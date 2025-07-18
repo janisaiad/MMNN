@@ -83,7 +83,7 @@ for epoch in range(1,1+num_epochs):
             x=x.reshape([-1, 1]) 
             input_data = torch.tensor(x, dtype=mydtype).to(device)
             y = model(input_data)
-            y = y.cpu().detach().numpy().reshape([-1])
+            y = y.cpu().detach().numpy().reshape([-1]) # move to cpu and convert to numpy array to avoid memory leak
             return y     
         
         
