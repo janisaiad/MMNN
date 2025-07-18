@@ -5,7 +5,7 @@ class MMNN(nn.Module):
     def __init__(self, 
                  ranks = [1] + [16]*5 + [1], 
                  widths = [366]*6,
-                 device = "cpu", 
+                 device = "cuda", 
                  ResNet = False,
                  fixWb = True):
         super().__init__()
@@ -25,7 +25,7 @@ class MMNN(nn.Module):
             fixWb (bool): If True, the weights and biases are not updated during training.
         """
         
-        self.ranks = ranks
+        self.ranks = ranks # 
         self.widths = widths
         self.ResNet = ResNet
         self.depth = len(widths)
@@ -40,9 +40,9 @@ class MMNN(nn.Module):
                            fc_sizes[j+1], device=device) 
             # setattr(self, f"fc{j}", fc)
             fcs.append(fc)
-        self.fcs = nn.ModuleList(fcs)
+        self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
         
-        if fixWb:
+        if fixWb: # if True, the weights and biases are not updated during training
             for j in range(len(fcs)):
                 if j % 2 == 0:
                     self.fcs[j].weight.requires_grad = False
