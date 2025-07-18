@@ -3,12 +3,15 @@ import jax.numpy as jnp
 from flax import linen as nn
 from typing import List, Optional
 
+
+
 class MMNNJax(nn.Module):
     ranks: List[int] # i list where the i-th element represents output dimension of i-th layer
     widths: List[int] # list specifying width of each layer
     resnet: bool # whether to use resnet architecture with identity connections
     fix_wb: bool # if true, weights and biases not updated during training
-    
+    learning_rate: float = 0.01 # learning rate for training
+
     
     def setup(self):
         """Initialize the model layers."""
