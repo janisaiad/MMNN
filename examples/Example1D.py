@@ -122,17 +122,17 @@ for epoch in range(1,1+num_epochs):
             FPN="./figures/"
             if not os.path.exists(FPN):
                 os.makedirs(FPN)
-            plt.savefig(f"{FPN}mmnn_epoch{epoch}1D.png", dpi=50)
+            #plt.savefig(f"{FPN}mmnn_epoch{epoch}1D.png", dpi=50)
             if show_plot:
                 plt.show()
 
-torch.save(model.state_dict(), 'model_parameters1D.pth')
-np.savez("errors1D", 
-         test=np.array(errors_test), 
-         testmax=np.array(errors_test_max), 
-         train = np.array(errors_train), 
-         time=time.time()-time1
-         )
+# #torch.save(model.state_dict(), 'model_parameters1D.pth')
+# np.savez("errors1D", 
+#          test=np.array(errors_test), 
+#          testmax=np.array(errors_test_max), 
+#          train = np.array(errors_train), 
+#          time=time.time()-time1
+#          )
 fig=plt.figure(figsize=(6,4))
 n=len(errors_test) 
 m=len(errors_train)
@@ -141,6 +141,6 @@ plt.plot(np.linspace(1,m,m), np.log10(errors_train),
 plt.plot(np.linspace(1,n,n), np.log10(errors_test), 
          label="test error")
 plt.legend()
-
+plt.show()
 
 
