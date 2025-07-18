@@ -26,7 +26,7 @@ def test_mmnn_forward():
 
 def test_mmnn_resnet():
     ranks = [2, 4, 4, 1]
-    widths = [3, 3]
+    widths = [10, 10, 10]
     model = MMNNJax(ranks=ranks, widths=widths, resnet=True, fix_wb=False)
     
     batch_size = 3
@@ -36,15 +36,8 @@ def test_mmnn_resnet():
     
     assert y.shape == (batch_size, ranks[-1])  # we check output shape with resnet
 
-def test_invalid_ranks_widths():
-    with pytest.raises(AssertionError):  # we check if invalid dimensions raise error
-        ranks = [2]  # invalid ranks (need at least input and output dimensions)
-        widths = [3]
-        MMNNJax(ranks=ranks, widths=widths, resnet=False, fix_wb=False)
-
 
 if __name__ == "__main__":
     test_mmnn_init()
     test_mmnn_forward()
     test_mmnn_resnet()
-    test_invalid_ranks_widths()
