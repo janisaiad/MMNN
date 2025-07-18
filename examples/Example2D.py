@@ -5,7 +5,7 @@ from torch.optim.lr_scheduler import StepLR
 import numpy as np
 import matplotlib.pyplot as plt
 import time,os
-import model.mmnn as mmnn
+import mmnn as mmnn
 
 ## 2D function Example
 
