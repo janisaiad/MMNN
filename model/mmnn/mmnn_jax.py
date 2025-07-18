@@ -43,9 +43,6 @@ class MMNNJax(nn.Module):
             Output tensor of shape [batch_size, output_dim]
         """
         for j in range(self.depth):
-            print(j)
-            print(self.fc_sizes[2*j])
-            print(self.fc_sizes[2*j+1])
             if self.resnet:
                 if 0 < j < self.depth-1:
                     x_id = x + 0.0  # make a copy to avoid inplace operations
@@ -61,5 +58,4 @@ class MMNNJax(nn.Module):
     
         x = jax.nn.relu(x)
         x = self.fcs[-1](x)
-        print(x.shape)
         return x
