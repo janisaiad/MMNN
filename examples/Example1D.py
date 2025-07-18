@@ -5,7 +5,7 @@ from torch.optim.lr_scheduler import StepLR
 import numpy as np
 import matplotlib.pyplot as plt
 import time,os
-import mmnn as mmnn
+import mmnn as mmnn # type: ignore
 
 # torch.set_default_dtype(torch.float64)
 mydtype = torch.get_default_dtype()

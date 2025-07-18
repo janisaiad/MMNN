@@ -6,7 +6,7 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import time,os
-import model.mmnn as mmnn
+import mmnn as mmnn # type: ignore
 
 
 # torch.set_default_dtype(torch.float64)
@@ -119,13 +119,13 @@ for epoch in range(1,1+num_epochs):
               f"{e_max:.2e} and {e_mse:.2e}")
         
 
-torch.save(model.state_dict(), f'model_parameters{dim}D.pth')
-np.savez(f"errors{dim}D", 
-         test=np.array(errors_test), 
-         testmax=np.array(errors_test_max), 
-         train = np.array(errors_train), 
-         time=time.time()-time1
-         )
+# torch.save(model.state_dict(), f'model_parameters{dim}D.pth')
+# np.savez(f"errors{dim}D", 
+#          test=np.array(errors_test), 
+#          testmax=np.array(errors_test_max), 
+#          train = np.array(errors_train), 
+#          time=time.time()-time1
+#          )
 fig=plt.figure(figsize=(6,4))
 n=len(errors_test) 
 m=len(errors_train)
@@ -134,3 +134,4 @@ plt.plot(np.linspace(1,m,m), np.log10(errors_train),
 plt.plot(np.linspace(1,n,n), np.log10(errors_test), 
          label="test error")
 plt.legend()
+plt.show()
