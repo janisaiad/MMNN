@@ -26,6 +26,8 @@ import jax.numpy as jnp
 from jax import jit, vmap
 from functools import partial
 from utils.means import nd_gaussian_expectation
+from jax.scipy.integrate import quadrature
+from jax.scipy.stats import chi2
 
 # we define our activation function and its derivative
 # here we use ReLU as a common example
@@ -70,17 +72,8 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
         # we compute the full physical nngp kernel of the previous layer
         k_nngp_prev = sigma_A**2 * nngp_l_minus_1 + sigma_c**2
         
-        # we define the functions to integrate for the current layer's kernels
+        # we define the function to integrate for the base nngp kernel
         f_nngp = lambda g: activation_fn(g[0]) * activation_fn(g[1])
-        f_nngp_dot = lambda g: d_l_minus_1 * activation_dot_fn(g[0]) * activation_dot_fn(g[1])
-
-
-
-
-
-
-
-
 
         # we prepare a function to compute one element (i, j) of the kernel matrices
         @jit
@@ -88,49 +81,61 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
             # we handle the base case and recursive step for pre-activation stats
             if l == 1:
                 # for the first layer, h_0 is the deterministic input x
-                k_prev_diag_i = jnp.dot(X[i], X[i])
-                k_prev_diag_j = jnp.dot(X[j], X[j])
-                k_prev_offdiag = jnp.dot(X[i], X[j])
-                
-                var_i = k_prev_diag_i + beta**2
-                var_j = k_prev_diag_j + beta**2
-                cov = k_prev_offdiag + beta**2
+                k_prev_diag_i_base = jnp.dot(X[i], X[i])
+                k_prev_diag_j_base = jnp.dot(X[j], X[j])
+                k_prev_offdiag_base = jnp.dot(X[i], X[j])
             else:
                 # for subsequent layers, h_{l-1} is a gaussian process
-                k_prev_diag_i = k_nngp_prev[i, i]
-                k_prev_diag_j = k_nngp_prev[j, j]
-                k_prev_offdiag = k_nngp_prev[i, j]
-                
-                var_i = d_l_minus_1 * k_prev_diag_i + beta**2
-                var_j = d_l_minus_1 * k_prev_diag_j + beta**2
-                cov = d_l_minus_1 * k_prev_offdiag + beta**2
+                k_prev_diag_i_base = k_nngp_prev[i, i]
+                k_prev_diag_j_base = k_nngp_prev[j, j]
+                k_prev_offdiag_base = k_nngp_prev[i, j]
 
-            # we set up parameters for the 2d gaussian expectation
-            mus = jnp.array([0.0, 0.0])
-            sigmas = jnp.sqrt(jnp.array([var_i, var_j]))
-            rho_val = cov / (sigmas[0] * sigmas[1])
-            # we clip rho_val to avoid numerical instability, staying away from singular boundaries
+            # --- NNGP Kernel Calculation (2D integral) ---
+            var_i_nngp = d_l_minus_1 * k_prev_diag_i_base + beta**2 if l > 1 else k_prev_diag_i_base + beta**2
+            var_j_nngp = d_l_minus_1 * k_prev_diag_j_base + beta**2 if l > 1 else k_prev_diag_j_base + beta**2
+            cov_nngp = d_l_minus_1 * k_prev_offdiag_base + beta**2 if l > 1 else k_prev_offdiag_base + beta**2
+
+            mus_nngp = jnp.array([0.0, 0.0])
+            sigmas_nngp = jnp.sqrt(jnp.array([var_i_nngp, var_j_nngp]))
+            rho_val_nngp = cov_nngp / (sigmas_nngp[0] * sigmas_nngp[1])
             eps = 1e-6
-            rho_val = jnp.clip(rho_val, -1.0 + eps, 1.0 - eps)
-            rho = jnp.array([[1.0, rho_val], [rho_val, 1.0]])
+            rho_val_nngp = jnp.clip(rho_val_nngp, -1.0 + eps, 1.0 - eps)
+            rho_nngp = jnp.array([[1.0, rho_val_nngp], [rho_val_nngp, 1.0]])
+            nngp_l_ij = nd_gaussian_expectation(f_nngp, mus_nngp, sigmas_nngp, rho_nngp)
 
-            # we compute the base kernels for the current layer
-            nngp_l_ij = nd_gaussian_expectation(f_nngp, mus, sigmas, rho)
-            nngp_dot_l_ij = nd_gaussian_expectation(f_nngp_dot, mus, sigmas, rho)
+            # --- Exact NTK Derivative Kernel Calculation (3D effective integral) ---
+            # we define the integrand for the outer 1D integral over s = ||w||^2
+            def dot_kernel_integrand(s):
+                # we compute the conditional variance/covariance of pre-activations given s
+                # for l>1, Var(w^T h) = E_h[Var(w^T h | h)] = E_h[h^T w w^T h] -> not simple
+                # using the approximation from the paper: Var(w^T h) = Var(h) * E[w^T w] = K * s
+                # this is more accurate than the previous approximation
+                var_i_cond_s = k_prev_diag_i_base * s + beta**2
+                var_j_cond_s = k_prev_diag_j_base * s + beta**2
+                cov_cond_s = k_prev_offdiag_base * s + beta**2
+
+                mus = jnp.array([0.0, 0.0])
+                sigmas = jnp.sqrt(jnp.array([var_i_cond_s, var_j_cond_s]))
+                rho_val = cov_cond_s / (sigmas[0] * sigmas[1])
+                rho_val = jnp.clip(rho_val, -1.0 + eps, 1.0 - eps)
+                rho = jnp.array([[1.0, rho_val], [rho_val, 1.0]])
+
+                # we compute E[dot_sigma(g_i)dot_sigma(g_j) | s]
+                f_dot = lambda g: activation_dot_fn(g[0]) * activation_dot_fn(g[1])
+                inner_expectation = nd_gaussian_expectation(f_dot, mus, sigmas, rho)
+                
+                # we return the full value to integrate: s * E[...] * p(s)
+                return s * inner_expectation * chi2.pdf(s, df=d_l_minus_1)
+
+            # we perform the 1d numerical integration over s
+            # we integrate up to a reasonable quantile of the chi2 distribution
+            upper_bound = chi2.ppf(0.9999, df=d_l_minus_1)
+            nngp_dot_l_ij, _ = quadrature(dot_kernel_integrand, 0.0, upper_bound, tol=1e-5)
             
             # we compute the ntk for the current layer using the recursive formula
             ntk_l_ij = ntk_l_minus_1[i, j] * (sigma_A**2 * nngp_dot_l_ij) + nngp_l_ij + sigma_c**2
             
             return nngp_l_ij, ntk_l_ij
-
-
-
-
-
-
-
-
-
 
         # we use vmap to compute the full kernel matrices efficiently
         # we create index pairs for all upper-triangular elements, including diagonal
