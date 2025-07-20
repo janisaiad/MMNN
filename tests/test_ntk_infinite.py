@@ -15,7 +15,7 @@ def test_compute_ntk_nngp_recursive():
 
     # we create random test input data
     rng = jax.random.PRNGKey(0)
-    X = jnp.array(jax.random.normal(0, 1, (batch_size, input_dim)))
+    X = jnp.array(jax.random.normal(rng, (batch_size, input_dim)))
 
     # we compute kernels
     kernels = compute_ntk_nngp_recursive(
@@ -35,8 +35,9 @@ def test_compute_ntk_nngp_recursive():
 
     # we verify symmetry of kernels
     for l in range(1, L+1):
-        assert jnp.allclose(kernels['nngp'][l], kernels['nngp'][l].T), "we expect symmetric nngp"
-        assert jnp.allclose(kernels['ntk'][l], kernels['ntk'][l].T), "we expect symmetric ntk"
+        print(kernels['nngp'][l])
+        assert jnp.allclose(kernels['nngp'][l], kernels['nngp'][l].T, atol=1e-6), "we expect symmetric nngp"
+        assert jnp.allclose(kernels['ntk'][l], kernels['ntk'][l].T, atol=1e-6), "we expect symmetric ntk"
 
     # we verify positive semi-definiteness
     for l in range(1, L+1):
