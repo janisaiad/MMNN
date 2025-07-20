@@ -109,8 +109,9 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
             mus = jnp.array([0.0, 0.0])
             sigmas = jnp.sqrt(jnp.array([var_i, var_j]))
             rho_val = cov / (sigmas[0] * sigmas[1])
-            # we clip rho_val to avoid numerical instability
-            rho_val = jnp.clip(rho_val, -1.0, 1.0)
+            # we clip rho_val to avoid numerical instability, staying away from singular boundaries
+            eps = 1e-6
+            rho_val = jnp.clip(rho_val, -1.0 + eps, 1.0 - eps)
             rho = jnp.array([[1.0, rho_val], [rho_val, 1.0]])
 
             # we compute the base kernels for the current layer
