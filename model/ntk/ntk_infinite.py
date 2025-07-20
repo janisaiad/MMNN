@@ -74,6 +74,14 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
         f_nngp = lambda g: activation_fn(g[0]) * activation_fn(g[1])
         f_nngp_dot = lambda g: d_l_minus_1 * activation_dot_fn(g[0]) * activation_dot_fn(g[1])
 
+
+
+
+
+
+
+
+
         # we prepare a function to compute one element (i, j) of the kernel matrices
         @jit
         def compute_kernel_element(i, j):
@@ -101,6 +109,8 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
             mus = jnp.array([0.0, 0.0])
             sigmas = jnp.sqrt(jnp.array([var_i, var_j]))
             rho_val = cov / (sigmas[0] * sigmas[1])
+            # we clip rho_val to avoid numerical instability
+            rho_val = jnp.clip(rho_val, -1.0, 1.0)
             rho = jnp.array([[1.0, rho_val], [rho_val, 1.0]])
 
             # we compute the base kernels for the current layer
@@ -112,6 +122,15 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
             
             return nngp_l_ij, ntk_l_ij
 
+
+
+
+
+
+
+
+
+
         # we use vmap to compute the full kernel matrices efficiently
         # we create index pairs for all upper-triangular elements, including diagonal
         idx_i, idx_j = jnp.triu_indices(num_samples)
@@ -120,8 +139,13 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
         nngp_triu, ntk_triu = vmap(compute_kernel_element)(idx_i, idx_j)
         
         # we build the full symmetric matrices
-        nngp_l = jnp.zeros_like(nngp_l_minus_1).at[idx_i, idx_j].set(nngp_triu).at[idx_j, idx_i].set(nngp_triu)
-        ntk_l = jnp.zeros_like(ntk_l_minus_1).at[idx_i, idx_j].set(ntk_triu).at[idx_j, idx_i].set(ntk_triu)
+        # first, we create an upper triangular matrix
+        nngp_l_upper = jnp.zeros_like(nngp_l_minus_1).at[idx_i, idx_j].set(nngp_triu)
+        ntk_l_upper = jnp.zeros_like(ntk_l_minus_1).at[idx_i, idx_j].set(ntk_triu)
+
+        # we make it symmetric by adding the transpose and subtracting the diagonal which was counted twice
+        nngp_l = nngp_l_upper + nngp_l_upper.T - jnp.diag(jnp.diag(nngp_l_upper))
+        ntk_l = ntk_l_upper + ntk_l_upper.T - jnp.diag(jnp.diag(ntk_l_upper))
         
         # we store the computed kernels
         kernels['nngp'][l] = nngp_l
