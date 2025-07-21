@@ -26,7 +26,7 @@ import jax.numpy as jnp
 from jax import jit, vmap
 from functools import partial
 from utils.means import nd_gaussian_expectation
-from jax.scipy.integrate import quadrature
+from jax.scipy.integrate import trapezoid
 from jax.scipy.stats import chi2
 
 # we define our activation function and its derivative
@@ -38,6 +38,15 @@ def relu(x):
 @jit
 def relu_dot(x):
     return (x > 0).astype(x.dtype)
+
+
+@jit
+def sin(x):
+    return jnp.sin(x)
+
+@jit
+def sin_dot(x):
+    return jnp.cos(x)
 
 def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activation_fn=relu, activation_dot_fn=relu_dot):
     """
@@ -127,10 +136,17 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
                 # we return the full value to integrate: s * E[...] * p(s)
                 return s * inner_expectation * chi2.pdf(s, df=d_l_minus_1)
 
-            # we perform the 1d numerical integration over s
-            # we integrate up to a reasonable quantile of the chi2 distribution
-            upper_bound = chi2.ppf(0.9999, df=d_l_minus_1)
-            nngp_dot_l_ij, _ = quadrature(dot_kernel_integrand, 0.0, upper_bound, tol=1e-5)
+            # we perform the 1d numerical integration over s using the trapezoidal rule
+            # we integrate up to a reasonable quantile of the chi2 distribution.
+            # since jax.scipy.stats.chi2 does not have a ppf method, we use a robust heuristic:
+            # the upper bound is set to the mean + 5 standard deviations of the distribution.
+            mean_s = d_l_minus_1
+            std_s = jnp.sqrt(2.0 * d_l_minus_1)
+            upper_bound = mean_s + 5.0 * std_s
+            
+            s_grid = jnp.linspace(1e-6, upper_bound, 200) # we create a fine grid for the integration, starting away from 0
+            integrand_values = vmap(dot_kernel_integrand)(s_grid) # we evaluate the integrand on the grid
+            nngp_dot_l_ij = trapezoid(integrand_values, s_grid)
             
             # we compute the ntk for the current layer using the recursive formula
             ntk_l_ij = ntk_l_minus_1[i, j] * (sigma_A**2 * nngp_dot_l_ij) + nngp_l_ij + sigma_c**2

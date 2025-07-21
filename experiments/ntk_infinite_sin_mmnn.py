@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from jax import random
 from scipy.linalg import eigvalsh
-from ntk import compute_ntk_nngp_recursive, relu, relu_dot
+from ntk import compute_ntk_nngp_recursive, sin, sin_dot
 from tqdm import tqdm
 
 # %% [markdown]
@@ -60,7 +60,7 @@ for i, sigma_A in tqdm(enumerate(sigma_As), desc="Testing σA values", total=len
             for L in tqdm(depths, desc=f"Testing depths for σA={sigma_A}, σc={sigma_c}", leave=False):
                 print(f"Testing depth {L} for σA={sigma_A}, σc={sigma_c}")
                 d_hidden = [rank] * (L-1)
-                kernels = compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activation_fn=relu, activation_dot_fn=relu_dot)
+                kernels = compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activation_fn=sin, activation_dot_fn=sin_dot)
                 ntk_final = kernels['ntk'][L]
                 # we ensure symmetry by averaging with transpose
                 ntk_final = (ntk_final + ntk_final.T) / 2
