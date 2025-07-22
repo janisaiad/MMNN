@@ -1,4 +1,14 @@
-pip install uv
+# check if uv installed and if not install it
+
+if ! command -v uv &> /dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# create venv
+uv venv
+
+# activate venv
+
 
 uv venv
 source .venv/bin/activate
