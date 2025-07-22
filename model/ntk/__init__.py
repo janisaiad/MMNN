@@ -1,1 +1,1 @@
-from .ntk_infinite import compute_ntk_nngp_recursive, relu, relu_dot, sin, sin_dot
+from .ntk_infinite import compute_ntk_nngp_recursive, relu, relu_dot, sin, sin_dot, compute_ntk_2layer_montecarlo
