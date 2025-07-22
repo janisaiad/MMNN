@@ -20,9 +20,9 @@ We analyze the Neural Tangent Kernel for a 2-layer network with ReLU activation:
 # %%
 # we set up base parameters
 key = random.PRNGKey(42)
-input_dim = 2  # we fix input dimension
+input_dim = 4  # we fix input dimension
 n_samples = 8  # we fix sample size
-ranks_to_test = range(2,100) # we test different ranks[0] values
+ranks_to_test = range(3,100) # we test different ranks[0] values
 beta = 1.0  # we fix random bias scaling
 n_mc_samples = 300  # we fix number of Monte Carlo samples
 
@@ -95,11 +95,14 @@ with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), desc="Overall Pr
                             beta=beta,
                             activation_fn=relu,
                             activation_dot_fn=relu_dot,
-                            key=random.split(key)[1]+i,  # we use different keys for each sample
+                            key=random.split(key)[1]+i*10,  # we use different keys for each sample
                             n_samples=n_mc_samples
                         )
                         ntk_samples.append(ntk)
-                        
+                        if jnp.isnan(ntk).any():
+                            print(f"NTK matrix contains NaNs at rank={rank}, σA={sigma_A}, σc={sigma_c}, sample={i}")
+                            print(ntk)
+                            continue
                         # we compute L2 loss and coordinates from projection
                         l2_loss, i_coord, j_coord = project_onto_IJ_space(ntk, I_norm, J_norm)
                         l2_loss_samples.append(l2_loss)
