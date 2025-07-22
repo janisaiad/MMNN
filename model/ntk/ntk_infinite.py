@@ -206,7 +206,7 @@ def compute_ntk_2layer(X, ranks=[10,10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1
 
 
 
-
+# we recall that this compute the mean NTK of the 2-layer MMNN, not the NTK of the 2-layer MMNN because it's random by nature
 def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot,key=None,n_samples=10000):
     """
     we compute the NNGP and NTK kernels for a 2-layer MMNN.
@@ -291,4 +291,61 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
     final_result = sigma_c**2 + sigma_A**2 * K2 + K1
     print(f"Final result shape: {final_result.shape}")
     print(final_result)
+    return final_result
+
+
+
+def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot,key=None,n_samples=10000):
+    """
+    we compute the NNGP and NTK kernels for a 2-layer MMNN.
+    """
+    num_samples, d_0 = X.shape
+    n_samples = n_samples
+    d_1 = ranks[0]
+    d_2 = ranks[1] # 1 is the output dimension
+    
+    K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
+    
+    b = jax.random.normal(key, (n_samples,1))
+    w = jax.random.normal(key, (n_samples,d_0))
+    
+    activations = activation_fn(jnp.dot(w,X.T) + beta*b)
+    
+    nngp_kernel = jnp.cov(activations.T)
+    
+    K = sigma_A**2 * nngp_kernel + sigma_c**2
+    
+    K1 = jnp.zeros((num_samples, num_samples))
+    K2 = jnp.zeros((num_samples, num_samples))
+    
+    w = jax.random.normal(key, (n_samples,ranks[0]))
+    
+    for i in range(num_samples):
+        for j in range(i,num_samples):
+            if i!=j:
+                cov_block = jnp.block([[K[i,i], K[i,j]], 
+                                    [K[j,i], K[j,j]]]) # shape: (2,2)
+                
+                h_single = jax.random.multivariate_normal(
+                    key=key+j,
+                    mean=jnp.zeros(2), 
+                    cov=cov_block,
+                    shape=(1, ranks[0]) # shape: (1, ranks[0], 2)
+                )
+                
+                h = jnp.repeat(h_single, n_samples, axis=0)  # shape: (n_samples, ranks[0], 2)
+                
+                h_x = h[:,:,0]
+                h_xp = h[:,:,1]
+            else: #  to avoid nan's for fully correlated gaussians
+                h_x = K[i,i]*jnp.sqrt(2)*jnp.ones((n_samples,ranks[0]))
+                h_xp = h_x+0.0
+            
+            K1 = K1.at[i,j].set(jnp.mean(activation_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b)*activation_fn(jnp.mean(jnp.multiply(h_xp,w),axis=1) + beta*b)))
+            K2 = K2.at[i,j].set(jnp.mean(activation_dot_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b) * jnp.mean(jnp.multiply(h_x,w),axis=1)*jnp.mean(jnp.multiply(w,w),axis=1)))
+            
+    K1 = K1 + K1.T - jnp.diag(jnp.diag(K1))
+    K2 = K2 + K2.T - jnp.diag(jnp.diag(K2))
+    
+    final_result = sigma_c**2 + sigma_A**2 * K2 + K1
     return final_result
