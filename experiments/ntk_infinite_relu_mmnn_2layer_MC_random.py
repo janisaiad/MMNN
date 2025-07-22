@@ -21,7 +21,7 @@ We analyze the Neural Tangent Kernel for a 2-layer network with ReLU activation:
 # we set up base parameters
 key = random.PRNGKey(42)
 input_dim = 2  # we fix input dimension
-n_samples = 4  # we fix sample size
+n_samples = 8  # we fix sample size
 ranks_to_test = range(2,100) # we test different ranks[0] values
 beta = 1.0  # we fix random bias scaling
 n_mc_samples = 300  # we fix number of Monte Carlo samples

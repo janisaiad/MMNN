@@ -326,10 +326,11 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
                 cov_block = jnp.block([[K[i,i], K[i,j]], 
                                     [K[j,i], K[j,j]]]) # shape: (2,2)
                 
+                
                 h_single = jax.random.multivariate_normal(
                     key=key+j,
                     mean=jnp.zeros(2), 
-                    cov=cov_block,
+                    cov=cov_block-jnp.eye(2)*1e-6,
                     shape=(1, ranks[0]) # shape: (1, ranks[0], 2)
                 )
                 
