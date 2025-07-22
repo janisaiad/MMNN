@@ -22,7 +22,7 @@ We analyze the Neural Tangent Kernel for a 2-layer network with ReLU activation:
 key = random.PRNGKey(42)
 input_dim = 2  # we fix input dimension
 n_samples = 4  # we fix sample size
-ranks_to_test = range(2,10) # we test different ranks[0] values
+ranks_to_test = range(2,100) # we test different ranks[0] values
 beta = 1.0  # we fix random bias scaling
 n_mc_samples = 300  # we fix number of Monte Carlo samples
 
@@ -38,6 +38,10 @@ X = X / jnp.linalg.norm(X, axis=1, keepdims=True)  # we normalize to unit sphere
 l2_losses = {rank: [] for rank in ranks_to_test}
 i_coords = {rank: [] for rank in ranks_to_test}  # we store I coordinates
 j_coords = {rank: [] for rank in ranks_to_test}  # we store J coordinates
+
+# we store std of NTK entries
+ntk_stds_00 = {rank: [] for rank in ranks_to_test}  # we store std of (0,0) entry
+ntk_stds_01 = {rank: [] for rank in ranks_to_test}  # we store std of (0,1) entry
 
 def compute_projection_matrices(n):
     """we compute normalized I and J matrices for projection"""
@@ -113,13 +117,16 @@ with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), desc="Overall Pr
                     i_coords[rank].append(jnp.mean(i_coord_samples))
                     j_coords[rank].append(jnp.mean(j_coord_samples))
                     
+                    # we store std values for (0,0) and (0,1) entries
+                    ntk_stds_00[rank].append(jnp.std(ntk_samples[:, 0, 0]))
+                    ntk_stds_01[rank].append(jnp.std(ntk_samples[:, 0, 1]))
+                    
                     # we plot NTK distribution for a few selected entries
                     plt.figure(figsize=(15, 5))
                     for idx, (i, j) in enumerate([(0,0), (0,1), (1,1)]):  # we select a few matrix entries
                         plt.subplot(1, 3, idx+1)
                         entry_samples = ntk_samples[:, i, j]
-                        print(f"entry_samples.shape: {entry_samples.shape}")
-                        print(f"entry_samples: {entry_samples}")
+                    
                         plt.hist(entry_samples, bins='auto', density=True)
                         plt.axvline(jnp.mean(entry_samples), color='r', linestyle='--', 
                                   label=f'Mean: {jnp.mean(entry_samples):.3f}\nStd: {jnp.std(entry_samples):.3f}')
@@ -223,6 +230,20 @@ plt.plot(list(ranks_to_test), mean_ntk_j_coords, 's-', label='Mean NTK J coordin
 plt.title('I and J Coordinates vs Rank')
 plt.xlabel('Rank')
 plt.ylabel('Coordinate Value')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# we plot std of NTK entries (0,0) and (0,1) vs rank
+plt.figure(figsize=(12, 6))
+mean_std_00 = [jnp.mean(jnp.array(ntk_stds_00[rank])) for rank in ranks_to_test]
+mean_std_01 = [jnp.mean(jnp.array(ntk_stds_01[rank])) for rank in ranks_to_test]
+
+plt.plot(list(ranks_to_test), mean_std_00, 'o-', label='Std of (0,0) entry')
+plt.plot(list(ranks_to_test), mean_std_01, 's-', label='Std of (0,1) entry')
+plt.title('Standard Deviation of NTK Entries vs Rank')
+plt.xlabel('Rank')
+plt.ylabel('Standard Deviation')
 plt.legend()
 plt.grid(True)
 plt.show()
