@@ -330,12 +330,19 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
                 h_single = jax.random.multivariate_normal(
                     key=key+j,
                     mean=jnp.zeros(2), 
-                    cov=cov_block-jnp.eye(2)*1e-6,
+                    cov=jnp.clip(cov_block-jnp.eye(2)*1e-2,0.01,None),
                     shape=(1, ranks[0]) # shape: (1, ranks[0], 2)
                 )
-                
+                if jnp.isnan(h_single).any():
+                    '''print(f"WARNING: NaN detected at position ({i},{j})")
+                    print(f'h_single: {h_single}')
+                    print(f'cov_block: {cov_block}')
+                    print(f'X[i]: {X[i]}')
+                    print(f'X[j]: {X[j]}')'''
+                    h_single = K[i,i]*jnp.sqrt(2)*jnp.ones((1,ranks[0],2))
+
+                    h = jnp.repeat(h_single, n_samples, axis=0)  # shape: (n_samples, ranks[0], 2)
                 h = jnp.repeat(h_single, n_samples, axis=0)  # shape: (n_samples, ranks[0], 2)
-                
                 h_x = h[:,:,0]
                 h_xp = h[:,:,1]
             else: #  to avoid nan's for fully correlated gaussians
@@ -344,7 +351,9 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
             
             K1 = K1.at[i,j].set(jnp.mean(activation_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b)*activation_fn(jnp.mean(jnp.multiply(h_xp,w),axis=1) + beta*b)))
             K2 = K2.at[i,j].set(jnp.mean(activation_dot_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b) * jnp.mean(jnp.multiply(h_x,w),axis=1)*jnp.mean(jnp.multiply(w,w),axis=1)))
-            
+                
+                
+                
     K1 = K1 + K1.T - jnp.diag(jnp.diag(K1))
     K2 = K2 + K2.T - jnp.diag(jnp.diag(K2))
     
