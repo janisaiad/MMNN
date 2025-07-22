@@ -95,13 +95,6 @@ $$
 
 
 
-
-
-# Project Name
-
-## Description
-A clear and concise description of what this project does and what it is for.
-
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
@@ -113,7 +106,6 @@ A clear and concise description of what this project does and what it is for.
 ## Installation
 
 To install dependencies using uv, follow these steps:
-
 1. Install uv:
    
    **macOS/Linux:**
@@ -128,6 +120,11 @@ To install dependencies using uv, follow these steps:
    **Windows:**
    ```powershell
    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   **One-line setup with launch script:**
+   ```bash
+   chmod +x launch.sh && ./launch.sh
    ```
 
    Alternatively, you can install uv using:
