@@ -82,7 +82,7 @@ with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), desc="Overall Pr
                     j_coord_samples = []
                     
                     # we compute multiple NTK samples
-                    for _ in range(n_samples_ntk):
+                    for i in range(n_samples_ntk): # we have to care about the key wtf
                         ntk = compute_ntk_2layer_montecarlo_random_field(
                             X,
                             ranks=[rank,1],
@@ -91,7 +91,7 @@ with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), desc="Overall Pr
                             beta=beta,
                             activation_fn=relu,
                             activation_dot_fn=relu_dot,
-                            key=random.split(key)[1],  # we use different keys for each sample
+                            key=random.split(key)[1]+i,  # we use different keys for each sample
                             n_samples=n_mc_samples
                         )
                         ntk_samples.append(ntk)
@@ -119,6 +119,7 @@ with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), desc="Overall Pr
                         plt.subplot(1, 3, idx+1)
                         entry_samples = ntk_samples[:, i, j]
                         print(f"entry_samples.shape: {entry_samples.shape}")
+                        print(f"entry_samples: {entry_samples}")
                         plt.hist(entry_samples, bins='auto', density=True)
                         plt.axvline(jnp.mean(entry_samples), color='r', linestyle='--', 
                                   label=f'Mean: {jnp.mean(entry_samples):.3f}\nStd: {jnp.std(entry_samples):.3f}')
