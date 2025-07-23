@@ -295,31 +295,25 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Summary \& Conclusion}
+\begin{frame}[fragile]{Summary of Recursive Formulas}
+\begin{block}{NNGP Kernel Recursion}
 \begin{itemize}
-    \item The single-layer NTK for an MMFN has an analytical solution that forms the base case of a recursive analysis.
-    \item For deep MMNNs, the NTK can be described by a set of recursive formulas.
-    \item \textbf{Key Insight:} In the multi-layer case ($\ell > 1$), the NNGP and NTK kernels become \textbf{random fields}, unlike in standard FCNNs where they are deterministic.
-    \item This framework provides the theoretical tools to analyze the training dynamics of deep and complex MMNNs.
-    \item \textbf{Final Takeaway:} MMNNs may enter an NTK-like regime with only linear parameters (vs. quadratic for MLPs). The trade-off is a random NTK, which we can analyze with probability tools (e.g., Bernstein bounds) to get robust optimization guarantees.
+    \item \textit{Base Kernel:} $\Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma(\dots_x) \sigma(\dots_{x'}) \right]$
+    \item \textit{Full Kernel:} $\mathcal{K}_{\text{NNGP}}^{(\ell)} = \sigma_A^2 \Sigma^{(\ell)} + \sigma_c^2$
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Experiment 3: Discussion}
-\begin{block}{The Core Trade-Off: Optimization vs. Variability}
 \end{block}
+\begin{block}{NTK Kernel Recursion}
 \begin{itemize}
-    \item \textbf{The Goal:} Can we use 2nd-order optimization? This requires a well-conditioned Hessian. MLPs are often ill-conditioned; we hope MMNNs are better.
-    \item \textbf{The Paradox:}
-    \begin{itemize}
-        \item The MMNN's low-rank structure is parameter-efficient and could improve conditioning.
-        \item But, this same structure moves the network away from the "lazy" regime, making the NTK itself more variable during training.
-    \end{itemize}
-    \item \textbf{The Path Forward:} The NTK's evolution is not chaotic. We can analyze its dynamics, enabled by the very low-rank structure that causes it to vary.
+    \item \textit{Base Derivative Kernel:} $\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}(\dots_x) \dot{\sigma}(\dots_{x'}) \bm{w}^\top\bm{w} \right]$
+    \item \textit{Full Kernel:} $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + \mathcal{K}_{\text{NNGP}}^{(\ell)}$
 \end{itemize}
+\end{block}
 \end{frame}
 
-\begin{frame}{Future Experiments}
+\section{Numerical Experiments}
+
+\begin{frame}{Experiment 1: Setup}
+We conduct numerical experiments to explore the kernel structures.
 \begin{itemize}
     \item \textbf{Key Goal:} Analyze the NTK's evolution during training. Is it predictable?
     \item Compare MMNN vs MLP for \textbf{Sine activation}: does the condition number similarity hold?
