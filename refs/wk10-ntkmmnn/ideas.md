@@ -98,3 +98,7 @@ d'ou le nouveau truc
 
 
 for sine and relu, low ranks are prefered
+
+the main thing i get is that the ntk is near diagonal when we concatenate layers
+
+PsinTU est à faire dans le futur, un peu complexe à rajouter dans le ntk, sintu et relu c'est un nombre constant de layer à approximer
