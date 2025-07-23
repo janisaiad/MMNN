@@ -228,6 +228,7 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
     print("Generating random weights and biases...")
     b = jax.random.normal(key, (n_samples,1))
     w = jax.random.normal(key, (n_samples,d_0))
+    w = w / jnp.sqrt(d_0)
     
     print("Computing first layer activations...")
     activations = activation_fn(jnp.dot(w,X.T) + beta*b)
@@ -248,6 +249,7 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
     
     print("Generating second layer weights...")
     w = jax.random.normal(key, (n_samples,ranks[0]))
+    w = w / jnp.sqrt(ranks[0])
     
     print("Computing pairwise kernel values...")
     for i in range(num_samples):
@@ -308,6 +310,7 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
     
     b = jax.random.normal(key, (n_samples,1))
     w = jax.random.normal(key, (n_samples,d_0))
+    w = w / jnp.sqrt(d_0)
     
     activations = activation_fn(jnp.dot(w,X.T) + beta*b)
     
@@ -319,6 +322,10 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
     K2 = jnp.zeros((num_samples, num_samples))
     
     w = jax.random.normal(key, (n_samples,ranks[0]))
+    
+    # we normalize the w by their dimension ! not the norm
+    w = w / jnp.sqrt(ranks[0])
+    
     
     for i in range(num_samples):
         for j in range(i,num_samples):
