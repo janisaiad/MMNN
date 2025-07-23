@@ -34,7 +34,7 @@ X = random.normal(key, (n_samples, input_dim))
 X = X / jnp.linalg.norm(X, axis=1, keepdims=True)  # we normalize to unit sphere
 # we store growth rates for heatmap
 growth_rates = jnp.zeros((len(sigma_As), len(sigma_cs)))
-linreg_coeffs = jnp.zeros((len(sigma_As), len(sigma_cs)))
+all_eigenvalue_growth_rates = jnp.zeros((len(sigma_As), len(sigma_cs), n_samples)) # we store all eigenvalue growth rates
 stable_configs = []
 for i, sigma_A in tqdm(enumerate(sigma_As), desc="Testing σA values", total=len(sigma_As)):
     for j, sigma_c in tqdm(enumerate(sigma_cs), desc=f"Testing σc values for σA={sigma_A}", leave=False, total=len(sigma_cs)):
@@ -75,7 +75,7 @@ for i, sigma_A in tqdm(enumerate(sigma_As), desc="Testing σA values", total=len
                 J_projs.append(J_proj_coeff)
             
                 eigenvals = eigvalsh(ntk_final)
-                all_eigenvals_for_plot.append(eigenvals/ntk_norm) # we collect eigenvalues for the plot
+                all_eigenvals_for_plot.append(eigenvals) # we collect eigenvalues for the plot
                 l2_norms_by_depth.append(jnp.linalg.norm(ntk_final - I*I_proj_coeff - J*J_proj_coeff, ord='fro'))
                 
                 
@@ -88,8 +88,25 @@ for i, sigma_A in tqdm(enumerate(sigma_As), desc="Testing σA values", total=len
             
             plt.figure(figsize=(10, 8)) #we plot the growth of each eigenvalue vs depth
             all_eigenvals_for_plot = jnp.array(all_eigenvals_for_plot)
+            
+            # we perform linear regression on log of eigenvalues vs depth
+            depths_array = jnp.array(depths, dtype=jnp.float32)
+            current_eigenvalue_growth_rates = [] # we store growth rates for this config
             for k in range(n_samples):
-                plt.plot(depths, all_eigenvals_for_plot[:, k], marker='o', linestyle='-', alpha=0.7, label=f'Eigenvalue k={k+1}')
+                log_eigenvals = jnp.log(all_eigenvals_for_plot[:, k])
+                coeffs = jnp.polyfit(depths_array, log_eigenvals, deg=1)
+                growth_rate = coeffs[0]
+                current_eigenvalue_growth_rates.append(growth_rate)
+                
+                plt.plot(depths, all_eigenvals_for_plot[:, k], marker='o', linestyle='-', alpha=0.7, 
+                        label=f'Eigenvalue k={k+1} (growth={growth_rate:.3f})')
+                # we plot fitted line
+                plt.plot(depths_array, jnp.exp(coeffs[0] * depths_array + coeffs[1]), '--', alpha=0.3)
+                
+            # we store the computed growth rates
+            all_eigenvalue_growth_rates = all_eigenvalue_growth_rates.at[i, j].set(jnp.array(current_eigenvalue_growth_rates))
+            growth_rates = growth_rates.at[i, j].set(jnp.mean(jnp.array(current_eigenvalue_growth_rates)))
+            
             plt.yscale('log')
             plt.title(f'Eigenvalue Growth vs. Depth (σA={sigma_A}, σc={sigma_c})')
             plt.xlabel('Depth (L)')
@@ -99,29 +116,10 @@ for i, sigma_A in tqdm(enumerate(sigma_As), desc="Testing σA values", total=len
             plt.show()
 
             
-            # we plot NTK norms in log space
-            plt.figure(figsize=(8, 6))
-            norms = jnp.array(ntk_norms_by_depth)  # we convert list to array before taking log
-            plt.plot(depths, norms, marker='o')
-            
-            # we perform linear regression on log norms
-            depths_array = jnp.array(depths, dtype=jnp.float32)  # we convert depths to float array
-            coeffs = jnp.polyfit(jnp.log(depths_array), jnp.log(norms), deg=1)
-            growth_rate = coeffs[0]  # slope is the growth rate
-            
-            plt.plot(depths_array, jnp.exp(coeffs[0] * jnp.log(depths_array) + coeffs[1]), 'r--', 
-                    label=f'Linear fit (growth rate = {growth_rate:.3f})')
-            plt.title(f'Log NTK Norm vs Depth (σA={sigma_A}, σc={sigma_c})')
-            plt.xlabel('Depth L')
-            plt.ylabel('Log NTK Norm')
-            plt.legend()
-            plt.yscale('log')
-            plt.grid(True)
-            plt.show()
-            
         except Exception as e:
             print(f"Error at σA={sigma_A}, σc={sigma_c}: {str(e)}")  # we log the specific error
             growth_rates = growth_rates.at[i, j].set(jnp.nan)
+            all_eigenvalue_growth_rates = all_eigenvalue_growth_rates.at[i, j].set(jnp.nan)
             continue
         
         
@@ -136,31 +134,7 @@ if jnp.all(jnp.isnan(growth_rates)):
     plt.tight_layout()
     plt.show()
 else:
-    # we plot exponential growth rate heatmap
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(growth_rates, 
-                xticklabels=[f"{x:.2f}" for x in sigma_cs],
-                yticklabels=[f"{x:.2f}" for x in sigma_As],
-                cmap='viridis',
-                annot=True, fmt='.3f')
-    plt.title('Exponential Growth Rate by Configuration')
-    plt.xlabel('σc')
-    plt.ylabel('σA')
-    plt.tight_layout()
-    plt.show()
-
-    # we plot linear regression coefficient heatmap
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(linreg_coeffs, 
-                xticklabels=[f"{x:.2f}" for x in sigma_cs],
-                yticklabels=[f"{x:.2f}" for x in sigma_As],
-                cmap='viridis',
-                annot=True, fmt='.3f')
-    plt.title('Linear Regression Coefficient (Log NTK Norm) by Configuration')
-    plt.xlabel('σc')
-    plt.ylabel('σA')
-    plt.tight_layout()
-    plt.show()
+    print("Plotting eigenvalue growth rates...")
 
 # %%
 if len(stable_configs) > 0:
@@ -216,3 +190,38 @@ else:
 3. Different data distributions still show distinct but stable spectral patterns
 4. Heatmap reveals patterns in exponential growth rates across configurations
 """
+
+# %% [markdown]
+"""
+## Analysis of Eigenvalue Growth Rates
+
+We plot the eigenvalue growth rates as a function of `σA`. Since `σc` is fixed at 1.0, we can see how `σA` affects the stability.
+"""
+
+# %%
+# we plot the growth rates of each eigenvalue as a function of sigma_A
+if not jnp.all(jnp.isnan(all_eigenvalue_growth_rates)):
+    for j, sigma_c in enumerate(sigma_cs):
+        plt.figure(figsize=(12, 8))
+        
+        for k in range(n_samples):
+            # we extract the growth rate for the k-th eigenvalue across all sigma_A values
+            growth_rates_k = all_eigenvalue_growth_rates[:, j, k]
+            
+            # we filter out nan values for plotting
+            valid_indices = ~jnp.isnan(growth_rates_k)
+            
+            if jnp.any(valid_indices):
+                sigma_As_filtered = jnp.array(sigma_As)[valid_indices]
+                growth_rates_k_filtered = growth_rates_k[valid_indices]
+                plt.plot(sigma_As_filtered, growth_rates_k_filtered, marker='o', linestyle='-', label=f'Eigenvalue k={k+1}')
+
+        plt.xlabel('σA')
+        plt.ylabel('Exponential Growth Rate')
+        plt.title(f'Eigenvalue Growth Rate vs. σA (for σc={sigma_c:.2f})')
+        plt.axhline(0, color='r', linestyle='--', label='Stability threshold (rate=0)') # we add a line for stability
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+else:
+    print("No eigenvalue growth data to plot.")
