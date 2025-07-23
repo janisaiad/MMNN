@@ -138,9 +138,9 @@ This formulation now correctly incorporates the contribution of all trainable pa
 \begin{itemize}
     \item \textbf{Layer Output:}
     \[ \bm{h}^{(\ell)}(\bm{x}) = \bm{c}^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}_j^{(\ell)} \sigma\left(\bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)}(\bm{x}) + \beta b_j^{(\ell)}\right) \]
-    
     \item \textbf{Base NNGP Kernel (Recursive Definition):}
-    \[ \Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b, \bm{h}^{(\ell-1)}} \left[ \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \right] \]
+    \[ \sigma(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma\left(\bm{w}^\top x + \beta b\right) \sigma\left(\bm{w}^\top x' + \beta b\right) \right] \]
+    \[ K_{\text{nngp}}^{(\ell)}(x, x') = \mathbb{E}_{\bm{h}^{(\ell-1)}} \left[ \sigma\left(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')\right) \right] \]
 
     \item \textbf{Base Derivative Kernel (Recursive Definition):}
     \[ \dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b, \bm{h}^{(\ell-1)}} \left[ \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \bm{w}^\top\bm{w} \right] \]
