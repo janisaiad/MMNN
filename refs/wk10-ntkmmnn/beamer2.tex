@@ -150,6 +150,26 @@ In the infinite-width limit ($n \to \infty$), the Law of Large Numbers gives:
 \end{equation}
 \end{frame}
 
+\begin{frame}[fragile]{1-Layer Kernel: The Implemented Formula}
+For normalized random features, the NNGP kernel $\Sigma^{(1)}$ is a nested expectation over the random bias $b \sim \mathcal{N}(0,1)$ and features $(Q_1, Q_2)$.
+\begin{equation*}
+\Sigma^{(1)} = \mathbb{E}_{b} \left[ \underbrace{\mathbb{E}_{Q_1, Q_2} \left[ \sigma(Q_1 + \beta b) \sigma(Q_2 + \beta b) \right]}_{\text{Inner Expectation } \mathcal{I}(\beta b, \rho)} \right]
+\end{equation*}
+\begin{block}{Decomposition}
+The inner expectation, for a fixed mean $\mu=\beta b$ and correlation $\rho$, is:
+\begin{equation*}
+\mathcal{I}(\mu, \rho) = I_2(\mu, \rho) + 2\mu I_1(\mu, \rho) + \mu^2 I_0(\mu, \rho)
+\end{equation*}
+where $I_0, I_1, I_2$ are moments of a truncated bivariate normal distribution, expressed using special Gaussian functions ($\phi, \Phi, L$).
+\end{block}
+\begin{alertblock}{Final Integral Form}
+The total kernel is a 1D integral over the random bias, which is computed numerically:
+\begin{equation*}
+\Sigma^{(1)}(\rho, \beta) = \int_{-\infty}^{\infty} \mathcal{I}(\beta b, \rho) \, \phi(b) \, db
+\end{equation*}
+\end{alertblock}
+\end{frame}
+
 \begin{frame}{The Final Result: Single-Layer Analytical NTK}
 \begin{theorem}[NNGP Kernel for a Single-Layer ReLU MMFN]
 The expectation $\Sigma^{(1)} = \mathbb{E}[\text{ReLU}(g_1)\text{ReLU}(g_2)]$ for jointly Gaussian pre-activations $(g_1, g_2)$ is:
@@ -177,6 +197,40 @@ $}
 \begin{itemize}
     \item \textbf{Trainable:} Output weights $\bm{A}_j^{(\ell)}$ and biases $\bm{c}^{(\ell)}$.
     \item \textbf{Random \& Fixed:} Input weights $\bm{w}_j^{(\ell)}$ and biases $b_j^{(\ell)}$.
+    \item \textbf{Isotropic Random Weights:} The weights $\bm{w}_j^{(\ell)}$ are isotropic ($\sim\mathcal{N}(0, \mathbf{I})$). The network learns directional preferences through the preceding layers, which transform the input into a structured representation $\bm{h}^{(\ell-1)}$ before the random projection is applied.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Signal Propagation: The Edge of Chaos (EOC)}
+\begin{block}{How does signal magnitude evolve with depth?}
+We analyze the layer-to-layer variance propagation to ensure the signal does not vanish or explode.
+\end{block}
+For ReLU networks, the average variance $q^{(\ell)}$ follows the recurrence:
+\begin{equation*}
+    q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right)
+\end{equation*}
+\begin{alertblock}{Edge of Chaos Condition}
+To maintain stable signal propagation, the multiplicative factor must be 1. This gives the condition:
+\begin{equation*}
+    \sigma_A^2 \cdot \text{Tr}(\Sigma_w) = 2
+\end{equation*}
+This sets a critical trade-off between trainable and random parameter variances.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{NTK: A Guide to the Optimization Landscape}
+\begin{block}{Why do we care about the NTK?}
+It tells us how to optimize the network.
+\end{block}
+\begin{itemize}
+    \item The NTK governs the local optimization dynamics under gradient descent.
+    \item Its spectrum is a tractable proxy for the Hessian's spectrum.
+    \item This allows us to diagnose the landscape:
+    \begin{itemize}
+        \item \textbf{Ill-conditioned NTK?} $\implies$ Use 1st-order methods (Gradient Descent).
+        \item \textbf{Well-conditioned NTK?} $\implies$ 2nd-order methods can be much faster.
+    \end{itemize}
+    \item \textbf{Our Goal:} Find probabilistic laws for the (moving) MMNN kernel to get optimization guarantees and make this choice rigorously.
 \end{itemize}
 \end{frame}
 
@@ -244,8 +298,145 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
 \begin{itemize}
     \item The single-layer NTK for an MMFN has an analytical solution that forms the base case of a recursive analysis.
     \item For deep MMNNs, the NTK can be described by a set of recursive formulas.
-    \item \textbf{Key Insight:} In the multi-layer case ($\ell > 1$), the sequential infinite-width limit causes the layer outputs to become Gaussian Processes. Consequently, the NNGP and NTK kernels become \textbf{random fields}, unlike in standard FCNNs where they are deterministic.
+    \item \textbf{Key Insight:} In the multi-layer case ($\ell > 1$), the NNGP and NTK kernels become \textbf{random fields}, unlike in standard FCNNs where they are deterministic.
     \item This framework provides the theoretical tools to analyze the training dynamics of deep and complex MMNNs.
+    \item \textbf{Final Takeaway:} MMNNs may enter an NTK-like regime with only linear parameters (vs. quadratic for MLPs). The trade-off is a random NTK, which we can analyze with probability tools (e.g., Bernstein bounds) to get robust optimization guarantees.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Experiment 3: Discussion}
+\begin{block}{The Core Trade-Off: Optimization vs. Variability}
+\end{block}
+\begin{itemize}
+    \item \textbf{The Goal:} Can we use 2nd-order optimization? This requires a well-conditioned Hessian. MLPs are often ill-conditioned; we hope MMNNs are better.
+    \item \textbf{The Paradox:}
+    \begin{itemize}
+        \item The MMNN's low-rank structure is parameter-efficient and could improve conditioning.
+        \item But, this same structure moves the network away from the "lazy" regime, making the NTK itself more variable during training.
+    \end{itemize}
+    \item \textbf{The Path Forward:} The NTK's evolution is not chaotic. We can analyze its dynamics, enabled by the very low-rank structure that causes it to vary.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Future Experiments}
+\begin{itemize}
+    \item \textbf{Key Goal:} Analyze the NTK's evolution during training. Is it predictable?
+    \item Compare MMNN vs MLP for \textbf{Sine activation}: does the condition number similarity hold?
+    \item Find the dependency of the scaling coefficient $C_{\text{scaling}}$ on hyperparameters $\sigma_A$ and $\beta$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Experiment 2: Scaling Law & Rank Effects}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Scaling of Remainder:}
+        \begin{itemize}
+            \item The error from the simple matrix structure follows a clear scaling law:
+        \end{itemize}
+        \begin{equation*}
+        \resizebox{0.9\hsize}{!}{$
+        \left\| \mathbb{E}[\Theta^{(2)}] - \text{approx} \right\|_2 \propto \frac{1}{\sqrt{\text{rank}_1}}
+        $}
+        \end{equation*}
+        \textbf{Rank-Magnitude Effect:}
+        \begin{itemize}
+            \item Counter-intuitively, as rank $\uparrow$, the NTK magnitude $\downarrow$.
+            \item Hypothesis: Gaussian concentration of measure.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+            \includegraphics[width=\textwidth]{placeholder_beamer_scaling.png}
+            \caption{Scaling of remainder norm}
+        \end{figure}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Experiment 3: 1-Layer MMNN vs. 2-Layer MLP}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \begin{itemize}
+            \item \textbf{Key finding:} The \textbf{condition numbers} of the NTK matrices are surprisingly similar!
+        \end{itemize}
+    </column>
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+            \includegraphics[width=\textwidth]{placeholder_beamer_mlp_vs_mmnn.png}
+            \caption{Kernel value vs. $\beta$}
+        </end{figure}
+    \end{column>
+\end{columns}
+\end{frame}
+
+\begin{frame}{Future Work: Numerical Investigations}
+\begin{itemize}
+    \item \textbf{Track NTK Dynamics:} Observe how the NTK evolves during the first few steps of training.
+    \item \textbf{MMNN vs. MLP (Sine):} Repeat the comparison with Sine activation. Does the condition number similarity hold?
+    \item \textbf{Solve Sine Puzzle:} Systematically vary $\beta$ to understand the "constant kernel" phenomenon.
+    \item \textbf{Check Robustness:} Test different initialization distributions and data configurations (higher dimension, more points).
+    \item \textbf{Confirm Limits:} Use larger ranks for integration to ensure results are stable.
+    \item \textbf{Integration Accuracy:} Increase the network width/rank used for numerical integration to confirm that the observed phenomena are stable as we better approach the infinite-width limit.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work: Mathematical Investigations}
+\begin{itemize}
+    \item \textbf{Analyze the Role of Bias $\beta$:} Explore the simplified case $\beta=0$ (common in MLP theory) vs. the full model, possibly via a Taylor expansion in $\beta$ to understand its perturbative effect.
+    \item \textbf{Spectrum via Puiseux Series:} Analyze kernel expansion near $\rho=\pm 1$ to get spectral scaling (Bietti \& Bach, '21).
+    \item \textbf{Spectrum via Zonal Operators:} Use power series & Gegenbauer polynomials to find eigenvalues (Murray et al., '23).
+    \item \textbf{Spectrum vs. Depth:} Adapt proofs (Terjék et al., '25) to analyze spectral scaling with depth $L$.
+    \item \textbf{Connect to Function Decomposition:} Investigate uniform weights for $\bm{w}$ to better align with theory.
+    \item \textbf{Derive Scaling Coefficient:} Find the analytical form for $C_{\text{scaling}}(\sigma_A, \beta)$ from the 2-layer experiment.
+    \item \textbf{Formalize Evolving NTK:} Develop a rigorous theory for the dynamics of the low-rank NTK.
+    \item \textbf{Trainable Activations (PSinTU):} Postpone the analysis of trainable activations like PSinTU, as their NTK is significantly harder to tackle.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Outlook I: A Key Application - PINNs}
+\begin{block}{Physics-Informed Neural Networks (PINNs)}
+PINNs solve PDEs by training a network to respect physical laws. This is fundamentally a function approximation problem.
+\end{block}
+\begin{itemize}
+    \item \textbf{MMNNs are a natural fit:} Our architecture is built from the ground up on the principle of function decomposition.
+    \item \textbf{Hypothesis:} This structured approach could be significantly more parameter-efficient and accurate for solving PDEs than using a standard, unstructured MLP.
+    \item \textbf{Future Step:} Develop a "DSRN of MMNN"—a twice-differentiable version—to rigorously apply approximation theorems for PDEs with second-order derivatives.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Outlook II: The Deeper Analogy - Learnable Wavelets}
+\begin{block}{MMNNs as High-Dimensional, Learnable Wavelets}
+\end{block}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Wavelet Transform}
+        \begin{itemize}
+            \item Decomposes functions on a \textit{fixed} basis.
+            \item Basis functions are localized.
+            \item Suffers from the \textbf{curse of dimensionality}.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \textbf{MMNN}
+        \begin{itemize}
+            \item Decomposes functions on an \textit{adaptive}, random basis.
+            \item Learns the right coefficients.
+            \item Tractable in high dimensions thanks to its low-rank structure.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\begin{alertblock}{The High-Dimensional Advantage: Funk-Hecke & Simple Kernels}
+In high dimensions, random inputs are nearly orthogonal ($\rho \to 0$). The Funk-Hecke theorem then implies the NTK becomes quasi-diagonal ($a\mathbf{I}+b\mathbf{J}$). The MMNN thus learns a directional domain decomposition, creating an exponential number of regions with only a linear number of parameters—a feat impossible for classical wavelets.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Summary \& Conclusion}
+\begin{itemize}
+    \item The single-layer NTK for an MMFN has an analytical solution that forms the base case of a recursive analysis.
+    \item For deep MMNNs, the NTK can be described by a set of recursive formulas.
+    \item \textbf{Key Insight:} In the multi-layer case ($\ell > 1$), the NNGP and NTK kernels become \textbf{random fields}, unlike in standard FCNNs where they are deterministic.
+    \item This framework provides the theoretical tools to analyze the training dynamics of deep and complex MMNNs.
+    \item \textbf{Final Takeaway:} MMNNs may enter an NTK-like regime with only linear parameters (vs. quadratic for MLPs). The trade-off is a random NTK, which we can analyze with probability tools (e.g., Bernstein bounds) to get robust optimization guarantees.
 \end{itemize}
 \end{frame}
 

@@ -44,6 +44,23 @@ The entire NTK and NNGP formalism relies on the infinite-width limit. Following 
 \end{itemize}
 This sequential limit is the key theoretical tool. When analyzing layer $\ell$ in the limit $n_\ell \to \infty$, the output of the previous layer, $\bm{h}^{(\ell-1)}$, is a sum of an infinite number of i.i.d. random variables (by construction of layer $\ell-1$). By the Central Limit Theorem, $\bm{h}^{(\ell-1)}$ converges in distribution to a Gaussian Process. This allows us to replace the complex, random function $\bm{h}^{(\ell-1)}$ with a GP whose covariance structure is precisely the NNGP kernel $\Sigma^{(\ell-1)}$. This is the foundation of the recursive calculation.
 
+\section{Signal Propagation and the Edge of Chaos (EOC)}
+Before analyzing the kernel, we study the propagation of the signal's magnitude through the network at initialization. We are interested in the evolution of the average variance per dimension of the layer outputs, defined as $q^{(\ell)} = \mathbb{E}[\|\bm{h}^{(\ell)}\|^2]/d_\ell$.
+
+For a ReLU activation and assuming centered parameters, the variance evolves according to the following recurrence relation (see Appendix for proof):
+\begin{equation}
+    q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right)
+\end{equation}
+This is an affine map $q^{(\ell)} = M \cdot q^{(\ell-1)} + C$. For the signal to propagate stably without vanishing ($M<1$) or exploding ($M>1$), the dynamics must be at the "Edge of Chaos", where the multiplicative factor is exactly 1.
+
+\begin{block}{Edge of Chaos Condition}
+The condition for stable signal propagation is:
+\begin{equation}
+    \frac{\sigma_A^2}{2} \text{Tr}(\Sigma_w) = 1 \quad \implies \quad \sigma_A \sqrt{\text{Tr}(\Sigma_w)} = \sqrt{2}
+\end{equation}
+This establishes a critical relationship between the variance of the trainable weights ($\sigma_A^2$) and the trace of the random weight covariance matrix ($\Sigma_w$).
+\end{block}
+
 \section{NTK for a Single-Layer MMFN}
 \label{sec:single_layer_mmfn}
 We begin by deriving the Neural Tangent Kernel for a single-layer Mean-field Matrix-Normal Network (MMFN). This result forms the base case for the multi-layer recursion. For simplicity, we consider a single scalar output, such that the network is defined as:
@@ -165,6 +182,26 @@ This formulation now correctly incorporates the contribution of all trainable pa
 
 \appendix
 \section{Appendix}
+\subsection{Derivation of the Variance Recurrence (EOC)}
+We derive the recurrence relation for the average variance per dimension, $q^{(\ell)} = \mathbb{E}[\|\bm{h}^{(\ell)}\|^2]/d_\ell$, assuming scalar outputs for simplicity ($d_\ell=1$).
+The output of layer $\ell$ is $h^{(\ell)} = c^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} A_j^{(\ell)} \sigma(g_j^{(\ell)})$, where $g_j^{(\ell)} = \bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)} + \beta b_j^{(\ell)}$.
+We assume all parameters are zero-mean and independent. The variance is:
+\begin{align*}
+    q^{(\ell)} = \mathbb{E}[(h^{(\ell)})^2] &= \mathbb{E}[(c^{(\ell)})^2] + \frac{\sigma_A^2}{n_\ell} \mathbb{E}\left[ \left( \sum_{j=1}^{n_\ell} A_j^{(\ell)} \sigma(g_j^{(\ell)}) \right)^2 \right] \\
+    &= \sigma_c^2 + \frac{\sigma_A^2}{n_\ell} \sum_{j=1}^{n_\ell} \mathbb{E}[(A_j^{(\ell)})^2] \mathbb{E}[(\sigma(g_j^{(\ell)}))^2] \quad \text{(by independence)} \\
+    &= \sigma_c^2 + \sigma_A^2 \mathbb{E}[\sigma(g^{(\ell)})^2] \quad (\text{since } \mathbb{E}[(A_j)^2]=1 \text{ and terms are i.i.d.})
+\end{align*}
+The pre-activation $g^{(\ell)} = \bm{w}^\top \bm{h}^{(\ell-1)} + \beta b$ is a zero-mean Gaussian. Its variance is:
+\begin{align*}
+    \text{Var}(g^{(\ell)}) &= \mathbb{E}[(\bm{w}^\top \bm{h}^{(\ell-1)})^2] + \mathbb{E}[(\beta b)^2] \\
+    &= \mathbb{E}[\text{Tr}(\bm{w}^\top \bm{h}^{(\ell-1)} (\bm{h}^{(\ell-1)})^\top \bm{w})] = \mathbb{E}[\text{Tr}(\bm{w}\bm{w}^\top \bm{h}^{(\ell-1)}(\bm{h}^{(\ell-1)})^\top)] \\
+    &= \text{Tr}(\mathbb{E}[\bm{w}\bm{w}^\top] \mathbb{E}[\bm{h}^{(\ell-1)}(\bm{h}^{(\ell-1)})^\top]) + \beta^2 \\
+    &= \text{Tr}(\Sigma_w \cdot (q^{(\ell-1)} \mathbf{I}_{d_{\ell-1}})) + \beta^2 = q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2
+\end{align*}
+For a zero-mean Gaussian variable $g$ and ReLU activation $\sigma$, we have $\mathbb{E}[\sigma(g)^2] = \frac{1}{2}\text{Var}(g)$.
+Substituting back, we get the recurrence:
+\[ q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right) \]
+
 \subsection{Proof of the NNGP kernel for a single-layer MMFN}
 
 \subsection{Proof of the NTK Recurrence Relation}
