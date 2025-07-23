@@ -95,3 +95,6 @@ bah oui car dans jax on peut preciser qui on train à priori ?
 
 en fait je pense aussi qu'il y a toute une wavelet analysis à faire !!, sauf que les wavelets en high dim ça croit exponentiellement
 d'ou le nouveau truc
+
+
+for sine and relu, low ranks are prefered
