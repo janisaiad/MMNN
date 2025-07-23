@@ -1,46 +1,59 @@
-\section*{Pistes de Recherche et Idées}
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
 
-\paragraph{Introduction et Utilité des MMNNs}
-L'introduction devrait élaborer sur l'utilité des MMNNs, en s'appuyant sur les théorèmes existants. Il est crucial de souligner que, bien que puissants, l'entraînement sur des variétés de bas rang est difficile et peu interprétable en raison des non-linéarités complexes impliquées. Néanmoins, leur pertinence pour la compression de modèles et la distillation de connaissances (même en dehors d'un cadre SETOL) est un avantage majeur à mettre en avant.
+\title{Research Directions and Ideas}
+\author{}
+\date{}
 
-\paragraph{Comportement du NTK en fonction du rang}
-Une observation centrale est le comportement du Noyau Tangent Neuronal (NTK). Pour les MMNNs, un rang faible semble faire croître le NTK, tandis qu'une augmentation du rang le diminue. Ce phénomène est contre-intuitif, notamment car les poids $\bm{w}$ dans la fonction d'activation ReLU ne sont pas normalisés. Une piste serait de normaliser ces poids, soit pour contrer la malédiction de la dimension, soit pour mieux approximer le long d'une direction et séparer les données à différentes échelles.
+\begin{document}
 
-\paragraph{Distributions des paramètres et échantillonnage}
-Il serait intéressant d'étudier le cas où les poids et les biais suivent des lois uniformes. Bien que cela nous écarte des hypothèses gaussiennes classiques, de nombreux calculs pourraient être menés à bien via des intégrales ou des outils de calcul symbolique. On pourrait également envisager un échantillonnage non isotrope pour les poids $Q$ et les biais $b$, ou en modifiant les données uniquement par $Q$ avec un rayon spectral de 1 (ou une autre valeur respectant les conditions EOC).
+\maketitle
 
-\paragraph{Scaling, Hessien et "Surmrise"}
-Pour comprendre la dynamique de l'optimisation, il est nécessaire de calculer le scaling par rapport au nombre de couches $L$. Une comparaison avec le Hessien est également à envisager, notamment pour investiguer le phénomène de "surmrise" dans le contexte des MMNNs.
+\section{Introduction and Utility of MMNNs}
+The introduction should elaborate on the utility of MMNNs, building on existing theorems. It is crucial to emphasize that, while powerful, training on low-rank manifolds is difficult and not very interpretable due to complex non-linearities involved. Nevertheless, their relevance for model compression and knowledge distillation (even outside a SETOL framework) is a major advantage to highlight.
 
-\paragraph{Améliorations pratiques et implémentation}
-Sur le plan pratique, le code JAX utilisé pour les calculs actuels peut être considérablement amélioré pour plus d'efficacité et de clarté. L'implémentation du calcul du Hessien dans JAX est également une étape nécessaire pour valider les analyses théoriques sur les noyaux d'ordre supérieur.
+\section{NTK Behavior as a Function of Rank}
+A central observation is the behavior of the Neural Tangent Kernel (NTK). For MMNNs, a low rank appears to increase the NTK, while increasing rank diminishes it. This phenomenon is counter-intuitive, particularly since the weights $\bm{w}$ in the ReLU activation function are not normalized. One approach would be to normalize these weights, either to counter the curse of dimensionality or to better approximate along a direction and separate data at different scales.
 
-\paragraph{Architectures avancées et Tensor Programs}
-Une idée prometteuse est d'utiliser une structure en blocs, inspirée de "l'anatomie de l'attention", où la dimension interne tend vers l'infini. Cela pourrait être efficace sans nécessiter un grand nombre de paramètres, comme les attentions en $n\log(n)$ ou les transformeurs. L'analyse sous le prisme du NTK permettrait de vérifier si l'optimisation se déroule bien ou si une structure locale gaussienne émerge, une conjecture majeure pour les Tensor Programs (TP). Le formalisme des TP pourrait d'ailleurs être utilisé pour choisir précisément quels paramètres entraîner.
+\section{Parameter Distributions and Sampling}
+It would be interesting to study the case where weights and biases follow uniform distributions. Although this deviates from classical Gaussian assumptions, many calculations could be carried out via integrals or symbolic computation tools. We could also consider non-isotropic sampling for weights $Q$ and biases $b$, or by modifying the data only through $Q$ with a spectral radius of 1 (or another value respecting EOC conditions).
 
-\paragraph{Validation expérimentale}
-Une validation expérimentale robuste est indispensable. Il faut comparer des MMNNs de différentes tailles à des MLPs pour construire un tableau de résultats numériques solide. On peut aussi inverser l'entraînement des poids $\bm{w}$ et des coefficients $a$ pour explorer différents régimes du NTK, maintenant que la théorie peut être raccordée. L'étude du NTK local est également pertinente pour voir si la propriété de "surmrise" se maintient, dans un cadre avec moins de paramètres mais plus d'aléa pour les MMNNs.
+\section{Scaling, Hessian and "Surmrise"}
+To understand optimization dynamics, it is necessary to calculate scaling with respect to the number of layers $L$. A comparison with the Hessian is also worth considering, particularly to investigate the "surmrise" phenomenon in the context of MMNNs.
 
-\paragraph{Analyse multi-couches et du noyau}
-L'analyse doit être étendue à des MMNNs à deux couches avec une structure de type $I+J$, car seule une couche a été étudiée jusqu'à présent. Le rôle du terme $\mathbb{E}[\|\bm{w}\|^2]$ dans l'espérance est probablement crucial et dépend des dimensions internes. Selon l'objectif d'approximation, on pourrait dé-normaliser $\bm{w}$ pour le faire diverger et ainsi obtenir un meilleur NTK.
+\section{Practical Improvements and Implementation}
+On the practical side, the JAX code used for current calculations can be considerably improved for greater efficiency and clarity. Implementing Hessian calculation in JAX is also a necessary step to validate theoretical analyses on higher-order kernels.
 
-\paragraph{Analyses théoriques approfondies}
-Pour une analyse théorique plus profonde, on pourrait développer le noyau zonal en série entière (similaire au `data_ntk`) ou utiliser le théorème de Funk-Hecke pour calculer les produits scalaires et trouver le spectre. Cette dernière approche est également compatible avec les espaces de Sobolev. Une autre voie est de se lancer dans la Théorie des Matrices Aléatoires (RMT) ou d'adapter la preuve de Terjek avec notre nouveau noyau, ce qui nécessiterait un développement limité pour déterminer si le scaling est linéaire ou exponentiel.
+\section{Advanced Architectures and Tensor Programs}
+A promising idea is to use a block structure, inspired by "the anatomy of attention", where internal dimension tends to infinity. This could be effective without requiring a large number of parameters, like $n\log(n)$ attentions or transformers. Analysis through the NTK lens would verify whether optimization proceeds well or if a local Gaussian structure emerges, a major conjecture for Tensor Programs (TP). The TP formalism could be used to precisely choose which parameters to train.
 
-\paragraph{Directions théoriques lointaines}
-Des directions plus lointaines incluent l'étude de l'effet du gel de certains neurones, formalisé dans une théorie de TP avec des paramètres aléatoires (à la Greg Yang ou Abbott). Il faudra faire attention à la paramétrisation $\mu P$ (avec ou sans $\beta^*n$) car elle impacte le gradient. On pourrait aussi envisager un DSRN (Deep Sliced-ResNet) de MMNNs et calculer son NTK. Enfin, une analyse par ondelettes serait pertinente, bien que la croissance exponentielle des bases d'ondelettes en haute dimension pose un défi.
+\section{Experimental Validation}
+Robust experimental validation is essential. We must compare MMNNs of different sizes to MLPs to build a solid numerical results table. We can also invert the training of weights $\bm{w}$ and coefficients $a$ to explore different NTK regimes, now that theory can be connected. Local NTK study is also relevant to see if the "surmrise" property holds, in a framework with fewer parameters but more randomness for MMNNs.
 
-\paragraph{Analyses spécifiques du noyau}
-Des analyses spécifiques du noyau sont nécessaires. Il faut comparer avec un NTK sans biais pour isoler la dépendance en $\|\bm{w}\|^2$. L'analyse à la Bietti, via un développement en série de Puiseux sur les bords du noyau, fournirait des propriétés approximatives du noyau et de son spectre. La conjecture sur le spectre divisé par deux reste une piste active, qui nécessite aussi une analyse sans biais.
+\section{Multi-layer and Kernel Analysis}
+The analysis must be extended to two-layer MMNNs with an $I+J$ type structure, as only one layer has been studied so far. The role of the term $\mathbb{E}[\|\bm{w}\|^2]$ in the expectation is likely crucial and depends on internal dimensions. Depending on the approximation objective, we could de-normalize $\bm{w}$ to make it diverge and thus obtain a better NTK.
 
-\paragraph{Scaling de la récurrence et Transformeurs}
-L'analyse du scaling de la récurrence est fondamentale, car c'est l'élément clé de la preuve de Terjek. Les transformeurs, un sujet majeur, doivent aussi être analysés. Le cas des transformeurs en $n\log(n)$ sera particulièrement intéressant pour la comparaison.
+\section{In-depth Theoretical Analyses}
+For deeper theoretical analysis, we could develop the zonal kernel in power series (similar to `data_ntk`) or use the Funk-Hecke theorem to calculate scalar products and find the spectrum. The latter approach is also compatible with Sobolev spaces. Another avenue is to venture into Random Matrix Theory (RMT) or adapt Terjek's proof with our new kernel, which would require a Taylor expansion to determine if scaling is linear or exponential.
 
-\paragraph{Prochaines étapes concrètes}
-Les prochaines étapes concrètes sont de commencer la rédaction du rapport et des preuves, et de ré-implémenter le calcul du Hessien pour les noyaux d'ordre supérieur. Il faut également lancer toutes les expériences avec des lois de probabilité uniformes pour les paramètres.
+\section{Future Theoretical Directions}
+More distant directions include studying the effect of freezing certain neurons, formalized in a TP theory with random parameters (à la Greg Yang or Abbott). Care must be taken with $\mu P$ parameterization (with or without $\beta^*n$) as it impacts the gradient. We could also consider a DSRN (Deep Sliced-ResNet) of MMNNs and calculate its NTK. Finally, a wavelet analysis would be relevant, although the exponential growth of wavelet bases in high dimensions poses a challenge.
 
-\paragraph{Développement de l'intuition}
-Il est important de développer une intuition plus fine. Par exemple, pour les lois non uniformes, on choisit non seulement une direction mais aussi un scaling sur celle-ci. Une intuition pour la création d'un MMNN serait d'utiliser deux activations opposées, correspondant à deux directions opposées avec un biais ajusté. On pourrait aussi faire un développement limité pour un petit $\beta$. La question d'entraîner ou non les biais dans les deux cas (MMNN et MLP) reste ouverte.
+\section{Specific Kernel Analyses}
+Specific kernel analyses are needed. We must compare with a bias-free NTK to isolate the dependence on $\|\bm{w}\|^2$. Bietti-style analysis, via Puiseux series development on kernel edges, would provide approximate properties of the kernel and its spectrum. The conjecture about the spectrum divided by two remains an active lead, also requiring bias-free analysis.
 
-\paragraph{Remarques finales}
-Enfin, quelques remarques : pour les activations sinus et ReLU, les rangs faibles semblent être préférables. Le NTK tend à devenir quasi-diagonal lorsque l'on concatène les couches. L'activation PsinTU est une piste future, bien que complexe à intégrer dans le formalisme NTK, alors que `sintu` et `relu` requièrent un nombre constant de couches pour l'approximation.
+\section{Recurrence Scaling and Transformers}
+Analysis of recurrence scaling is fundamental, as it's the key element of Terjek's proof. Transformers, a major topic, must also be analyzed. The case of $n\log(n)$ transformers will be particularly interesting for comparison.
+
+\section{Concrete Next Steps}
+Concrete next steps are to begin writing the report and proofs, and to re-implement Hessian calculation for higher-order kernels. All experiments with uniform probability distributions for parameters must also be launched.
+
+\section{Developing Intuition}
+It's important to develop finer intuition. For example, for non-uniform distributions, we choose not only a direction but also scaling on it. An intuition for creating an MMNN would be to use two opposite activations, corresponding to two opposite directions with adjusted bias. We could also do a Taylor expansion for small $\beta$. The question of whether to train biases in both cases (MMNN and MLP) remains open.
+
+\section{Final Remarks}
+Finally, some remarks: for sine and ReLU activations, low ranks seem preferable. The NTK tends to become quasi-diagonal when concatenating layers. PsinTU activation is a future lead, although complex to integrate into the NTK formalism, while `sintu` and `relu` require a constant number of layers for approximation.
+
+\end{document}

@@ -15,6 +15,9 @@
 \end{itemize}
 
 
+
+
+
 make a small explanation in the introduction to elaborate on why it's so useful (with MMNNS theorems) 
 but also that training on low rank manifolds is hard, and not interpretable that much, without a lot of non linearities involved
 for same number of parameters, but useful for compression and distillation (without SETOL setup)
