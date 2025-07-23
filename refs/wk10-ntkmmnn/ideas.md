@@ -39,3 +39,8 @@ and that can be useful without a lot of params, for instance nlog(n) attentions 
 ntk's pespective that the optmization goes well, or has gaussian local structure (big conjecture for any TP)
 
 in fact the formalism is to use TP and to choose what u train
+
+
+le fait est que maintenant on peut comparere differentes tailles de MMNNs face à des MLP pour vraiment avoir un tableau de nombres solide 
+
+on peut inverser le training de w et a
