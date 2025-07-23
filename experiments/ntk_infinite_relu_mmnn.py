@@ -20,7 +20,7 @@ We analyze the eigenvalue spectrum of Neural Tangent Kernels to find stable grow
 # we set up base parameters
 key = random.PRNGKey(42)
 input_dim = 5  # we fix input dimension to 10
-rank = 10  # we fix rank to 10
+rank = 2  # we fix rank to 10
 beta = 1.0  # we fix random bias scaling
 n_samples = 8  # we fix sample size
 depths = list(range(1, 5))  # we test depths 1 to 10
