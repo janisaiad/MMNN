@@ -143,6 +143,13 @@ where $\phi(b)$ is the standard normal PDF. This formulation is what is implemen
 \section{Recursion for Multi-Layer MMNNs}
 We now extend the single-layer result to deep networks. The recursion involves two distinct but intertwined kernels: the NNGP kernel $\Sigma^{(\ell)}$ and the NTK kernel $\Theta^{(\ell)}$.
 
+\subsection{The Critical Role of the \(\bm{w}^\top\bm{w}\) Term in the Derivative Kernel}
+The recursive formula for the NTK, $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + \dots$, shows that the derivative kernel $\dot{\Sigma}^{(\ell)}$ governs the propagation of gradient information through the layers. Its definition contains a crucial term:
+\[ \dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}(\dots) \dot{\sigma}(\dots) \bm{w}^\top\bm{w} \right] \]
+The presence of the inner product $\bm{w}^\top\bm{w}$ (the squared Euclidean norm of the random weight vector) is of paramount importance. For isotropic Gaussian weights, its expectation is $\mathbb{E}[\bm{w}^\top\bm{w}] = d_{\ell-1}$, the dimension of the previous layer's output. This introduces a factor proportional to the network's width at each layer into the recursive term of the NTK.
+
+\textbf{This can lead to a much faster, potentially explosive, growth of the NTK's magnitude with depth compared to the NNGP kernel.} A precise mathematical investigation of how this term interacts with the rest of the expectation is therefore essential to correctly characterize the scaling laws of the NTK in deep MMNNs, and will be a central part of our future work.
+
 \subsection{Remark on Model Structure and the Role of \(\beta\)}
 A key feature of this model is the structure of the pre-activation at each layer: $g = \bm{w}^\top \bm{h}_{in} + \beta b$. This structure, where $\bm{w}$ and $b$ are random parameters, is central to the model's behavior. It introduces two sources of randomness that are propagated through the network:
 \begin{enumerate}
@@ -175,7 +182,7 @@ The NTK is the Gram matrix of function gradients. For any finite width, it is a 
     \item \textbf{Recursive Step (\(\ell \ge 1\)):} The NTK for layer $\ell$ combines the NTK from previous layers with the contributions from the trainable parameters of the current layer, $A^{(\ell)}$ and $c^{(\ell)}$.
     \begin{equation}
         \boxed{
-        \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \left(\sigma_A^2\dot{\Sigma}^{(\ell)}(x, x')\right) + \Sigma^{(\ell)}(x, x') + \sigma_c^2
+        \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \left(\sigma_A^2\dot{\Sigma}^{(\ell)}(x, x')\right) + \Sigma^{(\ell)}(x, x') + 1
         }
     \end{equation}
     Here, $\sigma_c^2=1$ is the contribution from the trainable bias. $\Sigma^{(\ell)}$ is the base NNGP kernel defined above. $\dot{\Sigma}^{(\ell)}$ is the base derivative kernel, defined similarly as an expectation over layer-$\ell$ parameters:
@@ -206,7 +213,7 @@ This formulation now correctly incorporates the contribution of all trainable pa
         \item \textit{Base Derivative Kernel:}
         \[ \resizebox{\textwidth}{!}{$\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \bm{w}^\top\bm{w} \right]$} \]
         \item \textit{Full Kernel:}
-        \[ \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2  \dot{\Sigma}^{(\ell)}(x, x') + \mathcal{K}_{\text{NNGP}}^{(\ell)}(x, x') \]
+        \[ \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2  \dot{\Sigma}^{(\ell)}(x, x') + \Sigma^{(\ell)}(x, x')+1 \]
     \end{itemize}
 \end{itemize}
 \end{minipage}}

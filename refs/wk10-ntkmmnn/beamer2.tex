@@ -268,7 +268,7 @@ The NTK combines contributions from all previous layers with the current layer.
 For $\ell \ge 1$, with $\Theta^{(0)}=0$:
 \begin{equation*}
 \resizebox{\hsize}{!}{$
-\Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2\dot{\Sigma}^{(\ell)}(x, x') + \sigma_A^2 \Sigma^{(\ell)}(x, x') + \sigma_c^2
+\Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2\dot{\Sigma}^{(\ell)}(x, x') +  \Sigma^{(\ell)}(x, x') + \sigma_c^2
 $}
 \end{equation*}
 \end{theorem}
@@ -285,7 +285,7 @@ This kernel arises from the chain rule and captures the geometry of the function
 \begin{block}{Definition}
 \begin{equation*}
 \resizebox{\hsize}{!}{$
-\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\dots_x\right) \dot{\sigma}\left(\dots_{x'}\right) \bm{h}^{(\ell-1)}(x)^\top \bm{h}^{(\ell-1)}(x') \right]
+\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\dots_x\right) \dot{\sigma}\left(\dots_{x'}\right) \bm{w}^\top\bm{w} \right]
 $}
 \end{equation*}
 where $\dot{\sigma}$ is the derivative of the activation and $\dots_x = \bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b$.
@@ -293,6 +293,18 @@ where $\dot{\sigma}$ is the derivative of the activation and $\dots_x = \bm{w}^\
 \begin{alertblock}{Randomness}
 Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a random field for $\ell > 1$ because its definition depends on the random function $\bm{h}^{(\ell-1)}$.
 \end{alertblock}
+\end{frame}
+
+\begin{frame}{The Critical Role of the $\bm{w}^\top\bm{w}$ Term}
+\begin{block}{Why is the derivative kernel's structure so important?}
+The recursive part of the NTK formula is $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + \dots$
+\end{block}
+\begin{itemize}
+    \item The term $\dot{\Sigma}^{(\ell)}$ contains an expectation over $\bm{w}^\top\bm{w}$, the squared norm of the random weight vectors.
+    \item For isotropic weights, $\mathbb{E}[\bm{w}^\top\bm{w}]$ is proportional to the input dimension of the layer.
+    \item \textbf{This term can cause a much faster growth of the NTK magnitude with depth, potentially leading to divergence.}
+    \item Understanding and controlling this term is therefore essential for deriving the true scaling laws of the NTK in deep networks. This will be a key focus of our future mathematical investigation.
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Summary of Recursive Formulas}
@@ -305,7 +317,7 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
 \begin{block}{NTK Kernel Recursion}
 \begin{itemize}
     \item \textit{Base Derivative Kernel:} $\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}(\dots_x) \dot{\sigma}(\dots_{x'}) \bm{w}^\top\bm{w} \right]$
-    \item \textit{Full Kernel:} $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + \mathcal{K}_{\text{NNGP}}^{(\ell)}$
+    \item \textit{Full Kernel:} $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + {\Sigma}^{(\ell)}+1$
 \end{itemize}
 \end{block}
 \end{frame}
@@ -348,18 +360,7 @@ We conduct numerical experiments to explore the kernel structures.
 \end{frame}
 
 \begin{frame}{Experiment 3: 1-Layer MMNN vs. 2-Layer MLP}
-\begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-        \begin{itemize}
-            \item \textbf{Key finding:} The \textbf{condition numbers} of the NTK matrices are surprisingly similar!
-        \end{itemize}
-    </column>
-    \begin{column}{0.5\textwidth}
-        \begin{figure}
-            \fbox{\parbox[c][3cm]{\textwidth}{\centering Placeholder: \\ Kernel value vs. $\beta$}}
-        \end{figure}
-    \end{column>
-\end{columns}
+
 \end{frame}
 
 \begin{frame}{Future Work: Numerical Investigations}
