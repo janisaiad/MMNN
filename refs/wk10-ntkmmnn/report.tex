@@ -187,19 +187,31 @@ The NTK is the Gram matrix of function gradients. For any finite width, it is a 
 This formulation now correctly incorporates the contribution of all trainable parameters at each layer.
 
 \section{Summary of Formulas}
+\vspace{1em}
+\fbox{\begin{minipage}{0.95\textwidth}
 \begin{itemize}
     \item \textbf{Layer Output:}
     \[ \bm{h}^{(\ell)}(\bm{x}) = \bm{c}^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}_j^{(\ell)} \sigma\left(\bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)}(\bm{x}) + \beta b_j^{(\ell)}\right) \]
-    \item \textbf{Base NNGP Kernel (Recursive Definition):}
-    \[ \sigma(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma\left(\bm{w}^\top x + \beta b\right) \sigma\left(\bm{w}^\top x' + \beta b\right) \right] \]
-    \[ K_{\text{nngp}}^{(\ell)}(x, x') = \mathbb{E}_{\bm{h}^{(\ell-1)}} \left[ \sigma\left(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')\right) \right] \]
 
-    \item \textbf{Base Derivative Kernel (Recursive Definition):}
-    \[ \dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b, \bm{h}^{(\ell-1)}} \left[ \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \bm{w}^\top\bm{w} \right] \]
+    \item \textbf{NNGP Kernel Recursion:}
+    \begin{itemize}
+        \item \textit{Base Kernel:} Expectation over current layer's random parameters, conditioned on the previous layer's output GP $\bm{h}^{(\ell-1)}$.
+        \[ \Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \right] \]
+        \item \textit{Full Kernel:}
+        \[ \mathcal{K}_{\text{NNGP}}^{(\ell)}(x, x') = \sigma_A^2 \Sigma^{(\ell)}(x, x') + \sigma_c^2 \]
+    \end{itemize}
 
-    \item \textbf{NTK Kernel (Recursive Definition):}
-    \[ \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2  \dot{\Sigma}^{(\ell)}(x, x') + \Sigma^{(\ell)}(x, x') \]
+    \item \textbf{NTK Kernel Recursion:}
+    \begin{itemize}
+        \item \textit{Base Derivative Kernel:}
+        \[ \resizebox{\textwidth}{!}{$\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \bm{w}^\top\bm{w} \right]$} \]
+        \item \textit{Full Kernel:}
+        \[ \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2  \dot{\Sigma}^{(\ell)}(x, x') + \mathcal{K}_{\text{NNGP}}^{(\ell)}(x, x') \]
+    \end{itemize}
 \end{itemize}
+\end{minipage}}
+\vspace{1em}
+
 
 \section{Conclusion: A New Paradigm for NTK Analysis}
 The analysis of MMNNs through the lens of NTK theory reveals a fascinating trade-off and a path toward a more general framework. Standard NTK theory for MLPs requires massive overparameterization (quadratic in width) to guarantee a static kernel and a "lazy training" regime. MMNNs offer a compelling alternative: it may be possible to enter an analyzable, NTK-like regime with a parameter count that is merely linear in the width.

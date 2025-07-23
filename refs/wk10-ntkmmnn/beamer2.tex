@@ -5,6 +5,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
+\usepackage{graphicx}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% New commands below
 %%%% math fonts
@@ -99,7 +100,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{MMFN Architecture: Single Layer}
+\begin{frame}{MMNN Architecture: Single Layer}
 A single layer is a linear combination of random basis functions:
 \begin{equation*}
     \bmh(\bm{x}) = \bm{A} \sigma(\bm{W}\bm{x} + \bm{b}) + \bm{c}
@@ -140,7 +141,7 @@ Using an augmented representation to absorb the biases:
 \end{frame}
 
 \begin{frame}{Single-Layer NTK: From Sum to Expectation}
-The kernel is the sum of gradient products over trainable parameters ($\{A_j\}, c$). For a single output MMFN:
+The kernel is the sum of gradient products over trainable parameters ($\{A_j\}, c$). For a single output MMNN:
 \begin{equation*}
     h(\bm{x}) = \frac{1}{\sqrt{n}} \sum_{j=1}^n A_j \sigma(\bm{w}_j^\top \bm{x} + b_j) + c
 \end{equation*}
@@ -171,7 +172,7 @@ The total kernel is a 1D integral over the random bias, which is computed numeri
 \end{frame}
 
 \begin{frame}{The Final Result: Single-Layer Analytical NTK}
-\begin{theorem}[NNGP Kernel for a Single-Layer ReLU MMFN]
+\begin{theorem}[NNGP Kernel for a Single-Layer ReLU MMNN]
 The expectation $\Sigma^{(1)} = \mathbb{E}[\text{ReLU}(g_1)\text{ReLU}(g_2)]$ for jointly Gaussian pre-activations $(g_1, g_2)$ is:
 \begin{equation*}
 \resizebox{0.9\hsize}{!}{$\Sigma^{(1)} = \sigma_1\sigma_2 \cdot I_{12} + \mu_1\sigma_2 \cdot I_{01} + \mu_2\sigma_1 \cdot I_{10} + \mu_1\mu_2 \cdot I_{00}$}
@@ -326,7 +327,7 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Experiment 2: Scaling Law & Rank Effects}
+\begin{frame}{Experiment 2: Scaling Law \& Rank Effects}
 \begin{columns}[T]
     \begin{column}{0.5\textwidth}
         \textbf{Scaling of Remainder:}
@@ -346,8 +347,7 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
     \end{column}
     \begin{column}{0.5\textwidth}
         \begin{figure}
-            \includegraphics[width=\textwidth]{placeholder_beamer_scaling.png}
-            \caption{Scaling of remainder norm}
+            \fbox{\parbox[c][3cm]{\textwidth}{\centering Placeholder: \\ Scaling of remainder norm}}
         \end{figure}
     \end{column}
 \end{columns}
@@ -362,9 +362,8 @@ Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a rando
     </column>
     \begin{column}{0.5\textwidth}
         \begin{figure}
-            \includegraphics[width=\textwidth]{placeholder_beamer_mlp_vs_mmnn.png}
-            \caption{Kernel value vs. $\beta$}
-        </end{figure}
+            \fbox{\parbox[c][3cm]{\textwidth}{\centering Placeholder: \\ Kernel value vs. $\beta$}}
+        \end{figure}
     \end{column>
 \end{columns}
 \end{frame}
