@@ -93,3 +93,5 @@ plus loin il faut un DSRN de MMNN et on calcule le NTK dessus wow
 mais je pense un neural tangents ou on choisit qui on train c'est super parfait en fait, et je crois que c'est déjà fait !!!
 bah oui car dans jax on peut preciser qui on train à priori ?
 
+en fait je pense aussi qu'il y a toute une wavelet analysis à faire !!, sauf que les wavelets en high dim ça croit exponentiellement
+d'ou le nouveau truc
