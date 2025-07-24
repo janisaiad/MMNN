@@ -109,3 +109,12 @@ PsinTU est à faire dans le futur, un peu complexe à rajouter dans le ntk, sint
 
 
 we also need to implement and see the hessian in jax
+
+
+avec toutes les observatoins sur la variance et sur l'alea du ntk il y a un compromis
+une matrice ntk qui traite tous les elemnts pareils, aps trop random, à quel prix ?
+aussi on voit qu'on divise le spectre par 2 (en parler dans le script) car on divise le trianing set par 2
+ce qui est deja une grande avancée
+
+on a tojours pas parlé de ce qui se passe si on train tout le monde, et de l'approche mean field en w sur les particules
+ou peut etre mean field sur a pour voir penadnt le training

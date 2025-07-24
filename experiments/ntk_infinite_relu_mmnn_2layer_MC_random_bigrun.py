@@ -8,6 +8,7 @@ from ntk import compute_ntk_2layer_montecarlo_random_field, relu, relu_dot
 from tqdm import tqdm
 import os
 import pathlib
+import numpy as np  # we add numpy for saving arrays
 
 # Create output directories
 pathlib.Path("figures/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun").mkdir(parents=True, exist_ok=True)
@@ -158,13 +159,13 @@ for input_dim in input_dims:
                                 plt.savefig(f'figures/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/mean_ntk_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.png')
                                 plt.close()
 
-                                # we save arrays
-                                jnp.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/ntk_samples_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy', 
-                                        ntk_samples)
-                                jnp.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/mean_ntk_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy',
-                                        mean_ntk)
-                                jnp.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/eigenvals_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy',
-                                        results[config_key]['eigenvals'][rank])
+                                # we convert JAX arrays to numpy before saving
+                                np.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/ntk_samples_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy', 
+                                        np.array(ntk_samples))
+                                np.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/mean_ntk_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy',
+                                        np.array(mean_ntk))
+                                np.save(f'data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/eigenvals_dim{input_dim}_n{n_samples}_beta{beta}_rank{rank}.npy',
+                                        np.array(results[config_key]['eigenvals'][rank]))
 
                             except Exception as e:
                                 print(f"Error at dim={input_dim}, n={n_samples}, beta={beta}, rank={rank}: {str(e)}")
@@ -172,8 +173,12 @@ for input_dim in input_dims:
                             
                             pbar.update(1)
 
-# we save final results dictionary
-jnp.save('data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/all_results.npy', results)
+# we convert results dictionary to numpy arrays before saving
+numpy_results = {}
+for key in results:
+    numpy_results[key] = {k: np.array(v) if isinstance(v, (list, jnp.ndarray)) else v 
+                         for k, v in results[key].items()}
+np.save('data/ntk_infinite_relu_mmnn_2layer_MC_random_bigrun/all_results.npy', numpy_results)
 
 # we plot summary statistics across configurations
 for config_key in results:
