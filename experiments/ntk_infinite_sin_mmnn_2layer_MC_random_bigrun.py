@@ -83,7 +83,7 @@ for input_dim in input_dims:
                 return l2_loss, a, b
 
             # we compute and plot NTK matrices for each configuration
-            n_samples_ntk = 100  # we fix number of samples for NTK distribution analysis
+            n_samples_ntk = 300  # we fix number of samples for NTK distribution analysis
 
             with tqdm(total=len(ranks_to_test)*len(sigma_As)*len(sigma_cs), 
                      desc=f"Progress for dim={input_dim}, n={n_samples}, beta={beta}") as pbar:
