@@ -119,8 +119,8 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
                     # we collect values
                     for i in range(n):
                         for j in range(n):
-                            ntk_values.extend(samples[:, i, j])
-                            dot_products.extend([dots[i, j]] * len(samples))
+                            ntk_values.extend(samples[:, i, j].tolist())  # we convert to list
+                            dot_products.extend([float(dots[i, j])] * len(samples))  # we ensure float
     
     if not ntk_values:
         return
@@ -137,43 +137,27 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
         if len(ntk_in_bin) > 0:
             distributions_by_rho[rho_center] = {
                 'values': ntk_in_bin,
-                'mean': np.mean(ntk_in_bin),
-                'std': np.std(ntk_in_bin)
+                'mean': float(np.mean(ntk_in_bin)),  # we ensure float
+                'std': float(np.std(ntk_in_bin))     # we ensure float
             }
     
-    # we optimize a global bandwidth to match std across all bins
-    def global_fit_bandwidth(bw):
-        total_error = 0
-        for rho in distributions_by_rho:
-            values = distributions_by_rho[rho]['values']
-            emp_std = distributions_by_rho[rho]['std']
-            
-            kde = KernelDensity(kernel=kernel, bandwidth=bw)
-            kde.fit(values.reshape(-1, 1))
-            x_grid = np.linspace(min(values), max(values), 1000).reshape(-1, 1)
-            log_dens = kde.score_samples(x_grid)
-            dens = np.exp(log_dens)
-            
-            # we compute std of fitted distribution
-            x_grid = x_grid.flatten()
-            fitted_mean = np.sum(x_grid * dens) / np.sum(dens)
-            fitted_std = np.sqrt(np.sum((x_grid - fitted_mean)**2 * dens) / np.sum(dens))
-            
-            # we add squared relative error
-            total_error += ((fitted_std - emp_std) / emp_std) ** 2
-            
-        return np.sqrt(total_error / len(distributions_by_rho))  # we return RMSE
+    # we compute optimal bandwidth using Silverman's rule for each bin
+    def compute_silverman_bandwidth(data):
+        n = len(data)
+        sigma = np.std(data)
+        iqr = np.percentile(data, 75) - np.percentile(data, 25)
+        # we use min to be robust to outliers
+        scale = min(sigma, iqr/1.34)
+        return 0.9 * scale * n**(-0.2)
+
+    # we compute average Silverman bandwidth across all bins
+    all_bandwidths = []
+    for rho in distributions_by_rho:
+        values = distributions_by_rho[rho]['values']
+        if len(values) > 1:
+            all_bandwidths.append(compute_silverman_bandwidth(values))
     
-    # we use Silverman's rule of thumb as initial guess on all data
-    n = len(ntk_values)
-    initial_bw = 1.06 * np.std(ntk_values) * n**(-1/5)
-    
-    # we optimize bandwidth
-    from scipy.optimize import minimize_scalar
-    opt_result = minimize_scalar(global_fit_bandwidth, 
-                               bounds=(initial_bw/10, initial_bw*10), 
-                               method='bounded')
-    optimal_bw = opt_result.x
+    optimal_bw = float(np.mean(all_bandwidths))
     
     # we create figure for distributions by rho
     fig = plt.figure(figsize=(20, 15))
@@ -182,26 +166,31 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
     # we plot distributions for each rho bin with optimal bandwidth
     for i, rho in enumerate(sorted(distributions_by_rho.keys())):
         values = distributions_by_rho[rho]['values']
-        emp_mean = distributions_by_rho[rho]['mean']
-        emp_std = distributions_by_rho[rho]['std']
+        emp_mean = float(np.mean(values))
+        emp_std = float(np.std(values))
         
         plt.subplot(gs[i//3, i%3])
         
-        # we plot histogram
+        # we plot normalized histogram
         plt.hist(values, bins=50, density=True, alpha=0.5, label='Empirical')
         
-        # we fit and plot KDE with optimal bandwidth
         if len(values) > 1:
             kde = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
-            kde.fit(values.reshape(-1, 1))
-            x_grid = np.linspace(min(values), max(values), 1000).reshape(-1, 1)
-            log_dens = kde.score_samples(x_grid)
+w            kde.fit(values.reshape(-1, 1))
+            
+            # we extend grid for better visualization
+            x_grid = np.linspace(min(values) - 3*emp_std, max(values) + 3*emp_std, 2000)
+            log_dens = kde.score_samples(x_grid.reshape(-1, 1))
             dens = np.exp(log_dens)
             
-            # we compute fitted std for this bin
-            x_grid = x_grid.flatten()
-            fitted_mean = np.sum(x_grid * dens) / np.sum(dens)
-            fitted_std = np.sqrt(np.sum((x_grid - fitted_mean)**2 * dens) / np.sum(dens))
+            # we ensure proper normalization
+            dx = x_grid[1] - x_grid[0]
+            dens = dens / (np.sum(dens) * dx)
+            
+            # we compute moments for verification
+            fitted_mean = float(np.sum(x_grid * dens) * dx)
+            fitted_var = float(np.sum((x_grid - fitted_mean)**2 * dens) * dx)
+            fitted_std = float(np.sqrt(fitted_var))
             
             plt.plot(x_grid, dens, 'r-', 
                     label=f'KDE fit (σ={fitted_std:.3f})')
@@ -243,30 +232,101 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
     plt.close()
     
     # we print statistics
-    print(f"\nStatistics for rank={rank}, β={beta} (global bandwidth = {optimal_bw:.3f}):")
+    print(f"\nStatistics for rank={rank}, β={beta} (bandwidth = {optimal_bw:.3f}):")
     print("-" * 120)
     print(f"{'ρ':^10} | {'Count':^8} | {'Emp Mean':^12} | {'Emp Std':^12} | {'KDE Std':^12} | {'Theory':^12} | {'Diff':^12}")
     print("-" * 120)
     for rho in sorted(distributions_by_rho.keys()):
         values = distributions_by_rho[rho]['values']
-        emp_mean = distributions_by_rho[rho]['mean']
-        emp_std = distributions_by_rho[rho]['std']
+        emp_mean = float(np.mean(values))
+        emp_std = float(np.std(values))
         
         # we compute KDE std for this bin
         kde = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
         kde.fit(values.reshape(-1, 1))
-        x_grid = np.linspace(min(values), max(values), 1000).reshape(-1, 1)
-        log_dens = kde.score_samples(x_grid)
+        x_grid = np.linspace(min(values) - 3*emp_std, max(values) + 3*emp_std, 2000)
+        log_dens = kde.score_samples(x_grid.reshape(-1, 1))
         dens = np.exp(log_dens)
-        x_grid = x_grid.flatten()
-        fitted_mean = np.sum(x_grid * dens) / np.sum(dens)
-        fitted_std = np.sqrt(np.sum((x_grid - fitted_mean)**2 * dens) / np.sum(dens))
+        dx = x_grid[1] - x_grid[0]
+        dens = dens / (np.sum(dens) * dx)
+        
+        fitted_mean = float(np.sum(x_grid * dens) * dx)
+        fitted_var = float(np.sum((x_grid - fitted_mean)**2 * dens) * dx)
+        fitted_std = float(np.sqrt(fitted_var))
         
         theo_val = ntk_formula(rho, beta)
         diff = emp_mean - theo_val
         print(f"{rho:^10.3f} | {len(values):^8d} | {emp_mean:^12.3f} | {emp_std:^12.3f} | "
               f"{fitted_std:^12.3f} | {theo_val:^12.3f} | {diff:^12.3f}")
     print("-" * 120)
+
+    # we store min values for later analysis
+    return {
+        'beta': beta,
+        'rank': rank,
+        'min_values': {rho: np.min(distributions_by_rho[rho]['values']) for rho in distributions_by_rho}
+    }
+
+# %%
+# we analyze distributions and collect min values
+min_value_data = []
+for rank in ranks:
+    for beta in betas:
+        for kernel in KERNELS:
+            result = analyze_ntk_distribution(rank, beta, kernel)
+            if result is not None:
+                min_value_data.append(result)
+
+# we plot min values vs rank for each beta
+plt.figure(figsize=(15, 10))
+
+for beta in betas:
+    beta_data = [d for d in min_value_data if d['beta'] == beta]
+    if beta_data:
+        ranks_for_beta = sorted([d['rank'] for d in beta_data])
+        
+        # we collect min values across all rhos for each rank
+        min_vals = []
+        for rank in ranks_for_beta:
+            rank_data = next(d for d in beta_data if d['rank'] == rank)
+            min_vals.append(min(rank_data['min_values'].values()))
+        
+        plt.subplot(121)
+        plt.plot(ranks_for_beta, min_vals, 'o-', label=f'β={beta}')
+
+        plt.subplot(122)
+        plt.loglog(ranks_for_beta, min_vals, 'o-', label=f'β={beta}')
+
+plt.subplot(121)
+plt.title('Minimum NTK Value vs Rank')
+plt.xlabel('Rank')
+plt.ylabel('Min NTK Value')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(122)
+plt.title('Minimum NTK Value vs Rank (log-log)')
+plt.xlabel('Rank')
+plt.ylabel('Min NTK Value')
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, 'min_ntk_vs_rank.png'), bbox_inches='tight', dpi=300)
+plt.close()
+
+# we print min value analysis
+print("\nMinimum NTK Value Analysis:")
+print("-" * 80)
+print(f"{'β':^10} | {'Rank':^10} | {'Min Value':^15} | {'ρ at min':^15}")
+print("-" * 80)
+for data in min_value_data:
+    beta = data['beta']
+    rank = data['rank']
+    min_val = min(data['min_values'].values())
+    rho_at_min = min(data['min_values'].items(), key=lambda x: x[1])[0]
+    print(f"{beta:^10.2f} | {rank:^10d} | {min_val:^15.3f} | {rho_at_min:^15.3f}")
+print("-" * 80)
 
 # %%
 # we analyze distributions for each rank and beta
