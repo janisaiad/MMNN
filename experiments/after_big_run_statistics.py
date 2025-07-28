@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import jax.numpy as jnp
+from scipy import stats
 
 # we define base path
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # we get the project root directory
@@ -80,50 +81,76 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # %%
-# we analyze scaling with rank
-plt.figure(figsize=(15, 5))
-for beta in betas:
-    for n in n_samples_list:
-        for d in input_dims:
-            key = f"dim{d}_n{n}_beta{beta}"
-            if key in results:
-                # we get mean L2 losses across ranks
-                valid_ranks = [r for r in ranks if r in results[key]['l2_losses']]  # we only use ranks that exist
-                if valid_ranks:  # we plot only if we have valid ranks
-                    mean_losses = [np.mean(results[key]['l2_losses'][r]) for r in valid_ranks]
-                    plt.subplot(131)
-                    plt.loglog(valid_ranks, mean_losses, 'o-', label=f'd={d}, n={n}, β={beta}')
-                    
-                    # we get std of diagonal entries
-                    stds_00 = [np.mean(results[key]['ntk_stds_00'][r]) for r in valid_ranks]
-                    plt.subplot(132)
-                    plt.loglog(valid_ranks, stds_00, 'o-', label=f'd={d}, n={n}, β={beta}')
-                    
-                    # we get std of off-diagonal entries
-                    stds_01 = [np.mean(results[key]['ntk_stds_01'][r]) for r in valid_ranks]
-                    plt.subplot(133)
-                    plt.loglog(valid_ranks, stds_01, 'o-', label=f'd={d}, n={n}, β={beta}')
+# we analyze scaling with rank for beta=0.0
+plt.figure(figsize=(10, 12))
 
-plt.subplot(131)
-plt.title('L2 Loss vs Rank')
+# we store slopes and data for beta=0.0
+slopes_data = []  # we store (dim, n_samples, metric_type, slope, r_value)
+
+for n in n_samples_list:
+    for d in input_dims:
+        key = f"dim{d}_n{n}_beta0.0"
+        if key in results:
+            valid_ranks = [r for r in ranks if r in results[key]['l2_losses']]
+            if valid_ranks:
+                log_ranks = np.log(valid_ranks)
+                
+                # L2 loss
+                plt.subplot(311)
+                mean_losses = [np.mean(results[key]['l2_losses'][r]) for r in valid_ranks]
+                log_losses = np.log(mean_losses)
+                slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_losses)
+                plt.loglog(valid_ranks, mean_losses, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                slopes_data.append((d, n, 'L2 Loss', slope, r_value))
+                
+                # Diagonal STD
+                plt.subplot(312)
+                stds_00 = [np.mean(results[key]['ntk_stds_00'][r]) for r in valid_ranks]
+                log_diag = np.log(stds_00)
+                slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_diag)
+                plt.loglog(valid_ranks, stds_00, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                slopes_data.append((d, n, 'Diagonal STD', slope, r_value))
+                
+                # Off-diagonal STD
+                plt.subplot(313)
+                stds_01 = [np.mean(results[key]['ntk_stds_01'][r]) for r in valid_ranks]
+                log_offdiag = np.log(stds_01)
+                slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_offdiag)
+                plt.loglog(valid_ranks, stds_01, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                slopes_data.append((d, n, 'Off-diagonal STD', slope, r_value))
+
+# we customize plots
+plt.subplot(311)
+plt.title('L2 Loss vs Rank (β=0.0)')
 plt.xlabel('Rank')
 plt.ylabel('L2 Loss')
 plt.grid(True)
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.legend()
 
-plt.subplot(132)
-plt.title('Diagonal STD vs Rank')
+plt.subplot(312)
+plt.title('Diagonal STD vs Rank (β=0.0)')
 plt.xlabel('Rank')
 plt.ylabel('STD')
 plt.grid(True)
+plt.legend()
 
-plt.subplot(133)
-plt.title('Off-diagonal STD vs Rank')
+plt.subplot(313)
+plt.title('Off-diagonal STD vs Rank (β=0.0)')
 plt.xlabel('Rank')
 plt.ylabel('STD')
 plt.grid(True)
+plt.legend()
 
 plt.tight_layout()
-plt.savefig(os.path.join(output_dir, 'rank_scaling.png'), bbox_inches='tight')
+plt.savefig(os.path.join(output_dir, 'rank_scaling_beta0.png'), bbox_inches='tight', dpi=300)
 plt.close()
+
+# we print slopes in a formatted table
+print("\nSlopes and R² values for β=0.0:")
+print("-" * 80)
+print(f"{'Dimension':^10} | {'n_samples':^10} | {'Metric':^15} | {'Slope':^10} | {'R²':^10}")
+print("-" * 80)
+for d, n, metric, slope, r_value in slopes_data:
+    print(f"{d:^10} | {n:^10} | {metric:^15} | {slope:^10.3f} | {r_value**2:^10.3f}")
+print("-" * 80)
 
