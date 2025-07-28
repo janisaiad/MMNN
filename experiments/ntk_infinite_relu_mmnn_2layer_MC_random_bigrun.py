@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from jax import random
 from scipy.linalg import eigvalsh
-from ntk import compute_ntk_2layer_montecarlo_random_field, relu, relu_dot
+from ntk import compute_ntk_2layer_montecarlo_random_field, relu, relu_dot # type: ignore
 from tqdm import tqdm
 import os
 import pathlib
