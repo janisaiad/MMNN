@@ -188,34 +188,37 @@ for beta in betas:
 plt.subplot(131)
 for n in n_samples_list:
     if convergence_data[n]['betas']:  # we only plot if we have data
-        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['l2_losses'], 'o-', 
+        plt.loglog(convergence_data[n]['betas'], convergence_data[n]['l2_losses'], 'o-', 
                 label=f'n={n}')
 plt.title(f'Asymptotic L2 Loss vs β\n(rank={max_rank})')
-plt.xlabel('β')
+plt.xlabel('β (log scale)')
 plt.ylabel('L2 Loss (log scale)')
-plt.grid(True)
+plt.grid(True, which="both", ls="-", alpha=0.2)  # we add minor grid
+plt.grid(True, which="major", ls="-", alpha=0.5)  # we make major grid more visible
 plt.legend()
 
 plt.subplot(132)
 for n in n_samples_list:
     if convergence_data[n]['betas']:
-        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['diag_stds'], 'o-',
+        plt.loglog(convergence_data[n]['betas'], convergence_data[n]['diag_stds'], 'o-',
                 label=f'n={n}')
 plt.title(f'Asymptotic Diagonal STD vs β\n(rank={max_rank})')
-plt.xlabel('β')
+plt.xlabel('β (log scale)')
 plt.ylabel('STD (log scale)')
-plt.grid(True)
+plt.grid(True, which="both", ls="-", alpha=0.2)
+plt.grid(True, which="major", ls="-", alpha=0.5)
 plt.legend()
 
 plt.subplot(133)
 for n in n_samples_list:
     if convergence_data[n]['betas']:
-        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['offdiag_stds'], 'o-',
+        plt.loglog(convergence_data[n]['betas'], convergence_data[n]['offdiag_stds'], 'o-',
                 label=f'n={n}')
 plt.title(f'Asymptotic Off-diagonal STD vs β\n(rank={max_rank})')
-plt.xlabel('β')
+plt.xlabel('β (log scale)')
 plt.ylabel('STD (log scale)')
-plt.grid(True)
+plt.grid(True, which="both", ls="-", alpha=0.2)
+plt.grid(True, which="major", ls="-", alpha=0.5)
 plt.legend()
 
 plt.tight_layout()
