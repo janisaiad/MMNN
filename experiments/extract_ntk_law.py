@@ -21,13 +21,36 @@ import os
 from sklearn.neighbors import KernelDensity
 import jax.numpy as jnp
 from jax import random
+from scipy.stats import norm, multivariate_normal
+
+# we import theoretical formulas
+def get_rho_eff(rho, beta, norm_x=1.0, norm_x_prime=1.0):
+    numerator = rho + beta**2
+    denominator = jnp.sqrt((norm_x**2 + beta**2) * (norm_x_prime**2 + beta**2))
+    return numerator / denominator
+
+def K1(rho_eff, beta, norm_x=1.0, norm_x_prime=1.0):
+    rho_eff = jnp.clip(rho_eff, -1.0, 1.0)
+    variance_product = jnp.sqrt((norm_x**2 + beta**2) * (norm_x_prime**2 + beta**2))
+    term_in_parentheses = jnp.sqrt(1 - rho_eff**2) + (jnp.pi - jnp.arccos(rho_eff)) * rho_eff
+    return variance_product * (1 / (2 * jnp.pi)) * term_in_parentheses
+
+def K_dot(rho_eff):
+    rho_eff = jnp.clip(rho_eff, -1.0, 1.0)
+    return (1 / (2 * jnp.pi)) * (jnp.pi - jnp.arccos(rho_eff))
+
+def ntk_formula(rho, beta, norm_x=1.0, norm_x_prime=1.0):
+    rho_eff = get_rho_eff(rho, beta, norm_x, norm_x_prime)
+    k1_val = K1(rho_eff, beta, norm_x, norm_x_prime)
+    k_dot_val = K_dot(rho_eff)
+    return k1_val + (rho + beta**2) * k_dot_val
 
 # we define base path
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # we define kernels to test
 KERNELS = ['gaussian', 'epanechnikov', 'exponential', 'cosine']
-BANDWIDTHS = [0.1, 0.2, 0.5]  # we test different bandwidths
+BANDWIDTHS = [0.1, 0.2, 0.5]
 
 # we define rho bins (10 bins between -1 and 1)
 N_RHO_BINS = 10
@@ -73,7 +96,7 @@ if not os.path.exists(output_dir):
 
 # %%
 def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
-    """we analyze NTK distribution for specific rho bins"""
+    """we analyze NTK distribution for specific rho bins and compare with theory"""
     
     # we collect NTK values and corresponding dot products
     ntk_values = []
@@ -105,10 +128,11 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
     ntk_values = np.array(ntk_values)
     dot_products = np.array(dot_products)
     
-    # we create figure for distributions by rho
-    plt.figure(figsize=(20, 12))
+    # we create figure for distributions by rho and theory comparison
+    fig = plt.figure(figsize=(20, 15))
+    gs = plt.GridSpec(4, 3)
     
-    # we analyze distribution for each rho bin
+    # we plot distributions for each rho bin
     distributions_by_rho = {}
     for i, (rho_min, rho_max) in enumerate(zip(RHO_EDGES[:-1], RHO_EDGES[1:])):
         rho_center = RHO_CENTERS[i]
@@ -125,68 +149,74 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
             }
             
             # we plot distribution for this rho bin
-            plt.subplot(3, 4, i+1)
+            plt.subplot(gs[i//3, i%3])
             
             # we plot histogram
-            plt.hist(ntk_in_bin, bins=50, density=True, alpha=0.5, label='Histogram')
+            plt.hist(ntk_in_bin, bins=50, density=True, alpha=0.5, label='Empirical')
             
             # we fit and plot KDE
-            if len(ntk_in_bin) > 1:  # we need at least 2 points for KDE
+            if len(ntk_in_bin) > 1:
                 kde = KernelDensity(kernel=kernel, bandwidth=bandwidth)
                 kde.fit(ntk_in_bin.reshape(-1, 1))
                 x_grid = np.linspace(min(ntk_in_bin), max(ntk_in_bin), 1000).reshape(-1, 1)
                 log_dens = kde.score_samples(x_grid)
                 plt.plot(x_grid, np.exp(log_dens), 'r-', label=f'KDE ({kernel})')
             
+            # we compute theoretical value
+            theo_val = ntk_formula(rho_center, beta)
+            plt.axvline(theo_val, color='g', linestyle='--', 
+                       label=f'Theory: {theo_val:.3f}')
+            
             plt.title(f'ρ ≈ {rho_center:.2f}\nμ={np.mean(ntk_in_bin):.3f}, σ={np.std(ntk_in_bin):.3f}')
             plt.xlabel('NTK Value')
             plt.ylabel('Density')
             plt.grid(True)
-            if i == 0:  # we only show legend for first plot
+            if i == 0:
                 plt.legend()
     
-    plt.suptitle(f'NTK Distributions by ρ (rank={rank}, β={beta})', y=1.02)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'ntk_distributions_by_rho_rank{rank}_beta{beta}_{kernel}_bw{bandwidth}.png'),
-                bbox_inches='tight', dpi=300)
-    plt.close()
+    # we plot theory vs empirical means
+    ax_theory = plt.subplot(gs[3, :])
     
-    # we plot mean and std vs rho
-    plt.figure(figsize=(15, 5))
-    
-    rhos = list(distributions_by_rho.keys())
+    # we sort by rho for plotting
+    rhos = sorted(distributions_by_rho.keys())
     means = [distributions_by_rho[r]['mean'] for r in rhos]
     stds = [distributions_by_rho[r]['std'] for r in rhos]
     
-    plt.subplot(121)
-    plt.plot(rhos, means, 'o-')
-    plt.title(f'Mean NTK vs ρ\n(rank={rank}, β={beta})')
-    plt.xlabel('ρ')
-    plt.ylabel('Mean NTK')
-    plt.grid(True)
+    # we plot empirical means with error bars
+    plt.errorbar(rhos, means, yerr=stds, fmt='o', label='Empirical (mean ± std)', 
+                capsize=5, color='blue', alpha=0.6)
     
-    plt.subplot(122)
-    plt.plot(rhos, stds, 'o-')
-    plt.title(f'NTK Standard Deviation vs ρ\n(rank={rank}, β={beta})')
-    plt.xlabel('ρ')
-    plt.ylabel('Standard Deviation')
-    plt.grid(True)
+    # we plot theoretical curve
+    rho_fine = np.linspace(-1, 1, 100)
+    theo_values = [ntk_formula(r, beta) for r in rho_fine]
+    plt.plot(rho_fine, theo_values, 'r-', label='Theoretical', alpha=0.8)
     
+    plt.title(f'NTK Mean vs ρ (rank={rank}, β={beta})')
+    plt.xlabel('ρ')
+    plt.ylabel('NTK Value')
+    plt.grid(True)
+    plt.legend()
+    
+    plt.suptitle(f'NTK Distributions by ρ with Theory Comparison\n(rank={rank}, β={beta})', y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'ntk_stats_vs_rho_rank{rank}_beta{beta}_{kernel}_bw{bandwidth}.png'),
+    plt.savefig(os.path.join(output_dir, f'ntk_distributions_theory_rank{rank}_beta{beta}_{kernel}_bw{bandwidth}.png'),
                 bbox_inches='tight', dpi=300)
     plt.close()
     
-    # we print statistics
-    print(f"\nStatistics for rank={rank}, β={beta}:")
-    print("-" * 80)
-    print(f"{'ρ':^10} | {'Count':^10} | {'Mean':^15} | {'Std':^15} | {'Min':^10} | {'Max':^10}")
-    print("-" * 80)
+    # we print statistics and comparison with theory
+    print(f"\nStatistics and Theory Comparison for rank={rank}, β={beta}:")
+    print("-" * 100)
+    print(f"{'ρ':^10} | {'Count':^8} | {'Emp Mean':^12} | {'Emp Std':^12} | {'Theory':^12} | {'Diff':^12}")
+    print("-" * 100)
     for rho in sorted(distributions_by_rho.keys()):
         values = distributions_by_rho[rho]['values']
-        print(f"{rho:^10.3f} | {len(values):^10d} | {np.mean(values):^15.3f} | "
-              f"{np.std(values):^15.3f} | {np.min(values):^10.3f} | {np.max(values):^10.3f}")
-    print("-" * 80)
+        emp_mean = np.mean(values)
+        emp_std = np.std(values)
+        theo_val = ntk_formula(rho, beta)
+        diff = emp_mean - theo_val
+        print(f"{rho:^10.3f} | {len(values):^8d} | {emp_mean:^12.3f} | {emp_std:^12.3f} | "
+              f"{theo_val:^12.3f} | {diff:^12.3f}")
+    print("-" * 100)
 
 # %%
 # we analyze distributions for each rank and beta
