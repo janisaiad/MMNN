@@ -154,3 +154,82 @@ for d, n, metric, slope, r_value in slopes_data:
     print(f"{d:^10} | {n:^10} | {metric:^15} | {slope:^10.3f} | {r_value**2:^10.3f}")
 print("-" * 80)
 
+# %%
+# we analyze convergence values as a function of beta
+plt.figure(figsize=(15, 5))
+
+# we use the highest rank available as asymptotic value
+max_rank = max(ranks)
+
+# we store convergence data for each n and beta
+convergence_data = {n: {'betas': [], 'l2_losses': [], 'diag_stds': [], 'offdiag_stds': []} for n in n_samples_list}
+
+for beta in betas:
+    for n in n_samples_list:
+        # we average over dimensions for stability
+        l2_losses = []
+        diag_stds = []
+        offdiag_stds = []
+        
+        for d in input_dims:
+            key = f"dim{d}_n{n}_beta{beta}"
+            if key in results and max_rank in results[key]['l2_losses']:
+                l2_losses.append(np.mean(results[key]['l2_losses'][max_rank]))
+                diag_stds.append(np.mean(results[key]['ntk_stds_00'][max_rank]))
+                offdiag_stds.append(np.mean(results[key]['ntk_stds_01'][max_rank]))
+        
+        if l2_losses:  # we only add if we have data
+            convergence_data[n]['betas'].append(beta)
+            convergence_data[n]['l2_losses'].append(np.mean(l2_losses))
+            convergence_data[n]['diag_stds'].append(np.mean(diag_stds))
+            convergence_data[n]['offdiag_stds'].append(np.mean(offdiag_stds))
+
+# we plot convergence values vs beta
+plt.subplot(131)
+for n in n_samples_list:
+    if convergence_data[n]['betas']:  # we only plot if we have data
+        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['l2_losses'], 'o-', 
+                label=f'n={n}')
+plt.title(f'Asymptotic L2 Loss vs β\n(rank={max_rank})')
+plt.xlabel('β')
+plt.ylabel('L2 Loss (log scale)')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(132)
+for n in n_samples_list:
+    if convergence_data[n]['betas']:
+        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['diag_stds'], 'o-',
+                label=f'n={n}')
+plt.title(f'Asymptotic Diagonal STD vs β\n(rank={max_rank})')
+plt.xlabel('β')
+plt.ylabel('STD (log scale)')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(133)
+for n in n_samples_list:
+    if convergence_data[n]['betas']:
+        plt.semilogy(convergence_data[n]['betas'], convergence_data[n]['offdiag_stds'], 'o-',
+                label=f'n={n}')
+plt.title(f'Asymptotic Off-diagonal STD vs β\n(rank={max_rank})')
+plt.xlabel('β')
+plt.ylabel('STD (log scale)')
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, 'convergence_vs_beta.png'), bbox_inches='tight', dpi=300)
+plt.close()
+
+# we print convergence values in a table
+print("\nAsymptotic values vs β:")
+print("-" * 100)
+print(f"{'n_samples':^10} | {'β':^10} | {'L2 Loss':^20} | {'Diagonal STD':^20} | {'Off-diagonal STD':^20}")
+print("-" * 100)
+for n in n_samples_list:
+    for i, beta in enumerate(convergence_data[n]['betas']):
+        print(f"{n:^10} | {beta:^10.1f} | {convergence_data[n]['l2_losses'][i]:^20.3e} | "
+              f"{convergence_data[n]['diag_stds'][i]:^20.3e} | {convergence_data[n]['offdiag_stds'][i]:^20.3e}")
+print("-" * 100)
+
