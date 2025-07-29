@@ -155,6 +155,84 @@ for d, n, metric, slope, r_value in slopes_data:
 print("-" * 80)
 
 # %%
+# we analyze scaling with rank for non-zero betas
+nonzero_betas = [b for b in betas if b > 0]
+if nonzero_betas:
+    plt.figure(figsize=(24, 6 * len(nonzero_betas)))
+    slopes_data_nonzero = []  # we store (beta, dim, n_samples, metric_type, slope, r_value)
+
+    for i, beta in enumerate(nonzero_betas):
+        for n in n_samples_list:
+            for d in input_dims:
+                key = f"dim{d}_n{n}_beta{beta}"
+                if key in results:
+                    valid_ranks = [r for r in ranks if r in results[key].get('l2_losses', {})]
+                    if valid_ranks:
+                        log_ranks = np.log(valid_ranks)
+                        
+                        # L2 loss
+                        plt.subplot(len(nonzero_betas), 3, i * 3 + 1)
+                        mean_losses = [np.mean(results[key]['l2_losses'][r]) for r in valid_ranks]
+                        if np.all(np.array(mean_losses) > 0):
+                            log_losses = np.log(mean_losses)
+                            slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_losses)
+                            plt.loglog(valid_ranks, mean_losses, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                            slopes_data_nonzero.append((beta, d, n, 'L2 Loss', slope, r_value))
+                        
+                        # Diagonal STD
+                        plt.subplot(len(nonzero_betas), 3, i * 3 + 2)
+                        stds_00 = [np.mean(results[key]['ntk_stds_00'][r]) for r in valid_ranks]
+                        if np.all(np.array(stds_00) > 0):
+                            log_diag = np.log(stds_00)
+                            slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_diag)
+                            plt.loglog(valid_ranks, stds_00, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                            slopes_data_nonzero.append((beta, d, n, 'Diagonal STD', slope, r_value))
+                        
+                        # Off-diagonal STD
+                        plt.subplot(len(nonzero_betas), 3, i * 3 + 3)
+                        stds_01 = [np.mean(results[key]['ntk_stds_01'][r]) for r in valid_ranks]
+                        if np.all(np.array(stds_01) > 0):
+                            log_offdiag = np.log(stds_01)
+                            slope, intercept, r_value, _, _ = stats.linregress(log_ranks, log_offdiag)
+                            plt.loglog(valid_ranks, stds_01, 'o-', label=f'd={d}, n={n} (slope={slope:.3f}, R²={r_value**2:.3f})')
+                            slopes_data_nonzero.append((beta, d, n, 'Off-diagonal STD', slope, r_value))
+
+        # we customize plots for the current beta
+        plt.subplot(len(nonzero_betas), 3, i * 3 + 1)
+        plt.title(f'L2 Loss vs Rank (β={beta})')
+        plt.xlabel('Rank')
+        plt.ylabel('L2 Loss')
+        plt.grid(True)
+        plt.legend()
+
+        plt.subplot(len(nonzero_betas), 3, i * 3 + 2)
+        plt.title(f'Diagonal STD vs Rank (β={beta})')
+        plt.xlabel('Rank')
+        plt.ylabel('STD')
+        plt.grid(True)
+        plt.legend()
+
+        plt.subplot(len(nonzero_betas), 3, i * 3 + 3)
+        plt.title(f'Off-diagonal STD vs Rank (β={beta})')
+        plt.xlabel('Rank')
+        plt.ylabel('STD')
+        plt.grid(True)
+        plt.legend()
+
+    plt.tight_layout(pad=3.0)
+    plt.savefig(os.path.join(output_dir, 'rank_scaling_nonzero_betas.png'), bbox_inches='tight', dpi=300)
+    plt.close()
+
+    # we print slopes in a formatted table
+    print("\nSlopes and R² values for non-zero β:")
+    print("-" * 90)
+    print(f"{'Beta':^10} | {'Dimension':^10} | {'n_samples':^10} | {'Metric':^20} | {'Slope':^10} | {'R²':^10}")
+    print("-" * 90)
+    for beta, d, n, metric, slope, r_value in slopes_data_nonzero:
+        print(f"{beta:^10.3f} | {d:^10} | {n:^10} | {metric:^20} | {slope:^10.3f} | {r_value**2:^10.3f}")
+    print("-" * 90)
+
+# %%
 # we analyze convergence values as a function of beta
 def plot_convergence(rank_to_use, output_filename):
     plt.figure(figsize=(15, 5))
