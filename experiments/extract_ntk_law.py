@@ -176,7 +176,7 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
         
         if len(values) > 1:
             kde = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
-w            kde.fit(values.reshape(-1, 1))
+            kde.fit(values.reshape(-1, 1))
             
             # we extend grid for better visualization
             x_grid = np.linspace(min(values) - 3*emp_std, max(values) + 3*emp_std, 2000)
