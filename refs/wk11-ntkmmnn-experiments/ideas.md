@@ -121,3 +121,4 @@ appliquer directement approximation
 
 Tuesday : 
 power law loss for rank scaling with 2 and 4 coeffificents, need to go further to get b etter scaling laws
+remark for zero beta
