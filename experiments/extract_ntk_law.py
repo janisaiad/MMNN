@@ -267,6 +267,247 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
         'min_values': {rho: np.min(distributions_by_rho[rho]['values']) for rho in distributions_by_rho}
     }
 
+# we define Hill estimator function
+def hill_estimator(data):
+    """Computes the Hill estimator for the tail index alpha."""
+    # we only use positive data
+    data = data[data > 0]
+    if len(data) < 2:
+        return np.nan
+    
+    # we use top 10% of data for tail estimation
+    k = int(len(data) * 0.1)
+    if k < 2:
+        k = len(data) // 2
+    if k < 2:
+        return np.nan
+        
+    sorted_data = np.sort(data)
+    
+    # we compute log of k largest values
+    log_top_k = np.log(sorted_data[-k:])
+    # we compute log of threshold value
+    log_threshold = np.log(sorted_data[-k-1])
+    
+    # we compute 1/alpha
+    inv_alpha = np.mean(log_top_k) - log_threshold
+    
+    return 1.0 / inv_alpha if inv_alpha > 0 else np.nan
+
+def perform_full_analysis(rank, beta, kernel):
+    """we perform full analysis including distributions and tail analysis."""
+    
+    # we collect NTK values and corresponding dot products
+    ntk_values = []
+    dot_products = []
+    
+    for n in n_samples_list:
+        for d in input_dims:
+            key = f"dim{d}_n{n}_beta{beta}"
+            if key in results and rank in results[key]['ntk_samples']:
+                samples = results[key]['ntk_samples'][rank]
+                if samples is not None:
+                    # we generate input vectors
+                    key_rng = random.PRNGKey(41)
+                    X = random.normal(key_rng, (n, d))
+                    X = X / jnp.linalg.norm(X, axis=1, keepdims=True)
+                    
+                    # we compute dot products
+                    dots = jnp.dot(X, X.T)
+                    
+                    # we collect values
+                    for i in range(n):
+                        for j in range(n):
+                            ntk_values.extend(samples[:, i, j].tolist())  # we convert to list
+                            dot_products.extend([float(dots[i, j])] * len(samples))  # we ensure float
+    
+    if not ntk_values:
+        return
+    
+    ntk_values = np.array(ntk_values)
+    dot_products = np.array(dot_products)
+    
+    # we first collect all distributions by rho to optimize global bandwidth
+    distributions_by_rho = {}
+    for i, (rho_min, rho_max) in enumerate(zip(RHO_EDGES[:-1], RHO_EDGES[1:])):
+        rho_center = RHO_CENTERS[i]
+        mask = (dot_products >= rho_min) & (dot_products < rho_max)
+        ntk_in_bin = ntk_values[mask]
+        if len(ntk_in_bin) > 0:
+            distributions_by_rho[rho_center] = {
+                'values': ntk_in_bin,
+                'mean': float(np.mean(ntk_in_bin)),  # we ensure float
+                'std': float(np.std(ntk_in_bin))     # we ensure float
+            }
+    
+    # we compute optimal bandwidth using Silverman's rule for each bin
+    def compute_silverman_bandwidth(data):
+        n = len(data)
+        sigma = np.std(data)
+        iqr = np.percentile(data, 75) - np.percentile(data, 25)
+        # we use min to be robust to outliers
+        scale = min(sigma, iqr/1.34)
+        return 0.9 * scale * n**(-0.2)
+
+    # we compute average Silverman bandwidth across all bins
+    all_bandwidths = []
+    for rho in distributions_by_rho:
+        values = distributions_by_rho[rho]['values']
+        if len(values) > 1:
+            all_bandwidths.append(compute_silverman_bandwidth(values))
+    
+    optimal_bw = float(np.mean(all_bandwidths))
+    
+    # --- Plot 1: NTK Distributions by Rho ---
+    fig = plt.figure(figsize=(20, 15))
+    gs = plt.GridSpec(4, 3)
+    
+    for i, rho in enumerate(sorted(distributions_by_rho.keys())):
+        values = distributions_by_rho[rho]['values']
+        
+        # we truncate data at the 99th quantile
+        q99 = np.percentile(values, 99)
+        truncated_values = values[values <= q99]
+        
+        emp_mean = float(np.mean(truncated_values))
+        emp_std = float(np.std(truncated_values))
+        
+        plt.subplot(gs[i//3, i%3])
+        
+        plt.hist(truncated_values, bins=50, density=True, alpha=0.5, label='Empirical')
+        
+        if len(truncated_values) > 1:
+            kde = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
+            kde.fit(truncated_values.reshape(-1, 1))
+            
+            x_grid = np.linspace(min(truncated_values), max(truncated_values), 2000)
+            log_dens = kde.score_samples(x_grid.reshape(-1, 1))
+            dens = np.exp(log_dens)
+            
+            dx = x_grid[1] - x_grid[0]
+            dens = dens / (np.sum(dens) * dx)
+            
+            fitted_mean = float(np.sum(x_grid * dens) * dx)
+            fitted_var = float(np.sum((x_grid - fitted_mean)**2 * dens) * dx)
+            fitted_std = float(np.sqrt(fitted_var))
+            
+            plt.plot(x_grid, dens, 'r-', 
+                    label=f'KDE fit (σ={fitted_std:.3f})')
+        
+        plt.title(f'ρ ≈ {rho:.2f}\nμ={emp_mean:.3f}, σ={emp_std:.3f}\nn={len(truncated_values)}')
+        plt.xlabel('NTK Value')
+        plt.ylabel('Density')
+        plt.grid(True)
+        if i == 0:
+            plt.legend()
+    
+    # we plot theory vs empirical means
+    ax_theory = plt.subplot(gs[3, :])
+    
+    # we sort by rho for plotting
+    rhos = sorted(distributions_by_rho.keys())
+    means = [distributions_by_rho[r]['mean'] for r in rhos]
+    stds = [distributions_by_rho[r]['std'] for r in rhos]
+    
+    # we plot empirical means with error bars
+    plt.errorbar(rhos, means, yerr=stds, fmt='o', label='Empirical (mean ± std)', 
+                capsize=5, color='blue', alpha=0.6)
+    
+    # we plot theoretical curve
+    rho_fine = np.linspace(-1, 1, 100)
+    theo_values = [ntk_formula(r, beta) for r in rho_fine]
+    plt.plot(rho_fine, theo_values, 'r-', label='Theoretical', alpha=0.8)
+    
+    plt.title(f'NTK Mean vs ρ (rank={rank}, β={beta})\nGlobal bandwidth = {optimal_bw:.3f}')
+    plt.xlabel('ρ')
+    plt.ylabel('NTK Value')
+    plt.grid(True)
+    plt.legend()
+    
+    plt.suptitle(f'NTK Distributions by ρ (rank={rank}, β={beta})', y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f'ntk_distributions_rank{rank}_beta{beta}_{kernel}.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
+    # --- Plot 2: Log-Log KDE and Tail Analysis ---
+    fig2 = plt.figure(figsize=(20, 15))
+    gs2 = plt.GridSpec(4, 3)
+    
+    # we plot log-log KDE for each rho bin
+    for i, rho in enumerate(sorted(distributions_by_rho.keys())):
+        values = distributions_by_rho[rho]['values']
+        
+        # we truncate data at the 99th quantile
+        q99 = np.percentile(values, 99)
+        truncated_values = values[values <= q99]
+        
+        if len(truncated_values) < 10:
+            continue
+            
+        # we find the mode of the distribution to analyze the right tail
+        kde_for_mode = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
+        kde_for_mode.fit(truncated_values.reshape(-1, 1))
+        x_grid_mode = np.linspace(min(truncated_values), max(truncated_values), 2000)
+        log_dens_mode = kde_for_mode.score_samples(x_grid_mode.reshape(-1, 1))
+        mode = x_grid_mode[np.argmax(log_dens_mode)]
+        
+        # we filter for the right tail, starting from the mode
+        tail_data = truncated_values[truncated_values > mode]
+        
+        # we only use positive data from the tail for log-log plots
+        positive_tail_data = tail_data[tail_data > 0]
+        
+        if len(positive_tail_data) < 10:
+            continue
+            
+        plt.subplot(gs2[i//3, i%3])
+        
+        # we fit KDE on the tail data
+        kde_tail = KernelDensity(kernel=kernel, bandwidth=optimal_bw)
+        kde_tail.fit(positive_tail_data.reshape(-1, 1))
+        
+        # we create log-spaced grid for plotting
+        x_grid = np.logspace(np.log10(min(positive_tail_data)), np.log10(max(positive_tail_data)), 1000)
+        log_dens = kde_tail.score_samples(x_grid.reshape(-1, 1))
+        dens = np.exp(log_dens)
+        
+        # we plot KDE in log-log scale
+        plt.loglog(x_grid, dens, 'r-', label='KDE of Tail')
+        
+        # we estimate slope from KDE tail
+        log_x = np.log(x_grid)
+        log_y = np.log(dens)
+        valid_indices = np.isfinite(log_y)
+        if np.sum(valid_indices) > 1:
+            slope, _, _, _, _ = stats.linregress(log_x[valid_indices], log_y[valid_indices])
+            alpha_kde = -slope - 1
+        else:
+            alpha_kde = np.nan
+        
+        # we estimate slope with Hill estimator on the raw tail data
+        alpha_hill = hill_estimator(positive_tail_data)
+        
+        plt.title(f'ρ ≈ {rho:.2f}\nα_kde={alpha_kde:.2f}, α_hill={alpha_hill:.2f}')
+        plt.xlabel('NTK Value (log)')
+        plt.ylabel('Density (log)')
+        plt.grid(True, which="both", ls="-", alpha=0.2)
+        plt.legend()
+    
+    plt.suptitle(f'Log-Log KDE and Tail Analysis (rank={rank}, β={beta})', y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f'ntk_loglog_kde_rank{rank}_beta{beta}_{kernel}.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close(fig2)
+
+# %%
+# we analyze distributions and tails for each rank, beta, and kernel
+for rank in ranks:
+    for beta in betas:
+        for kernel in KERNELS:
+            perform_full_analysis(rank, beta, kernel)
+            print(f"Full analysis complete for rank={rank}, β={beta}, kernel={kernel}")
+
 # %%
 # we analyze distributions and collect min values
 min_value_data = []

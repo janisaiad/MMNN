@@ -29,8 +29,8 @@ key = random.PRNGKey(41)
 input_dims = range(2, 9)  # we test input dimensions from 1 to 8
 n_samples_list = [4, 8, 16]  # we test different sample sizes
 ranks_to_test = [1,2,5,10,20,50,100]  # we test different ranks[0] values
-betas = [0.0, 0.1, 0.2, 1.0]  # we test different beta values
-n_mc_samples = 300  # we fix number of Monte Carlo samples
+betas = [0.0, 0.1, 0.2,0.3,0.5,0.7,1.0]  # we test different beta values
+n_mc_samples = 300  # we fix number     of Monte Carlo samples
 
 # we test different sigma_A and sigma_c combinations
 sigma_As = [jnp.sqrt(2)]
