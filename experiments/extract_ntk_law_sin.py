@@ -59,7 +59,7 @@ RHO_CENTERS = (RHO_EDGES[:-1] + RHO_EDGES[1:]) / 2
 
 # %%
 # we load and combine individual results
-data_dir = os.path.join(BASE_PATH, 'data', 'ntk_infinite_relu_mmnn_2layer_MC_random_bigrun')
+data_dir = os.path.join(BASE_PATH, 'data', 'ntk_infinite_sin_mmnn_2layer_MC_random_bigrun')
 results = {}
 
 # we get all unique parameters from filenames
@@ -90,7 +90,7 @@ betas = sorted(list(set([float(k.split('_')[2].replace('beta','')) for k in resu
 ranks = sorted(list(set([int(r) for k in results.keys() for r in results[k]['ntk_samples'].keys()])))
 
 # we create output directories
-output_dir = os.path.join(BASE_PATH, "figures", "ntk_law_analysis")
+output_dir = os.path.join(BASE_PATH, "figures", "ntk_law_analysis_sin")
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
@@ -227,7 +227,7 @@ def analyze_ntk_distribution(rank, beta, kernel='gaussian', bandwidth=0.2):
     
     plt.suptitle(f'NTK Distributions by ρ (rank={rank}, β={beta})', y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'ntk_distributions_rank{rank}_beta{beta}_{kernel}.png'),
+    plt.savefig(os.path.join(output_dir, f'ntk_distributions_sin_rank{rank}_beta{beta}_{kernel}.png'),
                 bbox_inches='tight', dpi=300)
     plt.close()
     
@@ -426,7 +426,7 @@ def perform_full_analysis(rank, beta, kernel):
     
     plt.suptitle(f'NTK Distributions by ρ (rank={rank}, β={beta})', y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'ntk_distributions_rank{rank}_beta{beta}_{kernel}.png'),
+    plt.savefig(os.path.join(output_dir, f'ntk_distributions_sin_rank{rank}_beta{beta}_{kernel}.png'),
                 bbox_inches='tight', dpi=300)
     plt.close()
 
@@ -496,7 +496,7 @@ def perform_full_analysis(rank, beta, kernel):
     
     plt.suptitle(f'Log-Log KDE and Tail Analysis (rank={rank}, β={beta})', y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'ntk_loglog_kde_rank{rank}_beta{beta}_{kernel}.png'),
+    plt.savefig(os.path.join(output_dir, f'ntk_loglog_kde_sin_rank{rank}_beta{beta}_{kernel}.png'),
                 bbox_inches='tight', dpi=300)
     plt.close(fig2)
 
@@ -553,7 +553,7 @@ plt.grid(True)
 plt.legend()
 
 plt.tight_layout()
-plt.savefig(os.path.join(output_dir, 'min_ntk_vs_rank.png'), bbox_inches='tight', dpi=300)
+plt.savefig(os.path.join(output_dir, 'min_ntk_vs_rank_sin.png'), bbox_inches='tight', dpi=300)
 plt.close()
 
 # we print min value analysis
