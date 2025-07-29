@@ -25,7 +25,7 @@ BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # we ge
 
 # %%
 # we load and combine individual results
-data_dir = os.path.join(BASE_PATH, 'data', 'ntk_infinite_relu_mmnn_2layer_MC_random_bigrun')
+data_dir = os.path.join(BASE_PATH, 'data', 'ntk_infinite_sin_mmnn_2layer_MC_random_bigrun')
 results = {}
 
 # we get all unique parameters from filenames
@@ -76,7 +76,7 @@ betas = sorted(list(set([float(k.split('_')[2].replace('beta','')) for k in resu
 ranks = sorted(list(set([int(r) for k in results.keys() for r in results[k]['l2_losses'].keys()])))  # we get ranks
 
 # we create output directories
-output_dir = os.path.join(BASE_PATH, "figures", "after_big_run_statistics_relu")
+output_dir = os.path.join(BASE_PATH, "figures", "after_big_run_statistics_sin")
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
