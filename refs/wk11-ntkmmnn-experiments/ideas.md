@@ -138,3 +138,15 @@ puis en PINN avec la loss ce que ça fait comme NTK,
 
 et là on doit voir ce que l'on trouve, calculer le ntk local avec neural tangents et le ntk théorique et comparer !!!
 
+
+
+
+wednesday : i guess that the sinquad directions are taken for 2 layers with a specific stuff because the big slope is always orthogonal ; 
+for fcnn the big slope is always at 0, maybe because the sintu make everything goes bad ? idk 
+
+also put without bias, compute ntk, maybe compute ntk and hessians
+over a specific subspace of parameters with log dim (johson lindenstrauss)
+to get a better experimentation, with hand computations before to get the theoretical
+baseline
+
+orthogonal initialization, and rotation invariance - GOE
