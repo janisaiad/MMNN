@@ -86,10 +86,10 @@ def f_true(x, k=128):
     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
     # y= y*(6*x**8 + 1) / (1 + 8*x**6)
     # y=y*(8*x**8 + 1) / (1 + 10*x**4)
-    # y1 = (8*x**4 + 1) / (1 + 10*x**2)
+    y1 = (8*x**4 + 1) / (1 + 10*x**2)
     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
     # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    y1=0.6*torch.sin(200*np.pi*x)+0.8*torch.cos(160*torch.pi*x**2)
+    # y1=0.6*torch.sin(200*np.pi*x)+0.8*torch.cos(160*torch.pi*x**2)
     # y= y+y1
     return y
 
