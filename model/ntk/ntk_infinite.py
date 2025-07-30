@@ -49,9 +49,16 @@ def sin(x):
 def sin_dot(x):
     return jnp.cos(x)
 
+def TS(x,mu):
+    return jnp.max(x,mu)
+@jit
+def sintu(x):
+    return jnp.sin(TS(x,jnp.pi))
+
 def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activation_fn=relu, activation_dot_fn=relu_dot):
     """
     we compute the NNGP and NTK kernels for a deep MMNN recursively for all layers.
+
 
     Args:
         X (jnp.ndarray): Input data of shape (num_samples, d_0).

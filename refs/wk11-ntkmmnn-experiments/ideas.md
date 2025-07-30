@@ -122,3 +122,19 @@ appliquer directement approximation
 Tuesday : 
 power law loss for rank scaling with 2 and 4 coeffificents, need to go further to get b etter scaling laws
 remark for zero beta
+ok pour beta qui grandit la variabilité est portée par b, sinon on a une std qui est quasi nulle et qui decroit exponentiellement
+donc on peut se placer dans le regime beta 0 ou petit beta d'abord pour analyser tout ça, mais ça n'a pas grand intéret, donc on va stack les layers sur ce regime !! 
+et sur l'autre regime on stack pas les layerset on analyse directement fonctionnenemement en fonction de beta, puis avec un random kernel en grand dim (random kernel matrix resultats par ex de el karoui)
+
+
+et là on fait les comparaisons dans ce petit régime en stackant les layers avec terjek,
+avec l'observation spectre 2x plus petit, c'est vraiment sinquad qu'il faut run alors pour voir des images
+(faire un rapport dessus)
+ensuite on calculera la hessienne et ntk et on comparera, avec resutlat d'ethan dyer et jacot
+
+ensuite faire un training, check le NTK de manière experimentales et faire des animations pour montrer le NNGP,
+comment il varie, ce que fait une descente de gradient stochastique, visuellement quoi
+puis en PINN avec la loss ce que ça fait comme NTK,
+
+et là on doit voir ce que l'on trouve, calculer le ntk local avec neural tangents et le ntk théorique et comparer !!!
+
