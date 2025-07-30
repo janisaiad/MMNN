@@ -314,6 +314,7 @@ def plot(data1,data2,PN_save):
           #                              ]
           }
     fig.write_html(PN_save,config=config,include_plotlyjs='cdn')
+    fig.show(config=config)
     # print("zz")
     
     # # Save the plot as a PDF

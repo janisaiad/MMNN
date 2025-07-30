@@ -1,11 +1,18 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 18 20:19:55 2025
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.14.5
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
 
-@author: Shijun Zhang 
-"""
-
-
+# +
 from __future__ import print_function
 import argparse
 import numpy as np
@@ -31,9 +38,7 @@ print(f"Training on device: {device}")
 # torch.set_default_dtype(torch.float64)
 torch.set_default_dtype(torch.float32)
 mydtype = torch.get_default_dtype()
-
-
-
+# -
 
 net_size, W_idx = [64, 0, 2], 1
 
@@ -41,14 +46,12 @@ net_size, W_idx = [64, 0, 2], 1
 
 # net_size, W_idx =[128, 32, 2], 2
 
-
+# +
 act_idx=1 # 1 for sin
 # act_idx=2 # 2 for SinTU_0
 
-
 n=100 # grid size for plot
-
-
+# -
 
 acts= [
     "Sin",
@@ -62,8 +65,7 @@ acts= [
     "Tanh",
     ]
 
-
-
+# +
 nn_type= "MMNN" if net_size[1]>0 else "FCNN"
 
 PN_save="d" #f"Landscape{nn_type}{W_idx}Act{act_idx}"
@@ -71,12 +73,12 @@ s=60*1 # range for plot
 
 num_samples = 10000
 interval=np.array([-1,1])*np.pi # integral range
-
-
+# -
 
 def f_true(x):
     return 1/(1+100*x**2)
 
+# +
 # def f_true(x, k=128):
 #     y=(torch.abs(x)**10)**(1/5)
 #     y = k*y - 2*torch.floor( (k*y+1)/2 )
@@ -91,8 +93,7 @@ def f_true(x):
 #     # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(160*np.pi*x**2)
 #     # y= y+y1
 #     return y
-
-
+# -
 
 def get_data(net_size):   
     fc_idx=W_idx #[1] if net_size[1]>0 else W_idx[0]
@@ -163,12 +164,19 @@ def get_data(net_size):
     print(f"time used: {time.time()-time1:.2f}s", )
     return X, Y, loss
 
-
+# +
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
 net_size2 =[128, 32, 2] 
-data2=get_data(net_size2)
-myplotly.plot(data1, data2, "figures/sinquad/test.html")
-    
-    
+data2 = get_data(net_size2)
+
+import os
+# Create output directory if it doesn't exist
+output_dir = "../../figures/sinquad"  # i use relative path from experiments/former/SinQuad to figures/sinquad
+os.makedirs(output_dir, exist_ok=True)
+
+# Save plot to output directory
+output_path = os.path.join(output_dir, "test.html")
+myplotly.plot(data1, data2, output_path)
+# -
