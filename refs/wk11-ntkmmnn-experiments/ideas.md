@@ -159,3 +159,6 @@ has a radically new shape for MMNNs, and locally the ntk can tackle some other s
 but here compared to fcnn there is for some reasons a complete different new horizon
 
 investigate also with full relu, and sine at the end
+
+i can get that this matter of frequencies in the functions can be seen in the optimization landscape
+because there is something in the weights that can make the opt land wavy, a bit weird
