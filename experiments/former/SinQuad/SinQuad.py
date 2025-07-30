@@ -36,7 +36,7 @@ mydtype = torch.get_default_dtype()
 # %%
 
 
-net_size, W_idx = [64, 0, 8], 0
+net_size, W_idx = [64, 0, 8], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
