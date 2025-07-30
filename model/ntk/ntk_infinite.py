@@ -344,7 +344,7 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
                 h_single = jax.random.multivariate_normal(
                     key=key+j,
                     mean=jnp.zeros(2), 
-                    cov=jnp.clip(cov_block-jnp.eye(2)*1e-3,0.01,None),
+                    cov=jnp.clip(cov_block-jnp.eye(2)*1e-5,0.01,None),
                     shape=(1, ranks[0]) # shape: (1, ranks[0], 2)
                 )
                 if jnp.isnan(h_single).any():
