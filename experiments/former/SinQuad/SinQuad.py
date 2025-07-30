@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+# %% [markdown]
 """
 Created on Tue Feb 18 20:19:55 2025
 
 @author: Shijun Zhang 
 """
 
-
+# %%
 from __future__ import print_function
 import argparse
 import numpy as np
@@ -32,10 +33,10 @@ print(f"Training on device: {device}")
 torch.set_default_dtype(torch.float32)
 mydtype = torch.get_default_dtype()
 
+# %%
 
 
-
-net_size, W_idx = [64, 0, 2], 1
+net_size, W_idx = [64, 0, 8], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
@@ -49,7 +50,7 @@ act_idx=2 # 2 for SinTU_0
 n=100 # grid size for plot
 
 
-
+# %%
 acts= [
     "Sin",
     "SinT1",
@@ -73,7 +74,7 @@ num_samples = 10000
 interval=np.array([-1,1])*np.pi # integral range
 
 
-
+# %%
 def f_true(x):
     return 1/(1+100*x**2)
 
@@ -93,7 +94,7 @@ def f_true(x):
 #     return y
 
 
-
+# %%
 def get_data(net_size):   
     fc_idx=W_idx #[1] if net_size[1]>0 else W_idx[0]
     # acts=nets.ActFun_list
@@ -163,12 +164,10 @@ def get_data(net_size):
     print(f"time used: {time.time()-time1:.2f}s", )
     return X, Y, loss
 
-
+# %%
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
 net_size2 =[128, 32, 2] 
 data2=get_data(net_size2)
 myplotly.plot(data1, data2, "figures/sinquad/test.html")
-    
-    
