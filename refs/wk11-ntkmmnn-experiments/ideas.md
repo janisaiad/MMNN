@@ -153,3 +153,7 @@ orthogonal initialization, and rotation invariance - GOE
 
 sometimes the directions mess up a bit for MMNN, idk why, it just looks like
 fcnn but with fewer frequencies, and sometimes not, maybe something to see in the directions
+
+i think the most important ideas can be to show that the optimization landscape
+has a radically new shape for MMNNs, and locally the ntk can tackle some other stuff
+but here compared to fcnn there is for some reasons a complete different new horizon
