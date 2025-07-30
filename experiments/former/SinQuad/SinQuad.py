@@ -68,7 +68,7 @@ acts= [
 nn_type= "MMNN" if net_size[1]>0 else "FCNN"
 
 PN_save="d" #f"Landscape{nn_type}{W_idx}Act{act_idx}"
-s=60*2 # range for plot
+s=60*4 # range for plot
 
 num_samples = 10000
 interval=np.array([-1,1])*np.pi # integral range
@@ -84,12 +84,12 @@ def f_true(x, k=128):
     y = abs(y)**2
     # y = y / (1 + x**2)
     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    y= y*(6*x**8 + 1) / (1 + 8*x**6)
+    # y= y*(6*x**8 + 1) / (1 + 8*x**6)
     # y=y*(8*x**8 + 1) / (1 + 10*x**4)
     # y1 = (8*x**4 + 1) / (1 + 10*x**2)
     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
     # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(160*np.pi*x**2)
+    y1=0.6*torch.sin(200*np.pi*x)+0.8*torch.cos(160*torch.pi*x**2)
     # y= y+y1
     return y
 
