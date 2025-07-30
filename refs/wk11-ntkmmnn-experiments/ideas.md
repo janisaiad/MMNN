@@ -150,3 +150,6 @@ to get a better experimentation, with hand computations before to get the theore
 baseline
 
 orthogonal initialization, and rotation invariance - GOE
+
+sometimes the directions mess up a bit for MMNN, idk why, it just looks like
+fcnn but with fewer frequencies, and sometimes not, maybe something to see in the directions
