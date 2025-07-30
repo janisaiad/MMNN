@@ -42,8 +42,8 @@ net_size, W_idx = [64, 0, 2], 1
 # net_size, W_idx =[128, 32, 2], 2
 
 
-act_idx=1 # 1 for sin
-# act_idx=2 # 2 for SinTU_0
+# act_idx=1 # 1 for sin
+act_idx=2 # 2 for SinTU_0
 
 
 n=100 # grid size for plot
@@ -67,7 +67,7 @@ acts= [
 nn_type= "MMNN" if net_size[1]>0 else "FCNN"
 
 PN_save="d" #f"Landscape{nn_type}{W_idx}Act{act_idx}"
-s=60*1 # range for plot
+s=60*2 # range for plot
 
 num_samples = 10000
 interval=np.array([-1,1])*np.pi # integral range
