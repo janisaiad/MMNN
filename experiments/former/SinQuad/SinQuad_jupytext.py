@@ -173,8 +173,13 @@ data2 = get_data(net_size2)
 
 import os
 # Create output directory if it doesn't exist
-output_dir = "../../figures/sinquad"  # i use relative path from experiments/former/SinQuad to figures/sinquad
-os.makedirs(output_dir, exist_ok=True)
+output_dir = "/home/janis/STG3A/MMNN/figures/sinquad"  # i use relative path from experiments/former/SinQuad to figures/sinquad
+
+
+### 
+### WARNING I DON'T CREATE THE FIGURES DIRECTORY BC OF A PERMISSION ISSUE I HAD
+### 
+### 
 
 # Save plot to output directory
 output_path = os.path.join(output_dir, "test.html")
