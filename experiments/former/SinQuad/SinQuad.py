@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import time
-import nets,myplotly
+import nets,myplotly # okay this works very well for small projects also, don't need to put htis on uv it's cool
 import torch
 import torch.nn as nn
 import torch.optim as optim
