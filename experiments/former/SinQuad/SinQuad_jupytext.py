@@ -185,3 +185,5 @@ output_dir = "/home/janis/STG3A/MMNN/figures/sinquad"  # i use relative path fro
 output_path = os.path.join(output_dir, "test.html")
 myplotly.plot(data1, data2, output_path)
 # -
+
+##to see, use file://wsl.localhost/Ubuntu/home/janis/STG3A/MMNN/figures/sinquad/test.html
