@@ -75,23 +75,23 @@ interval=np.array([-1,1])*np.pi # integral range
 
 
 # %%
-def f_true(x):
-    return 1/(1+100*x**2)
+# def f_true(x):
+    # return 1/(1+100*x**2)
 
-# def f_true(x, k=128):
-#     y=(torch.abs(x)**10)**(1/5)
-#     y = k*y - 2*torch.floor( (k*y+1)/2 )
-#     y = abs(y)**2
-#     # y = y / (1 + x**2)
-#     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-#     y= y*(6*x**8 + 1) / (1 + 8*x**6)
-#     # y=y*(8*x**8 + 1) / (1 + 10*x**4)
-#     # y1 = (8*x**4 + 1) / (1 + 10*x**2)
-#     # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-#     # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-#     # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(160*np.pi*x**2)
-#     # y= y+y1
-#     return y
+def f_true(x, k=128):
+    y=(torch.abs(x)**10)**(1/5)
+    y = k*y - 2*torch.floor( (k*y+1)/2 )
+    y = abs(y)**2
+    # y = y / (1 + x**2)
+    # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
+    y= y*(6*x**8 + 1) / (1 + 8*x**6)
+    # y=y*(8*x**8 + 1) / (1 + 10*x**4)
+    # y1 = (8*x**4 + 1) / (1 + 10*x**2)
+    # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
+    # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
+    # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(160*np.pi*x**2)
+    # y= y+y1
+    return y
 
 
 # %%
