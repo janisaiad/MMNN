@@ -139,7 +139,7 @@ def run_experiment():
             configs.append({"depth": depth, "width": width, "act_kind": ["ReLU"]*(depth-2)+["SinT1"], "name": "Hybrid_ReLU_SinT1"})
 
     # --- Main Loop ---
-    all_experiments = list(product(f_targets.items(), configs, range(runs_per_config)))
+    all_experiments = list(product(f_targets.items(), configs, range(runs_per_config))).reverse()
     pbar = tqdm(all_experiments, desc="Overall Progress")
 
     for (f_name, f_func), config, run_idx in pbar:
