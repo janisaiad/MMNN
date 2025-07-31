@@ -185,4 +185,5 @@ with open(f"figures/sinquad/config_{datetime.datetime.now().strftime('%Y%m%d_%H%
     f.write(f"num_samples: {num_samples}")
     f.write(f"W_idx: {W_idx}")
     f.write(f"net_size: {net_size}")
+    f.write(f"net_size2: {net_size2}")
 myplotly.plot(data1, data2, f"figures/sinquad/test_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_seed{seed}_{act_idx}_{s}_{num_samples}_{W_idx}_{net_size[0]}_{net_size[1]}_{net_size[2]}_{net_size2[0]}_{net_size2[1]}_{net_size2[2]}.html",seed)
