@@ -159,7 +159,8 @@ has a radically new shape for MMNNs, and locally the ntk can tackle some other s
 but here compared to fcnn there is for some reasons a complete different new horizon
 
 investigate also with full relu, and sine at the end
-
+, with this high frequency cos function
+we can rescale the optimization landscapebecause of the rank thing and curse of dim
 i can get that this matter of frequencies in the functions can be seen in the optimization landscape
 because there is something in the weights that can make the opt land wavy, a bit weird
 
@@ -177,3 +178,18 @@ Thursday : it appeared that it depends a lot on the initialization when the moun
 sint1 is not sintu, there is maybe a s inside to disentangle, still did not seen with resnets
 
 now i can see that the landscape is very propice to gradient descnet so it's very interesintg, like the mountain stuff, lot of experiments to show 
+
+for seed 462084 we get that non wavy, it depends a lot on the initialization
+
+the value of the loss is like the same, 1.5 in meaan when mid blue, with this high frequency cos function
+we can rescale the optimization landscapebecause of the rank thing and curse of dim
+
+
+540281 is super less wavy well on y1[-3]
+
+346356 cool
+918573
+2649 pas trop wavy mais cool*
+155544 un mix des 2, vraiment curieux; signe de superposition
+
+65246 vraiment super

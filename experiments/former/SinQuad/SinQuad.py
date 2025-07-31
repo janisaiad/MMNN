@@ -38,7 +38,7 @@ mydtype = torch.get_default_dtype()
 # %%
 
 
-net_size, W_idx = [32, 0, 8], 1
+net_size, W_idx = [128, 0, 4], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
@@ -79,20 +79,28 @@ interval=np.array([-1,1])*np.pi # integral range
 # %%
 # def f_true(x):
     # return 1/(1+100*x**2)
+list_of_func = [
+    # Base functions for y
+    lambda x, k=128: (torch.abs(x)**10)**(1/5) * k - 2*torch.floor((k*(torch.abs(x)**10)**(1/5)+1)/2),  # Original y
+    lambda x: ((torch.abs(x)**10)**(1/5)) / (1 + x**2),  # y with division
+    lambda x: ((torch.abs(x)**10)**(1/5))*(6*x**8 + 1) / (1 + 8*x**6),  # y with multiplication 1
+    lambda x: ((torch.abs(x)**10)**(1/5))*(8*x**8 + 1) / (1 + 10*x**4),  # y with multiplication 2
+    
+    # Functions for y1
+    lambda x: 0.6*torch.sin(150*np.pi*x) + 0.8*torch.cos(100*np.pi*x**2),  # Original y1
+    lambda x: (8*x**4 + 1) / (1 + 10*x**2),  # Alternative y1 polynomial
+    lambda x: 0.6*torch.sin(200*np.pi*x) + 0.8*torch.cos(100*np.pi*x**2),  # y1 with different frequencies
+    lambda x: 0.6*torch.sin(200*np.pi*x) + 0.8*torch.cos(160*torch.pi*x**2)  # y1 with torch.pi
+]
 
-def f_true(x, k=128):
-    y=(torch.abs(x)**10)**(1/5)
-    y = k*y - 2*torch.floor( (k*y+1)/2 )
-    y = abs(y)**2
-    # y = y / (1 + x**2)
-    # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    # y= y*(6*x**8 + 1) / (1 + 8*x**6)
-    # y=y*(8*x**8 + 1) / (1 + 10*x**4)
-    y1 = (8*x**4 + 1) / (1 + 10*x**2)
-    # y1=0.6*np.sin(150*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    # y1=0.6*np.sin(200*np.pi*x)+0.8*np.cos(100*np.pi*x**2)
-    # y1=0.6*torch.sin(200*np.pi*x)+0.8*torch.cos(160*torch.pi*x**2)
-    # y= y+y1
+index_y=0
+index_y1=4
+combine=True
+def f_true(x, k=128, index_y=index_y, index_y1=index_y1, combine=combine):
+    y = list_of_func[index_y](x, k) if index_y == 0 else list_of_func[index_y](x)
+    if combine:
+        y1 = list_of_func[index_y1](x)
+        return y + y1
     return y
 
 
@@ -170,7 +178,7 @@ def get_data(net_size):
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
-net_size2 =[32, 8, 8] 
+net_size2 =[128, 32, 4] 
 
 
 data2=get_data(net_size2)
@@ -186,4 +194,7 @@ with open(f"figures/sinquad/config_{datetime.datetime.now().strftime('%Y%m%d_%H%
     f.write(f"W_idx: {W_idx}")
     f.write(f"net_size: {net_size}")
     f.write(f"net_size2: {net_size2}")
+    f.write(f'index_y: {index_y}')
+    f.write(f'index_y1: {index_y1}')
+    f.write(f'combine: {combine}')
 myplotly.plot(data1, data2, f"figures/sinquad/test_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_seed{seed}_{act_idx}_{s}_{num_samples}_{W_idx}_{net_size[0]}_{net_size[1]}_{net_size[2]}_{net_size2[0]}_{net_size2[1]}_{net_size2[2]}.html",seed)
