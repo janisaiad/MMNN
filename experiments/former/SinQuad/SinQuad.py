@@ -86,7 +86,7 @@ list_of_func = [
     lambda x: ((torch.abs(x)**10)**(1/5))*(6*x**8 + 1) / (1 + 8*x**6),  # y with multiplication 1
     lambda x: ((torch.abs(x)**10)**(1/5))*(8*x**8 + 1) / (1 + 10*x**4),  # y with multiplication 2
     
-    # Functions for y1
+    # for y1
     lambda x: 0.6*torch.sin(150*np.pi*x) + 0.8*torch.cos(100*np.pi*x**2),  # Original y1
     lambda x: (8*x**4 + 1) / (1 + 10*x**2),  # Alternative y1 polynomial
     lambda x: 0.6*torch.sin(200*np.pi*x) + 0.8*torch.cos(100*np.pi*x**2),  # y1 with different frequencies
@@ -94,7 +94,7 @@ list_of_func = [
 ]
 
 index_y=0
-index_y1=4
+index_y1=5
 combine=True
 def f_true(x, k=128, index_y=index_y, index_y1=index_y1, combine=combine):
     y = list_of_func[index_y](x, k) if index_y == 0 else list_of_func[index_y](x)

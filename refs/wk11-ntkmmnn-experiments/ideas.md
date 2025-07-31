@@ -196,3 +196,9 @@ we can rescale the optimization landscapebecause of the rank thing and curse of 
 
 -- now homogeneous by same nmuber of activation composed
 250889 idem
+
+
+
+--- now in the vector spcae 2d 
+
+
