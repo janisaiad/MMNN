@@ -193,3 +193,6 @@ we can rescale the optimization landscapebecause of the rank thing and curse of 
 155544 un mix des 2, vraiment curieux; signe de superposition
 
 65246 vraiment super
+
+-- now homogeneous by same nmuber of activation composed
+250889 idem
