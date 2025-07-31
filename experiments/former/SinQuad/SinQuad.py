@@ -38,7 +38,7 @@ mydtype = torch.get_default_dtype()
 # %%
 
 
-net_size, W_idx = [128, 0, 4], 1
+net_size, W_idx = [64, 0, 4], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
@@ -93,7 +93,7 @@ list_of_func = [
     lambda x: 0.6*torch.sin(200*np.pi*x) + 0.8*torch.cos(160*torch.pi*x**2)  # y1 with torch.pi
 ]
 
-index_y=0
+index_y=4
 index_y1=5
 combine=True
 def f_true(x, k=128, index_y=index_y, index_y1=index_y1, combine=combine):
@@ -183,7 +183,7 @@ def get_data(net_size):
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
-net_size2 =[128, 32, 4] 
+net_size2 =[64, 4, 4] 
 
 
 data2=get_data(net_size2)
