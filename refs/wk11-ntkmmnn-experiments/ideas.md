@@ -173,3 +173,5 @@ et enlever les html de tout le git et foutre ça sur un wetransfer jsp
 
 
 Thursday : it appeared that it depends a lot on the initialization when the mountain vs wavy appear, this is very curiious and need to b e investigated systematically
+
+sint1 is not sintu, there is maybe a s inside to disentangle
