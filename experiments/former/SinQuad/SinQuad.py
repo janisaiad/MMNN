@@ -21,11 +21,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
+import random
 
 # matplotlib.rcParams['text.usetex']=True
 # plt.rcParams['text.latex.preamble']=r"\usepackage{amsmath}"
 # matplotlib.rcParams['text.usetex']=False
-# torch.manual_seed(1)
+seed = random.randint(0, 1000000)
+torch.manual_seed(seed)
 device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"Training on device: {device}")
 
@@ -36,7 +38,7 @@ mydtype = torch.get_default_dtype()
 # %%
 
 
-net_size, W_idx = [128, 0, 8], 1
+net_size, W_idx = [32, 0, 8], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
@@ -168,6 +170,19 @@ def get_data(net_size):
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
-net_size2 =[128, 8, 8] 
+net_size2 =[32, 8, 8] 
+
+
 data2=get_data(net_size2)
-myplotly.plot(data1, data2, "figures/sinquad/test.html")
+import datetime
+import json
+with open(f"figures/sinquad/config_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_seed{seed}_{act_idx}_{s}_{num_samples}_{W_idx}_{net_size[0]}_{net_size[1]}_{net_size[2]}_{net_size2[0]}_{net_size2[1]}_{net_size2[2]}.json", "w") as f:
+    # now date time
+    f.write(f"now date time: {datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    f.write(f"seed: {seed}")
+    f.write(f"act_idx: {act_idx}")
+    f.write(f"s: {s}")
+    f.write(f"num_samples: {num_samples}")
+    f.write(f"W_idx: {W_idx}")
+    f.write(f"net_size: {net_size}")
+myplotly.plot(data1, data2, f"figures/sinquad/test_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_seed{seed}_{act_idx}_{s}_{num_samples}_{W_idx}_{net_size[0]}_{net_size[1]}_{net_size[2]}_{net_size2[0]}_{net_size2[1]}_{net_size2[2]}.html",seed)
