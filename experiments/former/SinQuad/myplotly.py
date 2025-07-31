@@ -33,7 +33,7 @@ def cmap_m2p(name='coolwarm', n=300, vmin=0, vmax=1):
 # data1
 # data2
 
-def plot(data1,data2,PN_save):
+def plot(data1,data2,PN_save,seed):
     # a, b, d = 1.32, 1., 0.8
     # c = a**2 - b**2
     # u, v = np.mgrid[0:2*np.pi:100j, 0:2*np.pi:100j]
@@ -194,7 +194,7 @@ def plot(data1,data2,PN_save):
     #################################
     ##### update layout
     # fig title
-    fig.update_layout(title_font=dict(size=50,color='red'))
+    fig.update_layout(title_font=dict(size=50,color='red'),title_text=f"seed: {seed}")
     # fig.update_layout(title_pad=dict(l=-0,b=0,r=0,t=0),title_text='zsj',
     #                   title_xanchor='center',
     #                   title_x=0.5 # middle,
