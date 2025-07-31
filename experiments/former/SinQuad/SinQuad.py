@@ -174,13 +174,13 @@ def get_data(net_size,index_weight11,index_weight12,index_weight21,index_weight2
     
     print(f"time used: {time.time()-time1:.2f}s", )
     return X, Y, loss
-
-index_weight11,index_weight12,index_weight21,index_weight22 = random.randint(0, net_size[1]-1), random.randint(0, net_size[1]-1), random.randint(0, net_size[1]-1), random.randint(0, net_size[1]-1)
+net_size2 =[128, 32, 4] 
+index_weight11,index_weight12,index_weight21,index_weight22 = random.randint(0, net_size2[1]-1), random.randint(0, net_size2[1]-1), random.randint(0, net_size2[1]-1), random.randint(0, net_size2[1]-1)
 # %%
 data1=get_data(net_size,index_weight11,index_weight12,index_weight21,index_weight22)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
-net_size2 =[128, 32, 4] 
+
 
 
 data2=get_data(net_size2,index_weight11,index_weight12,index_weight21,index_weight22)
