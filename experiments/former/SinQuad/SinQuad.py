@@ -70,7 +70,7 @@ acts= [
 nn_type= "MMNN" if net_size[1]>0 else "FCNN"
 
 PN_save="d" #f"Landscape{nn_type}{W_idx}Act{act_idx}"
-s=60*4 # range for plot
+s=60*8 # range for plot
 
 num_samples = 10000
 interval=np.array([-1,1])*np.pi # integral range
