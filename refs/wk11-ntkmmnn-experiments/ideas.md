@@ -167,3 +167,4 @@ also need to understand the weight vector and its influence for sintu for instan
 
 
 supprimer bigrunv1
+et enlever les html de tout le git et foutre ça sur un wetransfer jsp
