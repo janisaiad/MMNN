@@ -36,7 +36,7 @@ mydtype = torch.get_default_dtype()
 # %%
 
 
-net_size, W_idx = [64, 0, 9], 1
+net_size, W_idx = [128, 0, 8], 1
 
 # net_size, W_idx =[128, 32, 2], 1
 
@@ -168,6 +168,6 @@ def get_data(net_size):
 data1=get_data(net_size)
 # X,Y,Z=data1
 # np.savez( f"{PN_save}.npz",X=X,Y=Y,Z=Z) 
-net_size2 =[128, 32, 2] 
+net_size2 =[128, 8, 8] 
 data2=get_data(net_size2)
 myplotly.plot(data1, data2, "figures/sinquad/test.html")
