@@ -203,3 +203,7 @@ we can rescale the optimization landscapebecause of the rank thing and curse of 
 
 
 679175 petite pente
+
+we should not take conclusions by seeing the 2d stuff because by random projection, we can see all of what i describe on a high dimensional optimization landscape, so we cannot have nay conclusion
+but there is maybe something to disentangle in the way the optim landscape suddenly has this shape or not, and if it's true globally with a lot of weights involed in, by computing some high dimensional metrics, not only
+the hessian spectrum
