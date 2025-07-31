@@ -202,3 +202,4 @@ we can rescale the optimization landscapebecause of the rank thing and curse of 
 --- now in the vector spcae 2d 
 
 
+679175 petite pente
