@@ -162,3 +162,5 @@ investigate also with full relu, and sine at the end
 
 i can get that this matter of frequencies in the functions can be seen in the optimization landscape
 because there is something in the weights that can make the opt land wavy, a bit weird
+
+also need to understand the weight vector and its influence for sintu for instance
