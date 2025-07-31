@@ -159,13 +159,18 @@ def get_data(net_size):
     x_train = torch.tensor(x_train, device=device, dtype=mydtype)   
     y_true = f_true(x_train)
     h = ( interval[1] - interval[0] ) / num_samples
+    
+    # we save initial weights and generate random directions  
+    initial_weights = model.fcs[fc_idx].weight.data.clone()
+    direction1 = torch.randn_like(initial_weights) 
+    direction2 = torch.randn_like(initial_weights)
+    
     loss=np.zeros_like(X)
     for i in range(n):
         print(f"{i}  /  {n};  {net_size}; W_idx = {W_idx}; {act_kind}")
         for j in range(n):
-            model.fcs[fc_idx].weight.data[0,0] = X[i,j]
-            model.fcs[fc_idx].weight.data[-1,-1] = Y[i,j]
-            # print(model.fcs[0].weight.data[0,0])
+            # we use random directions instead of grid values
+            model.fcs[fc_idx].weight.data = initial_weights + X[i,j] * direction1 + Y[i,j] * direction2
         
             y_nn = model(x_train)
             y= (y_nn-y_true)**2
