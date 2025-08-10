@@ -14,7 +14,7 @@
     margin=2.5cm
 }
 
-\title{Analysis of Neural Tangent Kernel for Matrix Multiplication Neural Networks}
+\title{Analysis of Neural Tangent Kernel for MMNN}
 \author{Your Name}
 \date{\today}
 
@@ -27,7 +27,7 @@
 \end{abstract}
 
 \section{Introduction}
-The study of Neural Tangent Kernels (NTK) has provided profound insights into the behavior of deep neural networks, particularly in the infinite-width limit where the training dynamics can be described by a kernel. This analysis is grounded in the fact that, in this limit, the pre-activation outputs of the first layer follow a Gaussian Process. While the NTK for standard architectures like Multi-Layer Perceptrons (MLPs) is well-understood, its properties for more complex models like Matrix Multiplication Neural Networks (MMNNs) remain less explored.
+The study of Neural Tangent Kernels (NTK) has provided profound insights into the behavior of deep neural networks, particularly in the infinite-width limit where the training dynamics can be described by a kernel. This analysis is grounded in the fact that, in this limit, the pre-activation outputs of the first layer follow a Gaussian Process. While the NTK for standard architectures like Multi-Layer Perceptrons (MLPs) is well-understood, its properties for more complex models like MMNNs remain less explored.
 
 In this work, I conduct a detailed empirical investigation of the NTK for two-layer MMNNs with ReLU activations. My goal is to characterize the NTK's dependence on two critical hyperparameters: the internal rank of the matrix multiplication and a bias-like parameter, $\beta$. I aim to understand how these parameters affect not only the average behavior of the kernel but also its statistical fluctuations.
 
@@ -171,10 +171,10 @@ My experimental setup was designed to systematically explore the parameter space
 
 \subsection{Hyperparameter Configuration}
 \begin{itemize}
-    \item \textbf{Internal Rank ($r$):} The rank of matrix decomposition is a central parameter, varied on a logarithmic scale (from 2 to 100). The weight matrix of the second layer is normalized by $1/\sqrt{r}$.
-    \item \textbf{Parameter $\beta$:} Unlike standard MLP analyses where $\beta$ is often zero, we explore non-zero values to study its non-trivial influence on the kernel.
+    \item \textbf{Rang interne ($r$) :} Le rang de la décomposition matricielle est un paramètre central, varié sur une échelle logarithmique (de 2 à 100). La matrice de poids de la seconde couche est normalisée par $1/\sqrt{r}$.
+    \item \textbf{Paramètre $\beta$ :} Contrairement aux analyses standards de MLPs où $\beta$ est souvent nul, nous explorons des valeurs non nulles pour étudier son influence non triviale sur le noyau.
 \end{itemize}
-Each experimental configuration is a tuple (dimension, number of points $n$, $\beta$, rank $r$).
+Chaque configuration expérimentale est un n-uplet (dimension, nombre de points $n$, $\beta$, rang $r$).
 
 \subsection{NTK Computation and Statistical Estimation}
 I estimate the NTK using a Monte Carlo method. This approach is a practical necessity. The exact analytical computation would require an integration over a high-dimensional Gaussian measure associated with the weights of the second layer (where the dimension is the rank $r$), which is computationally intractable.
@@ -271,8 +271,8 @@ In conclusion, my empirical analysis has uncovered several distinct properties o
 \end{document}
 
 
+
 \section{Conclusion}
 In conclusion, my empirical analysis has uncovered several distinct properties of the NTK for MMNNs. The most critical result is the rapid decay of the NTK's variance with increasing internal rank. This concentration phenomenon implies that for sufficiently high ranks, the NTK behaves like a deterministic kernel that can be fully characterized by its mean. This is a powerful conclusion, as it greatly simplifies the theoretical analysis of these models. Furthermore, I have characterized the significant influence of the $\beta$ parameter and identified unique signatures in the kernel's functional form that distinguish MMNNs from classical MLP architectures.
 
 \end{document}
-
