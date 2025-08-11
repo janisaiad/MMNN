@@ -379,6 +379,31 @@ def compute_nngp_1layer(X, ranks=[10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0
     return K
     
 
+def compute_ntk_1layer(X, ranks=[10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot,key=None,n_samples=10000):
+    """
+    we compute the NNGP and NTK kernels for a 1-layer MMNN.
+    """
+    print('dimensions involved:')
+    print(f'd_0: {X.shape[1]}')
+    print(f'ranks: {ranks}')
+    print(f'sigma_A: {sigma_A}')
+    print(f'sigma_c: {sigma_c}') 
+    num_samples, d_0 = X.shape
+    n_samples = n_samples
+    d_1 = ranks[0]
+    
+    
+    b = jax.random.normal(key, (n_samples,1))
+    w = jax.random.normal(key, (n_samples,d_0))
+    w = w
+    
+    activations = activation_fn(jnp.dot(w,X.T) + beta*b)
+    
+    nngp_kernel = jnp.cov(activations.T)
+    
+    return nngp_kernel
+    
+    
 
 
 def compute_ntk_2layer(X, ranks=[10,10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot):
