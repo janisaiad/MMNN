@@ -189,28 +189,6 @@ def compute_ntk_nngp_recursive(X, L, d_hidden, sigma_A, sigma_c, beta, activatio
 
 
 
-def compute_ntk_2layer(X, ranks=[10,10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot):
-    """
-    we compute the NNGP and NTK kernels for a 2-layer MMNN.
-    """
-    num_samples, d_0 = X.shape
-    d_1 = ranks[0]
-    d_2 = ranks[1]
-    
-    K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
-    
-    # K1 should be computed as an integral over activation
-    # K2 should be computed as an integral over activation_dot
-    
-    # to compute K1, we integrate over b and w
-    # to compute K2 we integrate over b,w, and the gaussian process of the previous layer
-    
-    # for K1
-    
-    
-    
-    return sigma_c**2  + sigma_A**2 * K2 +K1
-
 
 
 # we recall that this compute the mean NTK of the 2-layer MMNN, not the NTK of the 2-layer MMNN because it's random by nature
@@ -373,3 +351,50 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
     
     final_result = sigma_c**2 + sigma_A**2 * K2 + K1
     return final_result
+
+def compute_nngp_1layer(X, ranks=[10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot,key=None,n_samples=10000):
+    """
+    we compute the NNGP and NTK kernels for a 1-layer MMNN.
+    """
+    num_samples, d_0 = X.shape
+    n_samples = n_samples
+    d_1 = ranks[0]
+    
+    K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
+    
+    b = jax.random.normal(key, (n_samples,1))
+    w = jax.random.normal(key, (n_samples,d_0))
+    w = w
+    
+    activations = activation_fn(jnp.dot(w,X.T) + beta*b)
+    
+    nngp_kernel = jnp.cov(activations.T)
+    
+    K = sigma_A**2 * nngp_kernel + sigma_c**2
+    
+    return K
+    
+
+
+
+def compute_ntk_2layer(X, ranks=[10,10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0, activation_fn=relu, activation_dot_fn=relu_dot):
+    """
+    we compute the NNGP and NTK kernels for a 2-layer MMNN.
+    """
+    num_samples, d_0 = X.shape
+    d_1 = ranks[0]
+    d_2 = ranks[1]
+    
+    K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
+    
+    # K1 should be computed as an integral over activation
+    # K2 should be computed as an integral over activation_dot
+    
+    # to compute K1, we integrate over b and w
+    # to compute K2 we integrate over b,w, and the gaussian process of the previous layer
+    
+    # for K1
+    
+    
+    
+    return sigma_c**2  + sigma_A**2 * K2 +K1
