@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 
 
@@ -11,7 +11,7 @@ class MMNNJax(nn.Module):
     resnet: bool # whether to use resnet architecture with identity connections
     fix_wb: bool # if true, weights and biases not updated during training
     learning_rate: float = 0.01 # learning rate for training
-
+    activation_fn: Callable = jax.nn.relu # activation function
     
     def setup(self):
         """Initialize the model layers."""
@@ -22,12 +22,14 @@ class MMNNJax(nn.Module):
             fc_sizes += [self.widths[j], self.ranks[j+1]]
         
         self.fc_sizes = fc_sizes
+        
         # we create a list of Dense layers
         fcs = []
-        for j in range(len(fc_sizes)):
-            fc = nn.Dense(fc_sizes[j], use_bias=True)
+        for j in range(len(fc_sizes)): # we skip the first and last layer, we will only have inputs and outputs weights
+            fc = nn.Dense(fc_sizes[j], use_bias=True,bias_init=nn.initializers.normal(stddev=1)) # the variance of the weights is 1/d_0
             fcs.append(fc)
-        self.fcs =fcs
+        self.fcs =fcs[1:]
+        
             
                 
                 
@@ -45,20 +47,43 @@ class MMNNJax(nn.Module):
         Returns:
             Output tensor of shape [batch_size, output_dim]
         """
-        for j in range(self.depth):
+        
+        for j in range(self.depth): # we skip the first and last layer
             if self.resnet:
                 if 0 < j < self.depth-1:
                     x_id = x + 0.0  # make a copy to avoid inplace operations
                     
             x = self.fcs[2*j](x)
-            x = jax.nn.relu(x)
+            x = self.activation_fn(x)
             x = self.fcs[2*j+1](x)
             
             if self.resnet:
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x = x.at[:,:n].add(x_id[:,:n])
-    
-        x = jax.nn.relu(x)
-        x = self.fcs[-1](x)
         return x
+
+
+if __name__ == "__main__":
+    from ntk.ntk_infinite import relu as jax_relu
+    key = jax.random.PRNGKey(0) # we create a random key
+    dummy_input = jnp.ones((1, 1)) # we create a dummy input, e.g., batch_size=1, features=10
+
+    model = MMNNJax( # we initialize the model
+        ranks=[1, 1, 1], 
+        widths=[10, 10], 
+        resnet=False, 
+        fix_wb=True, 
+        activation_fn=jax.nn.relu
+    )
+
+    print("--- model architecture summary ---") # we print the model architecture
+    # we use the tabulate method to get a string representation of the model's architecture.
+    # this requires a prngkey and a dummy input to trace the model.
+    # i've set the width to 120 to avoid wrapping.
+    print(model.tabulate(key, dummy_input, console_kwargs={'width': 120}))
+    
+    # we initialize the parameters. note that tabulate also calls init internally.
+    params = model.init(key, dummy_input)['params']
+    print("\n--- initialized parameters ---") # we print the initialized parameters
+    #print(params)
