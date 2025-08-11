@@ -12,6 +12,9 @@ class MMNNJax(nn.Module):
     fix_wb: bool # if true, weights and biases not updated during training
     learning_rate: float = 0.01 # learning rate for training
     activation_fn: Callable = jax.nn.relu # activation function
+    beta: float = 1.0 # beta parameter for the activation function
+    sigma_c: float = 1.0 # sigma_c parameter for the activation function
+    sigma_A: float = 1.0 # sigma_A parameter for the activation function
     
     def setup(self):
         """Initialize the model layers."""
