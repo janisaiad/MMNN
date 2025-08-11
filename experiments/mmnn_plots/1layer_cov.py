@@ -21,7 +21,7 @@ widths = [net_width] * net_depth # i define the widths for the mmnn layers
 print(f"calculating empirical covariance with {num_nets_empirical} networks...")
 outputs = []
 # i define the input range for our 1d function, smaller for covariance matrix visualization
-x_domain_jax = jnp.linspace(-jnp.pi, jnp.pi, 20).reshape(-1, 1)
+x_domain_jax = jnp.linspace(0, 1, 20).reshape(-1, 1)
 
 key = jax.random.PRNGKey(0)
 
@@ -59,8 +59,8 @@ nngp_kernel = compute_nngp_1layer(
     activation_fn=jax_relu,
     key=subkey,
     sigma_A=1.0,
-    sigma_c=0.0,
-    beta=0.0,
+    sigma_c=1.0,
+    beta=1.0,
     n_samples=10000
 )
 theoretical_cov = np.array(nngp_kernel)
