@@ -356,11 +356,15 @@ def compute_nngp_1layer(X, ranks=[10],sigma_A=jnp.sqrt(2), sigma_c=1.0, beta=1.0
     """
     we compute the NNGP and NTK kernels for a 1-layer MMNN.
     """
+    print('dimensions involved:')
+    print(f'd_0: {X.shape[1]}')
+    print(f'ranks: {ranks}')
+    print(f'sigma_A: {sigma_A}')
+    print(f'sigma_c: {sigma_c}') 
     num_samples, d_0 = X.shape
     n_samples = n_samples
     d_1 = ranks[0]
     
-    K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
     
     b = jax.random.normal(key, (n_samples,1))
     w = jax.random.normal(key, (n_samples,d_0))
