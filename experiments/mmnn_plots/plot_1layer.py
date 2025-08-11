@@ -33,7 +33,7 @@ x_domain = jnp.linspace(-2 * jnp.pi, 2 * jnp.pi, 2000).reshape(-1, 1) # i define
 
 # i initialize the jax model
 model_jax = MMNNJax(ranks=ranks, widths=widths, resnet=False, fix_wb=False, activation_fn=jax_sin)
-
+print(model_jax.tabulate(jax.random.PRNGKey(0), jnp.ones((1,1)), console_kwargs={'width': 120}))
 # we jit the apply function for better performance
 @jax.jit
 def apply_model(params, x):
