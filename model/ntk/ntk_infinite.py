@@ -258,10 +258,17 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
                 
                 h_x = h[:,:,0]
                 h_xp = h[:,:,1]
+                
+                # now we divide all the entries by sqrt(ranks[0])
+                h_x = h_x / jnp.sqrt(ranks[0])
+                h_xp = h_xp / jnp.sqrt(ranks[0])
+                
+                # now we compute the mean of the activations
+                
+                
             else: #  to avoid nan's for fully correlated gaussians
                 h_x = K[i,i]*jnp.sqrt(2)*jnp.ones((n_samples,ranks[0]))
                 h_xp = h_x+0.0
-            
             K1 = K1.at[i,j].set(jnp.mean(activation_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b)*activation_fn(jnp.mean(jnp.multiply(h_xp,w),axis=1) + beta*b)))
             K2 = K2.at[i,j].set(jnp.mean(activation_dot_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b) * jnp.mean(jnp.multiply(h_x,w),axis=1)*jnp.mean(jnp.multiply(w,w),axis=1)))
             
