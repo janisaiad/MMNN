@@ -355,6 +355,7 @@ Then for a rank r
     \sigma_A^2 \cdot \text{Tr}(\Sigma_w) = \frac{2}{r}
 \end{equation*}
 
+And we assume at least isotropic gaussian for the weights without loss of generality and to ensure fast computations.
 
 This condition ensures the signal neither vanishes nor explodes as it propagates through the network layers.
 This also means we need to normalize by $\sqrt{r}$ the output of the first MMNN layer.
@@ -366,17 +367,6 @@ We recall also that $\Theta^{(1)}$ is the arccosine kernel, which has a closed f
 
 We recall also that $\dot{\Theta}^{(1)}(\rho) = \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \dot{\sigma}(\bm{w}^\top x) \dot{\sigma}(\bm{w}^\top x') \right]$. We can compute this exactly when $\bm{w}$ is isotropic gaussian with variance 1:
 
-We apply the Funk-Hecke formula (i.e., using polar coordinates integration) and note that $r^2 \cdot r^{d-1} = r^{d+1}$:
-\begin{align*}
-\dot{\Theta}^{(1)}(\rho) &= \int_{\mathbb{R}^d} \|\bm{w}\|^2 \mathbb{1}_{w^\top x > 0} \mathbb{1}_{w^\top x' > 0} \frac{e^{-\|\bm{w}\|^2/2}}{(2\pi)^{d/2}} d\bm{w} \\
-&= \int_0^\infty r^{d+1} e^{-r^2/2} \int_{\mathbb{S}^{d-1}} \mathbb{1}_{\cos\theta > 0} \mathbb{1}_{\cos(\theta-\arccos(\rho)) > 0} d\sigma(\theta) dr \\
-&= \left(1 - \frac{\arccos(\rho)}{\pi}\right)
-\end{align*}
-where we used polar coordinates and integrated over the sphere $\mathbb{S}^{d-1}$. The final result shows that $\dot{\Theta}^{(1)}(\rho) = 1 - \frac{\arccos(\rho)}{\pi}$.
-It is just a reformulation of the fact that we integrate over a cone of angle $\arccos(\rho)$ a radial function.
-
-
-
 
 
 
@@ -384,26 +374,24 @@ In fact a simpler computation takes the expectation of the product of the two de
 \begin{align*}
 \dot{\Theta}^{(1)}(\rho) &= \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \dot{\sigma}(\bm{w}^\top x) \dot{\sigma}(\bm{w}^\top x') \right] \\
 &= \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \cdot \mathbb{1}_{\bm{w}^\top x > 0} \cdot \mathbb{1}_{\bm{w}^\top x' > 0} \right] \\
-&= \mathbb{E}_{\|\bm{w}\|^2} \left[ \|\bm{w}\|^2 \right] \cdot \mathbb{P}(\bm{w}^\top x > 0, \bm{w}^\top x' > 0) \quad \text{(by independence)} \\
-&= \left(1 - \frac{\arccos(\rho)}{\pi}\right)
+&= \mathbb{E}\!\left[ \|\bm{w}\|^2 \right] \cdot \mathbb{P}(\bm{w}^\top x > 0, \bm{w}^\top x' > 0) \\
+&= \operatorname{Tr}(\Sigma_w)\left(\frac{1}{2} - \frac{\arccos(\rho)}{2\pi}\right)
 \end{align*}
-
-Note that this value is between -1and 1, that is we can compute a lot of stuff after concatenating layers and getting some exponential scaling laws.
-
-
-
+It is just a reformulation of the fact that we integrate over a cone of angle $\arccos(\rho)$ a radial function.
 
 We then write $\Theta^{(2)}$ as a function of $\rho$ and $\rho_1$:
 \begin{center}
 \boxed{
 \begin{aligned}
-\Theta^{(2)}(\rho, \rho_1) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \left(1 - \frac{\arccos(\rho_1)}{\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
+\Theta^{(2)}(\rho, \rho_1) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \operatorname{Tr}(\Sigma_w)  \left(\frac{1}{2} - \frac{\arccos(\rho)}{2\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
 \text{with} \quad \Theta^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
 \end{aligned}
 }
 \end{center}
 
 where $\rho_1$ is the correlation between the outputs of the first layer, that is a random variable and $\rho$ is the correlation between the inputs.
+
+Note that this multiplicative value is between $0$ and $1$, that is we can compute a lot of stuff after concatenating layers and getting some exponential scaling laws.
 
 \subsection{Expression for random variables $\rho_1$, $\|x_1\|^2$, $\|y_1\|^2$}
 The output of the 1st layer is a gaussian process of dimension r, where each coordinate is a gaussian process with covariance matrix:
@@ -425,8 +413,7 @@ it happens, by a magic, that we can compute exactly the joint distribution of th
 \[
 \rho_1 = \frac{\sum_{i=1}^r x_i y_i }{\sqrt{\sum_{i=1}^r x_i^2} \sqrt{\sum_{i=1}^r y_i^2}}
 \]
-
-The squared norms $x_1^2$ and $y_1^2$ follow a bivariate Kibble distribution and their cosine distance follows an independent Fisher like distribution.
+The squared norms $x_1^2$ and $y_1^2$ follow a bivariate Kibble distribution and their cosine distance follows an independent Fisher like distribution. The Kibble distribution is defined for $u,v \geq 0$ and $\rho \in [-1,1]$, while the Fisher distribution is defined for $\theta \in [-1,1]$ and $\rho \in [-1,1]$ with $r > 2$.
 
 \begin{align*}
     (\|x_1\|^2, \|y_1\|^2) &\sim \text{Kibble}(r, \rho) \\
@@ -444,16 +431,15 @@ where $x_1_i$ and $y_1_i$ are $\rho$-correlated gaussian variables.
 We ensure that the reader has understood that the correlation of x,y is independent of the squared norms of x,y !
 
 \subsubsection{Final result}
-We can then state the final result: the NTK for a 2-layer network with ReLU activation is given by:
+We can then state the final result: For 2 entries x,y in $\mathbb{R}^d$ and a low rank r hidden layer, the NTK for a 2 hidden layer MMNN is:
 
 \begin{center}
-
-    For 2 entries x,y in $\mathbb{R}^d$ and a low rank r hidden layer, the NTK for a 2 hidden layer MMNN is :
+    
     \newline
 \boxed{
 \begin{aligned}
-\Theta^{(2)}(x,y) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \left(1 - \frac{\arccos(\rho_1)}{\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
-\text{with} \quad \Theta^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\Theta^{(2)}(x,y) &= \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\rho_1)}{\pi}\right)\frac{1}{r}  + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\| + 1 \\[1em]
+\text{with} \quad \Theta^{(1)}(\rho) &= \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
 \end{aligned}
 }
 \end{center}
@@ -469,42 +455,39 @@ where the random variables follow:
 
 \newpage
 \section{Fisher, Kibble distributions and the fake "Curse of Dimensionality"}
-Let us now explore the underlying probability laws governing the random components of our problem.
 
-\subsection{Distribution of the Correlation Coefficient $r$ (derived by Fisher)}
-The exact law of $r$, which represents the cosine of the angle between two Gaussian vectors of dimension $n$ with correlation $\rho$, was first derived by R. A. Fisher in his groundbreaking 1915 paper published in Biometrika. The modern form of this distribution is given by:
+\subsection{Distribution of the Correlation Coefficient $r$}
+Fisher derived the exact law of $r$ in 1915, representing the cosine between Gaussian vectors of dimension $n$ with correlation $\rho$:
 
 \[
 p(r|\rho, n) = \frac{(n-2)\Gamma(n-1)(1-\rho^2)^{\frac{n-1}{2}}(1-r^2)^{\frac{n-4}{2}}}{\sqrt{2\pi}\Gamma(n-\frac{1}{2})(1-\rho r)^{n-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; n-\frac{1}{2}; \frac{1+\rho r}{2}\right)
 \]
 
-For large values of $n$, Fisher's z-transformation shows that $z = \text{arctanh}(r)$ follows a normal distribution $\mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$. Notably, the variance of $r$ decreases as $O(1/n)$, not exponentially. When $\rho$ scales as $O(1/\sqrt{n})$, the correlation signal becomes obscured by geometric noise.
+For large $n$, Fisher's z-transform gives $z = \text{arctanh}(r) \sim \mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$. The variance of $r$ decreases as $O(1/n)$. When $\rho \sim O(1/\sqrt{n})$, geometric noise masks correlation.
 
-\subsection{The Kibble Distribution for the Squared Norms $(U,V)$}
-When considering the joint law of correlated chi-squared variables $U=\|X\|^2 \sim \chi^2(n)$ and $V=\|Y\|^2 \sim \chi^2(n)$, we encounter the bivariate Kibble-Gamma distribution, first introduced by W. F. Kibble in his 1941 Sankhyā paper. This distribution takes the form:
+\subsection{The Kibble Distribution}
+The joint law of correlated chi-squared variables $U=\|X\|^2$ and $V=\|Y\|^2$ follows Kibble's 1941 distribution:
 
 \[
 f(u, v) = \frac{(uv)^{\frac{n/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(n/2) (2(1-\rho^2))^{n/2+1} \rho^{\frac{n/2-1}{2}}} \cdot I_{n/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
 \]
 
-Regarding the apparent curse of dimensionality, we observe that the mean $\E[U] = n$ and variance $\Var(U) = 2n$ increase linearly with dimension. The coefficient of variation $CV = \sqrt{2}/\sqrt{n}$ approaches zero, indicating the distribution becomes relatively tighter around its mean. The normalized variable $U/n$ converges to 1 following a $\mathcal{N}(1, 2/n)$ approximation, with polynomial rather than exponential concentration.
+Mean $\E[U] = n$ and variance $\Var(U) = 2n$ grow linearly. $U/n$ converges to $\mathcal{N}(1, 2/n)$ with polynomial concentration.
 
-\subsection{Product of Kibble Variables $W=UV$ - Breaking the Curse}
-The product of Kibble variables exhibits interesting properties, though its distribution lacks a simple name and requires expression through infinite series or special functions like Meijer-G or Whittaker functions. The mean $\E[W] = n^2 + 2n\rho^2$ demonstrates quadratic growth with additional correlation effects. The variance reveals strong correlation dependence:
+\subsection{Product of Kibble Variables}
+The product $W=UV$ has mean $\E[W] = n^2 + 2n\rho^2$. Its variance shows correlation dependence:
 
 \[
 \Var\left(\frac{W}{n^2}\right) = \left(\frac{4}{n} + \frac{4}{n^2}\right) + \left(\frac{4}{n} + \frac{32}{n^2} + \frac{32}{n^3}\right)\rho^2 + \left(\frac{4}{n^2} + \frac{16}{n^3}\right)\rho^4 \approx \frac{4(1+\rho^2)}{n}
 \]
 
-Crucially, when $\rho \neq 0$, the variance decays polynomially as $O(1/n)$, with $\rho$ acting as a delocalization factor preventing extreme concentration.
+For $\rho \neq 0$, variance decays as $O(1/n)$, with $\rho$ preventing extreme concentration.
 
-\subsection{Independence and Gudermannian Connection}
-A fundamental result is that the variable $r$, containing information about relative orientation, is independent of the pair $(U,V)$ which describes magnitudes. The Fisher transformation and angle $\theta=\arccos(r)$ are connected through the Gudermannian function:
+\subsection{Independence Properties}
+The orientation variable $r$ is independent of magnitudes $(U,V)$. Fisher transform and angle $\theta=\arccos(r)$ connect via Gudermannian:
 
 \[
 z = \text{arctanh}(r) = \text{gd}^{-1}\left(\frac{\pi}{2} - \theta\right)
 \]
-
-Though mathematically interesting, this relationship serves more as a curiosity than a practical simplification tool.
 
 \end{document}
