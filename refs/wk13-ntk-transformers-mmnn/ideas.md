@@ -17,3 +17,7 @@ monday :  Wigner conjectured that certain properties of GOE matrices hold
 
 
  for the report we will impelement the total computations for the formula of true ntk 1 layer
+
+
+
+wednesday : hand computations done, now focusing on transformers
