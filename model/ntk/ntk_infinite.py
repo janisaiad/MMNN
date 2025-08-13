@@ -196,49 +196,40 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
     """
     we compute the NNGP and NTK kernels for a 2-layer MMNN.
     """
-    print("Starting 2-layer Monte Carlo NTK computation")
-    print(f"Input shape: {X.shape}")
-    print(f"Ranks: {ranks}")
-    print(f"Parameters: sigma_A={sigma_A}, sigma_c={sigma_c}, beta={beta}")
     
     num_samples, d_0 = X.shape
     n_samples = n_samples
     d_1 = ranks[0]
     d_2 = ranks[1] # 1 is the output dimension
     
-    print(f"Using {n_samples} Monte Carlo samples")
+    
     
     K1,K2 = jnp.zeros((num_samples, num_samples)), jnp.zeros((num_samples, num_samples))
     
-    print("Generating random weights and biases...")
+    
     b = jax.random.normal(key, (n_samples,1))
     w = jax.random.normal(key, (n_samples,d_0))
     w = w / jnp.sqrt(d_0)
     
-    print("Computing first layer activations...")
-    activations = activation_fn(jnp.dot(w,X.T) + beta*b)
-    print(f"Activation shape: {activations.shape}")
     
-    print("Computing NNGP kernel...")
+    activations = activation_fn(jnp.dot(w,X.T) + beta*b)
+    
+    
     nngp_kernel = jnp.cov(activations.T)
-    print(f"NNGP kernel shape: {nngp_kernel.shape}")
     
     K = sigma_A**2 * nngp_kernel + sigma_c**2
-    print(f"Full kernel K shape: {K.shape}")
-    print(f'kernel K: {K}')
     
     
-    print("Initializing K1 and K2 matrices...")
     K1 = jnp.zeros((num_samples, num_samples))
     K2 = jnp.zeros((num_samples, num_samples))
     
-    print("Generating second layer weights...")
+    
     w = jax.random.normal(key, (n_samples,ranks[0]))
     w = w / jnp.sqrt(ranks[0])
     
-    print("Computing pairwise kernel values...")
+    
     for i in range(num_samples):
-        print(f"Processing row {i+1}/{num_samples}")
+   
         for j in range(i,num_samples):
             if j % 10 == 0:
                 print(f"  Column {j+1}/{num_samples}")
@@ -253,8 +244,7 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
                     cov=cov_block,
                     shape=(n_samples, ranks[0]) # shape: (n_samples, ranks[0], 2)
                 )
-                print(f'1st ranks[0] dim entry of h: {[h[0,i,0] for i in range(ranks[0])]}'+'\n')
-                print(f'2nd ranks[0] dim entry of h: {[h[0,i,1] for i in range(ranks[0])]}'+'\n')
+               
                 
                 h_x = h[:,:,0]
                 h_xp = h[:,:,1]
@@ -269,6 +259,10 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
             else: #  to avoid nan's for fully correlated gaussians
                 h_x = K[i,i]*jnp.sqrt(2)*jnp.ones((n_samples,ranks[0]))
                 h_xp = h_x+0.0
+                
+                h_x = h_x / jnp.sqrt(ranks[0])
+                h_xp = h_xp / jnp.sqrt(ranks[0])
+                
             K1 = K1.at[i,j].set(jnp.mean(activation_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b)*activation_fn(jnp.mean(jnp.multiply(h_xp,w),axis=1) + beta*b)))
             K2 = K2.at[i,j].set(jnp.mean(activation_dot_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b) * jnp.mean(jnp.multiply(h_x,w),axis=1)*jnp.mean(jnp.multiply(w,w),axis=1)))
             
@@ -276,15 +270,9 @@ def compute_ntk_2layer_montecarlo(X, ranks=[3,1],sigma_A=jnp.sqrt(2), sigma_c=1.
                 print(f"WARNING: NaN detected at position ({i},{j})")
     K1 = K1 + K1.T - jnp.diag(jnp.diag(K1))
     K2 = K2 + K2.T - jnp.diag(jnp.diag(K2))
-    print(f'K1: {K1}')
-    print(f'K2: {K2}')
-    print("Computation complete")
-    print(f"K1 stats - min: {jnp.min(K1)}, max: {jnp.max(K1)}, mean: {jnp.mean(K1)}")
-    print(f"K2 stats - min: {jnp.min(K2)}, max: {jnp.max(K2)}, mean: {jnp.mean(K2)}")
-    
+  
     final_result = sigma_c**2 + sigma_A**2 * K2 + K1
-    print(f"Final result shape: {final_result.shape}")
-    print(final_result)
+    
     return final_result
 
 
@@ -333,20 +321,25 @@ def compute_ntk_2layer_montecarlo_random_field(X, ranks=[3,1],sigma_A=jnp.sqrt(2
                     shape=(1, ranks[0]) # shape: (1, ranks[0], 2)
                 )
                 if jnp.isnan(h_single).any():
-                    '''print(f"WARNING: NaN detected at position ({i},{j})")
-                    print(f'h_single: {h_single}')
-                    print(f'cov_block: {cov_block}')
-                    print(f'X[i]: {X[i]}')
-                    print(f'X[j]: {X[j]}')'''
+                
                     h_single = K[i,i]*jnp.sqrt(2)*jnp.ones((1,ranks[0],2))
 
                     h = jnp.repeat(h_single, n_samples, axis=0)  # shape: (n_samples, ranks[0], 2)
                 h = jnp.repeat(h_single, n_samples, axis=0)  # shape: (n_samples, ranks[0], 2)
                 h_x = h[:,:,0]
                 h_xp = h[:,:,1]
+                
+                # now we divide all the entries by sqrt(ranks[0])
+                h_x = h_x / jnp.sqrt(ranks[0])
+                h_xp = h_xp / jnp.sqrt(ranks[0])
+                
+                
             else: #  to avoid nan's for fully correlated gaussians
                 h_x = K[i,i]*jnp.sqrt(2)*jnp.ones((n_samples,ranks[0]))
                 h_xp = h_x+0.0
+                
+                h_x = h_x / jnp.sqrt(ranks[0])
+                h_xp = h_xp / jnp.sqrt(ranks[0])
             
             K1 = K1.at[i,j].set(jnp.mean(activation_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b)*activation_fn(jnp.mean(jnp.multiply(h_xp,w),axis=1) + beta*b)))
             K2 = K2.at[i,j].set(jnp.mean(activation_dot_fn(jnp.mean(jnp.multiply(h_x,w),axis=1) + beta*b) * jnp.mean(jnp.multiply(h_x,w),axis=1)*jnp.mean(jnp.multiply(w,w),axis=1)))
