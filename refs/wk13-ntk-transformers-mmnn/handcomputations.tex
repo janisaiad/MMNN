@@ -23,7 +23,7 @@
     linkcolor=blue,
     filecolor=magenta,      
     urlcolor=cyan,
-    pdftitle={Complete Summary of the Technical Discussion},
+    pdftitle={Handwritten MMNN 2 layer NTK computations},
     pdfauthor={Janis STG3A MMNN},
 }
 
@@ -43,7 +43,7 @@
 \maketitle
 
 \begin{abstract}
-This document recounts all the calculations, derivations, and concepts covered during our technical discussion. It covers the calculation of the expectation of products of ReLU functions applied to bivariate Gaussian variables, the application of Price's theorem, the analysis of special cases, and the study of the underlying probability laws such as the Fisher and Kibble distributions, in relation to the curse of dimensionality.
+This document recounts all the calculations, derivations, and concepts covered during my hand calculations. It covers the calculation of the expectation of products of ReLU functions applied to bivariate Gaussian variables, the application of Price's theorem, the analysis of special cases, and the study of the underlying probability laws such as the Fisher and Kibble distributions, in relation to the curse of dimensionality.
 \end{abstract}
 
 \newpage
@@ -466,43 +466,45 @@ where the random variables follow:
 
 \begin{center}
 
+
 \newpage
 \section{Fisher, Kibble distributions and the fake "Curse of Dimensionality"}
-The discussion then shifted to the underlying probability laws of the random components of the problem.
+Let us now explore the underlying probability laws governing the random components of our problem.
 
 \subsection{Distribution of the Correlation Coefficient $r$ (derived by Fisher)}
-\paragraph{Distribution} The exact law of $r$ (cosine of the angle between two Gaussian vectors of dimension $n$ with correlation $\rho$) was first derived by R. A. Fisher in his seminal 1915 paper "Frequency Distribution of the Values of the Correlation Coefficient in Samples from an Indefinitely Large Population" published in \textit{Biometrika}. The modern form of this distribution is given by:
+The exact law of $r$, which represents the cosine of the angle between two Gaussian vectors of dimension $n$ with correlation $\rho$, was first derived by R. A. Fisher in his groundbreaking 1915 paper published in Biometrika. The modern form of this distribution is given by:
+
 \[
 p(r|\rho, n) = \frac{(n-2)\Gamma(n-1)(1-\rho^2)^{\frac{n-1}{2}}(1-r^2)^{\frac{n-4}{2}}}{\sqrt{2\pi}\Gamma(n-\frac{1}{2})(1-\rho r)^{n-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; n-\frac{1}{2}; \frac{1+\rho r}{2}\right)
 \]
 
-\paragraph{Approximation (Fisher's z-transformation)} For large $n$, $z = \text{arctanh}(r)$ follows a $\mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$ distribution.
-
-\paragraph{Curse of Dimensionality} The variance of $r$ decreases as $O(1/n)$, not exponentially. When $\rho$ is of order $O(1/\sqrt{n})$, the correlation signal becomes overwhelmed by geometric noise.
+For large values of $n$, Fisher's z-transformation shows that $z = \text{arctanh}(r)$ follows a normal distribution $\mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$. Notably, the variance of $r$ decreases as $O(1/n)$, not exponentially. When $\rho$ scales as $O(1/\sqrt{n})$, the correlation signal becomes obscured by geometric noise.
 
 \subsection{The Kibble Distribution for the Squared Norms $(U,V)$}
-\paragraph{Distribution} The joint law of the correlated variables $U=\|X\|^2 \sim \chi^2(n)$ and $V=\|Y\|^2 \sim \chi^2(n)$ follows the bivariate Kibble-Gamma distribution, first described by W. F. Kibble in his 1941 paper "A Two-Variate Gamma Type Distribution" in \textit{Sankhyā}. The distribution takes the form:
+When considering the joint law of correlated chi-squared variables $U=\|X\|^2 \sim \chi^2(n)$ and $V=\|Y\|^2 \sim \chi^2(n)$, we encounter the bivariate Kibble-Gamma distribution, first introduced by W. F. Kibble in his 1941 Sankhyā paper. This distribution takes the form:
+
 \[
 f(u, v) = \frac{(uv)^{\frac{n/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(n/2) (2(1-\rho^2))^{n/2+1} \rho^{\frac{n/2-1}{2}}} \cdot I_{n/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
 \]
 
-\paragraph{Curse of Dimensionality - A Misnomer for Correlated Variables}
-The behavior of these variables is quite interesting in high dimensions. The expectation of $U$ is $n$ with variance $2n$, showing linear growth with dimension. The coefficient of variation $CV = \sqrt{2n}/n = \sqrt{2}/\sqrt{n}$ approaches zero, indicating the distribution becomes relatively tighter around its mean. When normalized, $U/n$ has mean 1 and variance $2/n$, converging to the constant 1 following the Law of Large Numbers, with a $\mathcal{N}(1, 2/n)$ approximation from the Central Limit Theorem. Notably, this concentration occurs polynomially in $n$, not exponentially.
+Regarding the apparent curse of dimensionality, we observe that the mean $\E[U] = n$ and variance $\Var(U) = 2n$ increase linearly with dimension. The coefficient of variation $CV = \sqrt{2}/\sqrt{n}$ approaches zero, indicating the distribution becomes relatively tighter around its mean. The normalized variable $U/n$ converges to 1 following a $\mathcal{N}(1, 2/n)$ approximation, with polynomial rather than exponential concentration.
 
 \subsection{Product of Kibble Variables $W=UV$ - Breaking the Curse}
-The product of Kibble variables exhibits complex behavior that can be expressed through infinite series or special functions like Meijer-G or Whittaker functions. The mean $\E[W] = n^2 + 2n\rho^2$ demonstrates quadratic growth with additional correlation effects. The variance shows strong correlation dependence: $\Var(W) = (4n^3 + 4n^2) + (4n^3 + 32n^2 + 32n)\rho^2 + (4n^2 + 16n)\rho^4$. For the normalized product $W/n^2$, the variance is approximately:
+The product of Kibble variables exhibits interesting properties, though its distribution lacks a simple name and requires expression through infinite series or special functions like Meijer-G or Whittaker functions. The mean $\E[W] = n^2 + 2n\rho^2$ demonstrates quadratic growth with additional correlation effects. The variance reveals strong correlation dependence:
+
 \[
 \Var\left(\frac{W}{n^2}\right) = \left(\frac{4}{n} + \frac{4}{n^2}\right) + \left(\frac{4}{n} + \frac{32}{n^2} + \frac{32}{n^3}\right)\rho^2 + \left(\frac{4}{n^2} + \frac{16}{n^3}\right)\rho^4 \approx \frac{4(1+\rho^2)}{n}
 \]
-A crucial insight is that when $\rho \neq 0$, the variance decays only polynomially as $O(1/n)$, not exponentially. The correlation $\rho$ serves as a delocalization factor preventing extreme concentration.
 
-\subsection{Independence}
-A key result is that the variable $r$ (information on relative orientation) is \textbf{independent} of the pair $(U,V)$ (information on magnitudes).
+Crucially, when $\rho \neq 0$, the variance decays polynomially as $O(1/n)$, with $\rho$ acting as a delocalization factor preventing extreme concentration.
 
-\subsection{Link with the Gudermannian Function}
-The Fisher transformation and the angle $\theta=\arccos(r)$ are related via the Gudermannian function, though this relationship serves more as a mathematical curiosity than a practical tool:
+\subsection{Independence and Gudermannian Connection}
+A fundamental result is that the variable $r$, containing information about relative orientation, is independent of the pair $(U,V)$ which describes magnitudes. The Fisher transformation and angle $\theta=\arccos(r)$ are connected through the Gudermannian function:
+
 \[
 z = \text{arctanh}(r) = \text{gd}^{-1}\left(\frac{\pi}{2} - \theta\right)
 \]
+
+Though mathematically interesting, this relationship serves more as a curiosity than a practical simplification tool.
 
 \end{document}
