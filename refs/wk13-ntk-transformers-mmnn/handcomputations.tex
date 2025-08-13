@@ -300,25 +300,22 @@ suppose that you have a low rank hidden layer, with a width r
 
 
 so the architecture is :
-
 \begin{center}
 \begin{tikzpicture}
-    \node (x) at (0,0) {$x$}; % input dimension d
-    \node (h0) at (2,0) {$\bm{h}^{(0)}$}; % first wide layer N
-    \node (h1) at (4,0) {$\bm{h}^{(1)}$}; % bottleneck layer r
-    \node (h2) at (6,0) {$\bm{h}^{(2)}$}; % second wide layer N  
-    \node (y) at (8,0) {$y$}; % output dimension 1
+    \node (x) at (0,0) {$(x,y)$}; % input
+    \node (h1) at (3,0) {$\bm{h}_1$}; % first wide layer N
+    \node (r) at (6,0) {$\bm{r}$}; % bottleneck layer r
+    \node (h2) at (9,0) {$\bm{h}_2$}; % second wide layer N
+    \node (y) at (12,0) {$(x_2,y_2)$}; % output
     
-    \draw[->] (x) -- node[above] {$\sigma$} (h0);
-    \draw[->] (h0) -- (h1);
-    \draw[->] (h1) -- node[above] {$\sigma$} (h2);
-    \draw[->] (h2) -- (y);
+    \draw[-latex] (x) -- node[above] {$\sigma W_1$} (h1);
+    \draw[-latex] (h1) -- node[above] {$A_1 \cdot+c_1$} (r);
+    \draw[-latex] (r) -- node[above] {$\sigma W_2$ } (h2);
+    \draw[-latex] (h2) -- node[above] {$A_2 \cdot +c_2$} (y);
     
-    \node[below] at (0,-0.5) {$d$};
-    \node[below] at (2,-0.5) {$N$};
-    \node[below] at (4,-0.5) {$r$};
-    \node[below] at (6,-0.5) {$N$};
-    \node[below] at (8,-0.5) {$1$};
+    \node[below] at (3,-0.5) {$N$};
+    \node[below] at (6,-0.5) {$(x_1,y_1)$ in $\mathbb{R}^r$};
+    \node[below] at (9,-0.5) {$N$};
 \end{tikzpicture}
 \end{center}
 And here N grow to infinity, and r is fixed.
@@ -397,14 +394,18 @@ Note that this value is between -1and 1, that is we can compute a lot of stuff a
 
 
 We then write $\Theta^{(2)}$ as a function of $\rho$ and $\rho_1$:
-
-\[
-\Theta^{(2)}(\rho, \rho_1) = \Theta^{(1)}(\rho) \cdot \left(\sigma_A^2 \dot{\Theta}^{(1)}(\rho_1)\right) + \Theta^{(1)}(\rho_1) + 1
-\]
+\begin{center}
+\boxed{
+\begin{aligned}
+\Theta^{(2)}(\rho, \rho_1) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \left(1 - \frac{\arccos(\rho_1)}{\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
+\text{with} \quad \Theta^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\end{aligned}
+}
+\end{center}
 
 where $\rho_1$ is the correlation between the outputs of the first layer, that is a random variable and $\rho$ is the correlation between the inputs.
 
-\subsection{The NTK kernel for a 2 hidden layer MMNN when $\beta=0$}
+\subsection{Expression for random variables $\rho_1$, $\|x_1\|^2$, $\|y_1\|^2$}
 The output of the 1st layer is a gaussian process of dimension r, where each coordinate is a gaussian process with covariance matrix:
 \[
 \Sigma^{(1)}_i = \mathbb{E}_{\bm{w}} \left[ \sigma(\bm{w}^\top x) \sigma(\bm{w}^\top x') \right]
@@ -419,89 +420,87 @@ I & \rho I \\
 It's a kronecker product of $r$ matrices $I$ and 2d $\rho$ correlated gaussian variables.
 
 
-We recall then the formula for the NTK kernel:
-
-\begin{align*}
-    \Theta^{(2)}(\rho) &= \Theta^{(1)}(\rho) \cdot \left(\sigma_A^2 \mathbb{E}_{\bm{w}} \left[ \dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x)) \dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x')) \bm{w}^\top\bm{w} \right]\right) \\
-    &\quad + \mathbb{E}_{\bm{w}} \left[ \sigma(\bm{w}^\top \bm{h}^{(1)}(x)) \sigma(\bm{w}^\top \bm{h}^{(1)}(x')) \right] + 1
-\end{align*}
-
-
-it happens, by a magic, that we can compute exactly the joint distribution of the random variable $(\rho_1, \|x\|^2, \|y\|^2)$ :
+it happens, by a magic, that we can compute exactly the joint distribution of the random variable $(\rho_1, \|x_1\|^2, \|y_1\|^2)$ :
 
 \[
 \rho_1 = \frac{\sum_{i=1}^r x_i y_i }{\sqrt{\sum_{i=1}^r x_i^2} \sqrt{\sum_{i=1}^r y_i^2}}
 \]
 
-The squared norms $x_i^2$ and $y_i^2$ follow a bivariate Kibble distribution and their cosine follows Fisher's distribution.
+The squared norms $x_1^2$ and $y_1^2$ follow a bivariate Kibble distribution and their cosine distance follows an independent Fisher like distribution.
 
 \begin{align*}
-    (\|x\|^2, \|y\|^2) &\sim \text{Kibble}(r, \rho) \\
+    (\|x_1\|^2, \|y_1\|^2) &\sim \text{Kibble}(r, \rho) \\
     &= \frac{(uv)^{\frac{r/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(r/2) (2(1-\rho^2))^{r/2+1} \rho^{\frac{r/2-1}{2}}} \cdot I_{r/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right) \\[1em]
     \rho_1 &\sim \text{Fisher}(\rho, r) \\
     &= \frac{(r-2)\Gamma(r-1)(1-\rho^2)^{\frac{r-1}{2}}(1-\theta^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\Gamma(r-\frac{1}{2})(1-\rho \theta)^{r-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; r-\frac{1}{2}; \frac{1+\rho \theta}{2}\right)
 \end{align*}
 
-where $u = \|x\|^2$, $v = \|y\|^2$, $\theta = \cos(x,y)$, and $I_\alpha$ is the modified Bessel function of the first kind.
+where $u = \|x_1\|^2$, $v = \|y_1\|^2$, $\theta = \cos(x_1,y_1)$, and $I_\alpha$ is the modified Bessel function of the first kind.
 
 and the correlation of x,y: 
 
-where $x_i$ and $y_i$ are $\rho$-correlated gaussian variables.
+where $x_1_i$ and $y_1_i$ are $\rho$-correlated gaussian variables.
 
+We ensure that the reader has understood that the correlation of x,y is independent of the squared norms of x,y !
 
+\subsubsection{Final result}
+We can then state the final result: the NTK for a 2-layer network with ReLU activation is given by:
 
+\begin{center}
+
+    For 2 entries x,y in $\mathbb{R}^d$ and a low rank r hidden layer, the NTK for a 2 hidden layer MMNN is :
+    \newline
+\boxed{
+\begin{aligned}
+\Theta^{(2)}(x,y) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \left(1 - \frac{\arccos(\rho_1)}{\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
+\text{with} \quad \Theta^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\end{aligned}
+}
+\end{center}
+
+where the random variables follow:
+\begin{itemize}
+\item $\rho_1 \sim \text{Fisher}(\rho, r)$ is independent of the norms
+\item $(\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \rho)$ are chi-squared variables with r degrees of freedom from correlated gaussian variables.
+\end{itemize}
+
+\begin{center}
 
 \newpage
-\section{Fisher, Kibble distributions and the "Curse of Dimensionality"}
+\section{Fisher, Kibble distributions and the fake "Curse of Dimensionality"}
 The discussion then shifted to the underlying probability laws of the random components of the problem.
 
-\subsection{The Fisher Distribution for the Correlation Coefficient $r$}
-\paragraph{Distribution} The exact law of $r$ (cosine of the angle between two Gaussian vectors of dimension $n$ with correlation $\rho$) is complex.
-\begin{itemize}
-    \item \textbf{Reference:} R. A. Fisher (1915), "Frequency Distribution...", \textit{Biometrika}.
-    \item \textbf{Modern Form:}
-        \[
-        p(r|\rho, n) = \frac{(n-2)\Gamma(n-1)(1-\rho^2)^{\frac{n-1}{2}}(1-r^2)^{\frac{n-4}{2}}}{\sqrt{2\pi}\Gamma(n-\frac{1}{2})(1-\rho r)^{n-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; n-\frac{1}{2}; \frac{1+\rho r}{2}\right)
-        \]
-\end{itemize}
+\subsection{Distribution of the Correlation Coefficient $r$ (derived by Fisher)}
+\paragraph{Distribution} The exact law of $r$ (cosine of the angle between two Gaussian vectors of dimension $n$ with correlation $\rho$) was first derived by R. A. Fisher in his seminal 1915 paper "Frequency Distribution of the Values of the Correlation Coefficient in Samples from an Indefinitely Large Population" published in \textit{Biometrika}. The modern form of this distribution is given by:
+\[
+p(r|\rho, n) = \frac{(n-2)\Gamma(n-1)(1-\rho^2)^{\frac{n-1}{2}}(1-r^2)^{\frac{n-4}{2}}}{\sqrt{2\pi}\Gamma(n-\frac{1}{2})(1-\rho r)^{n-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; n-\frac{1}{2}; \frac{1+\rho r}{2}\right)
+\]
 
 \paragraph{Approximation (Fisher's z-transformation)} For large $n$, $z = \text{arctanh}(r)$ follows a $\mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$ distribution.
 
-\paragraph{Curse of Dimensionality} The variance of $r$ decreases as $O(1/n)$, not exponentially. If $\rho \sim O(1/\sqrt{n})$, the correlation signal is drowned out by geometric noise.
+\paragraph{Curse of Dimensionality} The variance of $r$ decreases as $O(1/n)$, not exponentially. When $\rho$ is of order $O(1/\sqrt{n})$, the correlation signal becomes overwhelmed by geometric noise.
 
 \subsection{The Kibble Distribution for the Squared Norms $(U,V)$}
-\paragraph{Distribution} The joint law of $U=\|X\|^2 \sim \chi^2(n)$ and $V=\|Y\|^2 \sim \chi^2(n)$ (correlated) is the bivariate Kibble-Gamma distribution.
-\begin{itemize}
-    \item \textbf{Reference:} W. F. Kibble (1941), "A Two-Variate Gamma Type Distribution", \textit{Sankhyā}.
-    \item \textbf{Formula:} 
-    \[
-    f(u, v) = \frac{(uv)^{\frac{n/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(n/2) (2(1-\rho^2))^{n/2+1} \rho^{\frac{n/2-1}{2}}} \cdot I_{n/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
-    \]
-\end{itemize}
+\paragraph{Distribution} The joint law of the correlated variables $U=\|X\|^2 \sim \chi^2(n)$ and $V=\|Y\|^2 \sim \chi^2(n)$ follows the bivariate Kibble-Gamma distribution, first described by W. F. Kibble in his 1941 paper "A Two-Variate Gamma Type Distribution" in \textit{Sankhyā}. The distribution takes the form:
+\[
+f(u, v) = \frac{(uv)^{\frac{n/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(n/2) (2(1-\rho^2))^{n/2+1} \rho^{\frac{n/2-1}{2}}} \cdot I_{n/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
+\]
 
-\paragraph{Curse of Dimensionality}
-\begin{itemize}
-    \item $\E[U] = n$, $\Var(U) = 2n$. The mean and variance increase.
-    \item The coefficient of variation $CV = \sqrt{2n}/n = \sqrt{2}/\sqrt{n}$ tends to 0. The distribution becomes tighter relative to its mean.
-    \item The normalized variable $U/n$ has a mean of $1$ and variance of $2/n$. It converges to the constant 1 (Law of Large Numbers) following a $\mathcal{N}(1, 2/n)$ approximation (Central Limit Theorem).
-\end{itemize}
+\paragraph{Curse of Dimensionality - A Misnomer for Correlated Variables}
+The behavior of these variables is quite interesting in high dimensions. The expectation of $U$ is $n$ with variance $2n$, showing linear growth with dimension. The coefficient of variation $CV = \sqrt{2n}/n = \sqrt{2}/\sqrt{n}$ approaches zero, indicating the distribution becomes relatively tighter around its mean. When normalized, $U/n$ has mean 1 and variance $2/n$, converging to the constant 1 following the Law of Large Numbers, with a $\mathcal{N}(1, 2/n)$ approximation from the Central Limit Theorem. Notably, this concentration occurs polynomially in $n$, not exponentially.
 
-\subsection{Product of Kibble Variables $W=UV$}
-\begin{itemize}
-    \item \textbf{Law:} No simple name. Expressed via infinite series or special functions (Meijer-G, Whittaker).
-    \item \textbf{Mean:} $\E[W] = n^2 + 2n\rho^2$.
-    \item \textbf{Variance:} $\Var(W) = (4n^3 + 4n^2) + (4n^3 + 32n^2 + 32n)\rho^2 + (4n^2 + 16n)\rho^4$.
-    \item \textbf{Variance of the normalized product $W/n^2$:}
-    \[
-    \Var\left(\frac{W}{n^2}\right) = \left(\frac{4}{n} + \frac{4}{n^2}\right) + \left(\frac{4}{n} + \frac{32}{n^2} + \frac{32}{n^3}\right)\rho^2 + \left(\frac{4}{n^2} + \frac{16}{n^3}\right)\rho^4 \approx \frac{4(1+\rho^2)}{n}
-    \]
-\end{itemize}
+\subsection{Product of Kibble Variables $W=UV$ - Breaking the Curse}
+The product of Kibble variables exhibits complex behavior that can be expressed through infinite series or special functions like Meijer-G or Whittaker functions. The mean $\E[W] = n^2 + 2n\rho^2$ demonstrates quadratic growth with additional correlation effects. The variance shows strong correlation dependence: $\Var(W) = (4n^3 + 4n^2) + (4n^3 + 32n^2 + 32n)\rho^2 + (4n^2 + 16n)\rho^4$. For the normalized product $W/n^2$, the variance is approximately:
+\[
+\Var\left(\frac{W}{n^2}\right) = \left(\frac{4}{n} + \frac{4}{n^2}\right) + \left(\frac{4}{n} + \frac{32}{n^2} + \frac{32}{n^3}\right)\rho^2 + \left(\frac{4}{n^2} + \frac{16}{n^3}\right)\rho^4 \approx \frac{4(1+\rho^2)}{n}
+\]
+A crucial insight is that when $\rho \neq 0$, the variance decays only polynomially as $O(1/n)$, not exponentially. The correlation $\rho$ serves as a delocalization factor preventing extreme concentration.
 
 \subsection{Independence}
 A key result is that the variable $r$ (information on relative orientation) is \textbf{independent} of the pair $(U,V)$ (information on magnitudes).
 
 \subsection{Link with the Gudermannian Function}
-The Fisher transformation and the angle $\theta=\arccos(r)$ are related via the Gudermannian function, but this is a mathematical curiosity rather than a simplifying tool.
+The Fisher transformation and the angle $\theta=\arccos(r)$ are related via the Gudermannian function, though this relationship serves more as a mathematical curiosity than a practical tool:
 \[
 z = \text{arctanh}(r) = \text{gd}^{-1}\left(\frac{\pi}{2} - \theta\right)
 \]
