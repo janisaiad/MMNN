@@ -285,7 +285,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
                      store_weight_snapshots=True, snapshot_every=100):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(params, lr=lr)
+    optimizer = torch.optim.SGD(params, lr=lr)
     criterion = torch.nn.MSELoss()
     
     losses = []
@@ -333,7 +333,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             weight_snapshots.append(snapshot)
             loss_snapshots.append(current_loss)
             
-        if epoch % compute_ntk_every == 0:
+        if epoch % (10 * compute_ntk_every) == 0:
                 
             
             print(f"epoch {epoch}/{n_epochs}")
@@ -477,14 +477,14 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [2,4, 6, 8, 10]
+    depths = [2]
     widths = [128,256,512,2048,4096,8192]
     ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
     
     n_samples_1d = 30
     n_samples_2d = 100
-    n_epochs = 10000
+    n_epochs = 100000
     lr = 0.001
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
