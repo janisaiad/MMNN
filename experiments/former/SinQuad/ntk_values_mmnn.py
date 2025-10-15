@@ -53,28 +53,18 @@ def generate_data_1d(n_samples=100, x_range=(0, 1), device="cuda"):
     x = torch.linspace(x_range[0], x_range[1], n_samples, device=device).reshape(-1, 1)
     y = oscillatory_function_1d(x)
     return x, y
+
 def generate_data_2d(n_samples=100, x_range=(-1, 1), device="cuda"):
-    """we generate training data for 2d function on polar grid in unit disk"""
-    # we create a polar grid
-    n_r = int(np.sqrt(n_samples / 2))  # we set number of radial points
-    n_theta = n_samples // n_r  # we set number of angular points
+    """we generate training data for 2d function uniformly on unit circle"""
+    # we sample uniformly on the unit circle (radius = 1)
+    theta = 2 * np.pi * torch.linspace(0, 1, n_samples, device=device)
     
-    r = torch.linspace(0.1, 1.0, n_r, device=device)  # we avoid r=0 for stability
-    theta = torch.linspace(0, 2*np.pi, n_theta, device=device)
-    
-    r_grid, theta_grid = torch.meshgrid(r, theta, indexing='ij')
-    
-    x1 = r_grid.reshape(-1) * torch.cos(theta_grid.reshape(-1))
-    x2 = r_grid.reshape(-1) * torch.sin(theta_grid.reshape(-1))
-    
-    # we truncate to exactly n_samples
-    x1 = x1[:n_samples]
-    x2 = x2[:n_samples]
+    x1 = torch.cos(theta)
+    x2 = torch.sin(theta)
     
     x = torch.stack([x1, x2], dim=1)
     y = oscillatory_function_2d(x[:, 0:1], x[:, 1:2])
     return x, y
-
 
 def compute_ntk_gram(model, x):
     """we compute the neural tangent kernel gram matrix and its eigenvalues"""
@@ -238,7 +228,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [4, 6, 8, 10]
+    depths = [2]#,4, 6, 8, 10]
     widths = [128, 256, 512]
     ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
