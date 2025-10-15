@@ -135,12 +135,12 @@ for epoch in range(1,1+num_epochs):
               f"{e_max:.2e} and {e_mse:.2e}")
         
         # we compute NTK every 500 epochs
-        if epoch % 500 == 0:
+        if epoch % 50 == 0:
             ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
             ntk_eigenvalues[epoch] = eigenvalues
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
         
-        if epoch % 100 == 0:
+        if epoch % 1000 == 0:
             # Plot the results
             x = np.linspace(-1, 1, 1000)
             y_nn = learned_nn(x)
