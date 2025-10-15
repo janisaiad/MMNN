@@ -113,7 +113,7 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapshots, 
-                                        n_grid=50, grid_range=4.0, use_pca=True, seed=42):
+                                        n_grid=50, grid_range=4.0, use_pca=False, seed=42):
     """
     we compute loss landscape along 2 principal directions (PCA) or random directions
     """
@@ -134,7 +134,7 @@ def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapsho
     w_final = get_weight_vector().clone()
     w_init = weight_snapshots[0].clone()
     
-    if use_pca and len(weight_snapshots) > 2:
+    if use_pca and len(weight_snapshots) > 2 :
         print("using PCA to find principal directions...")
         
         # we center the weight snapshots
@@ -478,7 +478,7 @@ def main():
     """we run all training experiments"""
     
     depths = [2]
-    widths = [128,256,512,2048,4096,8192]
+    widths = [512, 1024, 2048, 4096, 8192]
     ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
     
