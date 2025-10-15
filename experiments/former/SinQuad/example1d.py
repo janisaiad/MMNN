@@ -112,6 +112,12 @@ train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
 # we create model
 model = nets.MMNN(ranks=ranks, widths=widths, device=device, ResNet=False, fixWb=True, act_kind=["ReLU"]*len(widths))
 
+# we MUST initialize weights properly (especially important with fixWb=True!)
+# even frozen weights need good initialization
+for layer in model.fcs:
+    torch.nn.init.xavier_uniform_(layer.weight)  # we use xavier initialization (default in PyTorch for Linear)
+    torch.nn.init.zeros_(layer.bias)  # we zero-initialize biases
+
 params = [p for p in model.parameters() if p.requires_grad]
 print(f"\ntrainable parameters: {sum(p.numel() for p in params)}")
 
@@ -124,7 +130,7 @@ errors_test_max = []
 ntk_matrices = {}
 ntk_eigenvalues = {}
 
-optimizer = optim.Adam(model.parameters(), lr=lr_init)
+optimizer = optim.Adam(model.parameters(), lr=lr_init)  # we use SGD to match benchmark.py
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
 criterion = nn.MSELoss()
 
@@ -135,7 +141,18 @@ for epoch in pbar:
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, targets)
+        
+        # we check for nan/inf before backward
+        if not torch.isfinite(loss):
+            print(f"\nWARNING: Non-finite loss detected at epoch {epoch}: {loss.item()}")
+            print("Skipping this batch...")
+            continue
+            
         loss.backward()
+        
+        # we clip gradients to prevent explosion
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
         optimizer.step()
     
     # we store loss at every epoch
@@ -168,14 +185,15 @@ for epoch in pbar:
             print(f"test errors (MAX and MSE): {e_max:.2e} and {e_mse:.2e}")
             print(f"time used: {time.time() - time1:.2f}s")
             
+        if epoch % 5000 == 0:
             # we compute NTK
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
             ntk_matrices[epoch] = ntk
             ntk_eigenvalues[epoch] = eigenvalues
             print(f"ntk eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
         
-        if epoch % 500 == 0:
-            # we plot the results
+        if epoch % 1000 == 0:
+            # we plot the results (every 1000 epochs)
             x_plot = np.linspace(-1, 1, 1000)
             x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype, device=device)
             with torch.no_grad():
@@ -199,6 +217,28 @@ for epoch in pbar:
 print(f"\n{'='*80}")
 print("training completed")
 print(f"{'='*80}")
+
+# we plot final comparison
+x_plot_final = np.linspace(-1, 1, 1000)
+x_plot_tensor_final = torch.tensor(x_plot_final.reshape([-1, 1]), dtype=mydtype, device=device)
+with torch.no_grad():
+    y_plot_nn_final = model(x_plot_tensor_final).cpu().numpy().reshape([-1])
+y_plot_true_final = func(x_plot_tensor_final).cpu().numpy().reshape([-1])
+
+fig = plt.figure(figsize=(10, 6))
+plt.plot(x_plot_final, y_plot_true_final, 'b-', label='true function', linewidth=2.5)
+plt.plot(x_plot_final, y_plot_nn_final, 'r--', label='learned network', linewidth=2, alpha=0.8)
+plt.xticks(np.linspace(*interval, 5))
+plt.tick_params(axis='both', which='major', labelsize=12)
+plt.grid(True, axis='both', color='#AAAAAA', linestyle='--', linewidth=1.4)
+plt.title(f'final comparison: true function vs learned network (epoch {num_epochs})', fontsize=14)
+plt.xlabel('x', fontsize=12)
+plt.ylabel('y', fontsize=12)
+plt.tight_layout()
+plt.legend(loc="upper center", fontsize=13, ncol=2)
+plt.savefig(os.path.join(base_folder, f"{config_name}_final_comparison.png"), dpi=150)
+plt.close()
+print(f"final comparison plot saved")
 
 # we save model parameters
 torch.save(model.state_dict(), os.path.join(base_folder, f'{config_name}_model_parameters.pth'))
@@ -306,7 +346,7 @@ config_dict = {
     "lr_gamma": lr_gamma,
     "lr_step_size": lr_step_size,
     "interval": interval,
-    "optimizer": "Adam",
+    "optimizer": "SGD",
     "activation": "ReLU",
     "resnet": False,
     "fix_wb": True,
