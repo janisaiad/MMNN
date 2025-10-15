@@ -113,7 +113,7 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapshots, 
-                                        n_grid=50, grid_range=2.0, use_pca=True, seed=42):
+                                        n_grid=50, grid_range=4.0, use_pca=True, seed=42):
     """
     we compute loss landscape along 2 principal directions (PCA) or random directions
     """
@@ -285,7 +285,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
                      store_weight_snapshots=True, snapshot_every=100):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=lr)
+    optimizer = torch.optim.Adam(params, lr=lr)
     criterion = torch.nn.MSELoss()
     
     losses = []
@@ -373,7 +373,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         print("\ncomputing 2d projected loss landscape...")
         Alpha, Beta, loss_landscape, trajectory_2d = compute_loss_landscape_2d_projection(
             model, x_train, y_train, weight_snapshots,
-            n_grid=40,
+            n_grid=50,
             grid_range=0.8,
             use_pca=True
         )
@@ -574,7 +574,7 @@ def main():
             "widths_list": widths_list,
             "n_epochs": n_epochs,
             "learning_rate": lr,
-            "optimizer": "SGD",
+            "optimizer": "Adam",
             "activation": "ReLU",
             "resnet": False,
             "fix_wb": True,
@@ -598,7 +598,7 @@ def main():
                 patience=20,
                 min_delta=1e-12,
                 store_weight_snapshots=True,
-                snapshot_every=100,
+                snapshot_every=10,
                 
             )
         except Exception as e:
