@@ -86,6 +86,8 @@ time1=time.time()
 errors_train=[]
 errors_test=[]
 errors_test_max=[]
+all_losses=[]  # we store all losses
+ntk_eigenvalues={}  # we store ntk eigenvalues
 
 optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
@@ -99,6 +101,7 @@ for epoch in range(1,1+num_epochs):
         loss.backward()
         optimizer.step()
     
+    all_losses.append(loss.item())  # we store loss
     scheduler.step()
               
     if epoch % 50 == 0:
@@ -131,7 +134,13 @@ for epoch in range(1,1+num_epochs):
         print("Test errors (MAX and MSE): " + 
               f"{e_max:.2e} and {e_mse:.2e}")
         
-        if epoch % 10000 == 0:
+        # we compute NTK every 500 epochs
+        if epoch % 500 == 0:
+            ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+            ntk_eigenvalues[epoch] = eigenvalues
+            print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+        
+        if epoch % 100 == 0:
             # Plot the results
             x = np.linspace(-1, 1, 1000)
             y_nn = learned_nn(x)
@@ -160,14 +169,81 @@ torch.save(model.state_dict(), 'model_parameters1D.pth')
 np.savez("errors1D", 
          test=np.array(errors_test), 
          testmax=np.array(errors_test_max), 
-         train = np.array(errors_train), 
+         train = np.array(errors_train),
+         all_losses=np.array(all_losses),
          time=time.time()-time1
          )
-fig=plt.figure(figsize=(6,4))
+
+# we plot loss evolution
+fig=plt.figure(figsize=(8,5))
+plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)
+plt.xlabel('Epoch')
+plt.ylabel('Loss (log scale)')
+plt.title('Training Loss Evolution')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('./figures/loss_evolution.png', dpi=100)
+plt.close()
+
+# we plot errors
+fig=plt.figure(figsize=(8,5))
 n=len(errors_test) 
 m=len(errors_train)
-plt.plot(np.linspace(1,m,m), np.log10(errors_train), 
-         label="log of training error")
-plt.plot(np.linspace(1,n,n), np.log10(errors_test), 
-         label="test error")
+plt.plot(np.linspace(1,m,m)*50, np.log10(errors_train), 
+         label="log10 training error", linewidth=2)
+plt.plot(np.linspace(1,n,n)*50, np.log10(errors_test), 
+         label="log10 test error", linewidth=2)
+plt.xlabel('Epoch')
+plt.ylabel('log10(error)')
+plt.title('Error Evolution')
+plt.grid(True, alpha=0.3)
 plt.legend()
+plt.tight_layout()
+plt.savefig('./figures/error_evolution.png', dpi=100)
+plt.close()
+
+# we plot NTK eigenvalues
+if len(ntk_eigenvalues) > 0:
+    epochs_list = sorted(ntk_eigenvalues.keys())
+    max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
+    min_eigenvalues = [ntk_eigenvalues[ep][0].item() for ep in epochs_list]
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
+    
+    ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Max Eigenvalue')
+    ax1.set_title('NTK Maximum Eigenvalue Evolution')
+    ax1.grid(True, alpha=0.3)
+    
+    ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Min Eigenvalue')
+    ax2.set_title('NTK Minimum Eigenvalue Evolution')
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('./figures/ntk_eigenvalues.png', dpi=100)
+    plt.close()
+
+# we plot final prediction/fit
+x_plot = np.linspace(-1, 1, 1000)
+x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
+with torch.no_grad():
+    y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
+y_plot_true = func(x_plot_tensor.cpu().numpy())
+
+fig=plt.figure(figsize=(8,5))
+plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
+plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Final Prediction vs True Function')
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.savefig('./figures/final_prediction.png', dpi=100)
+plt.close()
+
+print("\nAll plots saved to ./figures/")
+print(f"Total training time: {time.time()-time1:.2f}s")
