@@ -146,8 +146,8 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             plt.close()
             plt.figure()
             # we add a bar
-            plt.colorbar()
             plt.matshow(ntk)
+            plt.colorbar()
             plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_ntk_{epoch}.png"))
             plt.close()
             ntk_matrices[epoch] = ntk
