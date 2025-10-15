@@ -110,7 +110,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
                      patience=10, min_delta=1e-12):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(params, lr=lr)
+    optimizer = torch.optim.SGD(params, lr=lr)
     criterion = torch.nn.MSELoss()
     
     losses = []
@@ -261,9 +261,9 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [6]#,4, 6, 8, 10]
-    widths = [2048,4096,8192]
-    ranks = [20, 25, 30, 40, 50]
+    depths = [2,4, 6, 8, 10]
+    widths = [128,256,512,2048,4096,8192]
+    ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
     
     n_samples_1d = 30
