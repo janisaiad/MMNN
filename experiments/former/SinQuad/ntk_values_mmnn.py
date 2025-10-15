@@ -299,6 +299,10 @@ def main():
             fixWb=True,
             act_kind=["R"]*depth
         )
+        for layer in model.fcs:
+            torch.nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
+            torch.nn.init.zeros_(layer.bias)
+
         
         config_dict = {
             "depth": depth,
