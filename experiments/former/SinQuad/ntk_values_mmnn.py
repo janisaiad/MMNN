@@ -8,8 +8,9 @@ from itertools import product
 from tqdm import tqdm
 import os
 import json
-import matplotlib.pyplot as plt
-
+import matplotlib
+matplotlib.use('Agg')  # we use non-interactive backend (no GUI needed)
+import matplotlib.pyplot as plt  # NOW we can import pyplot safely
 
 torch.set_printoptions(
     precision=3,      # we set decimal precision
@@ -144,6 +145,8 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
             plt.close()
             plt.figure()
+            # we add a bar
+            plt.colorbar()
             plt.matshow(ntk)
             plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_ntk_{epoch}.png"))
             plt.close()
@@ -248,6 +251,15 @@ def main():
     
     x_train_2d, y_train_2d = generate_data_2d(n_samples_2d, device=device)
     print(f"generated 2d data: x {x_train_2d.shape}, y {y_train_2d.shape}")
+    
+    to_plot = y_train_2d.cpu().numpy()
+    plt.figure()
+    plt.plot(range(n_samples_2d), to_plot)
+    plt.xlabel('sample index')
+    plt.ylabel('x2')
+    plt.title('2d data')
+    plt.savefig(os.path.join(base_folder, "2d_data.png"))
+    plt.close()
     
     configs = []
     for depth in depths:
