@@ -10,6 +10,18 @@ import os
 import json
 import matplotlib.pyplot as plt
 
+
+torch.set_printoptions(
+    precision=3,      # we set decimal precision
+    threshold=float('inf'),  # we show all elements (no truncation with ...)
+    edgeitems=10,     # we show more edge items
+    linewidth=200,    # we set wider line width
+    sci_mode=False    # we disable scientific notation
+)
+
+
+
+
 device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"training on device: {device}")
 torch.set_default_dtype(torch.float32)
@@ -137,10 +149,11 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         print('loss: ', current_loss)
         
         if epoch % compute_ntk_every == 0:
-            with torch.no_grad():
-                ntk, eigenvalues = compute_ntk_gram(model, x_train)
-                ntk_matrices[epoch] = ntk
-                ntk_eigenvalues[epoch] = eigenvalues
+            
+            ntk, eigenvalues = compute_ntk_gram(model, x_train)
+            print(ntk)
+            ntk_matrices[epoch] = ntk
+            ntk_eigenvalues[epoch] = eigenvalues
         
         if current_loss < best_loss - min_delta:
             best_loss = current_loss
@@ -214,9 +227,9 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [6, 8, 10]
+    depths = [2, 4, 6, 8, 10]
     widths = [128, 256, 512]
-    ranks = [20, 25, 30, 40, 50]
+    ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
     
     n_samples_1d = 100
