@@ -48,7 +48,7 @@ def func(x):
     return y
 
 
-num_epochs = 2000
+num_epochs = 20000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -158,7 +158,7 @@ for epoch in range(1,1+num_epochs):
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
     
     # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-    if epoch % 50 == 0 and min(epoch, 600) == epoch:
+    if epoch % 25 == 0 and min(epoch, 600) == epoch:
         ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
         ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
