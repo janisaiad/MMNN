@@ -126,7 +126,6 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     stop_epoch = n_epochs
     
     for epoch in range(n_epochs):
-        print(f"epoch {epoch}/{n_epochs}")
         optimizer.zero_grad()
         
         outputs = model(x_train)
@@ -139,10 +138,11 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         losses.append(current_loss)
         
         
-        print(f"epoch {epoch}/{n_epochs}")
-        print('loss: ', current_loss)
-        
         if epoch % compute_ntk_every == 0:
+                
+            
+            print(f"epoch {epoch}/{n_epochs}")
+            print('loss: ', current_loss)
             
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
             # plt.close()
@@ -268,8 +268,8 @@ def main():
     
     n_samples_1d = 30
     n_samples_2d = 100
-    n_epochs = 20000
-    lr = 0.0001
+    n_epochs = 100000
+    lr = 0.01
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     
@@ -378,7 +378,7 @@ def main():
                 lr=lr,
                 config_dict=config_dict,
                 save_folder=base_folder,
-                compute_ntk_every=10,
+                compute_ntk_every=1000,
                 patience=20,
                 min_delta=1e-12
             )
