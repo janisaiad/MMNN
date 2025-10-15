@@ -48,7 +48,7 @@ def func(x):
     return y
 
 
-num_epochs = 1000
+num_epochs = 2000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -141,12 +141,14 @@ for epoch in range(1,1+num_epochs):
             ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
             ntk_eigenvalues[epoch] = eigenvalues
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
-        
-        # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-        if epoch % 1000 == 0:
-            ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-            ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
-        
+    
+    # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
+    if epoch % 1000 == 0:
+        ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+        ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
+        print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
+    
+    if epoch % 50 == 0:
         if epoch % 1000 == 0:
             # Plot the results
             x = np.linspace(-1, 1, 1000)
@@ -254,38 +256,38 @@ if len(ntk_eigenvalues_full) > 0:
     plt.close()
     
     # we plot first 5 and last 5 eigenvalues over time
-    if len(epochs_full) > 1:
-        fig, axes = plt.subplots(10, 1, figsize=(10, 16))
-        fig.suptitle('NTK Eigenvalues Evolution (First 5 and Last 5)', fontsize=14, y=0.995)
-        
-        # we plot first 5 eigenvalues (smallest)
-        for i in range(5):
-            ax = axes[i]
-            eigenvalues_over_time = [ntk_eigenvalues_full[ep][i] for ep in epochs_full]
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
-            ax.set_ylabel(f'λ_{i+1}', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
-        
-        # we plot last 5 eigenvalues (largest)
-        n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
-        for i in range(5):
-            ax = axes[5 + i]
-            idx = n_eigs - 5 + i
-            eigenvalues_over_time = [ntk_eigenvalues_full[ep][idx] for ep in epochs_full]
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
-            ax.set_ylabel(f'λ_{idx+1}', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
-        
-        axes[-1].set_xlabel('Epoch', fontsize=12)
-        plt.tight_layout()
-        plt.savefig('./figures/ntk_first_last_eigenvalues.png', dpi=100)
-        plt.close()
+    fig, axes = plt.subplots(10, 1, figsize=(10, 16))
+    fig.suptitle('NTK Eigenvalues Evolution (First 5 and Last 5)', fontsize=14, y=0.995)
+    
+    # we plot first 5 eigenvalues (smallest)
+    for i in range(5):
+        ax = axes[i]
+        eigenvalues_over_time = [ntk_eigenvalues_full[ep][i] for ep in epochs_full]
+        ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
+        ax.set_ylabel(f'λ_{i+1}', fontsize=10)
+        ax.grid(True, alpha=0.3)
+        ax.set_yscale('log')
+        if i < 4:
+            ax.set_xticklabels([])
+    
+    # we plot last 5 eigenvalues (largest)
+    n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
+    for i in range(5):
+        ax = axes[5 + i]
+        idx = n_eigs - 5 + i
+        eigenvalues_over_time = [ntk_eigenvalues_full[ep][idx] for ep in epochs_full]
+        ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
+        ax.set_ylabel(f'λ_{idx+1}', fontsize=10)
+        ax.grid(True, alpha=0.3)
+        ax.set_yscale('log')
+        if i < 4:
+            ax.set_xticklabels([])
+    
+    axes[-1].set_xlabel('Epoch', fontsize=12)
+    plt.tight_layout()
+    plt.savefig('./figures/ntk_first_last_eigenvalues.png', dpi=100)
+    plt.close()
+    print("NTK first/last 5 eigenvalues plot saved")
 
 # we plot final prediction/fit
 x_plot = np.linspace(-1, 1, 1000)
