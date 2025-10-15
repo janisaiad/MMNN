@@ -477,7 +477,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [2]
+    depths = [4]
     widths = [512, 1024, 2048, 4096, 8192]
     ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
@@ -558,10 +558,10 @@ def main():
             device=device,
             ResNet=False,
             fixWb=True,
-            act_kind=["ReLU"]*depth
+            act_kind=["Sin"]*depth
         )
         for layer in model.fcs:
-            torch.nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
+            torch.nn.init.kaiming_normal_(layer.weight, mode='fan_in')
             torch.nn.init.zeros_(layer.bias)
 
         
@@ -574,8 +574,8 @@ def main():
             "widths_list": widths_list,
             "n_epochs": n_epochs,
             "learning_rate": lr,
-            "optimizer": "Adam",
-            "activation": "ReLU",
+            "optimizer": "SGD",
+            "activation": "Sin",
             "resnet": False,
             "fix_wb": True,
             "n_samples": x_train.shape[0],
