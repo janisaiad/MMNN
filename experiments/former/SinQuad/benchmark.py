@@ -67,7 +67,7 @@ show_plot = False
 
 interval=[-1,1]
 ranks = [1] + [36]*5 + [1]
-widths = [600]*6
+widths = [250]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
                  device = device,
