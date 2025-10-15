@@ -55,6 +55,18 @@ def oscillatory_function_2d(x1, x2):
     
     return result
 
+def poisson_source_term(x, y):
+    """we define the source term f(x,y) for the poisson equation"""
+    term1 = -113 * (np.pi**2) * torch.sin(7*np.pi*x) * torch.sin(8*np.pi*y)  # we compute first term
+    term2 = -117 * (np.pi**2) * torch.sin(6*np.pi*x) * torch.sin(9*np.pi*y)  # we compute second term
+    return term1 + term2  # we return total source
+
+def poisson_exact_solution(x, y):
+    """we define the exact solution u(x,y) for the poisson equation"""
+    term1 = torch.sin(7*np.pi*x) * torch.sin(8*np.pi*y)  # we compute first term
+    term2 = torch.sin(6*np.pi*x) * torch.sin(9*np.pi*y)  # we compute second term
+    return term1 + term2  # we return exact solution
+
 def generate_data_1d(n_samples=100, x_range=(0, 1), device="cuda"):
     """we generate training data for 1d function"""
     x = torch.linspace(x_range[0], x_range[1], n_samples, device=device).reshape(-1, 1)
@@ -75,8 +87,66 @@ def generate_data_2d(n_samples=100, x_range=(-1, 1), device="cuda"):
     y = y / torch.std(y)
     return x, y
 
+def generate_collocation_points(n_points, x_range=(-1, 1), y_range=(-1, 1), device="cuda"):
+    """we generate collocation points uniformly in the domain (-1,1)^2"""
+    x = torch.rand(n_points, 1, device=device) * (x_range[1] - x_range[0]) + x_range[0]  # we sample x coordinates
+    y = torch.rand(n_points, 1, device=device) * (y_range[1] - y_range[0]) + y_range[0]  # we sample y coordinates
+    points = torch.cat([x, y], dim=1)  # we concatenate to form (n_points, 2)
+    return points  # we return collocation points
+
+class PINNWrapper(torch.nn.Module):
+    """we wrap the base network with hard boundary constraint u(x,y) = h(x,y)*cos(πx/2)*cos(πy/2)"""
+    def __init__(self, base_network):
+        super().__init__()
+        self.base_network = base_network  # we store the base network h_theta
+        
+    def forward(self, xy):
+        """we apply hard boundary constraint"""
+        x = xy[:, 0:1]  # we extract x coordinate
+        y = xy[:, 1:2]  # we extract y coordinate
+        
+        h_theta = self.base_network(xy)  # we compute h_theta(x,y)
+        bc_multiplier = torch.cos(np.pi * x / 2) * torch.cos(np.pi * y / 2)  # we compute boundary constraint multiplier
+        
+        u_theta = h_theta * bc_multiplier  # we apply hard constraint
+        return u_theta  # we return constrained output
 
 
+
+
+def compute_pde_residual(model, xy_collocation):
+    """we compute the pde residual R(x,y) = -Δu_θ(x,y) - f(x,y)"""
+    xy = xy_collocation.clone().requires_grad_(True)  # we enable gradient tracking
+    
+    u = model(xy)  # we compute network output u_θ(x,y)
+    
+    # we compute first derivatives ∂u/∂x and ∂u/∂y
+    grad_u = torch.autograd.grad(u.sum(), xy, create_graph=True)[0]  # we compute gradient (N, 2)
+    u_x = grad_u[:, 0:1]  # we extract ∂u/∂x
+    u_y = grad_u[:, 1:2]  # we extract ∂u/∂y
+    
+    # we compute second derivatives ∂²u/∂x² and ∂²u/∂y²
+    u_xx = torch.autograd.grad(u_x.sum(), xy, create_graph=True)[0][:, 0:1]  # we compute ∂²u/∂x²
+    u_yy = torch.autograd.grad(u_y.sum(), xy, create_graph=True)[0][:, 1:2]  # we compute ∂²u/∂y²
+    
+    # we compute laplacian Δu = ∂²u/∂x² + ∂²u/∂y²
+    laplacian_u = u_xx + u_yy  # we sum second derivatives
+    
+    # we compute source term f(x,y)
+    x = xy[:, 0:1]  # we extract x coordinate
+    y = xy[:, 1:2]  # we extract y coordinate
+    f = poisson_source_term(x, y)  # we evaluate source term
+    
+    # we compute residual R = -Δu - f
+    residual = -laplacian_u - f  # we compute pde residual
+    
+    return residual  # we return residual
+
+def pinn_loss(model, xy_collocation):
+    """we compute pinn loss L_PDE = (1/N) Σ R(xi,yi)²"""
+    residual = compute_pde_residual(model, xy_collocation)  # we compute residual at collocation points
+    loss = torch.mean(residual ** 2)  # we compute mean squared residual
+    return loss  # we return pinn loss
 
 def compute_ntk_gram(model, x):
     """we compute ntk using vectorized jacobian computation"""
@@ -113,11 +183,11 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapshots, 
-                                        n_grid=50, grid_range=4.0, use_pca=False, seed=42):
+                                        n_grid=50, grid_range=4.0, use_pca=False, seed=42, use_pinn_loss=False):
     """
     we compute loss landscape along 2 principal directions (PCA) or random directions
     """
-    criterion = torch.nn.MSELoss()
+    criterion = torch.nn.MSELoss()  # we keep MSE for non-PINN mode
     
     params = [p for p in model.parameters() if p.requires_grad]
     
@@ -202,10 +272,14 @@ def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapsho
             w_new = w_init + Alpha[i, j] * d1 + Beta[i, j] * d2
             set_weight_vector(w_new)
             
-            with torch.no_grad():
-                outputs = model(x_train)
-                loss = criterion(outputs, y_train)
+            if use_pinn_loss:
+                loss = pinn_loss(model, x_train)  # we use PINN loss if specified (needs gradients!)
                 loss_landscape[i, j] = loss.item()
+            else:
+                with torch.no_grad():
+                    outputs = model(x_train)  # we use standard MSE loss
+                    loss = criterion(outputs, y_train)
+                    loss_landscape[i, j] = loss.item()
     
     set_weight_vector(w_final)
     
@@ -282,11 +356,11 @@ def plot_2d_landscape_with_trajectory(Alpha, Beta, loss_landscape, trajectory_2d
     
 def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_folder, 
                      compute_ntk_every=10, patience=10, min_delta=1e-12,
-                     store_weight_snapshots=True, snapshot_every=100):
+                     store_weight_snapshots=True, snapshot_every=100, use_pinn=False):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=lr)
-    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(params, lr=lr)
+    criterion = torch.nn.MSELoss()  # we keep for potential non-PINN use
     
     losses = []
     ntk_matrices = {}
@@ -305,9 +379,14 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     print(f"\ntraining: {config_dict['config_name']}")
     print(f"trainable parameters: {sum(p.numel() for p in params)}")
     
-    
-    
-    
+    # we compute initial loss for diagnostics
+    if use_pinn:
+        with torch.no_grad():
+            # we check initial output and residual magnitude
+            sample_output = model(x_train[:10])  # we sample few points
+            print(f"initial network output range: [{sample_output.min():.3e}, {sample_output.max():.3e}]")
+        initial_loss = pinn_loss(model, x_train).item()  # we compute initial PINN loss
+        print(f"initial PINN loss: {initial_loss:.3e}")
     
     best_loss = float('inf')
     patience_counter = 0
@@ -318,8 +397,11 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     for epoch in range(n_epochs):
         optimizer.zero_grad()
         
-        outputs = model(x_train)
-        loss = criterion(outputs, y_train)
+        if use_pinn:
+            loss = pinn_loss(model, x_train)  # we compute PINN loss with PDE residual
+        else:
+            outputs = model(x_train)  # we use standard supervised loss
+            loss = criterion(outputs, y_train)
         
         loss.backward()
         optimizer.step()
@@ -333,11 +415,14 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             weight_snapshots.append(snapshot)
             loss_snapshots.append(current_loss)
             
-        if epoch % (10 * compute_ntk_every) == 0:
+        if epoch % (compute_ntk_every) == 0:
                 
             
             print(f"epoch {epoch}/{n_epochs}")
-            print('loss: ', current_loss)
+            if use_pinn:
+                print(f'PINN loss (PDE residual²): {current_loss:.6e}')  # we show PINN loss
+            else:
+                print(f'MSE loss: {current_loss:.6e}')  # we show MSE loss
             
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
             # plt.close()
@@ -375,7 +460,8 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             model, x_train, y_train, weight_snapshots,
             n_grid=50,
             grid_range=0.8,
-            use_pca=True
+            use_pca=True,
+            use_pinn_loss=use_pinn
         )
         
         landscape_path = os.path.join(save_folder, f"{config_dict['config_name']}_landscape_2d.html")
@@ -431,10 +517,23 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         min_plot_path = os.path.join(save_folder, f"{config_dict['config_name']}_min_eigenvalue.png")
         plt.savefig(min_plot_path, dpi=150)
         plt.close()
-        # plot prediction vs ground truth
+        # we plot prediction vs ground truth
         plt.figure()
-        plt.plot(range(len(y_train)), y_train.cpu().numpy(), 'b-', label='true')
-        plt.plot(range(len(y_train)), model(x_train).detach().cpu().numpy(), 'r--', label='predicted') 
+        with torch.no_grad():
+            predictions = model(x_train).cpu().numpy()  # we compute predictions
+        if use_pinn:
+            # we compute exact solution for comparison
+            x_coords = x_train[:, 0:1]  # we extract x
+            y_coords = x_train[:, 1:2]  # we extract y
+            y_exact = poisson_exact_solution(x_coords, y_coords).cpu().numpy()  # we compute exact solution
+            plt.plot(range(len(y_exact)), y_exact, 'b-', label='exact')  # we plot exact
+            plt.plot(range(len(predictions)), predictions, 'r--', label='predicted')  # we plot predicted
+            # we compute L2 relative error
+            l2_error = np.linalg.norm(predictions.flatten() - y_exact.flatten()) / np.linalg.norm(y_exact.flatten())  # we compute relative error
+            plt.title(f'prediction vs exact (L2 rel error: {l2_error:.2e})')  # we add error to title
+        else:
+            plt.plot(range(len(y_train)), y_train.cpu().numpy(), 'b-', label='true')  # we plot true
+            plt.plot(range(len(predictions)), predictions, 'r--', label='predicted')  # we plot predicted
         plt.legend()
         plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_prediction.png"))
         plt.close()
@@ -484,8 +583,19 @@ def main():
     
     n_samples_1d = 30
     n_samples_2d = 100
+    n_collocation_points = 1000  # we set number of collocation points for PINN
     n_epochs = 100000
-    lr = 0.001
+    use_pinn_mode = True  # we enable PINN mode for Poisson equation
+    
+    # we adjust hyperparameters based on mode
+    if use_pinn_mode:
+        lr = 0.0001  # we use smaller learning rate for PINN (large gradients from source term)
+        early_stop_patience = 500  # we increase patience for PINN (loss decreases slowly)
+        early_stop_min_delta = 1e-8  # we relax convergence criterion
+    else:
+        lr = 0.001  # we use standard learning rate
+        early_stop_patience = 20  # we use standard patience
+        early_stop_min_delta = 1e-12  # we use tight convergence criterion
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     
@@ -498,20 +608,43 @@ def main():
     print("starting mmnn training experiments")
     print("="*80)
     
-    x_train_1d, y_train_1d = generate_data_1d(n_samples_1d, device=device)
-    print(f"\ngenerated 1d data: x {x_train_1d.shape}, y {y_train_1d.shape}")
-    
-    x_train_2d, y_train_2d = generate_data_2d(n_samples_2d, device=device)
-    print(f"generated 2d data: x {x_train_2d.shape}, y {y_train_2d.shape}")
-    
-    to_plot = y_train_2d.cpu().numpy()
-    plt.figure()
-    plt.plot(range(n_samples_2d), to_plot)
-    plt.xlabel('sample index')
-    plt.ylabel('x2')
-    plt.title('2d data')
-    plt.savefig(os.path.join(base_folder, "2d_data.png"))
-    plt.close()
+    if use_pinn_mode:
+        # we generate collocation points for PINN training
+        x_collocation = generate_collocation_points(n_collocation_points, device=device)  # we generate collocation points
+        print(f"\ngenerated collocation points: {x_collocation.shape}")
+        
+        # we visualize collocation points
+        plt.figure(figsize=(8, 8))
+        plt.scatter(x_collocation[:, 0].cpu().numpy(), x_collocation[:, 1].cpu().numpy(), 
+                   s=1, alpha=0.5, c='blue')  # we plot collocation points
+        plt.xlim(-1, 1)
+        plt.ylim(-1, 1)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'collocation points (N={n_collocation_points})')
+        plt.grid(True, alpha=0.3)
+        plt.savefig(os.path.join(base_folder, "collocation_points.png"))
+        plt.close()
+        
+        # we also generate test points for evaluation
+        x_test = generate_collocation_points(500, device=device)  # we generate test points
+        y_test = poisson_exact_solution(x_test[:, 0:1], x_test[:, 1:2])  # we compute exact solution
+        print(f"generated test points: {x_test.shape}")
+    else:
+        x_train_1d, y_train_1d = generate_data_1d(n_samples_1d, device=device)
+        print(f"\ngenerated 1d data: x {x_train_1d.shape}, y {y_train_1d.shape}")
+        
+        x_train_2d, y_train_2d = generate_data_2d(n_samples_2d, device=device)
+        print(f"generated 2d data: x {x_train_2d.shape}, y {y_train_2d.shape}")
+        
+        to_plot = y_train_2d.cpu().numpy()
+        plt.figure()
+        plt.plot(range(n_samples_2d), to_plot)
+        plt.xlabel('sample index')
+        plt.ylabel('x2')
+        plt.title('2d data')
+        plt.savefig(os.path.join(base_folder, "2d_data.png"))
+        plt.close()
     
     
     
@@ -519,13 +652,21 @@ def main():
     for depth in depths:
         for width in widths:
             for rank in ranks:
-                for data_type in ["2d"]:
+                if use_pinn_mode:
                     configs.append({
                         "depth": depth,
                         "width": width,
                         "rank": rank,
-                        "data_type": data_type
+                        "data_type": "pinn"
                     })
+                else:
+                    for data_type in ["2d"]:
+                        configs.append({
+                            "depth": depth,
+                            "width": width,
+                            "rank": rank,
+                            "data_type": data_type
+                        })
     
     print(f"\ntotal configurations: {len(configs)}")
     
@@ -538,7 +679,11 @@ def main():
         
         pbar.set_description(f"D:{depth} W:{width} R:{rank} T:{data_type}")
         
-        if data_type == "1d":
+        if data_type == "pinn":
+            input_dim = 2  # we use 2d for Poisson equation
+            x_train = x_collocation  # we use collocation points
+            y_train = None  # we don't need labels for PINN
+        elif data_type == "1d":
             input_dim = 1
             x_train = x_train_1d
             y_train = y_train_1d
@@ -552,7 +697,7 @@ def main():
         
         config_name = f"d{depth}_w{width}_r{rank}_{data_type}"
         
-        model = nets.MMNN(
+        base_model = nets.MMNN(
             ranks=ranks_list,
             widths=widths_list,
             device=device,
@@ -560,9 +705,15 @@ def main():
             fixWb=True,
             act_kind=["Sin"]*depth
         )
-        for layer in model.fcs:
+        for layer in base_model.fcs:
             torch.nn.init.kaiming_normal_(layer.weight, mode='fan_in')
             torch.nn.init.zeros_(layer.bias)
+        
+        # we wrap with PINN wrapper if using PINN mode
+        if use_pinn_mode:
+            model = PINNWrapper(base_model)  # we apply hard boundary constraint
+        else:
+            model = base_model  # we use base model directly
 
         
         config_dict = {
@@ -581,8 +732,9 @@ def main():
             "n_samples": x_train.shape[0],
             "input_dim": input_dim,
             "config_name": config_name,
-            "early_stopping_patience": 20,
-            "early_stopping_min_delta": 1e-12
+            "early_stopping_patience": early_stop_patience,
+            "early_stopping_min_delta": early_stop_min_delta,
+            "use_pinn": use_pinn_mode
         }
         
         try:
@@ -594,12 +746,12 @@ def main():
                 lr=lr,
                 config_dict=config_dict,
                 save_folder=base_folder,
-                compute_ntk_every=1000,
-                patience=20,
-                min_delta=1e-12,
+                compute_ntk_every=100,
+                patience=early_stop_patience,
+                min_delta=early_stop_min_delta,
                 store_weight_snapshots=True,
                 snapshot_every=10,
-                
+                use_pinn=use_pinn_mode
             )
         except Exception as e:
             print(f"error: {e}")
