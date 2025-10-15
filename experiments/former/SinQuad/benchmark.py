@@ -143,13 +143,13 @@ for epoch in range(1,1+num_epochs):
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
     
     # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-    if epoch % 1000 == 0:
+    if epoch % 100 == 0:
         ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
         ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
     
     if epoch % 50 == 0:
-        if epoch % 1000 == 0:
+        if epoch % 100 == 0:
             # Plot the results
             x = np.linspace(-1, 1, 1000)
             y_nn = learned_nn(x)
