@@ -112,122 +112,177 @@ def compute_ntk_gram(model, x):
     
     return ntk_cpu, eigenvalues
 
-
-
-
-
-
-
-
-
-def compute_loss_landscape(model, x_train, y_train, weight_trajectory, layer_idx, 
-                          weight_idx1, weight_idx2, n_grid=50, grid_range=3.0):
-    """we compute the loss landscape around the weight trajectory"""
+def compute_loss_landscape_2d_projection(model, x_train, y_train, weight_snapshots, 
+                                        n_grid=50, grid_range=2.0, use_pca=True, seed=42):
+    """
+    we compute loss landscape along 2 principal directions (PCA) or random directions
+    """
     criterion = torch.nn.MSELoss()
     
-    # we get the trajectory bounds
-    w1_values = [w[0] for w in weight_trajectory]
-    w2_values = [w[1] for w in weight_trajectory]
+    params = [p for p in model.parameters() if p.requires_grad]
     
-    w1_min, w1_max = min(w1_values), max(w1_values)
-    w2_min, w2_max = min(w2_values), max(w2_values)
+    def get_weight_vector():
+        return torch.cat([p.data.view(-1) for p in params])
     
-    # we expand the range a bit
-    w1_center = (w1_min + w1_max) / 2
-    w2_center = (w2_min + w2_max) / 2
-    w1_range = max(abs(w1_max - w1_min), 0.1) * grid_range
-    w2_range = max(abs(w2_max - w2_min), 0.1) * grid_range
+    def set_weight_vector(w_vector):
+        offset = 0
+        for p in params:
+            numel = p.numel()
+            p.data.copy_(w_vector[offset:offset+numel].view(p.shape))
+            offset += numel
     
-    # we create grid
-    w1 = np.linspace(w1_center - w1_range, w1_center + w1_range, n_grid)
-    w2 = np.linspace(w2_center - w2_range, w2_center + w2_range, n_grid)
-    W1, W2 = np.meshgrid(w1, w2)
+    w_final = get_weight_vector().clone()
+    w_init = weight_snapshots[0].clone()
     
-    # we save original weights
-    original_w1 = model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]].item()
-    original_w2 = model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]].item()
+    if use_pca and len(weight_snapshots) > 2:
+        print("using PCA to find principal directions...")
+        
+        # we center the weight snapshots
+        weight_matrix = torch.stack(weight_snapshots)  # shape: (n_snapshots, n_params)
+        weight_centered = weight_matrix - weight_matrix.mean(dim=0)
+        
+        # we compute PCA using SVD
+        U, S, Vt = torch.linalg.svd(weight_centered.T, full_matrices=False)
+        
+        # we take the 2 principal components
+        d1 = U[:, 0]  # first principal component
+        d2 = U[:, 1]  # second principal component
+        
+        # we print explained variance
+        explained_var = (S**2) / (S**2).sum()
+        print(f"PC1 explains {explained_var[0]*100:.2f}% of variance")
+        print(f"PC2 explains {explained_var[1]*100:.2f}% of variance")
+        print(f"PC1+PC2 explain {(explained_var[0]+explained_var[1])*100:.2f}% of variance")
+        
+    else:
+        print("using random directions...")
+        torch.manual_seed(seed)
+        d1 = torch.randn_like(w_final)
+        d1 = d1 / torch.norm(d1)
+        
+        d2 = torch.randn_like(w_final)
+        d2 = d2 - torch.dot(d1, d2) * d1
+        d2 = d2 / torch.norm(d2)
     
-    # we compute loss landscape
-    loss_landscape = np.zeros_like(W1)
+    print(f"d1 norm = {torch.norm(d1):.3f}, d2 norm = {torch.norm(d2):.3f}")
+    print(f"orthogonality: d1·d2 = {torch.dot(d1, d2):.6f}")
+    
+    # we project trajectory
+    trajectory_2d = []
+    for w_snapshot in weight_snapshots:
+        w_diff = w_snapshot - w_init
+        alpha = torch.dot(w_diff, d1).item()
+        beta = torch.dot(w_diff, d2).item()
+        trajectory_2d.append((alpha, beta))
+    
+    alphas = [t[0] for t in trajectory_2d]
+    betas = [t[1] for t in trajectory_2d]
+    
+    print(f"trajectory range α: [{min(alphas):.4f}, {max(alphas):.4f}]")
+    print(f"trajectory range β: [{min(betas):.4f}, {max(betas):.4f}]")
+    
+    # we compute grid centered on trajectory
+    alpha_center = (max(alphas) + min(alphas)) / 2
+    beta_center = (max(betas) + min(betas)) / 2
+    alpha_range = max(abs(max(alphas) - min(alphas)), 0.001) * grid_range
+    beta_range = max(abs(max(betas) - min(betas)), 0.001) * grid_range
+    
+    alpha_grid = np.linspace(alpha_center - alpha_range, alpha_center + alpha_range, n_grid)
+    beta_grid = np.linspace(beta_center - beta_range, beta_center + beta_range, n_grid)
+    
+    Alpha, Beta = np.meshgrid(alpha_grid, beta_grid)
+    loss_landscape = np.zeros_like(Alpha)
+    
+    print(f"computing loss landscape on {n_grid}x{n_grid} grid...")
     
     for i in range(n_grid):
+        if i % 10 == 0:
+            print(f"  row {i}/{n_grid}")
         for j in range(n_grid):
-            model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]] = W1[i, j]
-            model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]] = W2[i, j]
+            w_new = w_init + Alpha[i, j] * d1 + Beta[i, j] * d2
+            set_weight_vector(w_new)
             
             with torch.no_grad():
                 outputs = model(x_train)
                 loss = criterion(outputs, y_train)
                 loss_landscape[i, j] = loss.item()
     
-    # we restore weights
-    model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]] = original_w1
-    model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]] = original_w2
+    set_weight_vector(w_final)
     
-    return W1, W2, loss_landscape
+    print(f"\nLoss landscape: min={loss_landscape.min():.6f}, max={loss_landscape.max():.6f}, mean={loss_landscape.mean():.6f}")
+    
+    return Alpha, Beta, loss_landscape, trajectory_2d
 
-def plot_loss_landscape_with_trajectory(W1, W2, loss_landscape, weight_trajectory, 
-                                        config_name, save_path):
-    """we plot the loss landscape with weight trajectory using plotly"""
+
+
+def plot_2d_landscape_with_trajectory(Alpha, Beta, loss_landscape, trajectory_2d, 
+                                      loss_trajectory, config_name, save_path):
+    """we plot 2d projected loss landscape with training trajectory"""
     
-    # we extract trajectory coordinates and losses
-    w1_traj = [w[0] for w in weight_trajectory]
-    w2_traj = [w[1] for w in weight_trajectory]
-    loss_traj = [w[2] for w in weight_trajectory]
+    alphas = [t[0] for t in trajectory_2d]
+    betas = [t[1] for t in trajectory_2d]
     
-    # we create surface
+    # we create 3d surface
     surface = go.Surface(
-        x=W1, y=W2, z=loss_landscape,
+        x=Alpha, y=Beta, z=loss_landscape,
         colorscale='Viridis',
         opacity=0.9,
-        name='loss landscape'
+        name='loss landscape',
+        colorbar=dict(title='loss', x=1.15)
     )
     
-    # we create trajectory line
+    # we create trajectory line in 3d
     trajectory = go.Scatter3d(
-        x=w1_traj, y=w2_traj, z=loss_traj,
+        x=alphas, y=betas, z=loss_trajectory,
         mode='lines+markers',
-        line=dict(color='black', width=6),
+        line=dict(color='red', width=8),
         marker=dict(
-            size=4,
-            color=list(range(len(w1_traj))),
-            colorscale='Reds',
+            size=5,
+            color=list(range(len(alphas))),
+            colorscale='Hot',
             showscale=True,
-            colorbar=dict(title='epoch')
+            colorbar=dict(title='epoch', x=1.0, len=0.5, y=0.25)
         ),
-        name='weight trajectory'
+        name='training trajectory'
     )
     
-    # we create figure
-    fig = go.Figure(data=[surface, trajectory])
+    # we mark start and end points
+    start_marker = go.Scatter3d(
+        x=[alphas[0]], y=[betas[0]], z=[loss_trajectory[0]],
+        mode='markers',
+        marker=dict(size=10, color='green', symbol='diamond'),
+        name='start'
+    )
+    
+    end_marker = go.Scatter3d(
+        x=[alphas[-1]], y=[betas[-1]], z=[loss_trajectory[-1]],
+        mode='markers',
+        marker=dict(size=10, color='blue', symbol='diamond'),
+        name='end'
+    )
+    
+    fig = go.Figure(data=[surface, trajectory, start_marker, end_marker])
     
     fig.update_layout(
-        title=f'loss landscape with training trajectory - {config_name}',
+        title=f'loss landscape (2d random projection) - {config_name}',
         scene=dict(
-            xaxis_title='weight 1',
-            yaxis_title='weight 2',
+            xaxis_title='direction 1 (α)',
+            yaxis_title='direction 2 (β)',
             zaxis_title='loss',
             camera=dict(eye=dict(x=1.5, y=1.5, z=1.3))
         ),
-        width=1000,
-        height=800
+        width=1200,
+        height=900
     )
     
     fig.write_html(save_path)
-    print(f"saved loss landscape plot to {save_path}")
-    
-    
-    
-    
-    
-    
-    
+    print(f"saved 2d projection landscape to {save_path}")
     
     
     
 def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_folder, 
                      compute_ntk_every=10, patience=10, min_delta=1e-12,
-                     track_weights=True, layer_to_track=1, weight_indices=None):
+                     store_weight_snapshots=True, snapshot_every=100):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=lr)
@@ -237,19 +292,28 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     ntk_matrices = {}
     ntk_eigenvalues = {}
     
-    # we track weight trajectory for visualization
-    weight_trajectory = []
-    if weight_indices is None:
-        # we default to tracking first two trainable weights
-        weight_indices = [(0, 0), (0, 1)]  # [(row1, col1), (row2, col2)]
-        
+    # we store complete weight snapshots for landscape visualization
+    weight_snapshots = []
+    loss_snapshots = []
+    
+    # we save initial weights
+    if store_weight_snapshots:
+        initial_weights = torch.cat([p.data.view(-1).clone() for p in params])
+        weight_snapshots.append(initial_weights)
+        loss_snapshots.append(float('inf'))  # we set placeholder for initial loss
+    
     print(f"\ntraining: {config_dict['config_name']}")
     print(f"trainable parameters: {sum(p.numel() for p in params)}")
+    
+    
+    
+    
     
     best_loss = float('inf')
     patience_counter = 0
     early_stopped = False
     stop_epoch = n_epochs
+    
     
     for epoch in range(n_epochs):
         optimizer.zero_grad()
@@ -263,13 +327,12 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         current_loss = loss.item()
         losses.append(current_loss)
         
-        # we store weight trajectory
-        if track_weights and epoch % 10 == 0:  # we store every 10 epochs
-            w1 = model.fcs[layer_to_track].weight.data[weight_indices[0]].item()
-            w2 = model.fcs[layer_to_track].weight.data[weight_indices[1]].item()
-            weight_trajectory.append((w1, w2, current_loss))
+        # we store weight snapshots
+        if store_weight_snapshots and epoch % snapshot_every == 0:
+            snapshot = torch.cat([p.data.view(-1).clone() for p in params])
+            weight_snapshots.append(snapshot)
+            loss_snapshots.append(current_loss)
             
-        
         if epoch % compute_ntk_every == 0:
                 
             
@@ -303,26 +366,23 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     print(f"final loss: {losses[-1]:.6e}")
     if early_stopped:
         print(f"training stopped early at epoch {stop_epoch}")
+        # we compute and plot 2d projected loss landscape
     
     
-        # we plot loss landscape with trajectory
-    if len(weight_trajectory) > 0:
-        print("computing loss landscape...")
-        W1, W2, loss_landscape = compute_loss_landscape(
-            model, x_train, y_train, weight_trajectory,
-            layer_idx=layer_to_track,
-            weight_idx1=weight_indices[0],
-            weight_idx2=weight_indices[1],
-            n_grid=50,
-            grid_range=2.0
+    if len(weight_snapshots) > 1:
+        print("\ncomputing 2d projected loss landscape...")
+        Alpha, Beta, loss_landscape, trajectory_2d = compute_loss_landscape_2d_projection(
+            model, x_train, y_train, weight_snapshots,
+            n_grid=40,
+            grid_range=0.8,
+            use_pca=True
         )
         
-        landscape_path = os.path.join(save_folder, f"{config_dict['config_name']}_landscape.html")
-        plot_loss_landscape_with_trajectory(
-            W1, W2, loss_landscape, weight_trajectory,
-            config_dict['config_name'], landscape_path
+        landscape_path = os.path.join(save_folder, f"{config_dict['config_name']}_landscape_2d.html")
+        plot_2d_landscape_with_trajectory(
+            Alpha, Beta, loss_landscape, trajectory_2d,
+            loss_snapshots, config_dict['config_name'], landscape_path
         )
-        
         
     plt.close()
     plt.figure()
@@ -424,8 +484,8 @@ def main():
     
     n_samples_1d = 30
     n_samples_2d = 100
-    n_epochs = 1000
-    lr = 0.01
+    n_epochs = 10000
+    lr = 0.001
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     
@@ -537,9 +597,9 @@ def main():
                 compute_ntk_every=1000,
                 patience=20,
                 min_delta=1e-12,
-                track_weights=True,
-                layer_to_track=1,
-                weight_indices=[(0, 0), (0, 1)]
+                store_weight_snapshots=True,
+                snapshot_every=100,
+                
             )
         except Exception as e:
             print(f"error: {e}")
