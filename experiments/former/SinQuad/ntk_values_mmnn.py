@@ -57,7 +57,7 @@ def generate_data_1d(n_samples=100, x_range=(0, 1), device="cuda"):
 def generate_data_2d(n_samples=100, x_range=(-1, 1), device="cuda"):
     """we generate training data for 2d function uniformly on unit circle"""
     # we sample uniformly on the unit circle (radius = 1)
-    theta = 2 * np.pi * torch.linspace(0, 1, n_samples, device=device)
+    theta = np.pi * torch.linspace(0, 1, n_samples, device=device)
     
     x1 = torch.cos(theta)
     x2 = torch.sin(theta)
@@ -66,48 +66,39 @@ def generate_data_2d(n_samples=100, x_range=(-1, 1), device="cuda"):
     y = oscillatory_function_2d(x[:, 0:1], x[:, 1:2])
     return x, y
 
+
+
+
 def compute_ntk_gram(model, x):
-    """we compute the neural tangent kernel gram matrix and its eigenvalues"""
+    """we compute ntk using vectorized jacobian computation"""
     n = x.shape[0]
     params = [p for p in model.parameters() if p.requires_grad]
     
     if len(params) == 0:
-        print("warning: no trainable parameters")
-        ntk_cpu = torch.zeros((n, n), device='cpu')
-        eigenvalues = torch.zeros(n, device='cpu')
-        return ntk_cpu, eigenvalues
+        return torch.zeros((n, n)), torch.zeros(n)
     
-    ntk = torch.zeros((n, n), device=device)
-    
-    # we use functional approach to compute jacobians
+    # we compute all jacobians at once
+    jacobians = []
     for i in range(n):
-        for j in range(n):
-            x_i = x[i:i+1].requires_grad_(True)
-            x_j = x[j:j+1].requires_grad_(True)
-            
-            # we compute outputs
-            y_i = model(x_i)
-            y_j = model(x_j)
-            
-            # we check if gradients exist
-            if not y_i.requires_grad or not y_j.requires_grad:
-                ntk[i, j] = 0.0
-                continue
-            
-            # we compute jacobians for each parameter
-            dot_product = 0.0
-            for p in params:
-                grad_i = torch.autograd.grad(y_i.sum(), p, retain_graph=True, create_graph=False, allow_unused=True)[0]
-                grad_j = torch.autograd.grad(y_j.sum(), p, retain_graph=True, create_graph=False, allow_unused=True)[0]
-                
-                if grad_i is not None and grad_j is not None:
-                    dot_product += torch.sum(grad_i * grad_j)
-            
-            ntk[i, j] = dot_product
+        x_i = x[i:i+1].requires_grad_(True)
+        y_i = model(x_i)
+        
+        if not y_i.requires_grad:
+            jacobians.append(torch.zeros(sum(p.numel() for p in params), device=device))
+            continue
+        
+        grads = torch.autograd.grad(y_i.sum(), params, create_graph=False, allow_unused=True)
+        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device) 
+                         for g, p in zip(grads, params)])
+        jacobians.append(jac)
+    
+    # we stack all jacobians: shape (n, n_params_total)
+    J = torch.stack(jacobians)
+    
+    # we compute ntk as J @ J^T
+    ntk = J @ J.T  # matrix multiplication: much faster!
     
     ntk_cpu = ntk.cpu()
-    
-    # we compute eigenvalues
     eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
     
     return ntk_cpu, eigenvalues
@@ -151,8 +142,11 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         if epoch % compute_ntk_every == 0:
             
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
+            plt.close()
+            plt.figure()
             plt.matshow(ntk)
-            plt.show()
+            plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_ntk_{epoch}.png"))
+            plt.close()
             ntk_matrices[epoch] = ntk
             ntk_eigenvalues[epoch] = eigenvalues
         
