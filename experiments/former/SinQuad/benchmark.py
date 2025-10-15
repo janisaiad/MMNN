@@ -67,7 +67,7 @@ show_plot = False
 
 interval=[-1,1]
 ranks = [1] + [36]*5 + [1]
-widths = [666]*6
+widths = [600]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
                  device = device,
@@ -106,7 +106,7 @@ ntk_eigenvalues={}  # we store ntk eigenvalues min/max
 
 
 
-optimizer = optim.AdamW(model.parameters(), lr=lr_init)
+optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
 criterion = nn.MSELoss()
 
@@ -158,12 +158,12 @@ for epoch in range(1,1+num_epochs):
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
     
     # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-    if epoch % 50 == 0 and min(epoch, 1000) == epoch:
+    if epoch % 50 == 0 and min(epoch, 600) == epoch:
         ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
         ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
     
-    if epoch % 50 == 0:
+    if epoch % 5000 == 0:
         if epoch % 100 == 0:
             # Plot the results
             x = np.linspace(-1, 1, 1000)
@@ -184,7 +184,7 @@ for epoch in range(1,1+num_epochs):
     
             FPN = os.path.join("figuressgd", "SinQuad", f"rank{ranks[-1]}_width{widths[0]}")
             os.makedirs(FPN, exist_ok=True)
-            #plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+            plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
             plt.close()
             if show_plot:
                 plt.show()
