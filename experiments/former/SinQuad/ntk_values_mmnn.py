@@ -107,10 +107,10 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_folder, compute_ntk_every=10, 
-                     patience=10, min_delta=1e-5):
+                     patience=10, min_delta=1e-12):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=lr)
+    optimizer = torch.optim.Adam(params, lr=lr)
     criterion = torch.nn.MSELoss()
     
     losses = []
@@ -145,13 +145,13 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         if epoch % compute_ntk_every == 0:
             
             ntk, eigenvalues = compute_ntk_gram(model, x_train)
-            plt.close()
-            plt.figure()
-            # we add a bar
-            plt.matshow(ntk)
-            plt.colorbar()
-            plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_ntk_{epoch}.png"))
-            plt.close()
+            # plt.close()
+            # plt.figure()
+            # # we add a bar
+            # plt.matshow(ntk)
+            # plt.colorbar()
+            # plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_ntk_{epoch}.png"))
+            # plt.close()
             ntk_matrices[epoch] = ntk
             ntk_eigenvalues[epoch] = eigenvalues
         
@@ -181,6 +181,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_loss.png"))
     plt.close()
     os.makedirs(save_folder, exist_ok=True)
+    
     
     # we create plots of eigenvalues vs epochs
     if len(ntk_eigenvalues) > 0:
@@ -218,7 +219,19 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         min_plot_path = os.path.join(save_folder, f"{config_dict['config_name']}_min_eigenvalue.png")
         plt.savefig(min_plot_path, dpi=150)
         plt.close()
+        # plot prediction vs ground truth
+        plt.figure()
+        plt.plot(range(len(y_train)), y_train.cpu().numpy(), 'b-', label='true')
+        plt.plot(range(len(y_train)), model(x_train).detach().cpu().numpy(), 'r--', label='predicted') 
+        plt.legend()
+        plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_prediction.png"))
+        plt.close()
+        print("\n" + "="*80)
+        print("all experiments completed")
+        print(f"results in: {save_folder}")
+        print("="*80)
         
+            
         print(f"eigenvalue plots saved to {max_plot_path} and {min_plot_path}")
     
     config_path = os.path.join(save_folder, f"{config_dict['config_name']}_config.json")
@@ -249,14 +262,14 @@ def main():
     """we run all training experiments"""
     
     depths = [2]#,4, 6, 8, 10]
-    widths = [ 512,1024,2048]
-    ranks = [5, 10, 15, 20, 25, 30, 40, 50]
+    widths = [2048,4096,8192]
+    ranks = [20, 25, 30, 40, 50]
 
     
     n_samples_1d = 30
     n_samples_2d = 100
-    n_epochs = 2000
-    lr = 0.001
+    n_epochs = 20000
+    lr = 0.0001
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     
@@ -283,6 +296,8 @@ def main():
     plt.title('2d data')
     plt.savefig(os.path.join(base_folder, "2d_data.png"))
     plt.close()
+    
+    
     
     configs = []
     for depth in depths:
@@ -351,7 +366,7 @@ def main():
             "input_dim": input_dim,
             "config_name": config_name,
             "early_stopping_patience": 20,
-            "early_stopping_min_delta": 1e-8
+            "early_stopping_min_delta": 1e-12
         }
         
         try:
@@ -364,19 +379,15 @@ def main():
                 config_dict=config_dict,
                 save_folder=base_folder,
                 compute_ntk_every=10,
-                patience=10,
-                min_delta=1e-5
+                patience=20,
+                min_delta=1e-12
             )
         except Exception as e:
             print(f"error: {e}")
             import traceback
             traceback.print_exc()
             continue
-    
-    print("\n" + "="*80)
-    print("all experiments completed")
-    print(f"results in: {base_folder}")
-    print("="*80)
+        
 
 if __name__ == "__main__":
     main()
