@@ -65,6 +65,8 @@ def generate_data_2d(n_samples=100, x_range=(-1, 1), device="cuda"):
     
     x = torch.stack([x1, x2], dim=1)
     y = oscillatory_function_2d(x[:, 0:1], x[:, 1:2])
+    # we rescale y to have unit variance
+    y = y / torch.std(y)
     return x, y
 
 
@@ -172,7 +174,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     
     plt.close()
     plt.figure()
-    plt.plot(losses)
+    plt.loglog(losses)
     plt.xlabel('epoch', fontsize=12)
     plt.ylabel('loss', fontsize=12)
     plt.title(f'loss evolution - {config_dict["config_name"]}', fontsize=14)
@@ -247,7 +249,7 @@ def main():
     """we run all training experiments"""
     
     depths = [2]#,4, 6, 8, 10]
-    widths = [128, 256, 512]
+    widths = [ 512,1024,2048]
     ranks = [5, 10, 15, 20, 25, 30, 40, 50]
 
     
