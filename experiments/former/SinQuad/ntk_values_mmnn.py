@@ -170,9 +170,17 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     if early_stopped:
         print(f"training stopped early at epoch {stop_epoch}")
     
+    plt.close()
+    plt.figure()
+    plt.plot(losses)
+    plt.xlabel('epoch', fontsize=12)
+    plt.ylabel('loss', fontsize=12)
+    plt.title(f'loss evolution - {config_dict["config_name"]}', fontsize=14)
+    plt.savefig(os.path.join(save_folder, f"{config_dict['config_name']}_loss.png"))
+    plt.close()
     os.makedirs(save_folder, exist_ok=True)
     
-    # we create plot of eigenvalues vs epochs
+    # we create plots of eigenvalues vs epochs
     if len(ntk_eigenvalues) > 0:
         epochs_list = sorted(ntk_eigenvalues.keys())
         max_eigenvalues = []
@@ -183,20 +191,33 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
             max_eigenvalues.append(eigs[-1].item())
             min_eigenvalues.append(eigs[0].item())
         
+        #  maximum eigenvalue
         plt.figure(figsize=(10, 6))
-        plt.plot(epochs_list, max_eigenvalues, 'b-', label='max eigenvalue', linewidth=2)
-        plt.plot(epochs_list, min_eigenvalues, 'r-', label='min eigenvalue', linewidth=2)
+        plt.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
         plt.xlabel('epoch', fontsize=12)
         plt.ylabel('eigenvalue', fontsize=12)
-        plt.title(f'ntk eigenvalues evolution - {config_dict["config_name"]}', fontsize=14)
-        plt.legend(fontsize=10)
+        plt.title(f'ntk maximum eigenvalue evolution - {config_dict["config_name"]}', fontsize=14)
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         
-        plot_path = os.path.join(save_folder, f"{config_dict['config_name']}_eigenvalues.png")
-        plt.savefig(plot_path, dpi=150)
-        plt.show()
-        print(f"eigenvalues plot saved to {plot_path}")
+        max_plot_path = os.path.join(save_folder, f"{config_dict['config_name']}_max_eigenvalue.png")
+        plt.savefig(max_plot_path, dpi=150)
+        plt.close()
+        
+        # minimum eigenvalue
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
+        plt.xlabel('epoch', fontsize=12)
+        plt.ylabel('eigenvalue', fontsize=12)
+        plt.title(f'ntk minimum eigenvalue evolution - {config_dict["config_name"]}', fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        min_plot_path = os.path.join(save_folder, f"{config_dict['config_name']}_min_eigenvalue.png")
+        plt.savefig(min_plot_path, dpi=150)
+        plt.close()
+        
+        print(f"eigenvalue plots saved to {max_plot_path} and {min_plot_path}")
     
     config_path = os.path.join(save_folder, f"{config_dict['config_name']}_config.json")
     with open(config_path, "w") as f:
@@ -231,8 +252,8 @@ def main():
 
     
     n_samples_1d = 30
-    n_samples_2d = 30
-    n_epochs = 200
+    n_samples_2d = 100
+    n_epochs = 2000
     lr = 0.001
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -327,8 +348,8 @@ def main():
             "n_samples": x_train.shape[0],
             "input_dim": input_dim,
             "config_name": config_name,
-            "early_stopping_patience": 10,
-            "early_stopping_min_delta": 1e-5
+            "early_stopping_patience": 20,
+            "early_stopping_min_delta": 1e-8
         }
         
         try:
