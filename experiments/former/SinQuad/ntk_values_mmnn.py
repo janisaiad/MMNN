@@ -12,6 +12,12 @@ import matplotlib
 matplotlib.use('Agg')  # we use non-interactive backend (no GUI needed)
 import matplotlib.pyplot as plt  # NOW we can import pyplot safely
 
+
+# Après les imports existants, ajoutez :
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+
 torch.set_printoptions(
     precision=3,      # we set decimal precision
     threshold=float('inf'),  # we show all elements (no truncation with ...)
@@ -106,8 +112,122 @@ def compute_ntk_gram(model, x):
     
     return ntk_cpu, eigenvalues
 
-def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_folder, compute_ntk_every=10, 
-                     patience=10, min_delta=1e-12):
+
+
+
+
+
+
+
+
+def compute_loss_landscape(model, x_train, y_train, weight_trajectory, layer_idx, 
+                          weight_idx1, weight_idx2, n_grid=50, grid_range=3.0):
+    """we compute the loss landscape around the weight trajectory"""
+    criterion = torch.nn.MSELoss()
+    
+    # we get the trajectory bounds
+    w1_values = [w[0] for w in weight_trajectory]
+    w2_values = [w[1] for w in weight_trajectory]
+    
+    w1_min, w1_max = min(w1_values), max(w1_values)
+    w2_min, w2_max = min(w2_values), max(w2_values)
+    
+    # we expand the range a bit
+    w1_center = (w1_min + w1_max) / 2
+    w2_center = (w2_min + w2_max) / 2
+    w1_range = max(abs(w1_max - w1_min), 0.1) * grid_range
+    w2_range = max(abs(w2_max - w2_min), 0.1) * grid_range
+    
+    # we create grid
+    w1 = np.linspace(w1_center - w1_range, w1_center + w1_range, n_grid)
+    w2 = np.linspace(w2_center - w2_range, w2_center + w2_range, n_grid)
+    W1, W2 = np.meshgrid(w1, w2)
+    
+    # we save original weights
+    original_w1 = model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]].item()
+    original_w2 = model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]].item()
+    
+    # we compute loss landscape
+    loss_landscape = np.zeros_like(W1)
+    
+    for i in range(n_grid):
+        for j in range(n_grid):
+            model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]] = W1[i, j]
+            model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]] = W2[i, j]
+            
+            with torch.no_grad():
+                outputs = model(x_train)
+                loss = criterion(outputs, y_train)
+                loss_landscape[i, j] = loss.item()
+    
+    # we restore weights
+    model.fcs[layer_idx].weight.data[weight_idx1[0], weight_idx1[1]] = original_w1
+    model.fcs[layer_idx].weight.data[weight_idx2[0], weight_idx2[1]] = original_w2
+    
+    return W1, W2, loss_landscape
+
+def plot_loss_landscape_with_trajectory(W1, W2, loss_landscape, weight_trajectory, 
+                                        config_name, save_path):
+    """we plot the loss landscape with weight trajectory using plotly"""
+    
+    # we extract trajectory coordinates and losses
+    w1_traj = [w[0] for w in weight_trajectory]
+    w2_traj = [w[1] for w in weight_trajectory]
+    loss_traj = [w[2] for w in weight_trajectory]
+    
+    # we create surface
+    surface = go.Surface(
+        x=W1, y=W2, z=loss_landscape,
+        colorscale='Viridis',
+        opacity=0.9,
+        name='loss landscape'
+    )
+    
+    # we create trajectory line
+    trajectory = go.Scatter3d(
+        x=w1_traj, y=w2_traj, z=loss_traj,
+        mode='lines+markers',
+        line=dict(color='black', width=6),
+        marker=dict(
+            size=4,
+            color=list(range(len(w1_traj))),
+            colorscale='Reds',
+            showscale=True,
+            colorbar=dict(title='epoch')
+        ),
+        name='weight trajectory'
+    )
+    
+    # we create figure
+    fig = go.Figure(data=[surface, trajectory])
+    
+    fig.update_layout(
+        title=f'loss landscape with training trajectory - {config_name}',
+        scene=dict(
+            xaxis_title='weight 1',
+            yaxis_title='weight 2',
+            zaxis_title='loss',
+            camera=dict(eye=dict(x=1.5, y=1.5, z=1.3))
+        ),
+        width=1000,
+        height=800
+    )
+    
+    fig.write_html(save_path)
+    print(f"saved loss landscape plot to {save_path}")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_folder, 
+                     compute_ntk_every=10, patience=10, min_delta=1e-12,
+                     track_weights=True, layer_to_track=1, weight_indices=None):
     """we train one mmnn configuration with early stopping on plateau"""
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=lr)
@@ -117,6 +237,12 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     ntk_matrices = {}
     ntk_eigenvalues = {}
     
+    # we track weight trajectory for visualization
+    weight_trajectory = []
+    if weight_indices is None:
+        # we default to tracking first two trainable weights
+        weight_indices = [(0, 0), (0, 1)]  # [(row1, col1), (row2, col2)]
+        
     print(f"\ntraining: {config_dict['config_name']}")
     print(f"trainable parameters: {sum(p.numel() for p in params)}")
     
@@ -137,6 +263,12 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
         current_loss = loss.item()
         losses.append(current_loss)
         
+        # we store weight trajectory
+        if track_weights and epoch % 10 == 0:  # we store every 10 epochs
+            w1 = model.fcs[layer_to_track].weight.data[weight_indices[0]].item()
+            w2 = model.fcs[layer_to_track].weight.data[weight_indices[1]].item()
+            weight_trajectory.append((w1, w2, current_loss))
+            
         
         if epoch % compute_ntk_every == 0:
                 
@@ -172,6 +304,26 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     if early_stopped:
         print(f"training stopped early at epoch {stop_epoch}")
     
+    
+        # we plot loss landscape with trajectory
+    if len(weight_trajectory) > 0:
+        print("computing loss landscape...")
+        W1, W2, loss_landscape = compute_loss_landscape(
+            model, x_train, y_train, weight_trajectory,
+            layer_idx=layer_to_track,
+            weight_idx1=weight_indices[0],
+            weight_idx2=weight_indices[1],
+            n_grid=50,
+            grid_range=2.0
+        )
+        
+        landscape_path = os.path.join(save_folder, f"{config_dict['config_name']}_landscape.html")
+        plot_loss_landscape_with_trajectory(
+            W1, W2, loss_landscape, weight_trajectory,
+            config_dict['config_name'], landscape_path
+        )
+        
+        
     plt.close()
     plt.figure()
     plt.loglog(losses)
@@ -258,6 +410,10 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
     
     return results
 
+
+
+
+
 def main():
     """we run all training experiments"""
     
@@ -268,7 +424,7 @@ def main():
     
     n_samples_1d = 30
     n_samples_2d = 100
-    n_epochs = 100000
+    n_epochs = 1000
     lr = 0.01
     
     timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -380,7 +536,10 @@ def main():
                 save_folder=base_folder,
                 compute_ntk_every=1000,
                 patience=20,
-                min_delta=1e-12
+                min_delta=1e-12,
+                track_weights=True,
+                layer_to_track=1,
+                weight_indices=[(0, 0), (0, 1)]
             )
         except Exception as e:
             print(f"error: {e}")
