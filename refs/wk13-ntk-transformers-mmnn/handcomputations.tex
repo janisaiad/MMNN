@@ -359,10 +359,11 @@ And we assume at least isotropic gaussian for the weights without loss of genera
 
 This condition ensures the signal neither vanishes nor explodes as it propagates through the network layers.
 This also means we need to normalize by $\sqrt{r}$ the output of the first MMNN layer.
+We call $x_1$ and $y_1$ the outputs of the first layer unnormalized.
 
-We recall also that $\Theta^{(1)}$ is the arccosine kernel, which has a closed form in function of the correlation $\rho$ between $x$ and $x'$:
+We recall also that $\Sigma^{(1)}$ is the arccosine kernel, which has a closed form in function of the correlation $\rho$ between $x$ and $x'$:
 \[
-\Theta^{(1)}(\rho) =  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\Sigma^{(1)}(\rho) =  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
 \]
 
 We recall also that $\dot{\Theta}^{(1)}(\rho) = \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \dot{\sigma}(\bm{w}^\top x) \dot{\sigma}(\bm{w}^\top x') \right]$. We can compute this exactly when $\bm{w}$ is isotropic gaussian with variance 1:
@@ -370,7 +371,7 @@ We recall also that $\dot{\Theta}^{(1)}(\rho) = \mathbb{E}_{\bm{w}} \left[  \bm{
 
 
 
-In fact a simpler computation takes the expectation of the product of the two derivatives of the ReLU:
+In fact a simple computation takes the expectation of the product of the two derivatives of the ReLU, by independence of $\|\bm{w}\|^2$ and $\mathbb{1}_{\bm{w}^\top x > 0} \cdot \mathbb{1}_{\bm{w}^\top x' > 0}$:
 \begin{align*}
 \dot{\Theta}^{(1)}(\rho) &= \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \dot{\sigma}(\bm{w}^\top x) \dot{\sigma}(\bm{w}^\top x') \right] \\
 &= \mathbb{E}_{\bm{w}} \left[  \bm{w}^\top \bm{w} \cdot \mathbb{1}_{\bm{w}^\top x > 0} \cdot \mathbb{1}_{\bm{w}^\top x' > 0} \right] \\
@@ -383,8 +384,8 @@ We then write $\Theta^{(2)}$ as a function of $\rho$ and $\rho_1$:
 \begin{center}
 \boxed{
 \begin{aligned}
-\Theta^{(2)}(\rho, \rho_1) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \operatorname{Tr}(\Sigma_w)  \left(\frac{1}{2} - \frac{\arccos(\rho)}{2\pi}\right) + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
-\text{with} \quad \Theta^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\Theta^{(2)}(\rho, \rho_1) &= \Theta^{(1)}(\rho) \cdot \sigma_A^2 \operatorname{Tr}(\Sigma_w)  \left(\frac{1}{2} - \frac{\arccos(\rho)}{2\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\rho_1)\|x_1\| \|y_1\|  + 1 \\[1em]
+\text{with} \quad \Sigma^{(1)}(\rho) &=  \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
 \end{aligned}
 }
 \end{center}
@@ -392,6 +393,7 @@ We then write $\Theta^{(2)}$ as a function of $\rho$ and $\rho_1$:
 where $\rho_1$ is the correlation between the outputs of the first layer, that is a random variable and $\rho$ is the correlation between the inputs.
 
 Note that this multiplicative value is between $0$ and $1$, that is we can compute a lot of stuff after concatenating layers and getting some exponential scaling laws.
+We emphasize the fact we multiply by $\|x_1\| \|y_1\|$ which is a random variable, but as we will see, it is independent of the correlation $\rho_1$.
 
 \subsection{Expression for random variables $\rho_1$, $\|x_1\|^2$, $\|y_1\|^2$}
 The output of the 1st layer is a gaussian process of dimension r, where each coordinate is a gaussian process with covariance matrix:
@@ -433,13 +435,14 @@ We ensure that the reader has understood that the correlation of x,y is independ
 \subsubsection{Final result}
 We can then state the final result: For 2 entries x,y in $\mathbb{R}^d$ and a low rank r hidden layer, the NTK for a 2 hidden layer MMNN is:
 
+
 \begin{center}
     
     \newline
 \boxed{
 \begin{aligned}
-\Theta^{(2)}(x,y) &= \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\rho_1)}{\pi}\right)\frac{1}{r}  + \Theta^{(1)}(\rho_1)\|x_1\| \|y_1\| + 1 \\[1em]
-\text{with} \quad \Theta^{(1)}(\rho) &= \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
+\Theta^{(2)}(x,y) &= \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\rho_1)}{\pi}\right)\frac{1}{r}  + \frac{1}{r}\Sigma^{(1)}(\rho_1)\|x_1\| \|y_1\| + 1 \\[1em]
+\text{with} \quad \Sigma^{(1)}(\rho) &= \frac{1}{\pi}\left(\sqrt{1-\rho^2} + \rho(1-\arccos(\rho))\right)
 \end{aligned}
 }
 \end{center}
@@ -452,42 +455,83 @@ where the random variables follow:
 
 \begin{center}
 
-
 \newpage
 \section{Fisher, Kibble distributions and the fake "Curse of Dimensionality"}
 
 \subsection{Distribution of the Correlation Coefficient $r$}
-Fisher derived the exact law of $r$ in 1915, representing the cosine between Gaussian vectors of dimension $n$ with correlation $\rho$:
+Fisher derived the exact law of $r$ in 1915, representing the cosine between Gaussian vectors of dimension $r$ with correlation $\rho$:
 
 \[
-p(r|\rho, n) = \frac{(n-2)\Gamma(n-1)(1-\rho^2)^{\frac{n-1}{2}}(1-r^2)^{\frac{n-4}{2}}}{\sqrt{2\pi}\Gamma(n-\frac{1}{2})(1-\rho r)^{n-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; n-\frac{1}{2}; \frac{1+\rho r}{2}\right)
+p(r|\rho, r) = \frac{(r-2)\Gamma(r-1)(1-\rho^2)^{\frac{r-1}{2}}(1-r^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\Gamma(r-\frac{1}{2})(1-\rho r)^{r-\frac{3}{2}}} \times {}_2F_1\left(\frac{1}{2}, \frac{1}{2}; r-\frac{1}{2}; \frac{1+\rho r}{2}\right)
 \]
+Where $\Gamma$ is the gamma function and ${}_2F_1$ is the hypergeometric function.
 
-For large $n$, Fisher's z-transform gives $z = \text{arctanh}(r) \sim \mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(n-1)}, \frac{1}{n-3}\right)$. The variance of $r$ decreases as $O(1/n)$. When $\rho \sim O(1/\sqrt{n})$, geometric noise masks correlation.
+For large $r$, Fisher's z-transform gives $z = \text{arctanh}(r) \sim \mathcal{N}\left(\text{arctanh}(\rho) + \frac{\rho}{2(r-1)}, \frac{1}{r-3}\right)$. The variance of $r$ decreases as $O(1/r)$. When $\rho \sim O(1/\sqrt{r})$, geometric noise masks correlation.
 
 \subsection{The Kibble Distribution}
 The joint law of correlated chi-squared variables $U=\|X\|^2$ and $V=\|Y\|^2$ follows Kibble's 1941 distribution:
 
 \[
-f(u, v) = \frac{(uv)^{\frac{n/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(n/2) (2(1-\rho^2))^{n/2+1} \rho^{\frac{n/2-1}{2}}} \cdot I_{n/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
+f(u, v) = \frac{(uv)^{\frac{r/2-1}{2}} e^{-\frac{u+v}{2(1-\rho^2)}}}{\Gamma(r/2) (2(1-\rho^2))^{r/2+1} \rho^{\frac{r/2-1}{2}}} \cdot I_{r/2-1}\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right)
+\]
+Where $\Gamma$ is the gamma function and $I_\alpha$ is the modified Bessel function of the first kind.
+
+Mean $\E[U] = r$ and variance $\Var(U) = 2r$ grow linearly. $U/r$ converges to $\mathcal{N}(1, 2/r)$ with polynomial concentration.
+
+
+\subsection{Exact moments and correlation for Kibble variables}
+
+Let $(X_i,Y_i)_{i=1}^r$ be i.i.d. Gaussian pairs with zero mean, unit variances and correlation $\rho$, and define
+\[
+U=\sum_{i=1}^r X_i^2,\qquad V=\sum_{i=1}^r Y_i^2.
+\]
+Then $(U,V)$ follows Kibble's bivariate chi-square law with $r$ degrees of freedom and correlation $\rho$. By Isserlis' (Wick's) theorem (or by expanding $\E[(X_i-\rho Y_i)^n (Y_i)^m]$ recursively):
+\[
+\E[X_i^2]=1,\quad \Var(X_i^2)=2,\quad \E[X_i^2Y_i^2]=1+2\rho^2,\quad \Cov(X_i^2,Y_i^2)=2\rho^2.
+\]
+Using independence across $i$:
+\[
+\E[U]=r,\quad \Var(U)=2r,\qquad \E[V]=r,\quad \Var(V)=2r,
+\]
+\[
+\Cov(U,V)=\sum_{i=1}^r \Cov(X_i^2,Y_i^2)=2r\,\rho^2,
+\]
+\[
+\Corr(U,V)=\frac{\Cov(U,V)}{\sqrt{\Var(U)\Var(V)}}=\frac{2r\rho^2}{\sqrt{(2r)(2r)}}=\rho^2,
+\]
+\[
+\E[UV]=\E[U]\E[V]+\Cov(U,V)=r^2+2r\,\rho^2.
 \]
 
-Mean $\E[U] = n$ and variance $\Var(U) = 2n$ grow linearly. $U/n$ converges to $\mathcal{N}(1, 2/n)$ with polynomial concentration.
 
-\subsection{Product of Kibble Variables}
-The product $W=UV$ has mean $\E[W] = n^2 + 2n\rho^2$. Its variance shows correlation dependence:
+\subsection{Product of Square Roots of Kibble Variables}
+Let $S=\sqrt{U}\sqrt{V}=\|X\|\|Y\|$. Due to correlation between $U$ and $V$, we cannot directly multiply expectations. Instead, using Cauchy-Schwarz inequality:
 
 \[
-\Var\left(\frac{W}{n^2}\right) = \left(\frac{4}{n} + \frac{4}{n^2}\right) + \left(\frac{4}{n} + \frac{32}{n^2} + \frac{32}{n^3}\right)\rho^2 + \left(\frac{4}{n^2} + \frac{16}{n^3}\right)\rho^4 \approx \frac{4(1+\rho^2)}{n}
+\E[S^2] = \E[UV] = \E[U]\E[V] + \Cov(U,V) = r^2 + 2r\rho^2
 \]
 
-For $\rho \neq 0$, variance decays as $O(1/n)$, with $\rho$ preventing extreme concentration.
+Therefore:
+\[
+\E[S] \leq \sqrt{\E[S^2]} = r\sqrt{1 + \frac{2\rho^2}{r}}
+\]
 
-\subsection{Independence Properties}
-The orientation variable $r$ is independent of magnitudes $(U,V)$. Fisher transform and angle $\theta=\arccos(r)$ connect via Gudermannian:
+The variance can be estimated similarly by expanding $(S - \E[S])^2$ and using correlation terms:
 
 \[
-z = \text{arctanh}(r) = \text{gd}^{-1}\left(\frac{\pi}{2} - \theta\right)
+\Var(S) \approx \frac{r}{2}(1 + \rho^2) + O(1)
 \]
+
+This suggests $S/r$ approaches a distribution with mean $O(\sqrt{1 + \frac{2\rho^2}{r}})$ and variance of order $O(1/r)$.
+
+\subsection{Independence Properties and Asymptotic Behavior}
+The orientation variable $r$ is independent of magnitudes $(U,V)$. For the normalized product $S/r$, we have:
+
+\[
+\frac{S}{r} = \frac{\|X\|\|Y\|}{r} \xrightarrow{r \to \infty} 1
+\]
+
+This convergence occurs with fluctuations of order $O(1/\sqrt{r})$, showing that in high dimensions, the normalized product concentrates around 1 regardless of the correlation $\rho$.
+
 
 \end{document}
