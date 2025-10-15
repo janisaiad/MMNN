@@ -477,9 +477,9 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [4]
+    depths = [6]
     widths = [512, 1024, 2048, 4096, 8192]
-    ranks = [5, 10, 15, 20, 25, 30, 40, 50]
+    ranks = [20, 25, 30, 40, 50]
 
     
     n_samples_1d = 30
