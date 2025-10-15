@@ -7,6 +7,36 @@ import matplotlib.pyplot as plt
 import time,os
 import mmnn
 
+def compute_ntk_gram(model, x, device):
+    """we compute ntk using vectorized jacobian computation"""
+    n = x.shape[0]
+    params = [p for p in model.parameters() if p.requires_grad]
+    
+    if len(params) == 0:
+        return torch.zeros((n, n)), torch.zeros(n)
+    
+    jacobians = []
+    for i in range(n):
+        x_i = x[i:i+1].requires_grad_(True)
+        y_i = model(x_i)
+        
+        if not y_i.requires_grad:
+            jacobians.append(torch.zeros(sum(p.numel() for p in params), device=device))
+            continue
+        
+        grads = torch.autograd.grad(y_i.sum(), params, create_graph=False, allow_unused=True)
+        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device) 
+                         for g, p in zip(grads, params)])
+        jacobians.append(jac)
+    
+    J = torch.stack(jacobians)
+    ntk = J @ J.T
+    
+    ntk_cpu = ntk.cpu()
+    eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
+    
+    return ntk_cpu, eigenvalues
+
 # torch.set_default_dtype(torch.float64)
 mydtype = torch.get_default_dtype()
 device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
@@ -57,7 +87,7 @@ errors_train=[]
 errors_test=[]
 errors_test_max=[]
 
-optimizer = optim.SGD(model.parameters(), lr=lr_init)
+optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
 criterion = nn.MSELoss()
 
