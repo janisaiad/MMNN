@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import time,os
 import mmnn
@@ -47,7 +48,7 @@ def func(x):
     return y
 
 
-num_epochs = 3000
+num_epochs = 1000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -87,7 +88,8 @@ errors_train=[]
 errors_test=[]
 errors_test_max=[]
 all_losses=[]  # we store all losses
-ntk_eigenvalues={}  # we store ntk eigenvalues
+ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
+ntk_eigenvalues={}  # we store ntk eigenvalues min/max
 
 optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
@@ -134,11 +136,16 @@ for epoch in range(1,1+num_epochs):
         print("Test errors (MAX and MSE): " + 
               f"{e_max:.2e} and {e_mse:.2e}")
         
-        # we compute NTK every 500 epochs
+        # we compute NTK every 50 epochs (min/max only for print)
         if epoch % 50 == 0:
             ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
             ntk_eigenvalues[epoch] = eigenvalues
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+        
+        # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
+        if epoch % 1000 == 0:
+            ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+            ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         
         if epoch % 1000 == 0:
             # Plot the results
@@ -201,7 +208,7 @@ plt.tight_layout()
 plt.savefig('./figures/error_evolution.png', dpi=100)
 plt.close()
 
-# we plot NTK eigenvalues
+# we plot NTK eigenvalues (min/max)
 if len(ntk_eigenvalues) > 0:
     epochs_list = sorted(ntk_eigenvalues.keys())
     max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
@@ -222,8 +229,63 @@ if len(ntk_eigenvalues) > 0:
     ax2.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('./figures/ntk_eigenvalues.png', dpi=100)
+    plt.savefig('./figures/ntk_eigenvalues_minmax.png', dpi=100)
     plt.close()
+
+# we plot full NTK eigenvalue spectrum (every 1000 epochs)
+if len(ntk_eigenvalues_full) > 0:
+    epochs_full = sorted(ntk_eigenvalues_full.keys())
+    
+    # we create a plot with all eigenvalues at each epoch
+    fig = plt.figure(figsize=(10, 6))
+    
+    for epoch in epochs_full:
+        eigs = ntk_eigenvalues_full[epoch]
+        indices = np.arange(len(eigs))
+        plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
+    
+    plt.xlabel('Eigenvalue Index')
+    plt.ylabel('Eigenvalue (log scale)')
+    plt.title('Full NTK Eigenvalue Spectrum Evolution')
+    plt.legend(loc='best')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('./figures/ntk_full_spectrum.png', dpi=100)
+    plt.close()
+    
+    # we plot first 5 and last 5 eigenvalues over time
+    if len(epochs_full) > 1:
+        fig, axes = plt.subplots(10, 1, figsize=(10, 16))
+        fig.suptitle('NTK Eigenvalues Evolution (First 5 and Last 5)', fontsize=14, y=0.995)
+        
+        # we plot first 5 eigenvalues (smallest)
+        for i in range(5):
+            ax = axes[i]
+            eigenvalues_over_time = [ntk_eigenvalues_full[ep][i] for ep in epochs_full]
+            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
+            ax.set_ylabel(f'λ_{i+1}', fontsize=10)
+            ax.grid(True, alpha=0.3)
+            ax.set_yscale('log')
+            if i < 4:
+                ax.set_xticklabels([])
+        
+        # we plot last 5 eigenvalues (largest)
+        n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
+        for i in range(5):
+            ax = axes[5 + i]
+            idx = n_eigs - 5 + i
+            eigenvalues_over_time = [ntk_eigenvalues_full[ep][idx] for ep in epochs_full]
+            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
+            ax.set_ylabel(f'λ_{idx+1}', fontsize=10)
+            ax.grid(True, alpha=0.3)
+            ax.set_yscale('log')
+            if i < 4:
+                ax.set_xticklabels([])
+        
+        axes[-1].set_xlabel('Epoch', fontsize=12)
+        plt.tight_layout()
+        plt.savefig('./figures/ntk_first_last_eigenvalues.png', dpi=100)
+        plt.close()
 
 # we plot final prediction/fit
 x_plot = np.linspace(-1, 1, 1000)
