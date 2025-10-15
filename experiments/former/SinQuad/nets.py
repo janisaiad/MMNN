@@ -152,7 +152,7 @@ class MMNN(nn.Module):
         self.scalings = []
         for fc in self.fcs:
             fan_in = fc.weight.shape[1]
-            self.scalings.append(1.0 / torch.sqrt(torch.tensor(fan_in)))
+            self.scalings.append(2.00 / torch.sqrt(torch.tensor(fan_in)))
             # we initialize with unit variance
             torch.nn.init.normal_(fc.weight, mean=0.0, std=1.0)
             torch.nn.init.zeros_(fc.bias)
