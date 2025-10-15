@@ -74,6 +74,19 @@ model = mmnn.MMNN(ranks = ranks,
                  ResNet = False)
 
 
+
+# nous vérifions l'initialisation
+print("\n=== WEIGHT INITIALIZATION CHECK ===")
+for j, layer in enumerate(model.fcs):
+    w_norm = layer.weight.norm().item()
+    b_norm = layer.bias.norm().item()
+    w_mean = layer.weight.mean().item()
+    w_std = layer.weight.std().item()
+    frozen = "FROZEN" if not layer.weight.requires_grad else "trainable"
+    
+    print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
+
+
 x_train = np.linspace(*interval, num_training_samples).reshape([-1, 1])
 y_train = func(x_train)
 x_train = torch.tensor(x_train, device=device, dtype=mydtype)
@@ -91,7 +104,9 @@ all_losses=[]  # we store all losses
 ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
 ntk_eigenvalues={}  # we store ntk eigenvalues min/max
 
-optimizer = optim.Adam(model.parameters(), lr=lr_init)
+
+
+optimizer = optim.AdamW(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
 criterion = nn.MSELoss()
 
