@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from model.mmnn.mmnn import MMNN
+from mmnn.mmnn import MMNN
 
 def oscillatory_function_1d(x):
     """
