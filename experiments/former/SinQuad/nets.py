@@ -147,6 +147,16 @@ class MMNN(nn.Module):
                     self.fcs[j].weight.requires_grad = False
                     self.fcs[j].bias.requires_grad = False
         
+                
+        # we store scaling factors for ntk parametrization
+        self.scalings = []
+        for fc in self.fcs:
+            fan_in = fc.weight.shape[1]
+            self.scalings.append(1.0 / torch.sqrt(torch.tensor(fan_in)))
+            # we initialize with unit variance
+            torch.nn.init.normal_(fc.weight, mean=0.0, std=1.0)
+            torch.nn.init.zeros_(fc.bias)
+        
         if "PSinT" in self.act_kind[0]:
             actfuns=[]
             for j in range(self.depth):
@@ -177,12 +187,14 @@ class MMNN(nn.Module):
                     x_id = x + 0
             x = self.fcs[2*j](x)
             
+            x = x * self.scalings[j]
             if "PSinT" in self.act_kind[j]:
                 x = self.actfuns[j](x)
             else:
                 x = myActFunc(x, self.act_kind[j])
                 
             x = self.fcs[2*j+1](x) 
+            x = x * self.scalings[j]
             # if j<self.depth-1:
             #     m = round(x.shape[1]*0.2)
             #     x[:,:m] = torch.relu(x[:,:m])
@@ -193,6 +205,17 @@ class MMNN(nn.Module):
                     # n = min(x.shape[1], x_id.shape[1])
                     # x[:,:n] = x[:,:n] + x_id[:,:n]
         return x
+
+
+
+
+
+
+
+
+
+
+
 
 class FCNN(nn.Module):
     def __init__(self, 
@@ -219,6 +242,7 @@ class FCNN(nn.Module):
             # setattr(self, f"fc{j}", fc)
             fcs.append(fc)
         self.fcs = nn.ModuleList(fcs)
+        
         
         if "PSinT" in self.act_kind[0]:
             actfuns=[]
@@ -267,6 +291,8 @@ class FCNN(nn.Module):
                     # # x=x+x_id
                     
         x = self.fcs[-1](x)
+        
+        
         return x
     
 
