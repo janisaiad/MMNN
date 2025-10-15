@@ -261,7 +261,7 @@ def train_one_config(model, x_train, y_train, n_epochs, lr, config_dict, save_fo
 def main():
     """we run all training experiments"""
     
-    depths = [2]#,4, 6, 8, 10]
+    depths = [6]#,4, 6, 8, 10]
     widths = [2048,4096,8192]
     ranks = [20, 25, 30, 40, 50]
 
@@ -342,7 +342,7 @@ def main():
             device=device,
             ResNet=False,
             fixWb=True,
-            act_kind=["R"]*depth
+            act_kind=["ReLU"]*depth
         )
         for layer in model.fcs:
             torch.nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
