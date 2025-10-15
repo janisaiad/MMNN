@@ -56,8 +56,8 @@ num_test_samples = 1234 # random samples
 # learning rate in epoch k is 
 # lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init=0.001
-lr_gamma=0.9
-lr_step_size= 400
+lr_gamma=0.99
+lr_step_size= 1000
 
 
 # Set this to False if running the code on a remote server.
@@ -158,7 +158,7 @@ for epoch in range(1,1+num_epochs):
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
     
     # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-    if epoch % 100 == 0:
+    if epoch % 50 == 0 and min(epoch, 1000) == epoch:
         ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
         ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
@@ -184,7 +184,8 @@ for epoch in range(1,1+num_epochs):
     
             FPN = os.path.join("figuressgd", "SinQuad", f"rank{ranks[-1]}_width{widths[0]}")
             os.makedirs(FPN, exist_ok=True)
-            plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+            #plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+            plt.close()
             if show_plot:
                 plt.show()
 
