@@ -47,7 +47,7 @@ def func(x):
     return y
 
 
-num_epochs = 20000
+num_epochs = 3000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -158,10 +158,9 @@ for epoch in range(1,1+num_epochs):
             plt.legend(loc="upper center" , fontsize=13,  ncol=2,
                 )
     
-            FPN="./figures/"
-            if not os.path.exists(FPN):
-                os.makedirs(FPN)
-            plt.savefig(f"{FPN}mmnn_epoch{epoch}1D.png", dpi=50)
+            FPN = os.path.join("figures", "SinQuad", f"rank{ranks[-1]}_width{widths[0]}")
+            os.makedirs(FPN, exist_ok=True)
+            plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
             if show_plot:
                 plt.show()
 
