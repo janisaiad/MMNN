@@ -48,7 +48,7 @@ def func(x):
     return y
 
 
-num_epochs = 20000
+num_epochs = 1000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -66,7 +66,7 @@ lr_step_size= 1000
 show_plot = False
 
 interval=[-1,1]
-ranks = [1] + [36]*5 + [1]
+ranks = [1] + [60]*5 + [1]
 widths = [250]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
@@ -265,7 +265,8 @@ if len(ntk_eigenvalues_full) > 0:
     plt.xlabel('Eigenvalue Index')
     plt.ylabel('Eigenvalue (log scale)')
     plt.title('Full NTK Eigenvalue Spectrum Evolution')
-    plt.legend(loc='best')
+    # i want to put the legend on the right side of the plot
+    plt.legend(loc='right')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig('./figuressgd/ntk_full_spectrum.png', dpi=100)
