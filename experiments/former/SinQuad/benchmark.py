@@ -66,7 +66,7 @@ lr_step_size= 1000
 show_plot = False
 
 interval=[-1,1]
-ranks = [1] + [60]*5 + [1]
+ranks = [1] + [36]*5 + [1]
 widths = [250]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
@@ -120,7 +120,9 @@ for epoch in range(1,1+num_epochs):
     
     all_losses.append(loss.item())  # we store loss
     scheduler.step()
-              
+            
+    if epoch > 300 and loss.item() < 5e-2:
+        optimizer = optim.SGD(model.parameters(), lr=lr_init)
     if epoch % 50 == 0:
         training_error = loss.item()
         print(f"\nEpoch {epoch} / {num_epochs}" + 
