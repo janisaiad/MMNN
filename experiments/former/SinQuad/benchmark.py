@@ -70,6 +70,13 @@ model = mmnn.MMNN(ranks = ranks,
                  device = device,
                  ResNet = False)
 
+# we get the weights and biases of the teacher network
+teacher = mmnn.MMNN(ranks = ranks, 
+                 widths = widths,
+                 device = device,
+                 ResNet = False)
+
+
 def func(x):
     # Convert input to tensor
     if not isinstance(x, torch.Tensor):
@@ -77,31 +84,15 @@ def func(x):
     if len(x.shape) == 1:
         x = x.reshape(-1, 1)
         
-    # Create teacher MLP layers
-    fc_sizes = [ranks[0]]
-    for j in range(len(widths)):
-        fc_sizes += [widths[j], ranks[j+1]]
-        
-    fcs = []
-    for j in range(len(fc_sizes)-1):
-        fc = nn.Linear(fc_sizes[j], fc_sizes[j+1], device=device)
-        # Fix weights and biases
-        if j % 2 == 0:
-            fc.weight.requires_grad = False
-            fc.bias.requires_grad = False
-        fcs.append(fc)
-        
-    # Forward pass
+    # Forward pass through teacher model
     with torch.no_grad():
-        for j in range(len(widths)):
-            x = fcs[2*j](x)
-            x = torch.relu(x)
-            x = fcs[2*j+1](x)
-            
+        x = teacher(x)
         y = x
-        y = y / y.std()
         
     return y.cpu().detach().numpy()
+
+
+
 
 # nous vérifions l'initialisation
 print("\n=== WEIGHT INITIALIZATION CHECK ===")
