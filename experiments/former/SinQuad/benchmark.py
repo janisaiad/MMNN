@@ -48,7 +48,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 1500
+num_epochs = 150
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -360,34 +360,38 @@ x = np.linspace(-1, 1, 1000)
 x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
 
 # For each layer with low rank output
-for layer_idx in range(0, len(teacher.fcs), 2):  # Even indices correspond to first part of each layer
+# very bad complexity O(n^2)
+for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
     output_rank = ranks[layer_idx//2 + 1]
 
     
+    # Plot components in a roughly rectangular grid
+    n_rows = int(np.ceil(np.sqrt(output_rank)))
+    n_cols = int(np.ceil(output_rank / n_rows))
+    
     # Create 6x6 subplot figure
-    fig, axes = plt.subplots(6, 6, figsize=(15, 15))
-    fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank 36)', fontsize=16)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+    fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank {output_rank})', fontsize=16)
     
     # Get layer output
     with torch.no_grad():
         # Apply layers up to current one
         current = x_tensor
         for i in range(layer_idx + 1):
-            current = teacher.fcs[i+1](current)
+            current = teacher.fcs[i](current)
             if i % 2 == 0:  # Apply ReLU after first part of each layer
                 current = torch.relu(current)
         
         output = current.cpu().numpy()
+          
+        for idx in range(output_rank):
+            i = idx // n_cols
+            j = idx % n_cols
+            axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
+            axes[i,j].set_title(f'Component {idx+1}')
+            axes[i,j].grid(True, alpha=0.3)
+            axes[i,j].set_xticks([-1, 0, 1])
             
-        # Plot each component
-        for i in range(6):
-            for j in range(6):
-                idx = i*6 + j
-                axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
-                axes[i,j].set_title(f'Component {idx+1}')
-                axes[i,j].grid(True, alpha=0.3)
-                axes[i,j].set_xticks([-1, 0, 1])
-                
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.savefig(f'./figuressgd/layer_{layer_idx//2}_components.png', dpi=100)
         plt.close()
