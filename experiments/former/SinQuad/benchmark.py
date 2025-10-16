@@ -45,7 +45,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 3000
+num_epochs = 300
 batch_size = 100
 num_training_samples = 500 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -53,8 +53,8 @@ num_test_samples = 1234 # random samples
 # learning rate in epoch k is 
 # lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init=0.001
-lr_gamma=0.99
-lr_step_size= 1000
+lr_gamma=0.9
+lr_step_size= 100
 
 
 # Set this to False if running the code on a remote server.
@@ -344,3 +344,47 @@ plt.close()
 
 print("\nAll plots saved to ./figuressgd/")
 print(f"Total training time: {time.time()-time1:.2f}s")
+# Plot functions learned by each low rank layer
+teacher = mmnn.MMNN(ranks=ranks,
+                   widths=widths, 
+                   device=device,
+                   ResNet=False)
+teacher.load_state_dict(model.state_dict())
+
+x = np.linspace(-1, 1, 1000)
+x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+
+# For each layer with low rank output
+for layer_idx in range(0, len(teacher.fcs), 2):  # Even indices correspond to first part of each layer
+    output_rank = ranks[layer_idx//2 + 1]
+    if output_rank == 36:  # Plot only for layers with rank 36 output
+        
+        # Create 6x6 subplot figure
+        fig, axes = plt.subplots(6, 6, figsize=(15, 15))
+        fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank 36)', fontsize=16)
+        
+        # Get layer output
+        with torch.no_grad():
+            # Apply layers up to current one
+            current = x_tensor
+            for i in range(layer_idx + 1):
+                current = teacher.fcs[i](current)
+                if i % 2 == 0:  # Apply ReLU after first part of each layer
+                    current = torch.relu(current)
+            
+            output = current.cpu().numpy()
+            
+        # Plot each component
+        for i in range(6):
+            for j in range(6):
+                idx = i*6 + j
+                axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
+                axes[i,j].set_title(f'Component {idx+1}')
+                axes[i,j].grid(True, alpha=0.3)
+                axes[i,j].set_xticks([-1, 0, 1])
+                
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig(f'./figuressgd/layer_{layer_idx//2}_components.png', dpi=100)
+        plt.close()
+
+print("Layer component plots saved to ./figuressgd/")
