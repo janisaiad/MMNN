@@ -43,9 +43,6 @@ mydtype = torch.get_default_dtype()
 device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"Training on device: {device}")
 ##############################
-def func(x):
-    y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* x**2)
-    return y
 
 
 num_epochs = 3000
@@ -56,8 +53,8 @@ num_test_samples = 1234 # random samples
 # learning rate in epoch k is 
 # lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init=0.001
-lr_gamma=0.9
-lr_step_size= 100
+lr_gamma=0.99
+lr_step_size= 1000
 
 
 # Set this to False if running the code on a remote server.
@@ -73,7 +70,29 @@ model = mmnn.MMNN(ranks = ranks,
                  device = device,
                  ResNet = False)
 
-
+def func(x):
+    # Create teacher MLP with alternating widths from ranks/widths lists
+    teacher = mmnn.MMNN(ranks=ranks, 
+                       widths=widths,
+                       device=device,
+                       ResNet=False,
+                       fixWb=True)
+    
+    # Convert input to tensor
+    if not isinstance(x, torch.Tensor):
+        x = torch.tensor(x, device=device, dtype=mydtype)
+    if len(x.shape) == 1:
+        x = x.reshape(-1, 1)
+        
+    # Get output from teacher network
+    with torch.no_grad():
+        y = teacher(x)
+        
+    # Convert back to numpy if input was numpy
+    if not isinstance(x, torch.Tensor):
+        y = y.cpu().numpy()
+        
+    return y
 
 # nous vérifions l'initialisation
 print("\n=== WEIGHT INITIALIZATION CHECK ===")
