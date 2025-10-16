@@ -373,7 +373,7 @@ for layer_idx in range(0, len(teacher.fcs), 2):  # Even indices correspond to fi
         # Apply layers up to current one
         current = x_tensor
         for i in range(layer_idx + 1):
-            current = teacher.fcs[i](current)
+            current = teacher.fcs[i+1](current)
             if i % 2 == 0:  # Apply ReLU after first part of each layer
                 current = torch.relu(current)
         
