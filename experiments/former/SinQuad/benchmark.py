@@ -48,7 +48,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 2000
+num_epochs = 1500
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -66,7 +66,7 @@ lr_step_size= 100
 show_plot = False
 
 interval=[-1,1]
-ranks = [1] + [36]*5 + [1]
+ranks = [1] + [15]*5 + [1]
 widths = [666]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
@@ -135,8 +135,8 @@ for epoch in range(1,1+num_epochs):
               f"\nTraining error (MSE): { training_error :.2e}" + 
               f"\nTime used: { time.time() - time1 :.2f}s")
         errors_train.append(training_error)
-        # we compute the std for the last 50 losses
-        losses_std.append(np.std(all_losses[-50:]))
+        # we compute the std for the last 50 losses in the log space
+        losses_std.append(np.std(np.log10(all_losses[-50:])))
 
         def learned_nn(x): # input and output are numpy.ndarray  
             x=x.reshape([-1, 1]) 
@@ -362,22 +362,22 @@ x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
 # For each layer with low rank output
 for layer_idx in range(0, len(teacher.fcs), 2):  # Even indices correspond to first part of each layer
     output_rank = ranks[layer_idx//2 + 1]
-    if output_rank == 36:  # Plot only for layers with rank 36 output
+
+    
+    # Create 6x6 subplot figure
+    fig, axes = plt.subplots(6, 6, figsize=(15, 15))
+    fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank 36)', fontsize=16)
+    
+    # Get layer output
+    with torch.no_grad():
+        # Apply layers up to current one
+        current = x_tensor
+        for i in range(layer_idx + 1):
+            current = teacher.fcs[i](current)
+            if i % 2 == 0:  # Apply ReLU after first part of each layer
+                current = torch.relu(current)
         
-        # Create 6x6 subplot figure
-        fig, axes = plt.subplots(6, 6, figsize=(15, 15))
-        fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank 36)', fontsize=16)
-        
-        # Get layer output
-        with torch.no_grad():
-            # Apply layers up to current one
-            current = x_tensor
-            for i in range(layer_idx + 1):
-                current = teacher.fcs[i](current)
-                if i % 2 == 0:  # Apply ReLU after first part of each layer
-                    current = torch.relu(current)
-            
-            output = current.cpu().numpy()
+        output = current.cpu().numpy()
             
         # Plot each component
         for i in range(6):
