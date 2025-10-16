@@ -110,6 +110,8 @@ optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
 criterion = nn.MSELoss()
 
+has_changed_optimizer = False
+has_changed_optimizer_2 = False
 for epoch in range(1,1+num_epochs):
     for inputs, targets in train_loader:
         optimizer.zero_grad()
@@ -121,11 +123,19 @@ for epoch in range(1,1+num_epochs):
     all_losses.append(loss.item())  # we store loss
     scheduler.step()
             
-    if epoch > 300 and loss.item() < 1e-2:
+    if epoch > 300 and loss.item() < 1e-2 and not has_changed_optimizer:
+        has_changed_optimizer = True
         print("Changing optimizer to SGD")
-        lr=0.0001
         optimizer = optim.SGD(model.parameters(), lr=lr_init)
-                
+    if epoch > 2000 and loss.item() < 4e-3 and has_changed_optimizer and not has_changed_optimizer_2:
+        has_changed_optimizer_2 = True
+        print("Changing optimizer to Adam")
+        lr_init=0.0001
+        lr_gamma=0.99
+        lr_step_size= 20
+        optimizer = optim.Adam(model.parameters(), lr=lr_init)
+        scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+        
     if epoch % 50 == 0:
         training_error = loss.item()
         print(f"\nEpoch {epoch} / {num_epochs}" + 
