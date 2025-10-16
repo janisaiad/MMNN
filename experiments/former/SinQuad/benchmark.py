@@ -45,7 +45,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 3000
+num_epochs = 300
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -71,28 +71,37 @@ model = mmnn.MMNN(ranks = ranks,
                  ResNet = False)
 
 def func(x):
-    # Create teacher MLP with alternating widths from ranks/widths lists
-    teacher = mmnn.MMNN(ranks=ranks, 
-                       widths=widths,
-                       device=device,
-                       ResNet=False,
-                       fixWb=True)
-    
     # Convert input to tensor
     if not isinstance(x, torch.Tensor):
         x = torch.tensor(x, device=device, dtype=mydtype)
     if len(x.shape) == 1:
         x = x.reshape(-1, 1)
         
-    # Get output from teacher network
+    # Create teacher MLP layers
+    fc_sizes = [ranks[0]]
+    for j in range(len(widths)):
+        fc_sizes += [widths[j], ranks[j+1]]
+        
+    fcs = []
+    for j in range(len(fc_sizes)-1):
+        fc = nn.Linear(fc_sizes[j], fc_sizes[j+1], device=device)
+        # Fix weights and biases
+        if j % 2 == 0:
+            fc.weight.requires_grad = False
+            fc.bias.requires_grad = False
+        fcs.append(fc)
+        
+    # Forward pass
     with torch.no_grad():
-        y = teacher(x)
+        for j in range(len(widths)):
+            x = fcs[2*j](x)
+            x = torch.relu(x)
+            x = fcs[2*j+1](x)
+            
+        y = x
+        y = y / y.std()
         
-    # Convert back to numpy if input was numpy
-    if not isinstance(x, torch.Tensor):
-        y = y.cpu().numpy()
-        
-    return y
+    return y.cpu().detach().numpy()
 
 # nous vérifions l'initialisation
 print("\n=== WEIGHT INITIALIZATION CHECK ===")
@@ -176,6 +185,7 @@ for epoch in range(1,1+num_epochs):
         y_true = func(x)
         
         # Calculate errors
+
         e = y_nn - y_true
         e_max = np.max(np.abs(e))
         e_mse = np.mean(e**2)
