@@ -56,8 +56,8 @@ num_test_samples = 1234 # random samples
 # learning rate in epoch k is 
 # lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init=0.001
-lr_gamma=0.99
-lr_step_size= 1000
+lr_gamma=0.9
+lr_step_size= 100
 
 
 # Set this to False if running the code on a remote server.
@@ -66,8 +66,8 @@ lr_step_size= 1000
 show_plot = False
 
 interval=[-1,1]
-ranks = [1] + [36]*5 + [1]
-widths = [666]*6
+ranks = [1] + [36]*1 + [1]
+widths = [666]*2
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
                  device = device,
