@@ -45,9 +45,9 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 300
+num_epochs = 3000
 batch_size = 100
-num_training_samples = 1000 # uniform grid samples
+num_training_samples = 500 # uniform grid samples
 num_test_samples = 1234 # random samples
   
 # learning rate in epoch k is 
@@ -63,33 +63,15 @@ lr_step_size= 1000
 show_plot = False
 
 interval=[-1,1]
-ranks = [1] + [36]*1 + [1]
-widths = [666]*2
+ranks = [1] + [36]*5 + [1]
+widths = [666]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
                  device = device,
                  ResNet = False)
-
-# we get the weights and biases of the teacher network
-teacher = mmnn.MMNN(ranks = ranks, 
-                 widths = widths,
-                 device = device,
-                 ResNet = False)
-
-
 def func(x):
-    # Convert input to tensor
-    if not isinstance(x, torch.Tensor):
-        x = torch.tensor(x, device=device, dtype=mydtype)
-    if len(x.shape) == 1:
-        x = x.reshape(-1, 1)
-        
-    # Forward pass through teacher model
-    with torch.no_grad():
-        x = teacher(x)
-        y = x
-        
-    return y.cpu().detach().numpy()
+    y = np.cos(36*np.pi* x) - 0.8*np.cos(12*np.pi* x)
+    return y
 
 
 
