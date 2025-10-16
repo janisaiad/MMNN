@@ -48,7 +48,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 150
+num_epochs = 1500
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -368,9 +368,12 @@ for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to fi
     # Plot components in a roughly rectangular grid
     n_rows = int(np.ceil(np.sqrt(output_rank)))
     n_cols = int(np.ceil(output_rank / n_rows))
-    
-    # Create 6x6 subplot figure
+    # Create subplot figure with dimensions based on output rank
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+    if n_rows == 1 and n_cols == 1:
+        axes = np.array([[axes]])  # Make 2D array for consistent indexing
+    elif n_rows == 1 or n_cols == 1:
+        axes = axes.reshape(n_rows, n_cols)
     fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank {output_rank})', fontsize=16)
     
     # Get layer output
