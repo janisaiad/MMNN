@@ -34,7 +34,10 @@ def compute_ntk_gram(model, x, device):
     ntk = J @ J.T
     
     ntk_cpu = ntk.cpu()
-    eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
+    try:
+        eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
+    except:
+        eigenvalues = torch.zeros(ntk_cpu.shape[0])
     
     return ntk_cpu, eigenvalues
 
@@ -45,9 +48,9 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 3000
+num_epochs = 10000
 batch_size = 100
-num_training_samples = 500 # uniform grid samples
+num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
   
 # learning rate in epoch k is 
@@ -70,7 +73,7 @@ model = mmnn.MMNN(ranks = ranks,
                  device = device,
                  ResNet = False)
 def func(x):
-    y = np.cos(36*np.pi* x) - 0.8*np.cos(12*np.pi* x)
+    y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* x**2)
     return y
 
 
@@ -123,19 +126,7 @@ for epoch in range(1,1+num_epochs):
     
     all_losses.append(loss.item())  # we store loss
     scheduler.step()
-            
-    if epoch > 300 and loss.item() < 1e-2 and not has_changed_optimizer:
-        has_changed_optimizer = True
-        print("Changing optimizer to SGD")
-        optimizer = optim.SGD(model.parameters(), lr=lr_init)
-    if epoch > 2000 and loss.item() < 4e-3 and has_changed_optimizer and not has_changed_optimizer_2:
-        has_changed_optimizer_2 = True
-        print("Changing optimizer to Adam")
-        lr_init=0.0001
-        lr_gamma=0.99
-        lr_step_size= 20
-        optimizer = optim.Adam(model.parameters(), lr=lr_init)
-        scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+    
         
     if epoch % 50 == 0:
         training_error = loss.item()
@@ -175,7 +166,7 @@ for epoch in range(1,1+num_epochs):
             print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
     
     # we store full eigenvalue spectrum every 1000 epochs for detailed analysis
-    if epoch % 25 == 0 and min(epoch, 600) == epoch:
+    if epoch % 100 == 0 and min(epoch, 3000) == epoch:
         ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
         ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
         print(f"Stored full NTK spectrum at epoch {epoch}: {len(eigenvalues)} eigenvalues")
