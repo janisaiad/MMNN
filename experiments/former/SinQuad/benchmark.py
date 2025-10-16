@@ -361,10 +361,20 @@ x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
 
 # For each layer with low rank output
 # very bad complexity O(n^2)
-for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
-    output_rank = ranks[layer_idx//2 + 1]
 
+
+
+for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
+    # if layer_idx is odd, we plot the first part of the layer, that means relu(something)
+    # if layer_idx is even, we plot the second part of the layer, that means something
+    # so we need to plot the first part of the layer if layer_idx is even, and the second part of the layer if layer_idx is odd
+    if layer_idx % 2 == 0:
+        output_rank = ranks[layer_idx//2+1]
+    else:
+        output_rank = min(widths[(layer_idx)//2], 36)
     
+
+    print(f"Plotting layer {layer_idx} with output rank {output_rank}")
     # Plot components in a roughly rectangular grid
     n_rows = int(np.ceil(np.sqrt(output_rank)))
     n_cols = int(np.ceil(output_rank / n_rows))
@@ -374,13 +384,13 @@ for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to fi
         axes = np.array([[axes]])  # Make 2D array for consistent indexing
     elif n_rows == 1 or n_cols == 1:
         axes = axes.reshape(n_rows, n_cols)
-    fig.suptitle(f'Functions learned by Layer {layer_idx//2} (rank {output_rank})', fontsize=16)
+    fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
     
     # Get layer output
     with torch.no_grad():
         # Apply layers up to current one
         current = x_tensor
-        for i in range(layer_idx + 1):
+        for i in range(layer_idx ):
             current = teacher.fcs[i](current)
             if i % 2 == 0:  # Apply ReLU after first part of each layer
                 current = torch.relu(current)
@@ -396,7 +406,7 @@ for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to fi
             axes[i,j].set_xticks([-1, 0, 1])
             
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(f'./figuressgd/layer_{layer_idx//2}_components.png', dpi=100)
+        plt.savefig(f'./figuressgd/layer_{layer_idx}_components.png', dpi=100)
         plt.close()
 
 print("Layer component plots saved to ./figuressgd/")
