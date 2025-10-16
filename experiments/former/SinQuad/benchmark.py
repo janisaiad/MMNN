@@ -48,7 +48,7 @@ def func(x):
     return y
 
 
-num_epochs = 1000
+num_epochs = 3000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -67,7 +67,7 @@ show_plot = False
 
 interval=[-1,1]
 ranks = [1] + [36]*5 + [1]
-widths = [250]*6
+widths = [666]*6
 model = mmnn.MMNN(ranks = ranks, 
                  widths = widths,
                  device = device,
@@ -121,8 +121,11 @@ for epoch in range(1,1+num_epochs):
     all_losses.append(loss.item())  # we store loss
     scheduler.step()
             
-    if epoch > 300 and loss.item() < 5e-2:
+    if epoch > 300 and loss.item() < 1e-2:
+        print("Changing optimizer to SGD")
+        lr=0.0001
         optimizer = optim.SGD(model.parameters(), lr=lr_init)
+                
     if epoch % 50 == 0:
         training_error = loss.item()
         print(f"\nEpoch {epoch} / {num_epochs}" + 
