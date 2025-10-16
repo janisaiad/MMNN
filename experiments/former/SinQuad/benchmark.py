@@ -45,7 +45,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 300
+num_epochs = 3000
 batch_size = 100
 num_training_samples = 500 # uniform grid samples
 num_test_samples = 1234 # random samples
