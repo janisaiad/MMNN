@@ -48,7 +48,7 @@ print(f"Training on device: {device}")
 ##############################
 
 
-num_epochs = 10000
+num_epochs = 2000
 batch_size = 100
 num_training_samples = 1000 # uniform grid samples
 num_test_samples = 1234 # random samples
@@ -108,7 +108,7 @@ all_losses=[]  # we store all losses
 ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
 ntk_eigenvalues={}  # we store ntk eigenvalues min/max
 
-
+losses_std = []
 
 optimizer = optim.Adam(model.parameters(), lr=lr_init)
 scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
@@ -135,7 +135,9 @@ for epoch in range(1,1+num_epochs):
               f"\nTraining error (MSE): { training_error :.2e}" + 
               f"\nTime used: { time.time() - time1 :.2f}s")
         errors_train.append(training_error)
-    
+        # we compute the std for the last 50 losses
+        losses_std.append(np.std(all_losses[-50:]))
+
         def learned_nn(x): # input and output are numpy.ndarray  
             x=x.reshape([-1, 1]) 
             input_data = torch.tensor(x, dtype=mydtype).to(device)
@@ -232,6 +234,18 @@ plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
 plt.savefig('./figuressgd/error_evolution.png', dpi=100)
+plt.close()
+
+
+# we plot losses std
+fig=plt.figure(figsize=(8,5))
+plt.plot(np.linspace(1,m,m)*50, losses_std, 'b-', linewidth=2)
+plt.xlabel('Epoch')
+plt.ylabel('Loss Std')
+plt.title('Loss Std Evolution')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('./figuressgd/loss_std_evolution.png', dpi=100)
 plt.close()
 
 # we plot NTK eigenvalues (min/max)
