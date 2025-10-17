@@ -308,8 +308,8 @@ for config in configs[:1]:
     if len(ntk_matrices) > 0:
         # we convert epoch keys to strings for npz format
         ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
-        np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
-        print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
+        #np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
+        #print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
         # we also save epochs list for reference
         ntk_epochs = sorted(ntk_matrices.keys())
         print(f"NTK matrices stored at epochs: {ntk_epochs}")
@@ -318,9 +318,9 @@ for config in configs[:1]:
     # we save model parameters evolution
     if len(parameters_snapshots) > 0:
         # we convert epoch keys to strings for npz format
-        params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
-        np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
-        print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
+        #params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
+        #np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
+        #print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
         # we also save epochs list for reference
         params_epochs = sorted(parameters_snapshots.keys())
         print(f"Parameters stored at epochs: {params_epochs}")
