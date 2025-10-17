@@ -192,7 +192,7 @@ for epoch in range(1,1+num_epochs):
             plt.legend(loc="upper center" , fontsize=13,  ncol=2,
                 )
     
-            FPN = os.path.join("figuressgd", "SinQuad", f"rank{ranks[-1]}_width{widths[0]}")
+            FPN = os.path.join("figures","largescaletraining","SinQuad", f"rank{ranks[-1]}_width{widths[0]}")
             os.makedirs(FPN, exist_ok=True)
             plt.savefig(os.path.join(FPN, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
             plt.close()
@@ -216,7 +216,7 @@ plt.ylabel('Loss (log scale)')
 plt.title('Training Loss Evolution')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('./figuressgd/loss_evolution.png', dpi=100)
+plt.savefig('./figures","largescaletraining","loss_evolution.png', dpi=100)
 plt.close()
 
 # we plot errors
@@ -233,7 +233,7 @@ plt.title('Error Evolution')
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig('./figuressgd/error_evolution.png', dpi=100)
+plt.savefig('./figures",'largescaletraining","error_evolution.png', dpi=100)
 plt.close()
 
 
@@ -245,7 +245,7 @@ plt.ylabel('Loss Std')
 plt.title('Loss Std Evolution')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('./figuressgd/loss_std_evolution.png', dpi=100)
+plt.savefig('./figures",'largescaletraining","loss_std_evolution.png', dpi=100)
 plt.close()
 
 # we plot NTK eigenvalues (min/max)
@@ -269,7 +269,7 @@ if len(ntk_eigenvalues) > 0:
     ax2.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('./figuressgd/ntk_eigenvalues_minmax.png', dpi=100)
+    plt.savefig('./figures",'largescaletraining","ntk_eigenvalues_minmax.png', dpi=100)
     plt.close()
 
 # we plot full NTK eigenvalue spectrum (every 1000 epochs)
@@ -291,7 +291,7 @@ if len(ntk_eigenvalues_full) > 0:
     plt.legend(loc='right')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig('./figuressgd/ntk_full_spectrum.png', dpi=100)
+    plt.savefig('./figures",'largescaletraining","ntk_full_spectrum.png', dpi=100)
     plt.close()
     
     # we plot first 5 and last 5 eigenvalues over time
@@ -324,7 +324,7 @@ if len(ntk_eigenvalues_full) > 0:
     
     axes[-1].set_xlabel('Epoch', fontsize=12)
     plt.tight_layout()
-    plt.savefig('./figuressgd/ntk_first_last_eigenvalues.png', dpi=100)
+    plt.savefig('./figures",'largescaletraining","ntk_first_last_eigenvalues.png', dpi=100)
     plt.close()
     print("NTK first/last 5 eigenvalues plot saved")
 
@@ -344,10 +344,10 @@ plt.title('Final Prediction vs True Function')
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig('./figuressgd/final_prediction.png', dpi=100)
+plt.savefig('./figures",'largescaletraining","final_prediction.png', dpi=100)
 plt.close()
 
-print("\nAll plots saved to ./figuressgd/")
+print("\nAll plots saved to ./figures",'largescaletraining","")
 print(f"Total training time: {time.time()-time1:.2f}s")
 # Plot functions learned by each low rank layer
 teacher = mmnn.MMNN(ranks=ranks,
@@ -406,7 +406,7 @@ for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to fi
             axes[i,j].set_xticks([-1, 0, 1])
             
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(f'./figuressgd/layer_{layer_idx}_components.png', dpi=100)
+        plt.savefig(f'./figures",'largescaletraining","layer_{layer_idx}_components.png', dpi=100)
         plt.close()
 
-print("Layer component plots saved to ./figuressgd/")
+print("Layer component plots saved to ./figures",'largescaletraining","")
