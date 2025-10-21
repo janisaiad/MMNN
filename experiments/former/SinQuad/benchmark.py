@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
+# ---
+
+# %%
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,11 +19,93 @@ import matplotlib.pyplot as plt
 import time
 import os
 import json
-import mmnn
+
+
+# %%
+from google.colab import drive
+drive.mount('/content/drive')
+
+
+# %%
+
+class MMNN(nn.Module):
+    def __init__(self, 
+                 ranks = [1] + [16]*5 + [1], 
+                 widths = [366]*6,
+                 device = "cuda", 
+                 ResNet = False,
+                 fixWb = True):
+        super().__init__()
+        """
+        A class to configure the neural network model.
+    
+        Attributes:
+            ranks (list[int]): A list where the i-th element represents the output dimension of the i-th layer.
+                               For the j-th layer, ranks[j-1] is the input dimension and ranks[j] is the output dimension.
+            
+            widths (list[int]): A list where each element specifies the width of the corresponding layer.
+            
+            device (str): The device (CPU/GPU) on which the PyTorch code will be executed.
+            
+            ResNet (bool): Indicates whether to use ResNet architecture, which includes identity connections between layers.
+            
+            fixWb (bool): If True, the weights and biases are not updated during training.
+        """
+        
+        self.ranks = ranks # 
+        self.widths = widths
+        self.ResNet = ResNet
+        self.depth = len(widths)
+        
+        fc_sizes = [ ranks[0] ] 
+        for j in range(self.depth):
+            fc_sizes += [ widths[j], ranks[j+1] ]
+
+        fcs=[]
+        for j in range(len(fc_sizes)-1):
+            fc = nn.Linear(fc_sizes[j],
+                           fc_sizes[j+1], device=device) 
+            # setattr(self, f"fc{j}", fc)
+            fcs.append(fc)
+        self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
+        
+        if fixWb: # if True, the weights and biases are not updated during training
+            for j in range(len(fcs)):
+                if j % 2 == 0:
+                    self.fcs[j].weight.requires_grad = False
+                    self.fcs[j].bias.requires_grad = False
+ 
+
+    def forward(self, x):
+        for j in range(self.depth):
+            if self.ResNet:
+                if 0 < j < self.depth-1:
+                    x_id = x + 0
+            x = self.fcs[2*j](x)
+            x = torch.relu(x)
+            x = self.fcs[2*j+1](x) 
+            if self.ResNet:
+                if 0 < j < self.depth-1:
+                    n = min(x.shape[1], x_id.shape[1])
+                    x[:,:n] = x[:,:n] + x_id[:,:n]
+        return x
+
+# %%
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.optim.lr_scheduler import StepLR
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import time
+import os
+import json
+
 
 def compute_ntk_gram(model, x, device):
     """we compute ntk using vectorized jacobian computation
-    
+
     to load saved ntk matrices:
         data = np.load('ntk_matrices.npz')
         ntk_at_epoch_100 = data['epoch_100']  # loads ntk matrix at epoch 100
@@ -20,33 +113,33 @@ def compute_ntk_gram(model, x, device):
     """
     n = x.shape[0]
     params = [p for p in model.parameters() if p.requires_grad]
-    
+
     if len(params) == 0:
         return torch.zeros((n, n)), torch.zeros(n)
-    
+
     jacobians = []
     for i in range(n):
         x_i = x[i:i+1].requires_grad_(True)
         y_i = model(x_i)
-        
+
         if not y_i.requires_grad:
             jacobians.append(torch.zeros(sum(p.numel() for p in params), device=device))
             continue
-        
+
         grads = torch.autograd.grad(y_i.sum(), params, create_graph=False, allow_unused=True)
-        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device) 
+        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device)
                          for g, p in zip(grads, params)])
         jacobians.append(jac)
-    
+
     J = torch.stack(jacobians)
     ntk = J @ J.T
-    
+
     ntk_cpu = ntk.cpu()
     try:
         eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
     except:
         eigenvalues = torch.zeros(ntk_cpu.shape[0])
-    
+
     return ntk_cpu, eigenvalues
 
 # torch.set_default_dtype(torch.float64)
@@ -59,8 +152,8 @@ print(f"Training on device: {device}")
 configs = []
 for lr_init in [0.001, 0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [10,8,6,4,2]:
-            for hidden_width in [1024,666,512,256,128,64]:
+        for num_layers in [6,8,12,15,20,25]:
+            for hidden_width in [4096,2048,1024,777,512,256,128,64]:
                 for hidden_rank in [50,36,30,20,15,10,5]:
                     configs.append({
                         # architecture hyperparameters
@@ -70,22 +163,22 @@ for lr_init in [0.001, 0.0001, 0.00001]:
                         "input_rank": 1,
                         "output_rank": 1,
                         "use_resnet": False,
-                        
+
                         # training hyperparameters
-                        "num_epochs": 5000,
+                        "num_epochs": 3000,
                         "batch_size": batch_size,
                         "num_training_samples": 1000,
                         "num_test_samples": 1234,
-                        
+
                         # learning rate schedule
                         "lr_init": 0.001,
                         "lr_gamma": 0.9,
                         "lr_step_size": 100,
-                        
+
                         # problem setup
                         "interval": [-1, 1],
                         "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
-                        
+
                         # monitoring
                         "show_plot": False,
                         "device": str(device),
@@ -105,29 +198,29 @@ config = {
     "input_rank": 1,  # rank of input layer
     "output_rank": 1,  # rank of output layer
     "use_resnet": False,  # whether to use resnet architecture
-    
+
     # training hyperparameters
     "num_epochs": 3000,
     "batch_size": 100,
     "num_training_samples": 1000,  # uniform grid samples
     "num_test_samples": 1234,  # random samples
-    
+
     # learning rate schedule: lr_init*lr_gamma**floor(k/lr_step_size)
     "lr_init": 0.001,
     "lr_gamma": 0.9,
     "lr_step_size": 100,
-    
+
     # problem setup
     "interval": [-1, 1],
     "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
-    
+
     # monitoring
     "show_plot": False,
     "device": str(device),
     "dtype": str(mydtype)
 }
 '''
-for config in configs[:1]:
+for config in configs:
     print(f"Training config: {config}")
     # we construct ranks and widths from config
     ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
@@ -143,7 +236,7 @@ for config in configs[:1]:
                 f"ntr{config['num_training_samples']}")
 
     # we create output directory
-    output_dir = os.path.join("figures", "mmnn_training", "largescaletraining", folder_name)
+    output_dir = os.path.join("/content/drive/MyDrive/JANIS AIAD Internship - NTK for NN ", "mmnn_training", folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
@@ -156,7 +249,7 @@ for config in configs[:1]:
     print(f"Widths: {widths}")
     print(f"Config: {json.dumps(config, indent=2)}")
 
-    model = mmnn.MMNN(ranks=ranks, 
+    model = MMNN(ranks=ranks,
                     widths=widths,
                     device=device,
                     ResNet=config["use_resnet"])
@@ -175,7 +268,7 @@ for config in configs[:1]:
         w_mean = layer.weight.mean().item()
         w_std = layer.weight.std().item()
         frozen = "FROZEN" if not layer.weight.requires_grad else "trainable"
-        
+
         print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
 
 
@@ -184,7 +277,7 @@ for config in configs[:1]:
     x_train = torch.tensor(x_train, device=device, dtype=mydtype)
     y_train = torch.tensor(y_train, device=device, dtype=mydtype)
     train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
-    train_loader = torch.utils.data.DataLoader(train_dataset, 
+    train_loader = torch.utils.data.DataLoader(train_dataset,
                                                 batch_size=config["batch_size"], shuffle=True)
 
 
@@ -213,33 +306,33 @@ for config in configs[:1]:
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
-        
+
         all_losses.append(loss.item())  # we store loss
         scheduler.step()
-        
-            
+
+
         if epoch % 50 == 0:
             training_error = loss.item()
-            print(f"\nEpoch {epoch} / {config['num_epochs']}" + 
+            print(f"\nEpoch {epoch} / {config['num_epochs']}" +
                 f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
-                f"\nTraining error (MSE): { training_error :.2e}" + 
+                f"\nTraining error (MSE): { training_error :.2e}" +
                 f"\nTime used: { time.time() - time1 :.2f}s")
             errors_train.append(training_error)
             # we compute the std for the last 50 losses in the log space
             losses_std.append(np.std(np.log10(all_losses[-50:])))
 
-            def learned_nn(x):  # input and output are numpy.ndarray  
-                x = x.reshape([-1, 1]) 
+            def learned_nn(x):  # input and output are numpy.ndarray
+                x = x.reshape([-1, 1])
                 input_data = torch.tensor(x, dtype=mydtype).to(device)
                 y = model(input_data)
                 y = y.cpu().detach().numpy().reshape([-1])
-                return y     
-            
-            
+                return y
+
+
             x = np.random.rand(config["num_test_samples"]) * 2 - 1
             y_nn = learned_nn(x)
             y_true = func(x)
-            
+
             # Calculate errors
 
             e = y_nn - y_true
@@ -247,29 +340,29 @@ for config in configs[:1]:
             e_mse = np.mean(e**2)
             errors_test.append(e_mse)
             errors_test_max.append(e_max)
-            
-            print("Test errors (MAX and MSE): " + 
+
+            print("Test errors (MAX and MSE): " +
                 f"{e_max:.2e} and {e_mse:.2e}")
-            
+
             # we compute NTK every 50 epochs (min/max only for print)
             if epoch % 50 == 0:
                 ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
                 ntk_eigenvalues[epoch] = eigenvalues
                 print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
-        
+
         # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
         if epoch % 50 == 0 and min(epoch, 1500) == epoch:
             ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
             ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
             ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
-            
+
             # we store model parameters as a flattened tensor
             params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters()])
             parameters_snapshots[epoch] = params_flat.numpy()
-            
+
             print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
             print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
-        
+
         if epoch % 5000 == 0:
             if epoch % 100 == 0:
                 # Plot the results
@@ -280,24 +373,24 @@ for config in configs[:1]:
                 plt.plot(x, y_true, label='true function')
                 plt.plot(x, y_nn, label='learned network')
                 plt.xticks(np.linspace(*config["interval"], 5))
-                plt.tick_params(axis='both', 
+                plt.tick_params(axis='both',
                                 which='major', labelsize=12)
-                plt.grid(True, axis='both', color='#AAAAAA', 
+                plt.grid(True, axis='both', color='#AAAAAA',
                         linestyle='--', linewidth=1.4)
                 config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
                 plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
                 plt.tight_layout()
                 plt.legend(loc="upper center", fontsize=13, ncol=2)
-        
+
                 plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
                 plt.close()
                 if config["show_plot"]:
                     plt.show()
 
     torch.save(model.state_dict(), os.path.join(output_dir, 'model_parameters.pth'))
-    np.savez(os.path.join(output_dir, "errors.npz"), 
-            test=np.array(errors_test), 
-            testmax=np.array(errors_test_max), 
+    np.savez(os.path.join(output_dir, "errors.npz"),
+            test=np.array(errors_test),
+            testmax=np.array(errors_test_max),
             train=np.array(errors_train),
             all_losses=np.array(all_losses),
             losses_std=np.array(losses_std),
@@ -360,11 +453,11 @@ for config in configs[:1]:
 
     # we plot errors
     fig = plt.figure(figsize=(8, 5))
-    n = len(errors_test) 
+    n = len(errors_test)
     m = len(errors_train)
-    plt.plot(np.linspace(1, m, m)*50, np.log10(errors_train), 
+    plt.plot(np.linspace(1, m, m)*50, np.log10(errors_train),
             label="log10 training error", linewidth=2)
-    plt.plot(np.linspace(1, n, n)*50, np.log10(errors_test), 
+    plt.plot(np.linspace(1, n, n)*50, np.log10(errors_test),
             label="log10 test error", linewidth=2)
     plt.xlabel('Epoch')
     plt.ylabel('log10(error)')
@@ -392,24 +485,24 @@ for config in configs[:1]:
         epochs_list = sorted(ntk_eigenvalues.keys())
         max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
         min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
-        
+
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
         fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
-        
+
         ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
         ax1.set_xlabel('Epoch')
         ax1.set_ylabel('Max Eigenvalue')
         ax1.set_title('NTK Maximum Eigenvalue')
         ax1.grid(True, alpha=0.3)
         ax1.set_yscale('log')
-        
+
         ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
         ax2.set_xlabel('Epoch')
         ax2.set_ylabel('|Min Eigenvalue|')
         ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
         ax2.grid(True, alpha=0.3)
         ax2.set_yscale('log')
-        
+
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
         plt.close()
@@ -417,15 +510,15 @@ for config in configs[:1]:
     # we plot full NTK eigenvalue spectrum (every 1000 epochs)
     if len(ntk_eigenvalues_full) > 0:
         epochs_full = sorted(ntk_eigenvalues_full.keys())
-        
+
         # we create a plot with all eigenvalues at each epoch
         fig = plt.figure(figsize=(10, 6))
-        
+
         for epoch in epochs_full[:10]:
             eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
             indices = np.arange(len(eigs))
             plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
-        
+
         plt.xlabel('Eigenvalue Index')
         plt.ylabel('|Eigenvalue| (log scale)')
         plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
@@ -435,11 +528,11 @@ for config in configs[:1]:
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
         plt.close()
-        
+
         # we plot first 5 and last 5 eigenvalues over time
         fig, axes = plt.subplots(10, 1, figsize=(10, 16))
         fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
-        
+
         # we plot first 5 eigenvalues (smallest)
         for i in range(5):
             ax = axes[i]
@@ -450,7 +543,7 @@ for config in configs[:1]:
             ax.set_yscale('log')
             if i < 4:
                 ax.set_xticklabels([])
-        
+
         # we plot last 5 eigenvalues (largest)
         n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
         for i in range(5):
@@ -463,7 +556,7 @@ for config in configs[:1]:
             ax.set_yscale('log')
             if i < 4:
                 ax.set_xticklabels([])
-        
+
         axes[-1].set_xlabel('Epoch', fontsize=12)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
@@ -492,8 +585,8 @@ for config in configs[:1]:
     print(f"\nAll plots saved to {output_dir}")
     print(f"Total training time: {time.time()-time1:.2f}s")
     # Plot functions learned by each low rank layer
-    teacher = mmnn.MMNN(ranks=ranks,
-                    widths=widths, 
+    teacher = MMNN(ranks=ranks,
+                    widths=widths,
                     device=device,
                     ResNet=config["use_resnet"])
     teacher.load_state_dict(model.state_dict())
@@ -514,7 +607,7 @@ for config in configs[:1]:
             output_rank = ranks[layer_idx//2+1]
         else:
             output_rank = min(widths[(layer_idx)//2], 36)
-        
+
 
         print(f"Plotting layer {layer_idx} with output rank {output_rank}")
         # Plot components in a roughly rectangular grid
@@ -527,7 +620,7 @@ for config in configs[:1]:
         elif n_rows == 1 or n_cols == 1:
             axes = axes.reshape(n_rows, n_cols)
         fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
-        
+
         # Get layer output
         with torch.no_grad():
             # Apply layers up to current one
@@ -536,9 +629,9 @@ for config in configs[:1]:
                 current = teacher.fcs[i](current)
                 if i % 2 == 0:  # Apply ReLU after first part of each layer
                     current = torch.relu(current)
-            
+
             output = current.cpu().numpy()
-            
+
             for idx in range(output_rank):
                 i = idx // n_cols
                 j = idx % n_cols
@@ -546,9 +639,9 @@ for config in configs[:1]:
                 axes[i,j].set_title(f'Component {idx+1}')
                 axes[i,j].grid(True, alpha=0.3)
                 axes[i, j].set_xticks([-1, 0, 1])
-                
+
             plt.tight_layout(rect=[0, 0.03, 1, 0.95])
             plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
             plt.close()
 
-    print(f"Layer component plots saved to {output_dir}")
+        print(f"Layer component plots saved to {output_dir}")
