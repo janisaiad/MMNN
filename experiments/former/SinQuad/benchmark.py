@@ -100,46 +100,45 @@ import time
 import os
 import json
 
-def compute_ntk_gram(model, x_train, device, batch_size=50):
-    """
-    we compute ntk gram matrix efficiently without storing all jacobians
-    """
-    model.eval()
-    n_samples = x_train.shape[0]
-    
-    # we initialize gram matrix on cpu
-    ntk = torch.zeros(n_samples, n_samples)
-    
-    def get_jacobian(idx):
-        """we get jacobian for a single sample"""
-        model.zero_grad()
-        x = x_train[idx:idx+1].to(device)
-        output = model(x).sum()
-        grads = torch.autograd.grad(output, model.parameters(), 
-                                   create_graph=False, retain_graph=False)
-        return torch.cat([g.flatten() for g in grads]).cpu()
-    
-    # we compute gram matrix element by element (or by small blocks)
-    for i in range(n_samples):
-        jac_i = get_jacobian(i)
-        
-        for j in range(i, n_samples):  # we use symmetry
-            jac_j = get_jacobian(j)
-            ntk[i, j] = torch.dot(jac_i, jac_j)
-            ntk[j, i] = ntk[i, j]  # we use symmetry
-            
-            del jac_j
-        
-        del jac_i
-        torch.cuda.empty_cache()
-        
-        if (i + 1) % 10 == 0:
-            print(f"we processed {i+1}/{n_samples} samples")
-    
-    eigenvalues = torch.linalg.eigvalsh(ntk)
-    
-    return ntk, eigenvalues
 
+def compute_ntk_gram(model, x, device):
+    """we compute ntk using vectorized jacobian computation
+
+    to load saved ntk matrices:
+        data = np.load('ntk_matrices.npz')
+        ntk_at_epoch_100 = data['epoch_100']  # loads ntk matrix at epoch 100
+        all_epochs = [int(key.split('_')[1]) for key in data.keys()]  # gets all stored epochs
+    """
+    n = x.shape[0]
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    if len(params) == 0:
+        return torch.zeros((n, n)), torch.zeros(n)
+
+    jacobians = []
+    for i in range(n):
+        x_i = x[i:i+1].requires_grad_(True)
+        y_i = model(x_i)
+
+        if not y_i.requires_grad:
+            jacobians.append(torch.zeros(sum(p.numel() for p in params), device=device))
+            continue
+
+        grads = torch.autograd.grad(y_i.sum(), params, create_graph=False, allow_unused=True)
+        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device)
+                         for g, p in zip(grads, params)])
+        jacobians.append(jac)
+
+    J = torch.stack(jacobians)
+    ntk = J @ J.T
+
+    ntk_cpu = ntk.cpu()
+    try:
+        eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
+    except:
+        eigenvalues = torch.zeros(ntk_cpu.shape[0])
+
+    return ntk_cpu, eigenvalues
 
 # torch.set_default_dtype(torch.float64)
 mydtype = torch.get_default_dtype()
@@ -151,7 +150,7 @@ print(f"Training on device: {device}")
 configs = []
 for lr_init in [0.001, 0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [15,20,25]:
+        for num_layers in [6,8,12,15,20,25]:
             for hidden_width in [4096,2048,1024,777,512,256,128,64]:
                 for hidden_rank in [50,36,30,20,15,10,5]:
                     configs.append({
@@ -344,10 +343,13 @@ for config in configs:
                 f"{e_max:.2e} and {e_mse:.2e}")
 
             # we compute NTK every 50 epochs (min/max only for print)
-            if epoch % 50 == 0:
-                ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-                ntk_eigenvalues[epoch] = eigenvalues
-                print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+            if epoch % 50000 == 0:
+                
+                #ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+                #ntk_eigenvalues[epoch] = eigenvalues
+                ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
+                ntk_eigenvalues_full[epoch] = eigenvalues
+                #print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
 
         # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
         if epoch % 50 == 0 and min(epoch, 1500) == epoch:
