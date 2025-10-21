@@ -100,45 +100,46 @@ import time
 import os
 import json
 
-
-def compute_ntk_gram(model, x, device):
-    """we compute ntk using vectorized jacobian computation
-
-    to load saved ntk matrices:
-        data = np.load('ntk_matrices.npz')
-        ntk_at_epoch_100 = data['epoch_100']  # loads ntk matrix at epoch 100
-        all_epochs = [int(key.split('_')[1]) for key in data.keys()]  # gets all stored epochs
+def compute_ntk_gram(model, x_train, device, batch_size=50):
     """
-    n = x.shape[0]
-    params = [p for p in model.parameters() if p.requires_grad]
+    we compute ntk gram matrix efficiently without storing all jacobians
+    """
+    model.eval()
+    n_samples = x_train.shape[0]
+    
+    # we initialize gram matrix on cpu
+    ntk = torch.zeros(n_samples, n_samples)
+    
+    def get_jacobian(idx):
+        """we get jacobian for a single sample"""
+        model.zero_grad()
+        x = x_train[idx:idx+1].to(device)
+        output = model(x).sum()
+        grads = torch.autograd.grad(output, model.parameters(), 
+                                   create_graph=False, retain_graph=False)
+        return torch.cat([g.flatten() for g in grads]).cpu()
+    
+    # we compute gram matrix element by element (or by small blocks)
+    for i in range(n_samples):
+        jac_i = get_jacobian(i)
+        
+        for j in range(i, n_samples):  # we use symmetry
+            jac_j = get_jacobian(j)
+            ntk[i, j] = torch.dot(jac_i, jac_j)
+            ntk[j, i] = ntk[i, j]  # we use symmetry
+            
+            del jac_j
+        
+        del jac_i
+        torch.cuda.empty_cache()
+        
+        if (i + 1) % 10 == 0:
+            print(f"we processed {i+1}/{n_samples} samples")
+    
+    eigenvalues = torch.linalg.eigvalsh(ntk)
+    
+    return ntk, eigenvalues
 
-    if len(params) == 0:
-        return torch.zeros((n, n)), torch.zeros(n)
-
-    jacobians = []
-    for i in range(n):
-        x_i = x[i:i+1].requires_grad_(True)
-        y_i = model(x_i)
-
-        if not y_i.requires_grad:
-            jacobians.append(torch.zeros(sum(p.numel() for p in params), device=device))
-            continue
-
-        grads = torch.autograd.grad(y_i.sum(), params, create_graph=False, allow_unused=True)
-        jac = torch.cat([g.reshape(-1) if g is not None else torch.zeros(p.numel(), device=device)
-                         for g, p in zip(grads, params)])
-        jacobians.append(jac)
-
-    J = torch.stack(jacobians)
-    ntk = J @ J.T
-
-    ntk_cpu = ntk.cpu()
-    try:
-        eigenvalues = torch.linalg.eigvalsh(ntk_cpu)
-    except:
-        eigenvalues = torch.zeros(ntk_cpu.shape[0])
-
-    return ntk_cpu, eigenvalues
 
 # torch.set_default_dtype(torch.float64)
 mydtype = torch.get_default_dtype()
