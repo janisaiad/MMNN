@@ -22,8 +22,6 @@ import json
 
 
 # %%
-from google.colab import drive
-drive.mount('/content/drive')
 
 
 # %%
@@ -236,7 +234,7 @@ for config in configs:
                 f"ntr{config['num_training_samples']}")
 
     # we create output directory
-    output_dir = os.path.join("/content/drive/MyDrive/JANIS AIAD Internship - NTK for NN ", "mmnn_training", folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training", folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
