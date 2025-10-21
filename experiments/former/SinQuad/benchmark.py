@@ -163,7 +163,7 @@ for lr_init in [0.001, 0.0001, 0.00001]:
                         "use_resnet": False,
 
                         # training hyperparameters
-                        "num_epochs": 3000,
+                        "num_epochs": 120000,
                         "batch_size": batch_size,
                         "num_training_samples": 1000,
                         "num_test_samples": 1234,
