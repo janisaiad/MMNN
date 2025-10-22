@@ -148,7 +148,7 @@ print(f"Training on device: {device}")
 
 # Generate configs with different depths, hidden ranks and widths
 configs = []
-for lr_init in [0.001, 0.0001, 0.00001]:
+for lr_init in [0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
         for num_layers in [6,8,12,15,20,25]:
             for hidden_width in [4096,2048,1024,777,512,256,128,64]:
@@ -310,6 +310,8 @@ for config in configs:
 
 
         if epoch % 50 == 0:
+            # we print the day hour etc ;;
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             training_error = loss.item()
             print(f"\nEpoch {epoch} / {config['num_epochs']}" +
                 f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
@@ -343,7 +345,7 @@ for config in configs:
                 f"{e_max:.2e} and {e_mse:.2e}")
 
             # we compute NTK every 50 epochs (min/max only for print)
-            if epoch % 50000 == 0:
+            if epoch % 5000 == 0:
                 
                 #ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
                 #ntk_eigenvalues[epoch] = eigenvalues
