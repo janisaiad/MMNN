@@ -172,9 +172,9 @@ for lr_init in [0.0001, 0.00001]:
                         "num_test_samples": 1234,
 
                         # learning rate schedule
-                        "lr_init": 0.001,
-                        "lr_gamma": 0.9,
-                        "lr_step_size": 100,
+                        "lr_init": lr_init,
+                        "lr_gamma": 0.99,
+                        "lr_step_size": 1000,
 
                         # problem setup
                         "interval": [-1, 1],
