@@ -50,6 +50,9 @@ class MMNN(nn.Module):
             fixWb (bool): If True, the weights and biases are not updated during training.
         """
         
+        self.product = 1
+        for j in range(1,len(ranks)):
+            self.product *= np.sqrt(widths[j-1] *ranks[j])
         self.ranks = ranks # 
         self.widths = widths
         self.ResNet = ResNet
@@ -86,7 +89,7 @@ class MMNN(nn.Module):
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x[:,:n] = x[:,:n] + x_id[:,:n]
-        return x
+        return x/self.product
 
 # %%
 import torch
@@ -150,7 +153,7 @@ print(f"Training on device: {device}")
 configs = []
 for lr_init in [0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [6,8,12,15,20,25]:
+        for num_layers in [12,15,20,25]:
             for hidden_width in [4096,2048,1024,777,512,256,128,64]:
                 for hidden_rank in [50,36,30,20,15,10,5]:
                     configs.append({
@@ -355,7 +358,7 @@ for config in configs:
 
         # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
         if epoch % 50 == 0 and min(epoch, 1500) == epoch:
-            ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+            ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
             ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
             ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
 
