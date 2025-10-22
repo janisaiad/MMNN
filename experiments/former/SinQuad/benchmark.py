@@ -154,7 +154,7 @@ configs = []
 for lr_init in [0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
         for num_layers in [15,20,25]:
-            for hidden_width in [4096,2048,1024,777,512,256,128,64]:
+            for hidden_width in [1024,777,512,256,128,64]:
                 for hidden_rank in [50,36,30,20,15,10,5]:
                     configs.append({
                         # architecture hyperparameters
