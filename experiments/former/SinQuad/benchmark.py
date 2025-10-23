@@ -153,7 +153,7 @@ print(f"Training on device: {device}")
 configs = []
 for lr_init in [0.0001, 0.00001]:
     for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [15,20,25]:
+        for num_layers in [2,4,6,8,10,12,15,20,25]:
             for hidden_width in [1024,777,512,256,128,64]:
                 for hidden_rank in [50,36,30,20,15,10,5]:
                     configs.append({
@@ -168,8 +168,8 @@ for lr_init in [0.0001, 0.00001]:
                         # training hyperparameters
                         "num_epochs": 120000,
                         "batch_size": batch_size,
-                        "num_training_samples": 1000,
-                        "num_test_samples": 1234,
+                        "num_training_samples": 300,
+                        "num_test_samples": 1000,
 
                         # learning rate schedule
                         "lr_init": lr_init,
