@@ -68,7 +68,7 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 # we set hyperparameters
-num_epochs = 20000
+num_epochs = 1000
 batch_size = 100
 num_training_samples = 1000  # we set uniform grid samples
 num_test_samples = 1234  # we set random samples
@@ -88,7 +88,7 @@ width = widths[0]  # we assume all widths are same
 rank = ranks[1]  # we assume all middle ranks are same
 config_name = f"d{depth}_w{width}_r{rank}_1d"
 
-# we setup paths for data storage
+# we setup paths for data storagein
 timestamp = time.strftime("%Y%m%d_%H%M%S")
 script_dir = os.path.dirname(os.path.abspath(__file__))
 base_folder = os.path.join(script_dir, "../../data/storage/1d_experiments", f"results_1d_{timestamp}")
@@ -179,11 +179,192 @@ for epoch in pbar:
         errors_test.append(e_mse)
         errors_test_max.append(e_max)
         
-        if epoch % 500 == 0:
+        if epoch % 100 == 0:
             print(f"\nepoch {epoch}/{num_epochs} ({epoch/num_epochs*100:.2f}%)")
             print(f"training error (MSE): {training_error:.2e}")
             print(f"test errors (MAX and MSE): {e_max:.2e} and {e_mse:.2e}")
             print(f"time used: {time.time() - time1:.2f}s")
+            
+                        
+                        
+            # we compute loss landscape around final trained parameters
+            print("\n" + "="*80)
+            print("computing loss landscape (2d affine projection)")
+            print("="*80)
+
+            # we create landscape folder
+            landscape_folder = os.path.join(base_folder, "figures", f"landscape_{epoch}")
+            os.makedirs(landscape_folder, exist_ok=True)
+
+            # we extract final trainable parameters as a flat vector
+            trainable_params = [p for p in model.parameters() if p.requires_grad]
+            final_params_flat = torch.cat([p.data.view(-1) for p in trainable_params])  # we flatten all trainable params
+            n_params = final_params_flat.shape[0]
+            print(f"number of trainable parameters: {n_params}")
+
+            # we save final model parameters
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'final_params_flat': final_params_flat,
+                'trainable_param_shapes': [p.shape for p in trainable_params]
+            }, os.path.join(landscape_folder, f"{config_name}_final_model_{epoch}.pt"))
+            print(f"saved final model parameters")
+
+            # we generate 2 random orthogonal directions
+            torch.manual_seed(42)  # we set seed for reproducibility
+            direction1 = torch.randn(n_params, device=device)  # we generate random direction 1
+            direction1 = direction1 / torch.norm(direction1)  # we normalize
+
+            direction2 = torch.randn(n_params, device=device)  # we generate random direction 2
+            direction2 = direction2 - (direction2 @ direction1) * direction1  # we orthogonalize using Gram-Schmidt
+            direction2 = direction2 / torch.norm(direction2)  # we normalize
+
+            print(f"generated 2 orthogonal random directions")
+            print(f"direction 1 norm: {torch.norm(direction1).item():.6f}")
+            print(f"direction 2 norm: {torch.norm(direction2).item():.6f}")
+            print(f"directions dot product: {(direction1 @ direction2).item():.6e} (should be ~0)")
+
+            # we set up grid for loss landscape
+            n_grid = 210  # we use 21x21 grid
+            alpha_range = np.linspace(-10.0, 10.0, n_grid)  # we set range for direction 1
+            beta_range = np.linspace(-10.0, 10.0, n_grid)  # we set range for direction 2
+            loss_grid = np.zeros((n_grid, n_grid))  # we initialize loss grid
+
+            print(f"evaluating loss on {n_grid}x{n_grid} grid...")
+
+            # we evaluate loss at each grid point
+            model.eval()
+            with torch.no_grad():
+                for i, alpha in enumerate(tqdm(alpha_range, desc="alpha (direction 1)")):
+                    for j, beta in enumerate(beta_range):
+                        # we compute perturbed parameters: theta = theta_final + alpha*d1 + beta*d2
+                        perturbed_params = final_params_flat + alpha * direction1 + beta * direction2
+                        
+                        # we load perturbed parameters into model
+                        idx = 0
+                        for p in trainable_params:
+                            numel = p.numel()
+                            p.data = perturbed_params[idx:idx+numel].view(p.shape)
+                            idx += numel
+                        
+                        # we compute loss on training set
+                        total_loss = 0.0
+                        n_batches = 0
+                        for inputs, targets in train_loader:
+                            outputs = model(inputs)
+                            loss = criterion(outputs, targets)
+                            total_loss += loss.item()
+                            n_batches += 1
+                        
+                        avg_loss = total_loss / n_batches
+                        loss_grid[i, j] = avg_loss
+
+            # we restore final parameters
+            idx = 0
+            for p in trainable_params:
+                numel = p.numel()
+                p.data = final_params_flat[idx:idx+numel].view(p.shape)
+                idx += numel
+
+            print(f"loss landscape computed")
+            print(f"min loss: {np.min(loss_grid):.6e}")
+            print(f"max loss: {np.max(loss_grid):.6e}")
+            print(f"loss at final point (0,0): {loss_grid[n_grid//2, n_grid//2]:.6e}")
+
+            # we save loss landscape data
+            np.savez(os.path.join(landscape_folder, f"{config_name}_loss_landscape_{epoch}.npz"),
+                    loss_grid=loss_grid,
+                    alpha_range=alpha_range,
+                    beta_range=beta_range,
+                    direction1=direction1.cpu().numpy(),
+                    direction2=direction2.cpu().numpy(),
+                    final_params=final_params_flat.cpu().numpy())
+
+            # we create 3d plotly visualization
+            Alpha, Beta = np.meshgrid(alpha_range, beta_range)
+
+            fig = go.Figure(data=[go.Surface(
+                x=Alpha,
+                y=Beta,
+                z=loss_grid.T,  # we transpose to match meshgrid convention
+                colorscale='Viridis',
+                colorbar=dict(title='Loss'),
+                name='Loss Landscape'
+            )])
+
+            # we add marker at final point (0, 0)
+            final_loss = loss_grid[n_grid//2, n_grid//2]
+            fig.add_trace(go.Scatter3d(
+                x=[0],
+                y=[0],
+                z=[final_loss],
+                mode='markers',
+                marker=dict(size=10, color='red', symbol='diamond'),
+                name='Final Parameters'
+            ))
+
+            fig.update_layout(
+                title=f'Loss Landscape - {config_name}<br>Affine 2D projection around final trained parameters',
+                scene=dict(
+                    xaxis_title='α (direction 1)',
+                    yaxis_title='β (direction 2)',
+                    zaxis_title='Loss',
+                    camera=dict(eye=dict(x=1.5, y=1.5, z=1.3))
+                ),
+                width=1000,
+                height=800,
+                font=dict(size=12)
+            )
+
+            # we save interactive html
+            html_path = os.path.join(landscape_folder, f"{config_name}_loss_landscape_{epoch}.html")
+            fig.write_html(html_path)
+            print(f"saved interactive loss landscape to: {html_path}")
+
+            # we also create a 2d contour plot
+            fig_contour = go.Figure(data=[go.Contour(
+                x=alpha_range,
+                y=beta_range,
+                z=loss_grid.T,
+                colorscale='Viridis',
+                colorbar=dict(title='Loss'),
+                contours=dict(
+                    showlabels=True,
+                    labelfont=dict(size=10, color='white')
+                )
+            )])
+
+            # we add marker at final point
+            fig_contour.add_trace(go.Scatter(
+                x=[0],
+                y=[0],
+                mode='markers+text',
+                marker=dict(size=15, color='red', symbol='star'),
+                text=['Final'],
+                textposition='top center',
+                textfont=dict(size=14, color='red'),
+                name='Final Parameters'
+            ))
+
+            fig_contour.update_layout(
+                title=f'Loss Landscape (Contour) - {config_name}<br>Affine 2D projection around final trained parameters',
+                xaxis_title='α (direction 1)',
+                yaxis_title='β (direction 2)',
+                width=900,
+                height=800,
+                font=dict(size=12)
+            )
+
+            # we save contour html
+            html_contour_path = os.path.join(landscape_folder, f"{config_name}_loss_landscape_contour_{epoch}.html")
+            fig_contour.write_html(html_contour_path)
+            print(f"saved interactive contour plot to: {html_contour_path}")
+
+            print("\n" + "="*80)
+            print("loss landscape analysis completed")
+            print("="*80)
+
+
             
         if epoch % 5000 == 0:
             # we compute NTK
@@ -211,7 +392,7 @@ for epoch in pbar:
             plt.ylabel('y', fontsize=12)
             plt.tight_layout()
             plt.legend(loc="upper center", fontsize=13, ncol=2)
-            plt.savefig(os.path.join(base_folder, f"{config_name}_prediction_epoch{epoch}.png"), dpi=150)
+            #plt.savefig(os.path.join(base_folder, f"{config_name}_prediction_epoch{epoch}.png"), dpi=150)
             plt.close()
 
 print(f"\n{'='*80}")
@@ -236,7 +417,7 @@ plt.xlabel('x', fontsize=12)
 plt.ylabel('y', fontsize=12)
 plt.tight_layout()
 plt.legend(loc="upper center", fontsize=13, ncol=2)
-plt.savefig(os.path.join(base_folder, f"{config_name}_final_comparison.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_final_comparison.png"), dpi=150)
 plt.close()
 print(f"final comparison plot saved")
 
@@ -267,7 +448,7 @@ plt.title(f'complete loss evolution - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3)
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_complete.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_complete.png"), dpi=150)
 plt.close()
 
 # we plot loss evolution (loglog scale)
@@ -279,7 +460,7 @@ plt.title(f'loss evolution (loglog) - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3, which='both')
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_loglog.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_loglog.png"), dpi=150)
 plt.close()
 
 # we plot error evolution (sampled every 50 epochs)
@@ -294,7 +475,7 @@ plt.title(f'error evolution (sampled) - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3)
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_error_evolution_sampled.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_error_evolution_sampled.png"), dpi=150)
 plt.close()
 
 # we plot NTK eigenvalues evolution
@@ -316,7 +497,7 @@ if len(ntk_eigenvalues) > 0:
     plt.title(f'ntk maximum eigenvalue evolution - {config_name}', fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_max_eigenvalue.png"), dpi=150)
+    #plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_max_eigenvalue.png"), dpi=150)
     plt.close()
     
     # we plot minimum eigenvalue
@@ -327,7 +508,7 @@ if len(ntk_eigenvalues) > 0:
     plt.title(f'ntk minimum eigenvalue evolution - {config_name}', fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_min_eigenvalue.png"), dpi=150)
+    #plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_min_eigenvalue.png"), dpi=150)
     plt.close()
 
 # we save configuration
@@ -351,9 +532,9 @@ config_dict = {
     "resnet": False,
     "fix_wb": True,
     "trainable_params": sum(p.numel() for p in params),
-    "total_time": time.time() - time1,
-    "final_train_loss": all_losses[-1] if len(all_losses) > 0 else None,
-    "final_test_error": errors_test[-1] if len(errors_test) > 0 else None
+    "total_time": float(time.time() - time1),  # we convert to native python float
+    "final_train_loss": float(all_losses[-1]) if len(all_losses) > 0 else None,  # we convert to native python float
+    "final_test_error": float(errors_test[-1]) if len(errors_test) > 0 else None  # we convert to native python float
 }
 
 with open(os.path.join(base_folder, f"{config_name}_config.json"), "w") as f:
