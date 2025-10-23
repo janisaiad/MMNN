@@ -263,7 +263,7 @@ for config in configs:
         b = np.array([np.pi, 2*np.pi])
         c = np.array([[np.pi, 3*np.pi],
                      [np.pi, np.pi]])
-        d = np.array([2*np.pi, np.pi],
+        d = np.array([[2*np.pi, np.pi],
                      [np.pi, 2*np.pi]])
         y = 0
         for i in range(2):
