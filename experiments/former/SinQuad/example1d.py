@@ -68,19 +68,19 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 # we set hyperparameters
-num_epochs = 1000
+num_epochs = 2000
 batch_size = 100
 num_training_samples = 1000  # we set uniform grid samples
 num_test_samples = 1234  # we set random samples
   
 # we define learning rate schedule: lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init = 0.001
-lr_gamma = 0.9
-lr_step_size = 400
+lr_gamma = 0.99
+lr_step_size = 1000
 
 interval = [-1, 1]
-ranks = [1] + [36]*5 + [1]
-widths = [666]*6
+ranks = [1] + [36]*3 + [1]
+widths = [512]*4
 
 # we create config name
 depth = len(widths)
@@ -225,7 +225,7 @@ for epoch in pbar:
             print(f"directions dot product: {(direction1 @ direction2).item():.6e} (should be ~0)")
 
             # we set up grid for loss landscape
-            n_grid = 210  # we use 21x21 grid
+            n_grid = 100  # we use 21x21 grid
             alpha_range = np.linspace(-10.0, 10.0, n_grid)  # we set range for direction 1
             beta_range = np.linspace(-10.0, 10.0, n_grid)  # we set range for direction 2
             loss_grid = np.zeros((n_grid, n_grid))  # we initialize loss grid
