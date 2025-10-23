@@ -169,11 +169,11 @@ for lr_init in [0.001, 0.0001]:
                         "num_epochs": 2000,
                         "batch_size": batch_size,
                         "num_training_samples": 600,
-                        "num_test_samples": 600,
+                        "num_test_samples": 133,
 
                         # learning rate schedule
                         "lr_init": lr_init,
-                        "lr_gamma": 0.9,
+                        "lr_gamma": 0.99,
                         "lr_step_size": 16,
 
                         # problem setup
@@ -260,11 +260,11 @@ for config in configs:
         s = 2
         a = np.array([[0.3, 0.2], 
                      [0.2, 0.3]])
-        b = np.array([2*np.pi, 4*np.pi])
-        c = np.array([[2*np.pi, 4*np.pi],
-                     [8*np.pi, 4*np.pi]])
-        d = np.array([[4*np.pi, 6*np.pi],
-                     [8*np.pi, 6*np.pi]])
+        b = np.array([np.pi, 2*np.pi])
+        c = np.array([[np.pi, 3*np.pi],
+                     [np.pi, np.pi]])
+        d = np.array([2*np.pi, np.pi],
+                     [np.pi, 2*np.pi]])
         y = 0
         for i in range(2):
             for j in range(2):
