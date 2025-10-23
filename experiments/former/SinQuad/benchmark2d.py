@@ -152,10 +152,10 @@ print(f"Training on device: {device}")
 # Generate configs with different depths, hidden ranks and widths
 configs = []
 for lr_init in [0.001, 0.0001]:
-    for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [6,8,12,15,20,25]:
-            for hidden_width in [64,128,256,512,1024,2048,4096,8192]:
-                for hidden_rank in [5,10,15,20,25,30,35,40,45,50]:
+    for batch_size in [1000]:
+        for num_layers in [12,15,10,20,8,25]:
+            for hidden_width in [512,768,1024,1536,164,128,256,1024,2048,4096,8192]:
+                for hidden_rank in [25,30,35,40,45,50]:
                     configs.append({
                         # architecture hyperparameters
                         "num_layers": num_layers,
@@ -168,13 +168,13 @@ for lr_init in [0.001, 0.0001]:
                         # training hyperparameters
                         "num_epochs": 2000,
                         "batch_size": batch_size,
-                        "num_training_samples": 100,
-                        "num_test_samples": 100,
+                        "num_training_samples": 600,
+                        "num_test_samples": 600,
 
                         # learning rate schedule
                         "lr_init": lr_init,
-                        "lr_gamma": 0.99,
-                        "lr_step_size": 100,
+                        "lr_gamma": 0.9,
+                        "lr_step_size": 16,
 
                         # problem setup
                         "interval": [-1, 1],
@@ -221,7 +221,7 @@ config = {
     "dtype": str(mydtype)
 }
 '''
-for config in configs[:1]:
+for config in configs:
     print(f"Training config: {config}")
     # we construct ranks and widths from config
     ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
@@ -446,8 +446,6 @@ for config in configs[:1]:
         "training_time_seconds": float(time.time()-time1),
         "total_parameters": sum(p.numel() for p in model.parameters()),
         "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
-        "ntk_epochs_stored": sorted(ntk_matrices.keys()) if len(ntk_matrices) > 0 else [],
-        "ntk_matrix_shape": ntk_matrices[list(ntk_matrices.keys())[0]].shape if len(ntk_matrices) > 0 else None,
         "parameters_epochs_stored": sorted(parameters_snapshots.keys()) if len(parameters_snapshots) > 0 else [],
         "parameter_vector_size": len(parameters_snapshots[list(parameters_snapshots.keys())[0]]) if len(parameters_snapshots) > 0 else None,
     }
@@ -507,7 +505,8 @@ for config in configs[:1]:
                            np.reshape(X2_plot,[-1,1])], axis=1)
 
     with torch.no_grad():
-        y_plot_nn = model(X_plot).reshape(n_plot, n_plot)
+        X_plot_tensor = torch.tensor(X_plot, dtype=mydtype).to(device)  # we convert to tensor
+        y_plot_nn = model(X_plot_tensor).cpu().numpy().reshape(n_plot, n_plot)  # we get predictions and convert back to numpy
     y_plot_true = func(X_plot).reshape(n_plot, n_plot)
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
@@ -542,64 +541,77 @@ for config in configs[:1]:
 
     print(f"\nAll plots saved to {output_dir}")
     print(f"Total training time: {time.time()-time1:.2f}s")
-    # Plot functions learned by each low rank layer
+    # we visualize functions learned by each layer (adapted for 2d)
     teacher = MMNN(ranks=ranks,
-                    widths=widths,
-                    device=device,
-                    ResNet=config["use_resnet"])
+                widths=widths,
+                device=device,
+                ResNet=config["use_resnet"])
     teacher.load_state_dict(model.state_dict())
 
-    x = np.linspace(-1, 1, 1000)
-    x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+    # we create 2d grid for layer visualization
+    n_viz = 50  # we use smaller grid for speed
+    x1_viz = np.linspace(-1, 1, n_viz)
+    x2_viz = np.linspace(-1, 1, n_viz)
+    X1_viz, X2_viz = np.meshgrid(x1_viz, x2_viz)
+    X_viz = np.concatenate([np.reshape(X1_viz,[-1,1]),
+                       np.reshape(X2_viz,[-1,1])], axis=1)
+    x_tensor = torch.tensor(X_viz, dtype=mydtype).to(device)  # we create 2d tensor input
 
-    # For each layer with low rank output
-    # very bad complexity O(n^2)
-
-
-
-    for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
-        # if layer_idx is odd, we plot the first part of the layer, that means relu(something)
-        # if layer_idx is even, we plot the second part of the layer, that means something
-        # so we need to plot the first part of the layer if layer_idx is even, and the second part of the layer if layer_idx is odd
+    # we iterate through layers
+    for layer_idx in range(1, len(teacher.fcs), 1):
+        # we determine output rank for this layer
         if layer_idx % 2 == 0:
             output_rank = ranks[layer_idx//2+1]
         else:
-            output_rank = min(widths[(layer_idx)//2], 36)
-
+            output_rank = min(widths[(layer_idx)//2], 16)  # we limit to 16 for visualization
 
         print(f"Plotting layer {layer_idx} with output rank {output_rank}")
-        # Plot components in a roughly rectangular grid
+        
+        # we compute layer output
+        with torch.no_grad():
+            current = x_tensor
+            for i in range(layer_idx):
+                current = teacher.fcs[i](current)
+                if i % 2 == 0:  # we apply relu after first part of each layer
+                    current = torch.relu(current)
+            
+            output = current.cpu().numpy()  # shape: (n_viz*n_viz, output_rank)
+        
+        # we plot components as 2d heatmaps
         n_rows = int(np.ceil(np.sqrt(output_rank)))
         n_cols = int(np.ceil(output_rank / n_rows))
-        # Create subplot figure with dimensions based on output rank
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4*n_cols, 4*n_rows))
         if n_rows == 1 and n_cols == 1:
-            axes = np.array([[axes]])  # Make 2D array for consistent indexing
+            axes = np.array([[axes]])  # we make 2d array for consistent indexing
         elif n_rows == 1 or n_cols == 1:
             axes = axes.reshape(n_rows, n_cols)
+        
         fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
+        
+        for idx in range(output_rank):
+            i = idx // n_cols
+            j = idx % n_cols
+            
+            # we reshape component to 2d grid
+            component_2d = output[:, idx].reshape(n_viz, n_viz)
+            
+            # we plot as heatmap
+            im = axes[i,j].imshow(component_2d, extent=[-1, 1, -1, 1], 
+                                  origin='lower', cmap='viridis')
+            axes[i,j].set_title(f'Component {idx+1}')
+            axes[i,j].set_xlabel('$x_1$')
+            axes[i,j].set_ylabel('$x_2$')
+            plt.colorbar(im, ax=axes[i,j])
+        
+        # we hide unused subplots
+        for idx in range(output_rank, n_rows * n_cols):
+            i = idx // n_cols
+            j = idx % n_cols
+            axes[i,j].axis('off')
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components_2d.png'), dpi=100)
+        plt.close()
 
-        # Get layer output
-        with torch.no_grad():
-            # Apply layers up to current one
-            current = x_tensor
-            for i in range(layer_idx ):
-                current = teacher.fcs[i](current)
-                if i % 2 == 0:  # Apply ReLU after first part of each layer
-                    current = torch.relu(current)
-
-            output = current.cpu().numpy()
-
-            for idx in range(output_rank):
-                i = idx // n_cols
-                j = idx % n_cols
-                axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
-                axes[i,j].set_title(f'Component {idx+1}')
-                axes[i,j].grid(True, alpha=0.3)
-                axes[i, j].set_xticks([-1, 0, 1])
-
-            plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-            plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
-            plt.close()
-
-        print(f"Layer component plots saved to {output_dir}")
+    print(f"Layer component plots saved to {output_dir}")
