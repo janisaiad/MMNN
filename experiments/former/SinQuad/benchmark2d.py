@@ -151,34 +151,34 @@ print(f"Training on device: {device}")
 
 # Generate configs with different depths, hidden ranks and widths
 configs = []
-for lr_init in [0.0001, 0.00001]:
+for lr_init in [0.001, 0.0001]:
     for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [15,20,25]:
-            for hidden_width in [1024,777,512,256,128,64]:
-                for hidden_rank in [50,36,30,20,15,10,5]:
+        for num_layers in [6,8,12,15,20,25]:
+            for hidden_width in [64,128,256,512,1024,2048,4096,8192]:
+                for hidden_rank in [5,10,15,20,25,30,35,40,45,50]:
                     configs.append({
                         # architecture hyperparameters
                         "num_layers": num_layers,
                         "hidden_width": hidden_width,
                         "hidden_rank": hidden_rank,
-                        "input_rank": 1,
+                        "input_rank": 2,
                         "output_rank": 1,
                         "use_resnet": False,
 
                         # training hyperparameters
-                        "num_epochs": 120000,
+                        "num_epochs": 2000,
                         "batch_size": batch_size,
-                        "num_training_samples": 1000,
-                        "num_test_samples": 1234,
+                        "num_training_samples": 100,
+                        "num_test_samples": 100,
 
                         # learning rate schedule
                         "lr_init": lr_init,
                         "lr_gamma": 0.99,
-                        "lr_step_size": 1000,
+                        "lr_step_size": 100,
 
                         # problem setup
                         "interval": [-1, 1],
-                        "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+                        "function": "0.3*sin(2*pi*x1) * sin(2*pi*x2) + 0.2*sin(2*pi*x1) * sin(4*pi*x2) + 0.2*sin(4*pi*x1) * sin(2*pi*x2) + 0.3*sin(4*pi*x1) * sin(4*pi*x2)",
 
                         # monitoring
                         "show_plot": False,
@@ -221,7 +221,7 @@ config = {
     "dtype": str(mydtype)
 }
 '''
-for config in configs:
+for config in configs[:1]:
     print(f"Training config: {config}")
     # we construct ranks and widths from config
     ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
@@ -237,7 +237,7 @@ for config in configs:
                 f"ntr{config['num_training_samples']}")
 
     # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training", folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training2d", folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
@@ -254,9 +254,22 @@ for config in configs:
                     widths=widths,
                     device=device,
                     ResNet=config["use_resnet"])
+    
     def func(x):
-        y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* x**2)
-        return y
+        x1, x2 = x[:, 0], x[:, 1]
+        s = 2
+        a = np.array([[0.3, 0.2], 
+                     [0.2, 0.3]])
+        b = np.array([2*np.pi, 4*np.pi])
+        c = np.array([[2*np.pi, 4*np.pi],
+                     [8*np.pi, 4*np.pi]])
+        d = np.array([[4*np.pi, 6*np.pi],
+                     [8*np.pi, 6*np.pi]])
+        y = 0
+        for i in range(2):
+            for j in range(2):
+                y += a[i,j] * np.sin(s*b[i]*x1 + s*c[i,j]*x1*x2) * np.cos(s*b[j]*x2 + s*d[i,j]*x1**2)
+        return y*10/np.sqrt(5)
 
 
 
@@ -271,15 +284,20 @@ for config in configs:
         frozen = "FROZEN" if not layer.weight.requires_grad else "trainable"
 
         print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
-
-
-    x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 1])
-    y_train = func(x_train)
-    x_train = torch.tensor(x_train, device=device, dtype=mydtype)
-    y_train = torch.tensor(y_train, device=device, dtype=mydtype)
+        
+        
+        
+    x1 = np.linspace(*config["interval"], config["num_training_samples"])
+    x2 = np.linspace(*config["interval"], config["num_training_samples"]) 
+    X1, X2 = np.meshgrid(x1, x2)
+    X = np.concatenate([np.reshape(X1,[-1,1]),
+                       np.reshape(X2,[-1,1])], axis=1)
+    Y = func(X).reshape([-1,1])
+    x_train = torch.tensor(X, device=device, dtype=mydtype)
+    y_train = torch.tensor(Y, device=device, dtype=mydtype)
     train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
     train_loader = torch.utils.data.DataLoader(train_dataset,
-                                                batch_size=config["batch_size"], shuffle=True)
+                                             batch_size=config["batch_size"], shuffle=True)
 
 
     time1=time.time()
@@ -287,9 +305,6 @@ for config in configs:
     errors_test=[]
     errors_test_max=[]
     all_losses=[]  # we store all losses
-    ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
-    ntk_eigenvalues={}  # we store ntk eigenvalues min/max
-    ntk_matrices={}  # we store full ntk matrices at selected epochs
     parameters_snapshots={}  # we store model parameters at selected epochs
 
     losses_std = []
@@ -325,14 +340,18 @@ for config in configs:
             losses_std.append(np.std(np.log10(all_losses[-50:])))
 
             def learned_nn(x):  # input and output are numpy.ndarray
-                x = x.reshape([-1, 1])
+                x = x.reshape([-1, 2])
                 input_data = torch.tensor(x, dtype=mydtype).to(device)
                 y = model(input_data)
                 y = y.cpu().detach().numpy().reshape([-1])
                 return y
 
 
-            x = np.random.rand(config["num_test_samples"]) * 2 - 1
+            x=np.linspace(-1, 1, 100)
+            x1, x2 = np.meshgrid(x, x)
+            X = np.concatenate([np.reshape(x1,[-1,1]),
+                               np.reshape(x2,[-1,1])], axis=1)
+            x = X
             y_nn = learned_nn(x)
             y_true = func(x)
 
@@ -347,48 +366,51 @@ for config in configs:
             print("Test errors (MAX and MSE): " +
                 f"{e_max:.2e} and {e_mse:.2e}")
 
-            # we compute NTK every 50 epochs (min/max only for print)
-            if epoch % 5000 == 0:
-                
-                #ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-                #ntk_eigenvalues[epoch] = eigenvalues
-                ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
-                ntk_eigenvalues_full[epoch] = eigenvalues
-                #print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
-
-        # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
-        if epoch % 50 == 0 and min(epoch, 1500) == epoch:
-            ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
-            ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
-            ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
-
-            # we store model parameters as a flattened tensor
-            params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters()])
-            parameters_snapshots[epoch] = params_flat.numpy()
-
-            print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
-            print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
-
-        if epoch % 5000 == 0:
+        if epoch % 250 == 0:
+            # Track epoch progress
+            print(f"Completed epoch {epoch} ({epoch/config['num_epochs']*100:.1f}% done)")
+            
             if epoch % 100 == 0:
-                # Plot the results
-                x = np.linspace(-1, 1, 1000)
-                y_nn = learned_nn(x)
-                y_true = func(x)
-                fig = plt.figure(figsize=(6, 4))
-                plt.plot(x, y_true, label='true function')
-                plt.plot(x, y_nn, label='learned network')
-                plt.xticks(np.linspace(*config["interval"], 5))
-                plt.tick_params(axis='both',
-                                which='major', labelsize=12)
-                plt.grid(True, axis='both', color='#AAAAAA',
-                        linestyle='--', linewidth=1.4)
+                # we plot the results as 2d heatmap
+                n_plot = 100
+                x1_plot = np.linspace(-1, 1, n_plot)
+                x2_plot = np.linspace(-1, 1, n_plot)
+                X1_plot, X2_plot = np.meshgrid(x1_plot, x2_plot)
+                X_plot = np.concatenate([np.reshape(X1_plot,[-1,1]),
+                                       np.reshape(X2_plot,[-1,1])], axis=1)
+                
+                y_nn_plot = learned_nn(X_plot).reshape(n_plot, n_plot)
+                y_true_plot = func(X_plot).reshape(n_plot, n_plot)
+                
+                fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+                
+                # we plot true function
+                im0 = axes[0].imshow(y_true_plot, extent=[-1, 1, -1, 1], origin='lower', cmap='viridis')
+                axes[0].set_title('True function')
+                axes[0].set_xlabel('$x_1$')
+                axes[0].set_ylabel('$x_2$')
+                plt.colorbar(im0, ax=axes[0])
+                
+                # we plot learned network
+                im1 = axes[1].imshow(y_nn_plot, extent=[-1, 1, -1, 1], origin='lower', cmap='viridis')
+                axes[1].set_title('Learned network')
+                axes[1].set_xlabel('$x_1$')
+                axes[1].set_ylabel('$x_2$')
+                plt.colorbar(im1, ax=axes[1])
+                
+                # we plot difference
+                diff = np.abs(y_nn_plot - y_true_plot)
+                im2 = axes[2].imshow(diff, extent=[-1, 1, -1, 1], origin='lower', cmap='hot')
+                axes[2].set_title(f'Absolute error (max={np.max(diff):.2e})')
+                axes[2].set_xlabel('$x_1$')
+                axes[2].set_ylabel('$x_2$')
+                plt.colorbar(im2, ax=axes[2])
+                
                 config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
-                plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
+                fig.suptitle(f'Epoch {epoch}\n{config_str}', fontsize=14)
                 plt.tight_layout()
-                plt.legend(loc="upper center", fontsize=13, ncol=2)
-
-                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+                
+                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_2D.png"), dpi=100)
                 plt.close()
                 if config["show_plot"]:
                     plt.show()
@@ -403,16 +425,6 @@ for config in configs:
             time=time.time()-time1
             )
 
-    # we save ntk matrices evolution
-    if len(ntk_matrices) > 0:
-        # we convert epoch keys to strings for npz format
-        ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
-        #np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
-        #print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
-        # we also save epochs list for reference
-        ntk_epochs = sorted(ntk_matrices.keys())
-        print(f"NTK matrices stored at epochs: {ntk_epochs}")
-        print(f"NTK matrix shape: {ntk_matrices[ntk_epochs[0]].shape}")
 
     # we save model parameters evolution
     if len(parameters_snapshots) > 0:
@@ -486,106 +498,46 @@ for config in configs:
     plt.savefig(os.path.join(output_dir, 'loss_std_evolution.png'), dpi=100)
     plt.close()
 
-    # we plot NTK eigenvalues (min/max)
-    if len(ntk_eigenvalues) > 0:
-        epochs_list = sorted(ntk_eigenvalues.keys())
-        max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
-        min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
+    # we plot final prediction/fit as 2d heatmaps
+    n_plot = 150
+    x1_plot = np.linspace(-1, 1, n_plot)
+    x2_plot = np.linspace(-1, 1, n_plot)
+    X1_plot, X2_plot = np.meshgrid(x1_plot, x2_plot)
+    X_plot = np.concatenate([np.reshape(X1_plot,[-1,1]),
+                           np.reshape(X2_plot,[-1,1])], axis=1)
 
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
-        fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
-
-        ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Max Eigenvalue')
-        ax1.set_title('NTK Maximum Eigenvalue')
-        ax1.grid(True, alpha=0.3)
-        ax1.set_yscale('log')
-
-        ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('|Min Eigenvalue|')
-        ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
-        ax2.grid(True, alpha=0.3)
-        ax2.set_yscale('log')
-
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
-        plt.close()
-
-    # we plot full NTK eigenvalue spectrum (every 1000 epochs)
-    if len(ntk_eigenvalues_full) > 0:
-        epochs_full = sorted(ntk_eigenvalues_full.keys())
-
-        # we create a plot with all eigenvalues at each epoch
-        fig = plt.figure(figsize=(10, 6))
-
-        for epoch in epochs_full[:10]:
-            eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
-            indices = np.arange(len(eigs))
-            plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
-
-        plt.xlabel('Eigenvalue Index')
-        plt.ylabel('|Eigenvalue| (log scale)')
-        plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
-        # i want to put the legend on the right side of the plot
-        plt.legend(loc='right')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
-        plt.close()
-
-        # we plot first 5 and last 5 eigenvalues over time
-        fig, axes = plt.subplots(10, 1, figsize=(10, 16))
-        fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
-
-        # we plot first 5 eigenvalues (smallest)
-        for i in range(5):
-            ax = axes[i]
-            eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][i]) for ep in epochs_full]  # we use absolute value
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
-            ax.set_ylabel(f'|λ_{i+1}|', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
-
-        # we plot last 5 eigenvalues (largest)
-        n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
-        for i in range(5):
-            ax = axes[5 + i]
-            idx = n_eigs - 5 + i
-            eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][idx]) for ep in epochs_full]  # we use absolute value
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
-            ax.set_ylabel(f'|λ_{idx+1}|', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
-
-        axes[-1].set_xlabel('Epoch', fontsize=12)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
-        plt.close()
-        print("NTK first/last 5 eigenvalues plot saved")
-
-    # we plot final prediction/fit
-    x_plot = np.linspace(-1, 1, 1000)
-    x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
     with torch.no_grad():
-        y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
-    y_plot_true = func(x_plot_tensor.cpu().numpy())
+        y_plot_nn = model(X_plot).reshape(n_plot, n_plot)
+    y_plot_true = func(X_plot).reshape(n_plot, n_plot)
 
-    fig = plt.figure(figsize=(8, 5))
-    plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
-    plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title(f'Final Prediction vs True Function\n{config_str}')
-    plt.grid(True, alpha=0.3)
-    plt.legend()
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+    # we plot true function
+    im0 = axes[0].imshow(y_plot_true, extent=[-1, 1, -1, 1], origin='lower', cmap='viridis')
+    axes[0].set_title('True function')
+    axes[0].set_xlabel('$x_1$')
+    axes[0].set_ylabel('$x_2$')
+    plt.colorbar(im0, ax=axes[0])
+
+    # we plot learned network
+    im1 = axes[1].imshow(y_plot_nn, extent=[-1, 1, -1, 1], origin='lower', cmap='viridis')
+    axes[1].set_title('Learned network')
+    axes[1].set_xlabel('$x_1$')
+    axes[1].set_ylabel('$x_2$')
+    plt.colorbar(im1, ax=axes[1])
+
+    # we plot absolute error as heatmap
+    diff = np.abs(y_plot_nn - y_plot_true)
+    im2 = axes[2].imshow(diff, extent=[-1, 1, -1, 1], origin='lower', cmap='hot')
+    axes[2].set_title(f'Absolute error (max={np.max(diff):.2e})')
+    axes[2].set_xlabel('$x_1$')
+    axes[2].set_ylabel('$x_2$')
+    plt.colorbar(im2, ax=axes[2])
+
+    config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}, lr={config['lr_init']}"
+    fig.suptitle(f'Final Prediction vs True Function\n{config_str}', fontsize=14)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=100)
+    plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=150)
     plt.close()
 
     print(f"\nAll plots saved to {output_dir}")
