@@ -327,50 +327,50 @@ for config in configs:
         scheduler.step()
 
 
-        if epoch % 50 == 0:
-            # we print the day hour etc ;;
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            training_error = loss.item()
-            print(f"\nEpoch {epoch} / {config['num_epochs']}" +
-                f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
-                f"\nTraining error (MSE): { training_error :.2e}" +
-                f"\nTime used: { time.time() - time1 :.2f}s")
-            errors_train.append(training_error)
-            # we compute the std for the last 50 losses in the log space
-            losses_std.append(np.std(np.log10(all_losses[-50:])))
+        
+        # we print the day hour etc ;;
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        training_error = loss.item()
+        print(f"\nEpoch {epoch} / {config['num_epochs']}" +
+            f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
+            f"\nTraining error (MSE): { training_error :.2e}" +
+            f"\nTime used: { time.time() - time1 :.2f}s")
+        errors_train.append(training_error)
+        # we compute the std for the last 50 losses in the log space
+        losses_std.append(np.std(np.log10(all_losses[-50:])))
 
-            def learned_nn(x):  # input and output are numpy.ndarray
-                x = x.reshape([-1, 2])
-                input_data = torch.tensor(x, dtype=mydtype).to(device)
-                y = model(input_data)
-                y = y.cpu().detach().numpy().reshape([-1])
-                return y
+        def learned_nn(x):  # input and output are numpy.ndarray
+            x = x.reshape([-1, 2])
+            input_data = torch.tensor(x, dtype=mydtype).to(device)
+            y = model(input_data)
+            y = y.cpu().detach().numpy().reshape([-1])
+            return y
 
 
-            x=np.linspace(-1, 1, 100)
-            x1, x2 = np.meshgrid(x, x)
-            X = np.concatenate([np.reshape(x1,[-1,1]),
-                               np.reshape(x2,[-1,1])], axis=1)
-            x = X
-            y_nn = learned_nn(x)
-            y_true = func(x)
+        x=np.linspace(-1, 1, 100)
+        x1, x2 = np.meshgrid(x, x)
+        X = np.concatenate([np.reshape(x1,[-1,1]),
+                            np.reshape(x2,[-1,1])], axis=1)
+        x = X
+        y_nn = learned_nn(x)
+        y_true = func(x)
 
-            # Calculate errors
+        # Calculate errors
 
-            e = y_nn - y_true
-            e_max = np.max(np.abs(e))
-            e_mse = np.mean(e**2)
-            errors_test.append(e_mse)
-            errors_test_max.append(e_max)
+        e = y_nn - y_true
+        e_max = np.max(np.abs(e))
+        e_mse = np.mean(e**2)
+        errors_test.append(e_mse)
+        errors_test_max.append(e_max)
 
-            print("Test errors (MAX and MSE): " +
-                f"{e_max:.2e} and {e_mse:.2e}")
+        print("Test errors (MAX and MSE): " +
+            f"{e_max:.2e} and {e_mse:.2e}")
 
-        if epoch % 250 == 0:
+        if epoch % 5 == 0:
             # Track epoch progress
             print(f"Completed epoch {epoch} ({epoch/config['num_epochs']*100:.1f}% done)")
             
-            if epoch % 100 == 0:
+            if epoch % 50 == 0:
                 # we plot the results as 2d heatmap
                 n_plot = 100
                 x1_plot = np.linspace(-1, 1, n_plot)
