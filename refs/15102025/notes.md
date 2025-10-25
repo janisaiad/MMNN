@@ -150,3 +150,15 @@ write down the thing and make sure it's correct ! using mathematica
 
 
 it introduce randomness in the ntk by random basis, more mathematically consistent, more accesible to extend to infinitely deep networks, with resnets also
+
+
+main story that we want to share,
+
+better experiments
+possible title and abstract
+
+test a lot the adam sgd observation !! strong numerical results
+1st jump, other jump (test with seed)
+
+
+global minima do respect symmetry but not the case for local, if we have symetry maybe this is a global minima
