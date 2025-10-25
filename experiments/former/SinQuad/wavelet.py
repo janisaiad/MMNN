@@ -152,10 +152,10 @@ print(f"Training on device: {device}")
 configs = []
 for alpha in [1.0,1.5,2,3,4,5,6,7,8,9,10]:
     for lr_init in [0.001]:
-        for batch_size in [1000]:
-            for num_layers in [4,6,8,10,12]:
-                for hidden_width in [64,128,256,512,1024,2048,]:
-                    for hidden_rank in [5,10,20,30,50,50,100,200]:
+        for batch_size in [int(300*alpha)]:
+            for num_layers in [3,4,5,6,8,10,12]:
+                for hidden_width in [64,128,256,512,1024,2048]:
+                    for hidden_rank in [1,2,3,4,5,6,7,8,9,10,20,30,50,50,100,200]:
                         configs.append({
                             # architecture hyperparameters
                             "num_layers": num_layers,
@@ -351,16 +351,16 @@ for config in configs:
                     f"{e_max:.2e} and {e_mse:.2e}")
 
                 # we compute NTK every 50 epochs (min/max only for print)
-                if epoch % 5000 == 0:
+                if epoch % 700 == 0:
                     
-                    #ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-                    #ntk_eigenvalues[epoch] = eigenvalues
+                    ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+                    ntk_eigenvalues[epoch] = eigenvalues
                     ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
                     ntk_eigenvalues_full[epoch] = eigenvalues
-                    #print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+                    print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
 
             # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
-            if epoch % 50 == 0 and min(epoch, 1500) == epoch:
+            if epoch % 500 == 0 and min(epoch, 1500) == epoch:
                 ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
                 ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
                 ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
@@ -410,8 +410,8 @@ for config in configs:
         if len(ntk_matrices) > 0:
             # we convert epoch keys to strings for npz format
             ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
-            #np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
-            #print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
+            np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
+            print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
             # we also save epochs list for reference
             ntk_epochs = sorted(ntk_matrices.keys())
             print(f"NTK matrices stored at epochs: {ntk_epochs}")
@@ -420,9 +420,9 @@ for config in configs:
         # we save model parameters evolution
         if len(parameters_snapshots) > 0:
             # we convert epoch keys to strings for npz format
-            #params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
-            #np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
-            #print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
+            params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
+            np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
+            print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
             # we also save epochs list for reference
             params_epochs = sorted(parameters_snapshots.keys())
             print(f"Parameters stored at epochs: {params_epochs}")
