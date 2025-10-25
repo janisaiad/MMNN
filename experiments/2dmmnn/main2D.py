@@ -157,7 +157,7 @@ def fun(x):
     for i in range(dim):
         for j in range(dim):
             y=y+a[i,j]*np.sin(b[i]*x[:,i]+c[i,j]*x[:,i]*x[:,j])*np.cos(b[j]*x[:,j]+d[i,j]*x[:,i]**2)
-    return(y)
+    return 10/np.sqrt(5)*(y)
 
 class Plot(object):
     def __init__(self,sqrt_n1=250, interval=[-1,1]):
