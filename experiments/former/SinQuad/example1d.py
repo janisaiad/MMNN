@@ -11,10 +11,79 @@ import matplotlib.pyplot as plt
 import time
 import os
 import json
-import nets
 from tqdm import tqdm
 import plotly.graph_objects as go
 
+
+
+
+class MMNN(nn.Module):
+    def __init__(self, 
+                 ranks = [1] + [16]*5 + [1], 
+                 widths = [366]*6,
+                 device = "cuda", 
+                 ResNet = False,
+                 fixWb = True):
+        super().__init__()
+        """
+        A class to configure the neural network model.
+    
+        Attributes:
+            ranks (list[int]): A list where the i-th element represents the output dimension of the i-th layer.
+                               For the j-th layer, ranks[j-1] is the input dimension and ranks[j] is the output dimension.
+            
+            widths (list[int]): A list where each element specifies the width of the corresponding layer.
+            
+            device (str): The device (CPU/GPU) on which the PyTorch code will be executed.
+            
+            ResNet (bool): Indicates whether to use ResNet architecture, which includes identity connections between layers.
+            
+            fixWb (bool): If True, the weights and biases are not updated during training.
+        """
+        
+        self.product = 1
+        for j in range(1,len(ranks)):
+            self.product *= np.sqrt(widths[j-1] *ranks[j])
+        self.ranks = ranks # 
+        self.widths = widths
+        self.ResNet = ResNet
+        self.depth = len(widths)
+        
+        fc_sizes = [ ranks[0] ] 
+        for j in range(self.depth):
+            fc_sizes += [ widths[j], ranks[j+1] ]
+
+        fcs=[]
+        for j in range(len(fc_sizes)-1):
+            fc = nn.Linear(fc_sizes[j],
+                           fc_sizes[j+1], device=device) 
+            # setattr(self, f"fc{j}", fc)
+            fcs.append(fc)
+        self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
+        
+        if fixWb: # if True, the weights and biases are not updated during training
+            for j in range(len(fcs)):
+                if j % 2 == 0:
+                    self.fcs[j].weight.requires_grad = False
+                    self.fcs[j].bias.requires_grad = False
+ 
+
+    def forward(self, x):
+        for j in range(self.depth):
+            if self.ResNet:
+                if 0 < j < self.depth-1:
+                    x_id = x + 0
+            x = self.fcs[2*j](x)
+            x = torch.relu(x)
+            x = self.fcs[2*j+1](x) 
+            if self.ResNet:
+                if 0 < j < self.depth-1:
+                    n = min(x.shape[1], x_id.shape[1])
+                    x[:,:n] = x[:,:n] + x_id[:,:n]
+        return x/self.product
+    
+    
+    
 torch.set_printoptions(
     precision=3,      # we set decimal precision
     threshold=float('inf'),  # we show all elements (no truncation with ...)
@@ -68,19 +137,19 @@ def compute_ntk_gram(model, x):
     return ntk_cpu, eigenvalues
 
 # we set hyperparameters
-num_epochs = 20000
+num_epochs = 2000
 batch_size = 100
 num_training_samples = 1000  # we set uniform grid samples
 num_test_samples = 1234  # we set random samples
   
 # we define learning rate schedule: lr_init*lr_gamma**floor(k/lr_step_size)
 lr_init = 0.001
-lr_gamma = 0.9
-lr_step_size = 400
+lr_gamma = 0.99
+lr_step_size = 1000
 
 interval = [-1, 1]
-ranks = [1] + [36]*5 + [1]
-widths = [666]*6
+ranks = [1] + [36]*3 + [1]
+widths = [512]*4
 
 # we create config name
 depth = len(widths)
@@ -88,7 +157,7 @@ width = widths[0]  # we assume all widths are same
 rank = ranks[1]  # we assume all middle ranks are same
 config_name = f"d{depth}_w{width}_r{rank}_1d"
 
-# we setup paths for data storage
+# we setup paths for data storagein
 timestamp = time.strftime("%Y%m%d_%H%M%S")
 script_dir = os.path.dirname(os.path.abspath(__file__))
 base_folder = os.path.join(script_dir, "../../data/storage/1d_experiments", f"results_1d_{timestamp}")
@@ -110,8 +179,10 @@ train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 # we create model
-model = nets.MMNN(ranks=ranks, widths=widths, device=device, ResNet=False, fixWb=True, act_kind=["ReLU"]*len(widths))
-
+model = MMNN(ranks=ranks,
+                    widths=widths,
+                    device=device,
+)
 # we MUST initialize weights properly (especially important with fixWb=True!)
 # even frozen weights need good initialization
 for layer in model.fcs:
@@ -179,11 +250,204 @@ for epoch in pbar:
         errors_test.append(e_mse)
         errors_test_max.append(e_max)
         
-        if epoch % 500 == 0:
+        if epoch % 100 == 0:
             print(f"\nepoch {epoch}/{num_epochs} ({epoch/num_epochs*100:.2f}%)")
             print(f"training error (MSE): {training_error:.2e}")
             print(f"test errors (MAX and MSE): {e_max:.2e} and {e_mse:.2e}")
             print(f"time used: {time.time() - time1:.2f}s")
+            
+                        
+                        
+            # we compute loss landscape using 10 random weight pairs
+            print("\n" + "="*80)
+            print("computing loss landscapes for 10 random weight pairs")
+            print("="*80)
+
+            # we create landscape folder
+            landscape_folder = os.path.join(base_folder, "figures", f"landscape_{epoch}")
+            os.makedirs(landscape_folder, exist_ok=True)
+
+            # we extract trainable parameters as flat vector
+            trainable_params = [p for p in model.parameters() if p.requires_grad]
+            final_params_flat = torch.cat([p.data.view(-1) for p in trainable_params])  # we flatten all trainable params
+            n_params = final_params_flat.shape[0]
+            print(f"number of trainable parameters: {n_params}")
+
+            # we save final model parameters
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'final_params_flat': final_params_flat,
+                'trainable_param_shapes': [p.shape for p in trainable_params]
+            }, os.path.join(landscape_folder, f"{config_name}_final_model_{epoch}.pt"))
+            print(f"saved final model parameters")
+
+            # we randomly select 10 pairs of weight indices
+            torch.manual_seed(42)  # we set seed for reproducibility
+            n_pairs = 3
+            weight_pairs = []
+            for pair_idx in range(n_pairs):
+                # we sample 2 different weight indices
+                indices = torch.randperm(n_params)[:2].tolist()
+                weight_pairs.append((indices[0], indices[1]))
+            
+            print(f"selected {n_pairs} random weight pairs")
+
+            # we process each weight pair
+            for pair_idx, (idx1, idx2) in enumerate(weight_pairs):
+                print(f"\n--- processing weight pair {pair_idx+1}/{n_pairs}: (w{idx1}, w{idx2}) ---")
+                
+                # we get initial values of these weights
+                w1_final = final_params_flat[idx1].item()
+                w2_final = final_params_flat[idx2].item()
+                
+                print(f"weight {idx1} final value: {w1_final:.6f}")
+                print(f"weight {idx2} final value: {w2_final:.6f}")
+                
+                # we set up grid for loss landscape (±10 around final values)
+                n_grid = 50  # we use 50x50 grid for efficiency
+                w1_range = np.linspace(w1_final - 10.0, w1_final + 10.0, n_grid)  # we vary ±10 around final
+                w2_range = np.linspace(w2_final - 10.0, w2_final + 10.0, n_grid)  # we vary ±10 around final
+                loss_grid = np.zeros((n_grid, n_grid))  # we initialize loss grid
+                
+                print(f"evaluating loss on {n_grid}x{n_grid} grid...")
+                
+                # we evaluate loss at each grid point
+                model.eval()
+                with torch.no_grad():
+                    for i, w1_val in enumerate(tqdm(w1_range, desc=f"pair {pair_idx+1} - w{idx1}")):
+                        for j, w2_val in enumerate(w2_range):
+                            # we create perturbed parameters (only modify two weights)
+                            perturbed_params = final_params_flat.clone()
+                            perturbed_params[idx1] = w1_val
+                            perturbed_params[idx2] = w2_val
+                            
+                            # we load perturbed parameters into model
+                            idx = 0
+                            for p in trainable_params:
+                                numel = p.numel()
+                                p.data = perturbed_params[idx:idx+numel].view(p.shape)
+                                idx += numel
+                            
+                            # we compute loss on training set
+                            total_loss = 0.0
+                            n_batches = 0
+                            for inputs, targets in train_loader:
+                                outputs = model(inputs)
+                                loss = criterion(outputs, targets)
+                                total_loss += loss.item()
+                                n_batches += 1
+                            
+                            avg_loss = total_loss / n_batches
+                            loss_grid[i, j] = avg_loss
+                
+                # we restore final parameters
+                idx = 0
+                for p in trainable_params:
+                    numel = p.numel()
+                    p.data = final_params_flat[idx:idx+numel].view(p.shape)
+                    idx += numel
+                
+                print(f"loss landscape computed for pair {pair_idx+1}")
+                print(f"min loss: {np.min(loss_grid):.6e}")
+                print(f"max loss: {np.max(loss_grid):.6e}")
+                print(f"loss at final point: {loss_grid[n_grid//2, n_grid//2]:.6e}")
+                
+                # we save loss landscape data
+                np.savez(os.path.join(landscape_folder, f"{config_name}_loss_landscape_pair{pair_idx+1}_{epoch}.npz"),
+                        loss_grid=loss_grid,
+                        w1_range=w1_range,
+                        w2_range=w2_range,
+                        idx1=idx1,
+                        idx2=idx2,
+                        w1_final=w1_final,
+                        w2_final=w2_final,
+                        final_params=final_params_flat.cpu().numpy())
+                
+                # we create 3d plotly visualization
+                W1, W2 = np.meshgrid(w1_range, w2_range)
+                
+                fig = go.Figure(data=[go.Surface(
+                    x=W1,
+                    y=W2,
+                    z=loss_grid.T,  # we transpose to match meshgrid convention
+                    colorscale='Viridis',
+                    colorbar=dict(title='Loss'),
+                    name='Loss Landscape'
+                )])
+                
+                # we add marker at final point
+                final_loss = loss_grid[n_grid//2, n_grid//2]
+                fig.add_trace(go.Scatter3d(
+                    x=[w1_final],
+                    y=[w2_final],
+                    z=[final_loss],
+                    mode='markers',
+                    marker=dict(size=10, color='red', symbol='diamond'),
+                    name='Final Parameters'
+                ))
+                
+                fig.update_layout(
+                    title=f'Loss Landscape - {config_name} (epoch {epoch})<br>Weight pair {pair_idx+1}: (w{idx1}, w{idx2})',
+                    scene=dict(
+                        xaxis_title=f'w{idx1}',
+                        yaxis_title=f'w{idx2}',
+                        zaxis_title='Loss',
+                        camera=dict(eye=dict(x=1.5, y=1.5, z=1.3))
+                    ),
+                    width=1000,
+                    height=800,
+                    font=dict(size=12)
+                )
+                
+                # we save interactive html
+                html_path = os.path.join(landscape_folder, f"{config_name}_loss_landscape_pair{pair_idx+1}_{epoch}.html")
+                fig.write_html(html_path)
+                
+                # we also create 2d contour plot
+                fig_contour = go.Figure(data=[go.Contour(
+                    x=w1_range,
+                    y=w2_range,
+                    z=loss_grid.T,
+                    colorscale='Viridis',
+                    colorbar=dict(title='Loss'),
+                    contours=dict(
+                        showlabels=True,
+                        labelfont=dict(size=10, color='white')
+                    )
+                )])
+                
+                # we add marker at final point
+                fig_contour.add_trace(go.Scatter(
+                    x=[w1_final],
+                    y=[w2_final],
+                    mode='markers+text',
+                    marker=dict(size=15, color='red', symbol='star'),
+                    text=['Final'],
+                    textposition='top center',
+                    textfont=dict(size=14, color='red'),
+                    name='Final Parameters'
+                ))
+                
+                fig_contour.update_layout(
+                    title=f'Loss Landscape (Contour) - {config_name} (epoch {epoch})<br>Weight pair {pair_idx+1}: (w{idx1}, w{idx2})',
+                    xaxis_title=f'w{idx1}',
+                    yaxis_title=f'w{idx2}',
+                    width=900,
+                    height=800,
+                    font=dict(size=12)
+                )
+                
+                # we save contour html
+                html_contour_path = os.path.join(landscape_folder, f"{config_name}_loss_landscape_contour_pair{pair_idx+1}_{epoch}.html")
+                fig_contour.write_html(html_contour_path)
+                
+                print(f"saved visualizations for pair {pair_idx+1}")
+
+            print("\n" + "="*80)
+            print("loss landscape analysis completed for all 10 weight pairs")
+            print("="*80)
+
+
             
         if epoch % 5000 == 0:
             # we compute NTK
@@ -211,7 +475,7 @@ for epoch in pbar:
             plt.ylabel('y', fontsize=12)
             plt.tight_layout()
             plt.legend(loc="upper center", fontsize=13, ncol=2)
-            plt.savefig(os.path.join(base_folder, f"{config_name}_prediction_epoch{epoch}.png"), dpi=150)
+            #plt.savefig(os.path.join(base_folder, f"{config_name}_prediction_epoch{epoch}.png"), dpi=150)
             plt.close()
 
 print(f"\n{'='*80}")
@@ -236,7 +500,7 @@ plt.xlabel('x', fontsize=12)
 plt.ylabel('y', fontsize=12)
 plt.tight_layout()
 plt.legend(loc="upper center", fontsize=13, ncol=2)
-plt.savefig(os.path.join(base_folder, f"{config_name}_final_comparison.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_final_comparison.png"), dpi=150)
 plt.close()
 print(f"final comparison plot saved")
 
@@ -267,7 +531,7 @@ plt.title(f'complete loss evolution - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3)
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_complete.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_complete.png"), dpi=150)
 plt.close()
 
 # we plot loss evolution (loglog scale)
@@ -279,7 +543,7 @@ plt.title(f'loss evolution (loglog) - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3, which='both')
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_loglog.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_loss_evolution_loglog.png"), dpi=150)
 plt.close()
 
 # we plot error evolution (sampled every 50 epochs)
@@ -294,7 +558,7 @@ plt.title(f'error evolution (sampled) - {config_name}', fontsize=14)
 plt.grid(True, alpha=0.3)
 plt.legend(fontsize=12)
 plt.tight_layout()
-plt.savefig(os.path.join(base_folder, f"{config_name}_error_evolution_sampled.png"), dpi=150)
+#plt.savefig(os.path.join(base_folder, f"{config_name}_error_evolution_sampled.png"), dpi=150)
 plt.close()
 
 # we plot NTK eigenvalues evolution
@@ -316,7 +580,7 @@ if len(ntk_eigenvalues) > 0:
     plt.title(f'ntk maximum eigenvalue evolution - {config_name}', fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_max_eigenvalue.png"), dpi=150)
+    #plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_max_eigenvalue.png"), dpi=150)
     plt.close()
     
     # we plot minimum eigenvalue
@@ -327,7 +591,7 @@ if len(ntk_eigenvalues) > 0:
     plt.title(f'ntk minimum eigenvalue evolution - {config_name}', fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_min_eigenvalue.png"), dpi=150)
+    #plt.savefig(os.path.join(base_folder, f"{config_name}_ntk_min_eigenvalue.png"), dpi=150)
     plt.close()
 
 # we save configuration
@@ -351,9 +615,9 @@ config_dict = {
     "resnet": False,
     "fix_wb": True,
     "trainable_params": sum(p.numel() for p in params),
-    "total_time": time.time() - time1,
-    "final_train_loss": all_losses[-1] if len(all_losses) > 0 else None,
-    "final_test_error": errors_test[-1] if len(errors_test) > 0 else None
+    "total_time": float(time.time() - time1),  # we convert to native python float
+    "final_train_loss": float(all_losses[-1]) if len(all_losses) > 0 else None,  # we convert to native python float
+    "final_test_error": float(errors_test[-1]) if len(errors_test) > 0 else None  # we convert to native python float
 }
 
 with open(os.path.join(base_folder, f"{config_name}_config.json"), "w") as f:
