@@ -89,7 +89,7 @@ class MMNN(nn.Module):
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x[:,:n] = x[:,:n] + x_id[:,:n]
-        return x/self.product
+        return x
 
 # %%
 import torch
@@ -151,40 +151,49 @@ print(f"Training on device: {device}")
 
 # Generate configs with different depths, hidden ranks and widths
 configs = []
-for lr_init in [0.0001, 0.00001]:
-    for batch_size in [100, 250, 500, 1000]:
-        for num_layers in [2,4,6,8,10,12,15,20,25]:
-            for hidden_width in [1024,777,512,256,128,64]:
-                for hidden_rank in [50,36,30,20,15,10,5]:
-                    configs.append({
-                        # architecture hyperparameters
-                        "num_layers": num_layers,
-                        "hidden_width": hidden_width,
-                        "hidden_rank": hidden_rank,
-                        "input_rank": 1,
-                        "output_rank": 1,
-                        "use_resnet": False,
 
-                        # training hyperparameters
-                        "num_epochs": 120000,
-                        "batch_size": batch_size,
-                        "num_training_samples": 300,
-                        "num_test_samples": 1000,
 
-                        # learning rate schedule
-                        "lr_init": lr_init,
-                        "lr_gamma": 0.99,
-                        "lr_step_size": 1000,
+for num_layers in [2,4,6,8,10,12,15,20,25]:
+    for hidden_width in [512,666,1024,256,128,64,32]:
+        for hidden_rank in [50,36,30,20,15,10,5]:                                
+            for gamma_2 in [0.9,0.99]:
+                for threshold in [1e-1,7e-2,3e-2,1e-2, 7e-3]:
+                    for lr_decay_steps in [10,20,50,100, 200, 500]:
+                        for batch_size in [100, 250, 500, 1000]:
+                                            
+                            configs.append({
+                                # architecture hyperparameters
+                                "num_layers": num_layers,
+                                "hidden_width": hidden_width,
+                                "hidden_rank": hidden_rank,
+                                "input_rank": 1,
+                                "output_rank": 1,
+                                "use_resnet": False,
 
-                        # problem setup
-                        "interval": [-1, 1],
-                        "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+                                # training hyperparameters
+                                "num_epochs": 50000,
+                                "batch_size": batch_size,
+                                "num_training_samples": 300,
+                                "num_test_samples": 1000,
 
-                        # monitoring
-                        "show_plot": False,
-                        "device": str(device),
-                        "dtype": str(mydtype)
-                    })
+                                # learning rate schedule
+                                "lr_init": 0.001,
+                                "lr_gamma": 0.99,
+                                "lr_step_size": 500,
+
+                                # problem setup
+                                "interval": [-1, 1],
+                                "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+
+                                # monitoring
+                                "show_plot": False,
+                                "device": str(device),
+                                "dtype": str(mydtype),
+                                "lr_decay_steps": lr_decay_steps,
+                                "gamma_2": gamma_2,
+                                "threshold": threshold,
+                                
+                            })
 
 
 
@@ -228,16 +237,20 @@ for config in configs:
     widths = [config["hidden_width"]] * (config["num_layers"] + 1)
 
     # we create folder name from config
-    folder_name = (f"mmnn_L{config['num_layers']}_"
+    sub_folder_name = (f"L{config['num_layers']}_"
                 f"W{config['hidden_width']}_"
                 f"R{config['hidden_rank']}_"
                 f"E{config['num_epochs']}_"
                 f"lr{config['lr_init']}_"
-                f"bs{config['batch_size']}_"
-                f"ntr{config['num_training_samples']}")
-
+                f"bs{config['batch_size']}_")
+                
+    os.makedirs(sub_folder_name, exist_ok=True)
+    
+    folder_name = os.path.join(sub_folder_name, f"th{config['threshold']}"
+                f"lr_decay_steps{config['lr_decay_steps']}"
+                f"gamma_2{config['gamma_2']}")
     # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training", folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching", folder_name,sub_folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
@@ -306,10 +319,32 @@ for config in configs:
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            
 
         all_losses.append(loss.item())  # we store loss
         scheduler.step()
+            
+            
+                
+        if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
+            has_changed_optimizer = True
+            print("Changing optimizer to SGD")
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100, momentum=0.9, nesterov=True)
+            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+        
+        if epoch > 2000 and loss.item() < config["threshold"]/50 and has_changed_optimizer and not has_changed_optimizer_2:
+            has_changed_optimizer_2 = True
+            print("Changing optimizer to Adam")
+            lr_init=0.0001
+            lr_gamma=config["gamma_2"]
+            lr_step_size= config["lr_decay_steps"]
+            optimizer = optim.Adam(model.parameters(), lr=lr_init)
+            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+            
+            
+            
 
 
         if epoch % 50 == 0:
@@ -347,29 +382,31 @@ for config in configs:
             print("Test errors (MAX and MSE): " +
                 f"{e_max:.2e} and {e_mse:.2e}")
 
-            # we compute NTK every 50 epochs (min/max only for print)
-            if epoch % 5000 == 0:
-                
-                #ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-                #ntk_eigenvalues[epoch] = eigenvalues
-                ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
-                ntk_eigenvalues_full[epoch] = eigenvalues
-                #print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+        # we compute NTK every 50 epochs (min/max only for print) - COMMENTED OUT FOR PERFORMANCE
+        if epoch % 5000 == 0:
+            
+            # ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+            # ntk_eigenvalues[epoch] = eigenvalues
+            # ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
+            # ntk_eigenvalues_full[epoch] = eigenvalues
+            # print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+            pass  # we skip NTK computation for better performance
 
-        # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
+        # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis - COMMENTED OUT FOR PERFORMANCE
         if epoch % 50 == 0 and min(epoch, 1500) == epoch:
-            ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
-            ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
-            ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
+            # ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
+            # ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
+            # ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
 
             # we store model parameters as a flattened tensor
-            params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters()])
-            parameters_snapshots[epoch] = params_flat.numpy()
+            # params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters() if p.requires_grad])
+            # parameters_snapshots[epoch] = params_flat.numpy()
 
-            print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
-            print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
+            # print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
+            # print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
+            pass  # we skip NTK and parameter storage for better performance
 
-        if epoch % 5000 == 0:
+        if epoch % 75 == 0 and min(epoch, 1500) == epoch:
             if epoch % 100 == 0:
                 # Plot the results
                 x = np.linspace(-1, 1, 1000)
@@ -403,27 +440,33 @@ for config in configs:
             time=time.time()-time1
             )
 
-    # we save ntk matrices evolution
+    # we save ntk matrices evolution - COMMENTED OUT FOR PERFORMANCE
     if len(ntk_matrices) > 0:
         # we convert epoch keys to strings for npz format
-        ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
-        #np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
-        #print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
+        # ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
+        # np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
+        # print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
         # we also save epochs list for reference
-        ntk_epochs = sorted(ntk_matrices.keys())
-        print(f"NTK matrices stored at epochs: {ntk_epochs}")
-        print(f"NTK matrix shape: {ntk_matrices[ntk_epochs[0]].shape}")
+        # ntk_epochs = sorted(ntk_matrices.keys())
+        # print(f"NTK matrices stored at epochs: {ntk_epochs}")
+        # print(f"NTK matrix shape: {ntk_matrices[ntk_epochs[0]].shape}")
+        pass  # we skip NTK matrix saving for better performance
+    else:
+        print("No NTK matrices computed (commented out for performance)")
 
-    # we save model parameters evolution
+    # we save model parameters evolution - COMMENTED OUT FOR PERFORMANCE
     if len(parameters_snapshots) > 0:
         # we convert epoch keys to strings for npz format
-        #params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
-        #np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
-        #print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
+        # params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
+        # np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
+        # print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
         # we also save epochs list for reference
-        params_epochs = sorted(parameters_snapshots.keys())
-        print(f"Parameters stored at epochs: {params_epochs}")
-        print(f"Parameter vector size: {len(parameters_snapshots[params_epochs[0]])}")
+        # params_epochs = sorted(parameters_snapshots.keys())
+        # print(f"Parameters stored at epochs: {params_epochs}")
+        # print(f"Parameter vector size: {len(parameters_snapshots[params_epochs[0]])}")
+        pass  # we skip parameter evolution saving for better performance
+    else:
+        print("No parameter snapshots computed (commented out for performance)")
 
     # we save results to json
     results = {
@@ -434,10 +477,10 @@ for config in configs:
         "training_time_seconds": float(time.time()-time1),
         "total_parameters": sum(p.numel() for p in model.parameters()),
         "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
-        "ntk_epochs_stored": sorted(ntk_matrices.keys()) if len(ntk_matrices) > 0 else [],
-        "ntk_matrix_shape": ntk_matrices[list(ntk_matrices.keys())[0]].shape if len(ntk_matrices) > 0 else None,
-        "parameters_epochs_stored": sorted(parameters_snapshots.keys()) if len(parameters_snapshots) > 0 else [],
-        "parameter_vector_size": len(parameters_snapshots[list(parameters_snapshots.keys())[0]]) if len(parameters_snapshots) > 0 else None,
+        "ntk_epochs_stored": [],  # we skip NTK storage for performance
+        "ntk_matrix_shape": None,  # we skip NTK storage for performance
+        "parameters_epochs_stored": [],  # we skip parameter storage for performance
+        "parameter_vector_size": None,  # we skip parameter storage for performance
     }
 
     with open(os.path.join(output_dir, "results.json"), "w") as f:
@@ -486,88 +529,94 @@ for config in configs:
     plt.savefig(os.path.join(output_dir, 'loss_std_evolution.png'), dpi=100)
     plt.close()
 
-    # we plot NTK eigenvalues (min/max)
+    # we plot NTK eigenvalues (min/max) - COMMENTED OUT FOR PERFORMANCE
     if len(ntk_eigenvalues) > 0:
-        epochs_list = sorted(ntk_eigenvalues.keys())
-        max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
-        min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
+        # epochs_list = sorted(ntk_eigenvalues.keys())
+        # max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
+        # min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
 
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
-        fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
+        # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
+        # fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
 
-        ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Max Eigenvalue')
-        ax1.set_title('NTK Maximum Eigenvalue')
-        ax1.grid(True, alpha=0.3)
-        ax1.set_yscale('log')
+        # ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
+        # ax1.set_xlabel('Epoch')
+        # ax1.set_ylabel('Max Eigenvalue')
+        # ax1.set_title('NTK Maximum Eigenvalue')
+        # ax1.grid(True, alpha=0.3)
+        # ax1.set_yscale('log')
 
-        ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('|Min Eigenvalue|')
-        ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
-        ax2.grid(True, alpha=0.3)
-        ax2.set_yscale('log')
+        # ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
+        # ax2.set_xlabel('Epoch')
+        # ax2.set_ylabel('|Min Eigenvalue|')
+        # ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
+        # ax2.grid(True, alpha=0.3)
+        # ax2.set_yscale('log')
 
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
-        plt.close()
+        # plt.tight_layout()
+        # plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
+        # plt.close()
+        pass  # we skip NTK eigenvalue plotting for better performance
+    else:
+        print("No NTK eigenvalues computed (commented out for performance)")
 
-    # we plot full NTK eigenvalue spectrum (every 1000 epochs)
+    # we plot full NTK eigenvalue spectrum (every 1000 epochs) - COMMENTED OUT FOR PERFORMANCE
     if len(ntk_eigenvalues_full) > 0:
-        epochs_full = sorted(ntk_eigenvalues_full.keys())
+        # epochs_full = sorted(ntk_eigenvalues_full.keys())
 
         # we create a plot with all eigenvalues at each epoch
-        fig = plt.figure(figsize=(10, 6))
+        # fig = plt.figure(figsize=(10, 6))
 
-        for epoch in epochs_full[:10]:
-            eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
-            indices = np.arange(len(eigs))
-            plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
+        # for epoch in epochs_full[:10]:
+        #     eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
+        #     indices = np.arange(len(eigs))
+        #     plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
 
-        plt.xlabel('Eigenvalue Index')
-        plt.ylabel('|Eigenvalue| (log scale)')
-        plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
-        # i want to put the legend on the right side of the plot
-        plt.legend(loc='right')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
-        plt.close()
+        # plt.xlabel('Eigenvalue Index')
+        # plt.ylabel('|Eigenvalue| (log scale)')
+        # plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
+        # # i want to put the legend on the right side of the plot
+        # plt.legend(loc='right')
+        # plt.grid(True, alpha=0.3)
+        # plt.tight_layout()
+        # plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
+        # plt.close()
 
         # we plot first 5 and last 5 eigenvalues over time
-        fig, axes = plt.subplots(10, 1, figsize=(10, 16))
-        fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
+        # fig, axes = plt.subplots(10, 1, figsize=(10, 16))
+        # fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
 
         # we plot first 5 eigenvalues (smallest)
-        for i in range(5):
-            ax = axes[i]
-            eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][i]) for ep in epochs_full]  # we use absolute value
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
-            ax.set_ylabel(f'|λ_{i+1}|', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
+        # for i in range(5):
+        #     ax = axes[i]
+        #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][i]) for ep in epochs_full]  # we use absolute value
+        #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
+        #     ax.set_ylabel(f'|λ_{i+1}|', fontsize=10)
+        #     ax.grid(True, alpha=0.3)
+        #     ax.set_yscale('log')
+        #     if i < 4:
+        #         ax.set_xticklabels([])
 
         # we plot last 5 eigenvalues (largest)
-        n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
-        for i in range(5):
-            ax = axes[5 + i]
-            idx = n_eigs - 5 + i
-            eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][idx]) for ep in epochs_full]  # we use absolute value
-            ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
-            ax.set_ylabel(f'|λ_{idx+1}|', fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.set_yscale('log')
-            if i < 4:
-                ax.set_xticklabels([])
+        # n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
+        # for i in range(5):
+        #     ax = axes[5 + i]
+        #     idx = n_eigs - 5 + i
+        #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][idx]) for ep in epochs_full]  # we use absolute value
+        #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
+        #     ax.set_ylabel(f'|λ_{idx+1}|', fontsize=10)
+        #     ax.grid(True, alpha=0.3)
+        #     ax.set_yscale('log')
+        #     if i < 4:
+        #         ax.set_xticklabels([])
 
-        axes[-1].set_xlabel('Epoch', fontsize=12)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
-        plt.close()
-        print("NTK first/last 5 eigenvalues plot saved")
+        # axes[-1].set_xlabel('Epoch', fontsize=12)
+        # plt.tight_layout()
+        # plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
+        # plt.close()
+        # print("NTK first/last 5 eigenvalues plot saved")
+        pass  # we skip NTK full spectrum plotting for better performance
+    else:
+        print("No NTK full spectrum computed (commented out for performance)")
 
     # we plot final prediction/fit
     x_plot = np.linspace(-1, 1, 1000)
