@@ -406,29 +406,37 @@ for config in configs:
             # print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
             pass  # we skip NTK and parameter storage for better performance
 
-        if epoch % 75 == 0 and min(epoch, 1500) == epoch:
-            if epoch % 100 == 0:
-                # Plot the results
-                x = np.linspace(-1, 1, 1000)
-                y_nn = learned_nn(x)
-                y_true = func(x)
-                fig = plt.figure(figsize=(6, 4))
-                plt.plot(x, y_true, label='true function')
-                plt.plot(x, y_nn, label='learned network')
-                plt.xticks(np.linspace(*config["interval"], 5))
-                plt.tick_params(axis='both',
-                                which='major', labelsize=12)
-                plt.grid(True, axis='both', color='#AAAAAA',
-                        linestyle='--', linewidth=1.4)
-                config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
-                plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
-                plt.tight_layout()
-                plt.legend(loc="upper center", fontsize=13, ncol=2)
+        # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
+        should_plot = False
+        if epoch <= 1000 and epoch % 100 == 0:
+            should_plot = True
+        elif 1000 < epoch <= 10000 and epoch % 1000 == 0:
+            should_plot = True
+        elif epoch > 10000 and epoch % 10000 == 0:
+            should_plot = True
+            
+        if should_plot:
+            # Plot the results
+            x = np.linspace(-1, 1, 1000)
+            y_nn = learned_nn(x)
+            y_true = func(x)
+            fig = plt.figure(figsize=(6, 4))
+            plt.plot(x, y_true, label='true function')
+            plt.plot(x, y_nn, label='learned network')
+            plt.xticks(np.linspace(*config["interval"], 5))
+            plt.tick_params(axis='both',
+                            which='major', labelsize=12)
+            plt.grid(True, axis='both', color='#AAAAAA',
+                    linestyle='--', linewidth=1.4)
+            config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
+            plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
+            plt.tight_layout()
+            plt.legend(loc="upper center", fontsize=13, ncol=2)
 
-                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
-                plt.close()
-                if config["show_plot"]:
-                    plt.show()
+            plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+            plt.close()
+            if config["show_plot"]:
+                plt.show()
 
     torch.save(model.state_dict(), os.path.join(output_dir, 'model_parameters.pth'))
     np.savez(os.path.join(output_dir, "errors.npz"),
