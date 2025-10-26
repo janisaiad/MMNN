@@ -20,7 +20,9 @@ import time
 import os
 import json
 
-
+torch.set_float32_matmul_precision('high')
+torch.backends.cudnn.allow_tf32 = True
+torch.backends.cuda.matmul.allow_tf32 = True
 # %%
 
 
@@ -89,7 +91,7 @@ class MMNN(nn.Module):
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x[:,:n] = x[:,:n] + x_id[:,:n]
-        return x/self.product
+        return x
 
 # %%
 import torch
@@ -153,9 +155,9 @@ print(f"Training on device: {device}")
 configs = []
 for lr_init in [0.001, 0.0001]:
     for batch_size in [1000]:
-        for num_layers in [12,15,10,20,8,25]:
+        for num_layers in [8,10,12,15,10,20,8,25]:
             for hidden_width in [512,768,1024,1536,164,128,256,1024,2048,4096,8192]:
-                for hidden_rank in [25,30,35,40,45,50]:
+                for hidden_rank in [5,10,15,20,25,30,35,40,45,50]:
                     configs.append({
                         # architecture hyperparameters
                         "num_layers": num_layers,
@@ -166,7 +168,7 @@ for lr_init in [0.001, 0.0001]:
                         "use_resnet": False,
 
                         # training hyperparameters
-                        "num_epochs": 2000,
+                        "num_epochs": 1000,
                         "batch_size": batch_size,
                         "num_training_samples": 600,
                         "num_test_samples": 133,
@@ -255,6 +257,8 @@ for config in configs:
                     device=device,
                     ResNet=config["use_resnet"])
     
+    model = torch.compile(model)
+    
     def func(x):
         x1, x2 = x[:, 0], x[:, 1]
         s = 2
@@ -327,7 +331,13 @@ for config in configs:
         scheduler.step()
 
 
-        
+        grads = [
+        param.grad.detach().flatten()
+        for param in model.parameters()
+        if param.grad is not None
+        ]
+        norm = torch.cat(grads).norm()
+        print("Gradient norm: ", norm.item())
         # we print the day hour etc ;;
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         training_error = loss.item()
