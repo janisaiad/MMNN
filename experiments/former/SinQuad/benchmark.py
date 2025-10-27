@@ -152,7 +152,7 @@ print(f"Training on device: {device}")
 # Generate configs with different depths, hidden ranks and widths
 configs = []
 
-
+"""
 for num_layers in [2,4,6,8,10,12,15,20,25]:
     for hidden_width in [512,666,1024,256,128,64,32]:
         for hidden_rank in [50,36,30,20,15,10,5]:                                
@@ -160,7 +160,16 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
                 for threshold in [1e-1,7e-2,3e-2,1e-2, 7e-3]:
                     for lr_decay_steps in [10,20,50,100, 200, 500]:
                         for batch_size in [100, 250, 500, 1000]:
-                                            
+   """                                     
+   
+
+for num_layers in [4,6,8,10,12,15,20,25]:
+    for hidden_width in [512,666,1024,256]:
+        for hidden_rank in [50,36,30,20,15,10,5]:                                
+            for gamma_2 in [0.9,0.99]:
+                for threshold in [1e-1,7e-2,3e-2,1e-2, 7e-3]:
+                    for lr_decay_steps in [10,20,50,100, 200, 500]:
+                        for batch_size in [100, 250, 500, 1000]:    
                             configs.append({
                                 # architecture hyperparameters
                                 "num_layers": num_layers,
@@ -250,7 +259,7 @@ for config in configs:
                 f"lr_decay_steps{config['lr_decay_steps']}"
                 f"gamma_2{config['gamma_2']}")
     # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching", folder_name,sub_folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching",sub_folder_name,folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
