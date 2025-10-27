@@ -163,11 +163,11 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
    """                                     
    
 
-for num_layers in [4,6,8,10,12,15,20,25]:
+for num_layers in [4,6,8,10]:
     for hidden_width in [512,666,1024,256]:
         for hidden_rank in [50,36,30,20,15,10,5]:                                
-            for gamma_2 in [0.9,0.99]:
-                for threshold in [1e-1,7e-2,3e-2,1e-2, 7e-3]:
+            for gamma_2 in [0.95,0.99]:
+                for threshold in [3e-2,1e-2, 7e-3,1e-1,7e-2]:
                     for lr_decay_steps in [10,20,50,100, 200, 500]:
                         for batch_size in [100, 250, 500, 1000]:    
                             configs.append({
@@ -180,15 +180,15 @@ for num_layers in [4,6,8,10,12,15,20,25]:
                                 "use_resnet": False,
 
                                 # training hyperparameters
-                                "num_epochs": 500000,
+                                "num_epochs": 10000,
                                 "batch_size": batch_size,
-                                "num_training_samples": 300,
+                                "num_training_samples": 600,
                                 "num_test_samples": 1000,
 
                                 # learning rate schedule
                                 "lr_init": 0.001,
                                 "lr_gamma": 0.99,
-                                "lr_step_size": 500,
+                                "lr_step_size": 2000,
 
                                 # problem setup
                                 "interval": [-1, 1],
@@ -280,7 +280,7 @@ for config in configs:
         y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* x**2)
         return y
 
-
+    
 
 
     # nous vérifions l'initialisation
@@ -316,6 +316,7 @@ for config in configs:
 
     losses_std = []
 
+    optim_string = f"Adam_{config['lr_init']}"
     optimizer = optim.Adam(model.parameters(), lr=config["lr_init"])
     scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
     criterion = nn.MSELoss()
@@ -340,9 +341,9 @@ for config in configs:
         if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
             has_changed_optimizer = True
             print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/50, momentum=0.9, nesterov=True)
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100, momentum=0.3,nesterov=True)
             scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-        
+            optim_string = f"SGD_{config['lr_init']/100}"
         if epoch > 2000 and loss.item() < config["threshold"]/50 and has_changed_optimizer and not has_changed_optimizer_2:
             has_changed_optimizer_2 = True
             print("Changing optimizer to Adam")
@@ -351,7 +352,7 @@ for config in configs:
             lr_step_size= config["lr_decay_steps"]
             optimizer = optim.Adam(model.parameters(), lr=lr_init)
             scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
-            
+            optim_string = f"Adam_{lr_init}"
             
             
 
@@ -363,7 +364,8 @@ for config in configs:
             print(f"\nEpoch {epoch} / {config['num_epochs']}" +
                 f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
                 f"\nTraining error (MSE): { training_error :.2e}" +
-                f"\nTime used: { time.time() - time1 :.2f}s")
+                f"\nTime used: { time.time() - time1 :.2f}s" +
+                f"\nOptimizer: {optim_string}")
             errors_train.append(training_error)
             # we compute the std for the last 50 losses in the log space
             losses_std.append(np.std(np.log10(all_losses[-50:])))
