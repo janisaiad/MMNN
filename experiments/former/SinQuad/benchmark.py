@@ -180,7 +180,7 @@ for num_layers in [4,6,8,10,12,15,20,25]:
                                 "use_resnet": False,
 
                                 # training hyperparameters
-                                "num_epochs": 50000,
+                                "num_epochs": 500000,
                                 "batch_size": batch_size,
                                 "num_training_samples": 300,
                                 "num_test_samples": 1000,
@@ -340,7 +340,7 @@ for config in configs:
         if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
             has_changed_optimizer = True
             print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100, momentum=0.9, nesterov=True)
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/50, momentum=0.9, nesterov=True)
             scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
         
         if epoch > 2000 and loss.item() < config["threshold"]/50 and has_changed_optimizer and not has_changed_optimizer_2:
