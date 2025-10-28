@@ -163,7 +163,7 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
    """                                     
    
 
-for num_layers in [4,6,8,10]:
+for num_layers in [6,8,10]:
     for hidden_width in [512,666,1024,256]:
         for hidden_rank in [50,36,30,20,15,10,5]:                                
             for gamma_2 in [0.95,0.99]:
