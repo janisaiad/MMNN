@@ -135,8 +135,22 @@ and what's happening if we don't train only the 1st layer ?
 
 
 
- from meanfieldlandscape2layers
-
- 
+breakthrough from meanfieldlandscape2layers
 $(ii)$~Multiple finite-$N$ local minima can correspond to the same  minimizer $\rho_*$ of $R(\rho)$ in the limit
 $N\to\infty$. Ideas from glass theory \cite{mezard1999thermodynamics} might be useful to investigate this structure.
+
+"
+We will prove below that, for $\beta<\infty$, the evolution \eqref{eq:GeneralPDE_Temp} generically converges to the minimizer of
+$F_{\beta, \lambda}(\rho)$, hence implying global convergence of noisy SGD in a number of steps \emph{independent of $N$}.
+"
+
+
+from the globalconvergence it's having a full supoort at each time that gives universal approximation
+but the random features keep that ! we keep a huge support because it remains the same !
+
+
+
+
+
+i've identified that i should take back the math ODE material for 3 layers but simplifying it, using this insight i could prove non quantitative convergence result
+
