@@ -1,0 +1,130 @@
+\documentclass[10pt]{article} 
+\usepackage[left=1in,top=1in,right=1in,bottom=1in,letterpaper]{geometry}
+
+\usepackage[ansinew]{inputenc}
+%\usepackage{graphics} 
+\usepackage{ upgreek }
+
+\usepackage{multicol}
+\usepackage{blindtext}
+\usepackage{enumitem}
+\usepackage{calc}
+\usepackage{ifthen}
+\usepackage{amsmath,amsthm,amsfonts,amssymb}
+\usepackage{color,graphicx,overpic}
+\usepackage{hyperref, thmtools}
+\usepackage{bbm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{subcaption}
+\usepackage{nicefrac}
+\usepackage{nicematrix}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.17}
+\usepackage{tikz}
+\usepackage{adjustbox}
+\usepackage{calc}
+
+
+\newlength\TopY
+\newlength\BotY
+\newlength\TotalHeight
+
+
+\newcommand{\ws}{\bs{w}_*}
+\newcommand{\eq}[1]{\begin{align}#1\end{align}}
+
+\newcommand{\bhline}[1]{\noalign{\hrule height #1}}  
+\newcommand{\bvline}[1]{\vrule width #1}  
+
+\newcommand*\samethanks[1][\value{footnote}]{\footnotemark[#1]}
+
+\usepackage{tcolorbox}  % in preamble
+
+\tcbset{
+  colframe=black!60,
+  colback=white,
+  boxrule=0.5pt,
+  sharp corners,
+  left=5pt, right=5pt, top = 4pt, bottom = 4pt}
+
+\setlength{\parskip}{0.4em}
+
+\usepackage{titlesec}
+\titlespacing*{\paragraph}{0pt}{2.5pt plus 1pt minus 1pt}{1em}
+
+\makeatletter
+\newcommand{\leqnomode}{\tagsleft@true}
+\newcommand{\reqnomode}{\tagsleft@false}
+\makeatother
+
+\input{_macros}
+
+% Define BibTeX command
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+
+% \newcommand{\DW}[1]{\textcolor{violet}{\bf (DW: #1)}}
+% \newcommand{\MV}[1]{\textcolor{purple}{\bf (MV: #1)}}
+
+
+
+\mathtoolsset{showonlyrefs}
+\setlength{\parindent}{0pt}
+
+\title{Learning quadratic neural networks in high dimensions:\\ SGD dynamics and scaling laws}
+ 
+
+\author{
+G\'erard Ben Arous\thanks{New York University. \texttt{benarous@cims.nyu.edu}.},\,\,
+Murat A. Erdogdu\thanks{University of Toronto and Vector Institute. \texttt{\{erdogdu,vural\}@cs.toronto.edu}.},\,\,
+N. Mert Vural\samethanks[2],\,\,
+Denny Wu\thanks{New York University and Flatiron Institute. \texttt{dennywu@nyu.edu}.}
+\vspace{-3mm}
+}
+
+
+
+\begin{document}
+\maketitle
+
+% \vspace{-2.5mm}
+
+\input{abstract}
+
+\allowdisplaybreaks
+\input{intro}
+\input{results}
+\input{sketch}
+\input{conclusion}
+
+\bigskip
+
+\subsection*{Acknowledgment}
+
+The authors thank Florent Krzakala, Jason D.~Lee, and Lenka Zdeborov{\'a} for discussion and feedback. 
+The research of GBA was supported in part by NSF grant 2134216. 
+MAE was partially supported by the
+NSERC Grant [2019-06167], the CIFAR AI Chairs program, and the CIFAR Catalyst grant. 
+Part of this work was completed when NMV interned at the Flatiron Institute. 
+
+\bigskip
+
+{
+
+% \fontsize{10}{10}\selectfont     
+
+\bibliography{ref}  
+\bibliographystyle{alpha} 
+
+\newpage
+
+}
+
+\appendix
+
+\input{proofs}
+
+\end{document}
