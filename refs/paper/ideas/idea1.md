@@ -154,3 +154,165 @@ but the random features keep that ! we keep a huge support because it remains th
 
 i've identified that i should take back the math ODE material for 3 layers but simplifying it, using this insight i could prove non quantitative convergence result
 
+
+
+##0611
+
+my idea is to write an incremental paper, because from random features, low ranks, optimizer switching, high dim point of view, central flow point of view
+generalization, approximation, adding the PINN loss and sobolev training framework from papers found, the litterature is very big and I need to disentangle every piece
+of contributions I add
+
+NTK and RKHS with randomness (high dim also), partial training then random, the spherical harmonics point of view (multi index model also)
+inductive bias of low frequencies and lower X (maybe explained by the NTK) and NTK interpolation , and also tfinally the unifying tensorprograms theory added with muP to work well the theory, then the terjek-like analysis for the NTK spectrum with depth (ideally that's cool because we can go in the NTK regime then), from tensorprograms we inherits hyperparam transfer, then the NTK for infinite width and NTK for DSRN
+the PINN analysis go then (ernest ryu)
+
+i've not even talked about the transformers analysis, and the hermite expansion i wanna try, also the spectrum of kernel random matrices
+
+and at the whole end, the NTK review book, and then the DL optimization book
+
+mainly my results lie in the mean field framework (between 500 and 5000 width), and I need to prove that it beats MLP for conference paper also by adding the benchmark
+in comparison for 3 layers
+so for the arxiv i before put all the math i've done to have a great math paper, for the conference i'll work on the benchmark, sincerely all the math i've done so far
+
+i'll also give the insight for 3 layers by convergence theorem and universal approximation as explained in globalconvergencesthreelayers because this is what we see in the experimental results
+
+
+i'm gonna sell this under the random features framework before to inherits from the generalization/approxiamtion litterature already given
+recall that mean field approx don't care about input dimensions, sos it's an orthogonal viewpoint on tackling the problem
+
+more and more we will construct the preprint adding results in this direction like tensor programs
+
+in fact mmnn is Low rank random features networkn
+
+
+
+The goal of the paper is 1st to provide extensive
+we do 1st an extensive litterature review, to be added at the end because of showing up computations
+we should mention a lot of people in the review, also the montufar paper with only 1 hidden layer growing
+
+we provide 1qst explanation of why MMNN tends to have great training behavior, we conjecture this kind of architecture forms a good preconditionning technique
+to combine RF and low rank is mainly due to  https://arxiv.org/pdf/2209.13569 remarks and a way to make hand computations tractable at a large scale
+
+1)
+NTK, we have the recursive formulation for the NTK, with the probabilistic view point and std wrt r so concentraion bounds holds for r and also
+for input dimensions; we believe that this NTK regime that appears with very smaller parameter budget can lead to better understanding of 1st part of training behavior
+
+then we show experiments confirming the NTK training behavior for practical tasks and also comparing predictions/exp for a simple NN cosine regression
+we increase dimensions, r see how practical NTK behave compare to theory and where lazy training stops, we still want to show the 1st part of lazy training analyze the NTK inductive bias for lower inots absolute values (we show it appears)
+
+it won't be a benchmark paper but a physics theory inspired paper
+mathematically, we believe also that having r between 5 and 50 lead very good results in general for many tasks that can lead for around 30 good concentration bound
+and enough expressivity with fewer weights (Tflops analysis, maybe scaling law)
+
+about expressivity we describe the RKHS (BE CAREFUL THERE IS EXTENSIVE APPROX THEOREMS FOR RF MODELS), from bach paper, but also misiakewicz
+the goal of this RKHS analysis is here to provide statistical guarantees that our intuition for MMNN approximation results will holds
+and give quantitative generalization bounds
+
+then we extent in a finite width correction way the NTK (as explained in theory we can lead to better depth estimation of early part of training)
+the finitewidth correction is in Nr due to EOC for MMNNs !
+
+we explain that the NTK randomness can lead to a lyapunov product expansion analysis and can explain a better conditionning than NN
+or at least a faster early training curve, we have to keep in mind normalization data
+we also show what's going on with the NTK std because disagreeing experiments with 1/r² instead of 1/r
+
+
+
+
+also we can show a bit the analysis wrt non gaussian process propagation , the fact it differs from the NTK trying to fit a kernel gaussian process
+there is no interpretation like that 
+
+
+there should be a propagation of rho argument following, how the rho_i propagates due to the fisher law
+
+we give in appendix computations for bias related gaussian NTK and standard deviations
+we apply a theorem from 'spectrum of kernel random matrices' that explain all of our NTK results in theory,  there will be 2 randomness to disentangle so we would have a bound in 1/r then ..
+we have to be careful because for the paper 'the spectrum of kernel random matrices' need a linear number of samples wrt dimension
+
+and we compare with MLP !!! especially from Terjek paper
+
+for the NTK there is a expansion in sum of C_i/r^i (1 to L) for L layers and C_i a random variable to be computed according to rho_i, from rho the cosine dist between x and y vector
+finer analysis of the constant from lyapunov product analysis of those (1-arccos(rho_i)/pi) ; the pertubation in the kernel random matrix leads
+to a bulk spectrum/outlier that differs from MLP
+
+with this 1/r expansion maybe this is the premise to the finite width correction in infinite depth !! great idea to explore then
+
+outlier analysis inherits from terjek analysis and its scaling then, there is a complete analysis to give on how the bulk will behave/outlier (ben arous discussion)
+since what matters is outliers analysis we need to experiment on spherical 2d and 3d data (circle and sphere) because it avoids scaling issues
+and the cosine distance can be very well understood
+
+
+we can understood that the NTK decay
+
+the code will be released in JAX first but then in torch (because of cuda management for my PC, maybe i'll see then)
+
+the fact NTK converges to 1 in large low rank tells us that RF gives 
+we can give results for high dim entries with d N r growing linearly from "the spectrum of kernel random matrices"
+because we conjecture we need only a linear number of dictionary functions wrt input dim, in this regime we grow N d r at the same time !! (NTK analysis from marchenko pastur holds !!)
+so that we avoid the complexity and get 3 layers analysis in this direction
+
+the linear coefficient between d and N comes from discretization, N width grows and we have gram product with rho_1 as random variables ! conditioned on X
+
+then we have a doubly random matrix, we have gram matrix appearing ! the spectrum is linearized wrt outputs and then we can apply marchenko pastur theory
+
+weh sould see only 1 outlier that describe the early trianing part, as of terjek, and we recover it in a easier manner more tractable
+
+i think the explanation of 1/r² decay comes from the 1/r randomness added from the gram output in NElkaroui paper !!
+
+we can then explain the NTK bulk in a normalized * r² manner 
+
+
+this is the most interesting regime
+
+
+
+
+
+
+
+A very important aspect is that the curse of dim makes not to have unit norm w but not unit norm bias, it depends on if your data are normalized or in hypercube
+if hypoercube then we need Tr(sigma_w) = d and unit bias to be sure approx theorem remains applicable
+if spherical, unit norm weight and unit bias
+
+This has an impact on the NTK std  ! ! and explain which NTK is useful for which case, in particular over the sphere Tr = 1 and we remove the 1/r coming from normalization
+
+
+we're doing our full analysis on 2 mmnn layers because of untractable integral arising after the 2nd mmnn layer, we can tackle infinite layer NTK with the 1/r exponential expansion
+
+since we only have 2 hidden layers, finite width corrections are tractable ! and we can try to have Nr and r/d scaling law
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2) the 2nd part of training, end of lazy training
+we hope to explain this part with no finite width corrections, we will try to do a comparison between the minimum found by this and
+what we get in practice
+
+then we describe all our experiments showing this dictionary feature learning, behavior accross layers for several dimensional tasks
+
+
+
+
+
+3) about finite width corrections
+
+we show then our results on finite width corrections scaling wrt depth, scaling law,
+do comparison with what PMISOF get and try to show this can lead to great optimization bounds in the future
+especially in RF low rank models where we can combine high dim stats and feynman to get scaling law for any depth
+this can lead to a great future direction of research because of tractability for low rank RF models
+
+also we have a NTK theory for 2 layers 
+
