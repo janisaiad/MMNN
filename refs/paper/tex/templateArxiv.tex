@@ -16,6 +16,12 @@
 
 % Math and theorem environments
 \usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\definecolor{personalcontribcolor}{RGB}{30,136,229}
+\definecolor{k3color}{RGB}{233,30,99}
 
 % Header
 \pagestyle{fancy}
@@ -23,43 +29,180 @@
 \rhead{ \textit{} }
 
 % Update your Headers here
-\fancyhead[LO]{MMNN and NTK}
+\fancyhead[LO]{Low-rank random features and NTK}
 
 % Macros
-\newcommand{\ReLU}{\mathrm{ReLU}}
+\DeclareRobustCommand{\ReLU}{\mathrel{\text{%
+\begin{tikzpicture}[baseline=(current bounding box.south)]
+    \draw[thick] (0,0) -- (0.25,0) -- (0.4,0.25);
+\end{tikzpicture}}}\!\!}
 \newcommand{\Kop}{\boldsymbol{\Theta}}
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
+\newtheorem{assumption}{Assumption}
 
 %% Title
-\title{MMNN: Neural Tangent Kernel Recursion, Low-Rank Random Features,\\
-and Scaling Laws in the Infinite-Width Regime}
+\title{Low rank and random features neural network optimization}
 
 \author{
-  Author1, Author2 \\
-  Affiliation \\
-  Univ \\
-  City\\
-  \texttt{email@example.com}
+  Janis Aiad\thanks{First author, work done during a visit at UMD}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
+  $^{1}$ École Polytechnique \\
+  $^{2}$ University of Maryland, Department of Mathematics; Department of Computer Science \\
+  $^{3}$ The Hong Kong Polytechnic University
 }
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We study \textit{Multi-Component Multi-layer Neural Networks} (MMNN), an architecture where only the linear outputs $(A^{(\ell)},c^{(\ell)})$ are trained while the input weights $(w^{(\ell)},b^{(\ell)})$ are frozen at random. This factorization drastically reduces the optimization dimension, stabilizes training under NTK parameterization, and admits an explicit Neural Tangent Kernel (NTK) recursion in the sequential infinite-width limit. We formalize the MMNN model, derive the NTK recursion, discuss the base and derivative NNGP kernels, and explain how low-rank bottlenecks yield fast $O(1/r)$ fluctuation decay. We connect these properties to emergent scaling laws and to the extensive-rank viewpoint where random features and low-rank structure jointly precondition optimization.
+We study low-rank random feature models (also referred to previously as MMNN~\cite{mmnn_ref}), an architecture where only the linear outputs $(A^{(\ell)},c^{(\ell)})$ are trained while the input weights $(w^{(\ell)},b^{(\ell)})$ are frozen at random. This factorization drastically reduces the optimization dimension, stabilizes training under NTK parameterization, and admits an explicit Neural Tangent Kernel (NTK) recursion in the sequential infinite-width limit. We formalize the model, derive the NTK recursion, discuss the base and derivative NNGP kernels, and explain how low-rank bottlenecks yield fast $O(1/r)$ fluctuation decay. We connect these properties to emergent scaling laws and to the extensive-rank viewpoint where random features and low-rank structure jointly precondition optimization.
 \end{abstract}
 
 % keywords can be removed
 \keywords{Neural Tangent Kernel \and Mean-Field \and Random Features \and Low Rank \and Scaling Laws \and Infinite Width}
 
 \section{Introduction}
-We consider MMNN as a principled compromise between expressivity and stability: at each layer $\ell$, the network linearly combines a frozen random nonlinear basis, and only the output weights and biases are trained. Empirically, MMNN exhibits dictionary/wavelet-like feature selection and ``spike'' localization via ReLU gating, while theoretically it supports a kernel regime governed by an explicit NTK recursion. Two complementary regimes arise:
+We consider low-rank random feature models (called MMNN in prior work~\cite{mmnn_ref}) as a principled compromise between expressivity and stability: at each layer $\ell$, the network linearly combines a frozen random nonlinear basis, and only the output weights and biases are trained. Empirically, these models exhibit dictionary/wavelet-like feature selection and ``spike'' localization via ReLU gating, while theoretically they support a kernel regime governed by an explicit NTK recursion. Two complementary regimes arise:
 (i) NTK parameterization ($1/\sqrt{n_\ell}$) inducing lazy training and linearized dynamics,
 (ii) mean-field parameterization fostering feature learning with nonlinear parameter evolution.
 Our focus is on the NTK view, its spectral preconditioning, and its interaction with low-rank bottlenecks.
 
-\section{MMNN Model}
+\medskip
+In deep learning, the central task is to optimize a highly non-convex and high-dimensional loss to obtain parameters that generalize. Gradient-based methods (e.g., SGD) are foundational, yet their efficiency hinges on the conditioning of the loss landscape. \textbf{Preconditioning} transforms the problem to improve conditioning, accelerating convergence. In this work we study architectural preconditioning via the \textbf{Neural Tangent Kernel (NTK)} lens, connecting infinitely wide limits to linear models with fixed kernels, and we analyze how low-rank random feature design impacts optimization dynamics through NTK spectra.
+
+\subsection*{A motivating architecture and its two-layer NTK}
+The considered architecture is:
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=2cm and 3cm,
+        neuron/.style={circle, draw, fill=blue!20, minimum size=15pt},
+        input/.style={circle, draw, fill=green!20, minimum size=15pt},
+        output/.style={circle, draw, fill=red!20, minimum size=15pt},
+        hidden/.style={circle, draw, fill=yellow!20, minimum size=15pt},
+        bottleneck/.style={circle, draw, fill=orange!30, minimum size=15pt},
+        thick
+    ]
+    
+    % Input layer
+    \node[input] (x1) at (0,2) {$x_1$};
+    \node[input] (x2) at (0,1) {$x_2$};
+    \node[input] (x3) at (0,0) {$x_3$};
+    \node[input] (xd) at (0,-1) {$x_d$};
+    \node at (0,-1.5) {$\vdots$};
+    
+    % First hidden layer
+    \node[hidden] (h11) at (3,2.5) {$h_1^{(1)}$};
+    \node[hidden] (h12) at (3,1.5) {$h_2^{(1)}$};
+    \node[hidden] (h13) at (3,0.5) {$h_3^{(1)}$};
+    \node[hidden] (h14) at (3,-0.5) {$h_4^{(1)}$};
+    \node[hidden] (h15) at (3,-1.5) {$h_5^{(1)}$};
+    \node at (3,-2) {$\vdots$};
+    
+    % Bottleneck layer (low rank)
+    \node[bottleneck] (b1) at (6,1) {$b_1$};
+    \node[bottleneck] (b2) at (6,0) {$b_2$};
+    \node at (6,-0.5) {$\vdots$};
+    
+    % Second hidden layer
+    \node[hidden] (h21) at (9,2.5) {$h_1^{(2)}$};
+    \node[hidden] (h22) at (9,1.5) {$h_2^{(2)}$};
+    \node[hidden] (h23) at (9,0.5) {$h_3^{(2)}$};
+    \node[hidden] (h24) at (9,-0.5) {$h_4^{(2)}$};
+    \node[hidden] (h25) at (9,-1.5) {$h_5^{(2)}$};
+    \node at (9,-2) {$\vdots$};
+    
+    % Output layer
+    \node[output] (y1) at (12,1.5) {$y_1$};
+    \node[output] (y2) at (12,0.5) {$y_2$};
+    \node[output] (yk) at (12,-0.5) {$y_k$};
+    \node at (12,-1) {$\vdots$};
+    
+    % Connections input to first hidden
+    \foreach \i in {1,2,3,d} {
+        \foreach \j in {11,12,13,14,15} {
+            \draw[->] (x\i) -- (h\j);
+        }
+    }
+    
+    % Connections first hidden to bottleneck
+    \foreach \i in {11,12,13,14,15} {
+        \foreach \j in {1,2} {
+            \draw[->] (h\i) -- (b\j);
+        }
+    }
+    
+    % Connections bottleneck to second hidden
+    \foreach \i in {1,2} {
+        \foreach \j in {21,22,23,24,25} {
+            \draw[->] (b\i) -- (h\j);
+        }
+    }
+    
+    % Connections second hidden to output
+    \foreach \i in {21,22,23,24,25} {
+        \foreach \j in {1,2,k} {
+            \draw[->] (h\i) -- (y\j);
+        }
+    }
+    
+    % Layer labels
+    \node at (0,-2.5) {\textbf{Input}};
+    \node at (0,-3) {$d_0 = d$};
+    
+    \node at (3,-2.5) {\textbf{Hidden 1}};
+    \node at (3,-3) {$n_1$ neurons};
+    
+    \node at (6,-1) {\textbf{Bottleneck}};
+    \node at (6,-1.5) {$r \ll n_1$ neurons};
+    
+    \node at (9,-2.5) {\textbf{Hidden 2}};
+    \node at (9,-3) {$n_2$ neurons};
+    
+    \node at (12,-1.5) {\textbf{Output}};
+    \node at (12,-2) {$d_L = k$};
+    
+    % Mathematical notation
+    \node at (1.5,3) {$\bm{W}^{(1)}$};
+    \node at (4.5,2) {$\bm{A}^{(1)}$};
+    \node at (7.5,2) {$\bm{W}^{(2)}$};
+    \node at (10.5,1.5) {$\bm{A}^{(2)}$};
+    
+    % Highlight low rank structure
+    \draw[red, thick, dashed] (5.5,1.5) rectangle (6.5,-0.75);
+    \node[red] at (6,-2.5) {\textbf{Low Rank}};
+    \node[red] at (6,-2.8) {\textbf{Component}};
+    
+    \end{tikzpicture}
+    \caption{Architecture of a Multi-component Multi-layer Neural Network (MMNN) with a low-rank intermediate layer. The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons.
+    We only train the output weights $\bm{A}^{(1)}$ and $\bm{A}^{(2)}$.}
+    \label{fig:mmnn_architecture}
+\end{figure}
+
+\paragraph{Two-layer NTK (for $\beta=0$).}
+For two hidden layers, the NTK can be written as:
+\begin{align}
+\textcolor{red}{\boldsymbol{\Theta}}^{(1)}(x,x') &= \mathbb{E}_{\bm{w}} \left[ \sigma(\bm{w}^\top x) \sigma(\bm{w}^\top x') \right] + 1 \nonumber\\
+\textcolor{red}{\boldsymbol{\Theta}}^{(2)}(x,x') &= \textcolor{red}{\boldsymbol{\Theta}}^{(1)}(x,x') \cdot \left(\sigma_A^2 \mathbb{E}_{\bm{w}} \left[ \dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x)) \dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x')) \bm{w}^\top\bm{w} \right]\right) \nonumber\\
+&\quad + \mathbb{E}_{\bm{w}} \left[ \sigma(\bm{w}^\top \bm{h}^{(1)}(x)) \sigma(\bm{w}^\top \bm{h}^{(1)}(x')) \right] + 1. \nonumber
+\end{align}
+
+\subsection*{Key Questions}
+\begin{itemize}
+    \item \textbf{Q1.} How does the MMNN architecture act as an implicit \emph{preconditioner} in the NTK regime, and how does its design influence the NTK spectrum (conditioning, smallest eigenvalues) and early optimization speed?
+    \item \textbf{Q2.} How do low-rank bottlenecks of rank $r$ shape NTK \emph{fluctuations} (e.g., $O(1/r)$) and induce practical \emph{scaling laws} across $(d,N,r)$ in the extensive-rank setting?
+\end{itemize}
+
+\subsection*{Our Contributions}
+\begin{itemize}
+    \item \textbf{NTK recursion with proofs.} We derive a clean NTK recursion for MMNN in the sequential infinite-width limit (Theorem), with full proofs deferred to Appendix A.
+    \item \textbf{Two-layer corollary.} We state an explicit two-layer NTK corollary and connect it to a simple architectural schematic (figure), clarifying each contribution term.
+    \item \textbf{Low-rank fluctuation bound.} We formalize how rank-$r$ bottlenecks yield $O(1/r)$ kernel fluctuation decay, motivating deterministic spectral approximations for moderate $r$.
+    \item \textbf{Conference-friendly body.} We keep the body exposition concise and intuitive; complete derivations and technicalities (LLN arguments, Jacobian products) are in Appendix A.
+\end{itemize}
+
+\section{NTK and lazy training analysis}
+\subsection{Model}
 Let $\bm{h}^{(0)}(\bm{x})=\bm{x}\in\mathbb{R}^{d_0}$. For $\ell=1,\dots,L$,
 \begin{equation}
 \label{eq:mmnn}
@@ -70,7 +213,7 @@ Let $\bm{h}^{(0)}(\bm{x})=\bm{x}\in\mathbb{R}^{d_0}$. For $\ell=1,\dots,L$,
 \end{equation}
 Training policy: $(\bm{A}^{(\ell)},\bm{c}^{(\ell)})$ are trained; $(\bm{w}^{(\ell)},b^{(\ell)})$ are frozen random draws. The $1/\sqrt{n_\ell}$ scaling (NTK parameterization) ensures a well-defined infinite-width limit; $\beta$ controls internal biases; $\sigma_c$ scales output biases. Low-rank bottlenecks (intermediate dimension $r\ll n_\ell$) compress correlations and improve conditioning.
 
-\section{Base NNGP and Derivative Kernels}
+\subsection{Base NNGP and Derivative Kernels}
 In the sequential infinite-width limit, the layer-$\ell$ base kernel is
 \begin{equation}
 \Sigma^{(\ell)}(x,x')
@@ -83,7 +226,7 @@ and the derivative kernel is
 \end{equation}
 For $\ell=1$ and centered Gaussian $(\bm{w},b)$, $\Sigma^{(1)}$ is rotation-invariant with standard closed forms, e.g. in terms of input cosine similarity $\rho$.
 
-\section{NTK Recursion for MMNN}
+\subsection{NTK Recursion}
 \begin{theorem}[NTK recursion]
 Under NTK parameterization and a sequential limit $n_1\to\infty,\dots,n_L\to\infty$ with $(\bm{w}^{(\ell)},b^{(\ell)})$ i.i.d. frozen after initialization, the layer-$\ell$ NTK satisfies
 \begin{align}
@@ -93,9 +236,25 @@ Under NTK parameterization and a sequential limit $n_1\to\infty,\dots,n_L\to\inf
 For $\ell=1$, $\Sigma^{(1)}$ is deterministic; for $\ell>1$, $\Sigma^{(\ell)}$ and $\dot{\Sigma}^{(\ell)}$ are random fields whose fluctuations shrink with width and with the rank $r$ of bottlenecks.
 \end{theorem}
 
+Proof: See Appendix A.1.
+
 \paragraph{Interpretation.} The additive term $\sigma_A^2\Sigma^{(\ell)}$ encodes fresh basis contribution at layer $\ell$, while the multiplicative coupling $\Kop^{(\ell-1)}\cdot(\sigma_A^2\dot{\Sigma}^{(\ell)})$ transports geometry through layers. The bias term $\sigma_c^2$ (often set to $1$) stabilizes the kernel baseline.
 
-\section{Low-Rank Bottlenecks and $O(1/r)$ Fluctuations}
+\medskip
+\noindent\textbf{Corollary (Two-layer NTK).}
+Consider $L=2$. Then
+\begin{align*}
+\Kop^{(1)}(x,x') \;&=\; \sigma_A^2\,\Sigma^{(1)}(x,x') \;+\; \sigma_c^2,\\
+\Kop^{(2)}(x,x') \;&=\; \Kop^{(1)}(x,x')\cdot\big(\sigma_A^2\,\dot{\Sigma}^{(2)}(x,x')\big) \;+\; \sigma_A^2\,\Sigma^{(2)}(x,x') \;+\; \sigma_c^2,
+\end{align*}
+where $\Sigma^{(1)}(x,x')=\mathbb{E}_{\bm{w},b}\big[\ReLU(\bm{w}^\top x+\beta b)\ReLU(\bm{w}^\top x'+\beta b)\big]$ and
+\[
+\dot{\Sigma}^{(2)}(x,x')=\mathbb{E}_{\bm{w},b}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x)+\beta b\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x')+\beta b\big)\,\bm{w}^\top\bm{w}\Big],\quad
+\Sigma^{(2)}(x,x')=\mathbb{E}_{\bm{w},b}\Big[\ReLU(\cdot)\ReLU(\cdot)\Big].
+\]
+Proof: See Appendix A.2.
+
+\subsection{Low-Rank Bottlenecks and $O(1/r)$ Fluctuations}
 Low-rank projections concentrate inner products and reduce kernel randomness. In particular, when an intermediate representation is compressed to rank $r$, effective correlations concentrate with variance $O(1/r)$, yielding:
 \begin{proposition}[Fast fluctuation decay]
 Let $\tilde{\Kop}^{(\ell)}$ denote the deterministic (zonal) limit of $\Kop^{(\ell)}$ induced by the low-rank layer. Then, for moderate $r$,
@@ -105,18 +264,121 @@ Let $\tilde{\Kop}^{(\ell)}$ denote the deterministic (zonal) limit of $\Kop^{(\e
 so spectral analysis can be approximated by the deterministic kernel operator for practical $r$.
 \end{proposition}
 
-\section{Scaling Laws and Extensive-Rank Viewpoint}
-In an extensive-rank regime (e.g., $r\simeq d^\beta$), training curves may exhibit staircase-like phases consistent with additive model activation of latent directions. The MMNN NTK captures early lazy-training behavior with a reduced parameter budget due to low-rank structure, suggesting improved conditioning and faster initial convergence compared to standard MLPs, while preserving expressivity through the random-feature RKHS induced by the frozen bases.
+\subsection{Scaling Laws and Extensive-Rank Viewpoint}
+\section{Numerical experiments}
+We present empirical results validating the NTK predictions, fluctuation decay with rank $r$, and early-training scaling in extensive-rank regimes. (Details, datasets, and plots to be added.)
+
+In an extensive-rank regime (e.g., $r\simeq d^\beta$), training curves may exhibit staircase-like phases consistent with additive model activation of latent directions. The NTK of low-rank random feature models captures early lazy-training behavior with a reduced parameter budget due to low-rank structure, suggesting improved conditioning and faster initial convergence compared to standard MLPs, while preserving expressivity through the random-feature RKHS induced by the frozen bases.
 
 \section{Discussion and Outlook}
-MMNN merges random features with low-rank structure to produce a tractable NTK recursion and favorable optimization preconditioning. Future directions include:
+These models merge random features with low-rank structure to produce a tractable NTK recursion and favorable optimization preconditioning. Future directions include:
 (i) fine spectral analysis of the zonal kernel and finite-width corrections,
 (ii) quantitative fluctuation bounds vs. $r$ and depth,
 (iii) empirical scaling-law validation under increasing $(d,N,r)$ with controlled cosine geometry,
 (iv) extensions beyond Gaussian pre-activations and bias control via $\beta$.
 
+\section{Notation}
+We summarize the main symbols and conventions used throughout the paper.
+\begin{itemize}
+    \item Inputs: $x,x' \in \mathbb{R}^{d_0}$; cosine similarity $\rho=\langle x,x'\rangle/(\|x\|\|x'\|)$ when inputs are normalized.
+    \item Layers: $\bm{h}^{(0)}(x)=x$ and $\bm{h}^{(\ell)}(x)$ denotes the layer-$\ell$ representation; $n_\ell$ is the width of layer $\ell$.
+    \item Activation: $\ReLU(\cdot)$; its weak derivative is denoted $\dot{\ReLU}(\cdot)$ (equals $\mathbf{1}\{\cdot>0\}$ a.e.).
+    \item Parameters: $\sigma_A$ is the NTK scaling for output weights $A^{(\ell)}$; $\sigma_c$ the output-bias scale; $\beta$ controls the internal random bias $b^{(\ell)}$ within the activation.
+    \item Random features: $(\bm{w}^{(\ell)},b^{(\ell)})$ are frozen random parameters at layer $\ell$; unless stated, $\bm{w}^{(\ell)}$ and $b^{(\ell)}$ are i.i.d. across neurons and layers with centered Gaussian laws.
+    \item Kernels:
+    \begin{itemize}
+        \item NNGP base kernel at layer $\ell$: $\displaystyle \Sigma^{(\ell)}(x,x')=\mathbb{E}_{\bm{w},b}\big[\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x)+\beta b)\,\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x')+\beta b)\big]$.
+        \item Derivative kernel: $\displaystyle \dot{\Sigma}^{(\ell)}(x,x')=\mathbb{E}_{\bm{w},b}\big[\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x)+\beta b)\,\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x')+\beta b)\,\bm{w}^\top\bm{w}\big]$.
+        \item NTK at layer $\ell$: $\Kop^{(\ell)}(x,x')$ with recursion stated in the main theorem.
+    \end{itemize}
+    \item Expectations: $\mathbb{E}_{\bm{w},b}[\cdot]$ indicates expectation over the layer-$\ell$ random parameters $(\bm{w}^{(\ell)},b^{(\ell)})$; other expectations are indicated explicitly.
+    \item Limits: we take widths $n_1\to\infty,\dots,n_L\to\infty$ \emph{sequentially}; LLN applies conditionally at each step.
+    \item Low-rank bottleneck: $r$ denotes the intermediate rank; kernel fluctuations scale as $O(1/r)$ in the analysis.
+    \item Operators: $\mathbf{I}_d$ is the $d\times d$ identity; $\|\cdot\|$ is the Euclidean/operator norm depending on context.
+    \item Zonal kernels: “zonal” refers to rotation-invariant kernels on the sphere (dependence on $\rho$ only).
+\end{itemize}
+
 \section*{Acknowledgments}
-We thank colleagues for insightful discussions on MMNN, NTK, and random features.
+We thank David Terjék and G. Ben Arous for insightful discussions NTK spectrum related topics.
+
+\appendix
+\section{Proofs}
+\subsection{Proof of Theorem (NTK recursion)}\label{appendix:proof-ntk-recursion}
+We prove the recursion by decomposing the NTK at layer $\ell$ into contributions of the trainable parameters up to layer $\ell$, and invoking the Law of Large Numbers (LLN) under the sequential infinite-width limit. Let $f^{(\ell)}$ denote the network output truncated at layer $\ell$. For finite width, the (random) NTK reads
+\[
+\Theta^{(\ell)}_{\mathrm{rand}}(x,x') \;=\; \underbrace{\big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x)\big)^\top \big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x')\big)}_{\text{Term 1}} \;+\; \underbrace{\sum_{j=1}^{n_\ell}\frac{\partial f^{(\ell)}(x)}{\partial A^{(\ell)}_j}\frac{\partial f^{(\ell)}(x')}{\partial A^{(\ell)}_j}}_{\text{Term 2}} \;+\; \underbrace{\frac{\partial f^{(\ell)}(x)}{\partial c^{(\ell)}}\frac{\partial f^{(\ell)}(x')}{\partial c^{(\ell)}}}_{\text{Term 3}}.
+\]
+\emph{Term 3 (bias).} From \eqref{eq:mmnn}, $f^{(\ell)}$ depends additively on $\sigma_c\,c^{(\ell)}$, hence $\partial f^{(\ell)}/\partial c^{(\ell)}=\sigma_c$, yielding the deterministic contribution $\sigma_c^2$.
+
+\emph{Term 2 (layer-$\ell$ output weights $A^{(\ell)}$).} Again by \eqref{eq:mmnn}, $\partial f^{(\ell)}(x)/\partial A^{(\ell)}_j = \frac{\sigma_A}{\sqrt{n_\ell}}\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)+\beta b^{(\ell)}_j\big)$. Therefore
+\[
+\text{Term 2} \;=\; \frac{\sigma_A^2}{n_\ell}\sum_{j=1}^{n_\ell} \ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)+\beta b^{(\ell)}_j\big)\,\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')+\beta b^{(\ell)}_j\big).
+\]
+Conditionally on $\bm{h}^{(\ell-1)}$, the summands are i.i.d. over $(\bm{w}^{(\ell)}_j,b^{(\ell)}_j)$. As $n_\ell\to\infty$ (with lower layers already taken to their limits), LLN yields
+\[
+\text{Term 2} \xrightarrow{p} \sigma_A^2\,\Sigma^{(\ell)}(x,x').
+\]
+
+\emph{Term 1 (previous layers).} By the chain rule,
+\[
+\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x) \;=\; \Big(\frac{\partial f^{(\ell)}(x)}{\partial \bm{h}^{(\ell-1)}(x)}\Big)\,\nabla_{\theta^{(\ell-1)}} \bm{h}^{(\ell-1)}(x).
+\]
+Hence Term 1 factorizes as $\Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')$ multiplied by a Jacobian metric:
+\[
+\text{Term 1} \;=\; \Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')\;\cdot\;\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle.
+\]
+From \eqref{eq:mmnn}, $\frac{\partial f^{(\ell)}(x)}{\partial \bm{h}^{(\ell-1)}(x)} = \frac{\sigma_A}{\sqrt{n_\ell}}\sum_{j=1}^{n_\ell}\bm{A}^{(\ell)}_j\,\dot{\ReLU}\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)+\beta b^{(\ell)}_j\big)\,\bm{w}^{(\ell)}_j$. Taking the inner product at $x$ and $x'$ and applying LLN as $n_\ell\to\infty$ yields
+\[
+\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle \xrightarrow{p} \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
+\]
+Therefore, passing to the limit in Term 1,
+\[
+\text{Term 1} \xrightarrow{p} \Theta^{(\ell-1)}(x,x')\cdot \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
+\]
+Combining the three limits completes the recursion
+\[
+\Theta^{(\ell)}(x,x') \;=\; \Theta^{(\ell-1)}(x,x')\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x') \;+\; \sigma_A^2\,\Sigma^{(\ell)}(x,x') \;+\; \sigma_c^2.
+\]
+The sequential limit assumption (taking $n_1\to\infty$, then $n_2\to\infty$, etc.) ensures that lower-layer random objects have already converged when taking the next-layer limit. This justifies the conditional LLN applications used above.
+
+\subsection{Proof of Corollary (Two-layer NTK)}\label{appendix:proof-2layer}
+Apply the theorem for $\ell=1$ and $\ell=2$. For $\ell=1$, since $\Kop^{(0)}=0$, only the layer-$1$ output/bias contributions remain, yielding $\Kop^{(1)}=\sigma_A^2\Sigma^{(1)}+\sigma_c^2$. For $\ell=2$, substitute $\Kop^{(1)}$ in the recursion to obtain
+\[
+\Kop^{(2)}(x,x') \;=\; \big(\sigma_A^2\Sigma^{(1)}(x,x')+\sigma_c^2\big)\cdot\big(\sigma_A^2\,\dot{\Sigma}^{(2)}(x,x')\big) \;+\; \sigma_A^2\,\Sigma^{(2)}(x,x') \;+\; \sigma_c^2,
+\]
+which is the stated expression.
+
+\section{Fisher and Kibble distributions}
+\begin{theorem}[Fisher distribution of the sample correlation]
+Let $(X_i,Y_i)_{i=1}^r$ be i.i.d. centered Gaussian pairs with unit variances and correlation $\rho\in[-1,1]$. Define the sample (cosine) correlation
+\[
+r \;=\; \frac{\sum_{i=1}^r X_iY_i}{\sqrt{\sum_{i=1}^r X_i^2}\sqrt{\sum_{i=1}^r Y_i^2}} \;\in [-1,1].
+\]
+Then $r$ has density (Fisher, 1915)
+\[
+p(r\mid \rho,r) \;=\; \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-r^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma\!\left(r-\tfrac{1}{2}\right)\,(1-\rho\,r)^{\,r-\frac{3}{2}}}\;\;{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\,r}{2}\right),
+\]
+for $r>2$. For large $r$, Fisher's $z$-transform $z=\operatorname{arctanh}(r)$ satisfies
+\[
+z \;\sim\; \mathcal{N}\!\left(\operatorname{arctanh}(\rho)+\frac{\rho}{2(r-1)},\;\frac{1}{\,r-3\,}\right),
+\]
+so $\operatorname{Var}(r)=O(1/r)$ and when $\rho=O(1/\sqrt{r})$ geometric noise masks correlation.
+\end{theorem}
+
+\begin{theorem}[Kibble bivariate chi-square law]
+Let $(X_i,Y_i)_{i=1}^r$ be as above and define the squared norms
+\[
+U=\sum_{i=1}^r X_i^2,\qquad V=\sum_{i=1}^r Y_i^2.
+\]
+Then $(U,V)$ has Kibble's (1941) bivariate chi-square density
+\[
+f(u,v) \;=\; \frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\; I_{\,\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{\,1-\rho^2\,}\right),\qquad u,v\ge 0,
+\]
+where $I_\nu$ is the modified Bessel function of the first kind. In particular,
+\[
+\mathbb{E}[U]=\mathbb{E}[V]=r,\quad \operatorname{Var}(U)=\operatorname{Var}(V)=2r,\quad \operatorname{Cov}(U,V)=2r\,\rho^2.
+\]
+\end{theorem}
 
 %Bibliography
 \bibliographystyle{unsrt}

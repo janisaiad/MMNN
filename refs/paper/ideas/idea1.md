@@ -185,8 +185,12 @@ more and more we will construct the preprint adding results in this direction li
 in fact mmnn is Low rank random features networkn
 
 
+goodnotes : https://web.goodnotes.com/s/F0IFxLELb1470d6AGRdbxH#page-2
 
-The goal of the paper is 1st to provide extensive
+
+## paper whole timeline
+The goal of the paper is 1st to provide extensive results explaining numerical experiments related to mmnn, especially the super convergence observed
+especially 3 part of training where the problem convexify
 we do 1st an extensive litterature review, to be added at the end because of showing up computations
 we should mention a lot of people in the review, also the montufar paper with only 1 hidden layer growing
 
@@ -194,6 +198,21 @@ we provide 1qst explanation of why MMNN tends to have great training behavior, w
 to combine RF and low rank is mainly due to  https://arxiv.org/pdf/2209.13569 remarks and a way to make hand computations tractable at a large scale
 
 1)
+
+in fact the early part of training appears to be very bad for SGD and the NTK can partly explain this ?  this is a line of research that is investigated for mmnns
+we try to use NTK to explain early training and the apparently bad conditionned starting
+
+we use the NTK to confirm that in this regime there is no disadvantage of using this kind of network due to RKHS being the same
+
+from extensive numerical experiments, we believe different frequency timescales are learned in the order, making the landscape autosimilar, so that 
+explaining early stage of training leads to same as final stage of training, that is super convergece
+
+
+symmetry breaking then recovery during training and after convergence seems to be very 
+
+also sgd switching gives us a way to quantify at which point the training convexify
+
+
 NTK, we have the recursive formulation for the NTK, with the probabilistic view point and std wrt r so concentraion bounds holds for r and also
 for input dimensions; we believe that this NTK regime that appears with very smaller parameter budget can lead to better understanding of 1st part of training behavior
 
@@ -294,20 +313,54 @@ since we only have 2 hidden layers, finite width corrections are tractable ! and
 
 
 
+reminder : i should write the proof of kibble and fisher distrib !! 
 
 
 
-2) the 2nd part of training, end of lazy training
 we hope to explain this part with no finite width corrections, we will try to do a comparison between the minimum found by this and
 what we get in practice
 
 then we describe all our experiments showing this dictionary feature learning, behavior accross layers for several dimensional tasks
 
 
+2) mean field analysis
+this is a tremendous remark from meanfieldlandscape The answer to the last question is generally negative, and a physics analogy can explain why.
+Think of $\btheta_1,\dots,\btheta_N$ as the positions of $N$ particles in a $D$-dimensional space. 
+When $N$ is large, the behavior of such a `gas' of particles is effectively described by a density $\rho_t(\btheta)$ (with $t$ indexing time). However, not all `small' 
+changes of this density profile can be realized in the actual physical dynamics:
+the dynamics conserves mass locally because particles cannot move discontinuously.
+For instance, if $\supp(\rho_t) = S_1\cup S_2$ for two disjoint compact sets $S_1,S_2\subseteq\reals^D$, and all $t\in [t_1,t_2]$,
+then the total mass in each of these regions cannot change over time, i.e. $\rho_t(S_1) = 1-\rho_t(S_2)$ does not depend on $t\in [t_1,t_2]$. 
 
 
 
-3) about finite width corrections
+the bias is removed by adding 1 to data
+i should see before what's happening betwen 1 layer RF and NN
+i should make MF experiments to show distributions behavior
+i should test with bounded activations 
+
+they use gronwall insttead of https://arxiv.org/pdf/2504.13110 
+
+
+from globalconvergences "Another
+ corollary of Theorem 3 is that given the same family Init, the law of the MF trajectory is insensitive
+ to the choice of the neuronal embedding of Init."  mail Huanh Min
+ DM CHIZAT ET bach " Wenowgive a criteria for Wasserstein gradient flows to escape from non-optimal stationary points.
+ It is valid both in the finite-particle regime and in the many-particle limit. Such a result supports
+ the idea that, even in the finite-particle case (i.e. classical gradient flows), the point of view using
+ measures is natural." from their paper
+
+3) the 2nd part of training, end of lazy training
+before knowing if I can try a mean field proof by getting the 
+
+ 
+from "propagation of chaos"  " intuition that in many
+ teacher-student settings with uniform initialization, the neurons are dispersed before converging to the
+ teacher neurons."
+
+we have to be careful if our function lives in the barron space or not, to invsstigate
+
+4) about finite width corrections
 
 we show then our results on finite width corrections scaling wrt depth, scaling law,
 do comparison with what PMISOF get and try to show this can lead to great optimization bounds in the future
