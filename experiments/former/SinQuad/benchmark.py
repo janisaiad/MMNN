@@ -163,46 +163,47 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
    """                                     
    
 
-for num_layers in [6,8,10]:
+for num_layers in [4,6]:
     for hidden_width in [512,666,1024,256]:
         for hidden_rank in [50,36,30,20,15,10,5]:                                
-            for gamma_2 in [0.95,0.99]:
-                for threshold in [3e-2,1e-2, 7e-3,1e-1,7e-2]:
-                    for lr_decay_steps in [10,20,50,100, 200, 500]:
-                        for batch_size in [100, 250, 500, 1000]:    
-                            configs.append({
-                                # architecture hyperparameters
-                                "num_layers": num_layers,
-                                "hidden_width": hidden_width,
-                                "hidden_rank": hidden_rank,
-                                "input_rank": 1,
-                                "output_rank": 1,
-                                "use_resnet": False,
+            for gamma_2 in [0.99]:
+                for threshold in [1e-2,3e-2,1e-2,7e-3,1e-1,7e-2]:
+                    for lr_decay_steps in [1000]:
+                        for batch_size in [100]: 
+                            for ratio in [10,20,30]:   
+                                configs.append({
+                                    # architecture hyperparameters
+                                    "num_layers": num_layers,
+                                    "hidden_width": hidden_width,
+                                    "hidden_rank": hidden_rank,
+                                    "input_rank": 1,
+                                    "output_rank": 1,
+                                    "use_resnet": False,
 
-                                # training hyperparameters
-                                "num_epochs": 10000,
-                                "batch_size": batch_size,
-                                "num_training_samples": 600,
-                                "num_test_samples": 1000,
+                                    # training hyperparameters
+                                    "num_epochs": 30000,
+                                    "batch_size": batch_size,
+                                    "num_training_samples": 600,
+                                    "num_test_samples": 1000,
 
-                                # learning rate schedule
-                                "lr_init": 0.001,
-                                "lr_gamma": 0.99,
-                                "lr_step_size": 2000,
+                                    # learning rate schedule
+                                    "lr_init": 0.001,
+                                    "lr_gamma": 0.99,
+                                    "lr_step_size": 1000,
 
-                                # problem setup
-                                "interval": [-1, 1],
-                                "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+                                    # problem setup
+                                    "interval": [-1, 1],
+                                    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
 
-                                # monitoring
-                                "show_plot": False,
-                                "device": str(device),
-                                "dtype": str(mydtype),
-                                "lr_decay_steps": lr_decay_steps,
-                                "gamma_2": gamma_2,
-                                "threshold": threshold,
-                                
-                            })
+                                    # monitoring
+                                    "show_plot": False,
+                                    "device": str(device),
+                                    "dtype": str(mydtype),
+                                    "lr_decay_steps": lr_decay_steps,
+                                    "gamma_2": gamma_2,
+                                    "threshold": threshold,
+                                    "ratio": ratio
+                                })
 
 
 
@@ -251,7 +252,8 @@ for config in configs:
                 f"R{config['hidden_rank']}_"
                 f"E{config['num_epochs']}_"
                 f"lr{config['lr_init']}_"
-                f"bs{config['batch_size']}_")
+                f"bs{config['batch_size']}_"
+                f"ratio{config['ratio']}")
                 
     os.makedirs(sub_folder_name, exist_ok=True)
     
@@ -259,7 +261,7 @@ for config in configs:
                 f"lr_decay_steps{config['lr_decay_steps']}"
                 f"gamma_2{config['gamma_2']}")
     # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching",sub_folder_name,folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching2",sub_folder_name,folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
@@ -323,6 +325,13 @@ for config in configs:
 
     has_changed_optimizer = False
     has_changed_optimizer_2 = False
+    has_changed_optimizer_3 = False
+    has_changed_optimizer_4 = False
+    has_changed_optimizer_5 = False
+    has_changed_optimizer_6 = False
+    has_changed_optimizer_7 = False
+    
+    switch_epochs = []  # we track epochs where optimizer switches occur
     for epoch in range(1, 1 + config["num_epochs"]):
         for inputs, targets in train_loader:
             optimizer.zero_grad()
@@ -340,12 +349,16 @@ for config in configs:
                 
         if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
             has_changed_optimizer = True
+            switch_epochs.append(epoch)  # we record the switching epoch
             print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100, momentum=0.3,nesterov=True)
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
             scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
             optim_string = f"SGD_{config['lr_init']/100}"
-        if epoch > 2000 and loss.item() < config["threshold"]/50 and has_changed_optimizer and not has_changed_optimizer_2:
+            
+            
+        if epoch > 2000 and loss.item() < config["threshold"]/config["ratio"] and has_changed_optimizer and not has_changed_optimizer_2:
             has_changed_optimizer_2 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
             print("Changing optimizer to Adam")
             lr_init=0.0001
             lr_gamma=config["gamma_2"]
@@ -354,6 +367,52 @@ for config in configs:
             scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
             optim_string = f"Adam_{lr_init}"
             
+            
+        if epoch > 3000 and loss.item() < config["threshold"]/config["ratio"]**2 and has_changed_optimizer and has_changed_optimizer_2 and not has_changed_optimizer_3:
+            has_changed_optimizer_3 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
+            print("Changing optimizer to SGD")
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+            optim_string = f"SGD_{config['lr_init']/100}"
+            
+        if epoch > 4000 and loss.item() < config["threshold"]/config["ratio"]**3 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and not has_changed_optimizer_4:
+            has_changed_optimizer_4 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
+            print("Changing optimizer to Adam")
+            lr_init=0.0001
+            lr_gamma=config["gamma_2"]
+            lr_step_size= config["lr_decay_steps"]
+            optimizer = optim.Adam(model.parameters(), lr=lr_init)
+            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+            optim_string = f"Adam_{lr_init}"
+            
+        if epoch > 5000 and loss.item() < config["threshold"]/config["ratio"]**4 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and not has_changed_optimizer_5:
+            has_changed_optimizer_5 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
+            print("Changing optimizer to SGD")
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+            optim_string = f"SGD_{config['lr_init']/100}"
+            
+        if epoch > 6000 and loss.item() < config["threshold"]/config["ratio"]**5 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and not has_changed_optimizer_6:
+            has_changed_optimizer_6 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
+            print("Changing optimizer to Adam")
+            lr_init=0.0001
+            lr_gamma=config["gamma_2"]
+            lr_step_size= config["lr_decay_steps"]
+            optimizer = optim.Adam(model.parameters(), lr=lr_init)
+            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+            optim_string = f"Adam_{lr_init}"
+        
+        if epoch > 7000 and loss.item() < config["threshold"]/config["ratio"]**6 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and has_changed_optimizer_6 and not has_changed_optimizer_7:
+            has_changed_optimizer_7 = True
+            switch_epochs.append(epoch)  # we record the switching epoch
+            print("Changing optimizer to SGD")
+            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+            optim_string = f"SGD_{config['lr_init']/100}"
             
 
 
@@ -496,6 +555,7 @@ for config in configs:
         "training_time_seconds": float(time.time()-time1),
         "total_parameters": sum(p.numel() for p in model.parameters()),
         "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
+        "optimizer_switch_epochs": switch_epochs,  # we store epochs where optimizer switched
         "ntk_epochs_stored": [],  # we skip NTK storage for performance
         "ntk_matrix_shape": None,  # we skip NTK storage for performance
         "parameters_epochs_stored": [],  # we skip parameter storage for performance
@@ -511,6 +571,8 @@ for config in configs:
     config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}, lr={config['lr_init']}"
     fig = plt.figure(figsize=(8, 5))
     plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)
+    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
     plt.xlabel('Epoch')
     plt.ylabel('Loss (log scale)')
     plt.title(f'Training Loss Evolution\n{config_str}')
@@ -527,6 +589,8 @@ for config in configs:
             label="log10 training error", linewidth=2)
     plt.plot(np.linspace(1, n, n)*50, np.log10(errors_test),
             label="log10 test error", linewidth=2)
+    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
     plt.xlabel('Epoch')
     plt.ylabel('log10(error)')
     plt.title(f'Error Evolution\n{config_str}')
@@ -540,6 +604,8 @@ for config in configs:
     # we plot losses std
     fig = plt.figure(figsize=(8, 5))
     plt.plot(np.linspace(1, m, m)*50, losses_std, 'b-', linewidth=2)
+    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
     plt.xlabel('Epoch')
     plt.ylabel('Loss Std')
     plt.title(f'Loss Std Evolution\n{config_str}')
