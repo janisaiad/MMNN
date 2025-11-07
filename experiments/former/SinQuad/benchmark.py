@@ -164,13 +164,13 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
    
 
 for num_layers in [4,6]:
-    for hidden_width in [512,666,1024,256]:
-        for hidden_rank in [50,36,30,20,15,10,5]:                                
+    for hidden_width in [512,666,1024]:
+        for hidden_rank in [50,30,15]:                                
             for gamma_2 in [0.99]:
                 for threshold in [1e-2,3e-2,1e-2,7e-3,1e-1,7e-2]:
                     for lr_decay_steps in [1000]:
                         for batch_size in [100]: 
-                            for ratio in [10,20,30]:   
+                            for ratio in [5,10,15]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
@@ -193,7 +193,7 @@ for num_layers in [4,6]:
 
                                     # problem setup
                                     "interval": [-1, 1],
-                                    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+                                    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi* (x+0.5)^2)",
 
                                     # monitoring
                                     "show_plot": False,
@@ -232,7 +232,7 @@ config = {
 
     # problem setup
     "interval": [-1, 1],
-    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
+    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi* (x+0.5)^2)",
 
     # monitoring
     "show_plot": False,
@@ -261,7 +261,7 @@ for config in configs:
                 f"lr_decay_steps{config['lr_decay_steps']}"
                 f"gamma_2{config['gamma_2']}")
     # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_switching2",sub_folder_name,folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_shifted",sub_folder_name,folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
     # we save config to json
@@ -279,7 +279,7 @@ for config in configs:
                     device=device,
                     ResNet=config["use_resnet"])
     def func(x):
-        y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* x**2)
+        y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* (x+0.5)**2)
         return y
 
     
@@ -482,7 +482,7 @@ for config in configs:
             should_plot = True
         elif 1000 < epoch <= 10000 and epoch % 1000 == 0:
             should_plot = True
-        elif epoch > 10000 and epoch % 10000 == 0:
+        elif epoch > 10000 and epoch % 2000 == 0:
             should_plot = True
             
         if should_plot:
