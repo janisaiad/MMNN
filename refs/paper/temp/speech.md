@@ -23,6 +23,11 @@ there is litterature on that , under the low rank random feature perspective ;
 I discovered that I am fundamentally in the mean field regime with 1000 neurons, and it is dimension independent
 with 2 hidden layer we have the POC of benefits of low ranks
 
+i can have a ton of different research lines but mostly we observe those kind of step hierarchical training curves
+I believe by testing other functions that this comes from a frequency inductive bias
+to run very large experiments i'm at the limit of having time to tune hyperparameters and many experimental details, the 
+
+
 
 - **architecture and factorization**
   - 3-layer MMNNs benefit from low-rank factorization of the middle matrix; 2-layer models reduce to random features with no factorization advantage  # we delineate regimes
@@ -61,9 +66,6 @@ with 2 hidden layer we have the POC of benefits of low ranks
   - in large low rank, NTK tends to 1; analyze finite-width corrections and depth scaling (towards infinite depth via \(1/r\) expansion)  # we chart the limit
   - relation to tensor programs for depth and hyperparameter transfer (via \(\mu\)P); plan NTK for DSRN as well  # we connect frameworks
 
-- **spectral/initialization insights**
-  - spectral initialization performs as well as traditional schemes; singular vectors matter more than singular values  # we highlight empirical result
-  - setting all singular values to 1 preserves performance, contrary to earlier beliefs  # we note specificity
 
 - **normalization and data geometry**
   - hypercube data: use \(\mathrm{Tr}(\Sigma_w) = d\) and unit bias for approximation theorems  # we define scaling
