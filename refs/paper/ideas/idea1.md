@@ -307,12 +307,6 @@ since we only have 2 hidden layers, finite width corrections are tractable ! and
 
 
 
-
-
-
-
-
-
 reminder : i should write the proof of kibble and fisher distrib !! 
 
 
