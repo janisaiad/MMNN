@@ -69,6 +69,10 @@ class MMNN(nn.Module):
             # setattr(self, f"fc{j}", fc)
             fcs.append(fc)
         self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
+        # mean-field initialization: we set each weight with unit variance and zero bias
+        for fc in self.fcs:
+            nn.init.normal_(fc.weight, mean=0.0, std=2.0)
+            nn.init.zeros_(fc.bias)
         
         if fixWb: # if True, the weights and biases are not updated during training
             for j in range(len(fcs)):
@@ -89,7 +93,7 @@ class MMNN(nn.Module):
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x[:,:n] = x[:,:n] + x_id[:,:n]
-        return x
+        return x/self.product
 
 # %%
 import torch
@@ -102,6 +106,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import json
+
 
 
 def compute_ntk_gram(model, x, device):
@@ -149,6 +154,7 @@ device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"Training on device: {device}")
 ##############################
 
+step_number= 5
 # Generate configs with different depths, hidden ranks and widths
 configs = []
 
@@ -241,547 +247,622 @@ config = {
 }
 '''
 for config in configs:
-    print(f"Training config: {config}")
-    # we construct ranks and widths from config
-    ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
-    widths = [config["hidden_width"]] * (config["num_layers"] + 1)
+    for step in range(step_number):
+        time2 = time.time()
+        print(f"Training config: {config}")
+        # we construct ranks and widths from config
+        ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
+        widths = [config["hidden_width"]] * (config["num_layers"] + 1)
 
-    # we create folder name from config
-    sub_folder_name = (f"L{config['num_layers']}_"
-                f"W{config['hidden_width']}_"
-                f"R{config['hidden_rank']}_"
-                f"E{config['num_epochs']}_"
-                f"lr{config['lr_init']}_"
-                f"bs{config['batch_size']}_"
-                f"ratio{config['ratio']}")
-                
-    os.makedirs(sub_folder_name, exist_ok=True)
-    
-    folder_name = os.path.join(sub_folder_name, f"th{config['threshold']}"
-                f"lr_decay_steps{config['lr_decay_steps']}"
-                f"gamma_2{config['gamma_2']}")
-    # we create output directory
-    output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_shifted",sub_folder_name,folder_name)
-    os.makedirs(output_dir, exist_ok=True)
-
-    # we save config to json
-    with open(os.path.join(output_dir, "config.json"), "w") as f:
-        json.dump(config, f, indent=4)
-
-    print(f"\n=== CONFIGURATION ===")
-    print(f"Output directory: {output_dir}")
-    print(f"Ranks: {ranks}")
-    print(f"Widths: {widths}")
-    print(f"Config: {json.dumps(config, indent=2)}")
-
-    model = MMNN(ranks=ranks,
-                    widths=widths,
-                    device=device,
-                    ResNet=config["use_resnet"])
-    def func(x):
-        y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* (x+0.5)**2)
-        return y
-
-    
-
-
-    # nous vérifions l'initialisation
-    print("\n=== WEIGHT INITIALIZATION CHECK ===")
-    for j, layer in enumerate(model.fcs):
-        w_norm = layer.weight.norm().item()
-        b_norm = layer.bias.norm().item()
-        w_mean = layer.weight.mean().item()
-        w_std = layer.weight.std().item()
-        frozen = "FROZEN" if not layer.weight.requires_grad else "trainable"
-
-        print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
-
-
-    x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 1])
-    y_train = func(x_train)
-    x_train = torch.tensor(x_train, device=device, dtype=mydtype)
-    y_train = torch.tensor(y_train, device=device, dtype=mydtype)
-    train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
-    train_loader = torch.utils.data.DataLoader(train_dataset,
-                                                batch_size=config["batch_size"], shuffle=True)
-
-
-    time1=time.time()
-    errors_train=[]
-    errors_test=[]
-    errors_test_max=[]
-    all_losses=[]  # we store all losses
-    ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
-    ntk_eigenvalues={}  # we store ntk eigenvalues min/max
-    ntk_matrices={}  # we store full ntk matrices at selected epochs
-    parameters_snapshots={}  # we store model parameters at selected epochs
-
-    losses_std = []
-
-    optim_string = f"Adam_{config['lr_init']}"
-    optimizer = optim.Adam(model.parameters(), lr=config["lr_init"])
-    scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-    criterion = nn.MSELoss()
-
-    has_changed_optimizer = False
-    has_changed_optimizer_2 = False
-    has_changed_optimizer_3 = False
-    has_changed_optimizer_4 = False
-    has_changed_optimizer_5 = False
-    has_changed_optimizer_6 = False
-    has_changed_optimizer_7 = False
-    
-    switch_epochs = []  # we track epochs where optimizer switches occur
-    for epoch in range(1, 1 + config["num_epochs"]):
-        for inputs, targets in train_loader:
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-            
-
-        all_losses.append(loss.item())  # we store loss
-        scheduler.step()
-            
-            
-                
-        if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
-            has_changed_optimizer = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
-            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-            optim_string = f"SGD_{config['lr_init']/100}"
-            
-            
-        if epoch > 2000 and loss.item() < config["threshold"]/config["ratio"] and has_changed_optimizer and not has_changed_optimizer_2:
-            has_changed_optimizer_2 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to Adam")
-            lr_init=0.0001
-            lr_gamma=config["gamma_2"]
-            lr_step_size= config["lr_decay_steps"]
-            optimizer = optim.Adam(model.parameters(), lr=lr_init)
-            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
-            optim_string = f"Adam_{lr_init}"
-            
-            
-        if epoch > 3000 and loss.item() < config["threshold"]/config["ratio"]**2 and has_changed_optimizer and has_changed_optimizer_2 and not has_changed_optimizer_3:
-            has_changed_optimizer_3 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
-            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-            optim_string = f"SGD_{config['lr_init']/100}"
-            
-        if epoch > 4000 and loss.item() < config["threshold"]/config["ratio"]**3 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and not has_changed_optimizer_4:
-            has_changed_optimizer_4 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to Adam")
-            lr_init=0.0001
-            lr_gamma=config["gamma_2"]
-            lr_step_size= config["lr_decay_steps"]
-            optimizer = optim.Adam(model.parameters(), lr=lr_init)
-            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
-            optim_string = f"Adam_{lr_init}"
-            
-        if epoch > 5000 and loss.item() < config["threshold"]/config["ratio"]**4 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and not has_changed_optimizer_5:
-            has_changed_optimizer_5 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
-            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-            optim_string = f"SGD_{config['lr_init']/100}"
-            
-        if epoch > 6000 and loss.item() < config["threshold"]/config["ratio"]**5 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and not has_changed_optimizer_6:
-            has_changed_optimizer_6 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to Adam")
-            lr_init=0.0001
-            lr_gamma=config["gamma_2"]
-            lr_step_size= config["lr_decay_steps"]
-            optimizer = optim.Adam(model.parameters(), lr=lr_init)
-            scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
-            optim_string = f"Adam_{lr_init}"
+        # we create folder name from config
+        sub_folder_name = (f"L{config['num_layers']}_"
+                    f"W{config['hidden_width']}_"
+                    f"R{config['hidden_rank']}_"
+                    f"E{config['num_epochs']}_"
+                    f"lr{config['lr_init']}_"
+                    f"bs{config['batch_size']}_"
+                    f"ratio{config['ratio']}")
+                    
+        os.makedirs(sub_folder_name, exist_ok=True)
         
-        if epoch > 7000 and loss.item() < config["threshold"]/config["ratio"]**6 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and has_changed_optimizer_6 and not has_changed_optimizer_7:
-            has_changed_optimizer_7 = True
-            switch_epochs.append(epoch)  # we record the switching epoch
-            print("Changing optimizer to SGD")
-            optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
-            scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
-            optim_string = f"SGD_{config['lr_init']/100}"
+        folder_name = os.path.join(sub_folder_name, f"th{config['threshold']}"
+                    f"lr_decay_steps{config['lr_decay_steps']}"
+                    f"gamma_2{config['gamma_2']}")
+        # we create output directory
+        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_shifted",sub_folder_name,folder_name,f"time{time2}")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # we save config to json
+        with open(os.path.join(output_dir, "config.json"), "w") as f:
+            json.dump(config, f, indent=4)
+
+        print(f"\n=== CONFIGURATION ===")
+        print(f"Output directory: {output_dir}")
+        print(f"Ranks: {ranks}")
+        print(f"Widths: {widths}")
+        print(f"Config: {json.dumps(config, indent=2)}")
+
+        model = MMNN(ranks=ranks,
+                        widths=widths,
+                        device=device,
+                        ResNet=config["use_resnet"])
+        def func(x):
+            y = np.cos(36*np.pi* x**2) - 0.8*np.cos(12*np.pi* (x+0.5)**2)
+            return y
+
+        
+
+
+        # nous vérifions l'initialisation
+        print("\n=== WEIGHT INITIALIZATION CHECK ===")
+        for j, layer in enumerate(model.fcs):
+            w_norm = layer.weight.norm().item()
+            b_norm = layer.bias.norm().item()
+            w_mean = layer.weight.mean().item()
+            w_std = layer.weight.std().item()
+            frozen = "FROZEN" if not layer.weight.requires_grad else "trainable"
+
+            print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
+
+
+        x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 1])
+        y_train = func(x_train)
+        x_train = torch.tensor(x_train, device=device, dtype=mydtype)
+        y_train = torch.tensor(y_train, device=device, dtype=mydtype)
+        train_dataset = torch.utils.data.TensorDataset(x_train, y_train)
+        train_loader = torch.utils.data.DataLoader(train_dataset,
+                                                    batch_size=config["batch_size"], shuffle=True)
+
+
+        time1=time.time()
+        errors_train=[]
+        errors_test=[]
+        errors_test_max=[]
+        all_losses=[]  # we store all losses
+        ntk_eigenvalues_full={}  # we store all ntk eigenvalues (full spectrum)
+        ntk_eigenvalues={}  # we store ntk eigenvalues min/max
+        ntk_matrices={}  # we store full ntk matrices at selected epochs
+        parameters_snapshots={}  # we store model parameters at selected epochs
+
+        losses_std = []
+
+        optim_string = f"Adam_{config['lr_init']}"
+        optimizer = optim.Adam(model.parameters(), lr=config["lr_init"])
+        scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+        criterion = nn.MSELoss()
+
+        has_changed_optimizer = False
+        has_changed_optimizer_2 = False
+        has_changed_optimizer_3 = False
+        has_changed_optimizer_4 = False
+        has_changed_optimizer_5 = False
+        has_changed_optimizer_6 = False
+        has_changed_optimizer_7 = False
+        
+        switch_epochs = []  # we track epochs where optimizer switches occur
+        switch_losses = []  # we track losses at the switching epochs
+        switch_targets = []  # we track target criteria used for switching
+        last_switch_loss = None  # we track the last switching loss to define the next target
+        for epoch in range(1, 1 + config["num_epochs"]):
+            for inputs, targets in train_loader:
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
+                
+
+            all_losses.append(loss.item())  # we store loss
+            scheduler.step()
+                
+                
+                    
+            if epoch > 300 and loss.item() < config["threshold"] and not has_changed_optimizer:
+                has_changed_optimizer = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                switch_targets.append(float(config["threshold"]))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to SGD")
+                optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+                scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+                optim_string = f"SGD_{config['lr_init']/100}"
+                
+                
+            if epoch > 2000 and has_changed_optimizer and not has_changed_optimizer_2 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_2 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to Adam")
+                lr_init=0.0001
+                lr_gamma=config["gamma_2"]
+                lr_step_size= config["lr_decay_steps"]
+                optimizer = optim.Adam(model.parameters(), lr=lr_init)
+                scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+                optim_string = f"Adam_{lr_init}"
+                
+                
+            if epoch > 3000 and has_changed_optimizer and has_changed_optimizer_2 and not has_changed_optimizer_3 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_3 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to SGD")
+                optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+                scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+                optim_string = f"SGD_{config['lr_init']/100}"
+                
+            if epoch > 4000 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and not has_changed_optimizer_4 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_4 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to Adam")
+                lr_init=0.0001
+                lr_gamma=config["gamma_2"]
+                lr_step_size= config["lr_decay_steps"]
+                optimizer = optim.Adam(model.parameters(), lr=lr_init)
+                scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+                optim_string = f"Adam_{lr_init}"
+                
+            if epoch > 5000 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and not has_changed_optimizer_5 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_5 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to SGD")
+                optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+                scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+                optim_string = f"SGD_{config['lr_init']/100}"
+                
+            if epoch > 6000 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and not has_changed_optimizer_6 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_6 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to Adam")
+                lr_init=0.0001
+                lr_gamma=config["gamma_2"]
+                lr_step_size= config["lr_decay_steps"]
+                optimizer = optim.Adam(model.parameters(), lr=lr_init)
+                scheduler = StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+                optim_string = f"Adam_{lr_init}"
             
+            if epoch > 7000 and has_changed_optimizer and has_changed_optimizer_2 and has_changed_optimizer_3 and has_changed_optimizer_4 and has_changed_optimizer_5 and has_changed_optimizer_6 and not has_changed_optimizer_7 and last_switch_loss is not None and loss.item() < (last_switch_loss / float(config["ratio"])):
+                has_changed_optimizer_7 = True
+                switch_epochs.append(epoch)  # we record the switching epoch
+                target_loss = last_switch_loss / float(config["ratio"])
+                switch_targets.append(float(target_loss))  # we record the target criterion
+                switch_losses.append(float(loss.item()))  # we record the actual loss at switch
+                last_switch_loss = float(loss.item())  # we update the last switch loss for next ratio criterion
+                print("Changing optimizer to SGD")
+                optimizer = optim.SGD(model.parameters(), lr=config["lr_init"]/100)
+                scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
+                optim_string = f"SGD_{config['lr_init']/100}"
+                
 
 
-        if epoch % 50 == 0:
-            # we print the day hour etc ;;
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            training_error = loss.item()
-            print(f"\nEpoch {epoch} / {config['num_epochs']}" +
-                f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
-                f"\nTraining error (MSE): { training_error :.2e}" +
-                f"\nTime used: { time.time() - time1 :.2f}s" +
-                f"\nOptimizer: {optim_string}")
-            errors_train.append(training_error)
-            # we compute the std for the last 50 losses in the log space
-            losses_std.append(np.std(np.log10(all_losses[-50:])))
+            if epoch % 50 == 0:
+                # we print the day hour etc ;;
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                training_error = loss.item()
+                print(f"\nEpoch {epoch} / {config['num_epochs']}" +
+                    f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
+                    f"\nTraining error (MSE): { training_error :.2e}" +
+                    f"\nTime used: { time.time() - time1 :.2f}s" +
+                    f"\nOptimizer: {optim_string}")
+                errors_train.append(training_error)
+                # we compute the std for the last 50 losses in the log space
+                losses_std.append(np.std(np.log10(all_losses[-50:])))
 
-            def learned_nn(x):  # input and output are numpy.ndarray
-                x = x.reshape([-1, 1])
-                input_data = torch.tensor(x, dtype=mydtype).to(device)
-                y = model(input_data)
-                y = y.cpu().detach().numpy().reshape([-1])
-                return y
-
-
-            x = np.random.rand(config["num_test_samples"]) * 2 - 1
-            y_nn = learned_nn(x)
-            y_true = func(x)
-
-            # Calculate errors
-
-            e = y_nn - y_true
-            e_max = np.max(np.abs(e))
-            e_mse = np.mean(e**2)
-            errors_test.append(e_mse)
-            errors_test_max.append(e_max)
-
-            print("Test errors (MAX and MSE): " +
-                f"{e_max:.2e} and {e_mse:.2e}")
-
-        # we compute NTK every 50 epochs (min/max only for print) - COMMENTED OUT FOR PERFORMANCE
-        if epoch % 5000 == 0:
-            
-            # ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-            # ntk_eigenvalues[epoch] = eigenvalues
-            # ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
-            # ntk_eigenvalues_full[epoch] = eigenvalues
-            # print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
-            pass  # we skip NTK computation for better performance
-
-        # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis - COMMENTED OUT FOR PERFORMANCE
-        if epoch % 50 == 0 and min(epoch, 1500) == epoch:
-            # ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
-            # ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
-            # ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
-
-            # we store model parameters as a flattened tensor
-            # params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters() if p.requires_grad])
-            # parameters_snapshots[epoch] = params_flat.numpy()
-
-            # print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
-            # print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
-            pass  # we skip NTK and parameter storage for better performance
-
-        # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
-        should_plot = False
-        if epoch <= 1000 and epoch % 100 == 0:
-            should_plot = True
-        elif 1000 < epoch <= 10000 and epoch % 1000 == 0:
-            should_plot = True
-        elif epoch > 10000 and epoch % 2000 == 0:
-            should_plot = True
-            
-        if should_plot:
-            # Plot the results
-            x = np.linspace(-1, 1, 1000)
-            y_nn = learned_nn(x)
-            y_true = func(x)
-            fig = plt.figure(figsize=(6, 4))
-            plt.plot(x, y_true, label='true function')
-            plt.plot(x, y_nn, label='learned network')
-            plt.xticks(np.linspace(*config["interval"], 5))
-            plt.tick_params(axis='both',
-                            which='major', labelsize=12)
-            plt.grid(True, axis='both', color='#AAAAAA',
-                    linestyle='--', linewidth=1.4)
-            config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
-            plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
-            plt.tight_layout()
-            plt.legend(loc="upper center", fontsize=13, ncol=2)
-
-            plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
-            plt.close()
-            if config["show_plot"]:
-                plt.show()
-
-    torch.save(model.state_dict(), os.path.join(output_dir, 'model_parameters.pth'))
-    np.savez(os.path.join(output_dir, "errors.npz"),
-            test=np.array(errors_test),
-            testmax=np.array(errors_test_max),
-            train=np.array(errors_train),
-            all_losses=np.array(all_losses),
-            losses_std=np.array(losses_std),
-            time=time.time()-time1
-            )
-
-    # we save ntk matrices evolution - COMMENTED OUT FOR PERFORMANCE
-    if len(ntk_matrices) > 0:
-        # we convert epoch keys to strings for npz format
-        # ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
-        # np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
-        # print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
-        # we also save epochs list for reference
-        # ntk_epochs = sorted(ntk_matrices.keys())
-        # print(f"NTK matrices stored at epochs: {ntk_epochs}")
-        # print(f"NTK matrix shape: {ntk_matrices[ntk_epochs[0]].shape}")
-        pass  # we skip NTK matrix saving for better performance
-    else:
-        print("No NTK matrices computed (commented out for performance)")
-
-    # we save model parameters evolution - COMMENTED OUT FOR PERFORMANCE
-    if len(parameters_snapshots) > 0:
-        # we convert epoch keys to strings for npz format
-        # params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
-        # np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
-        # print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
-        # we also save epochs list for reference
-        # params_epochs = sorted(parameters_snapshots.keys())
-        # print(f"Parameters stored at epochs: {params_epochs}")
-        # print(f"Parameter vector size: {len(parameters_snapshots[params_epochs[0]])}")
-        pass  # we skip parameter evolution saving for better performance
-    else:
-        print("No parameter snapshots computed (commented out for performance)")
-
-    # we save results to json
-    results = {
-        "config": config,
-        "final_train_error": float(errors_train[-1]) if len(errors_train) > 0 else None,
-        "final_test_error": float(errors_test[-1]) if len(errors_test) > 0 else None,
-        "final_test_error_max": float(errors_test_max[-1]) if len(errors_test_max) > 0 else None,
-        "training_time_seconds": float(time.time()-time1),
-        "total_parameters": sum(p.numel() for p in model.parameters()),
-        "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
-        "optimizer_switch_epochs": switch_epochs,  # we store epochs where optimizer switched
-        "ntk_epochs_stored": [],  # we skip NTK storage for performance
-        "ntk_matrix_shape": None,  # we skip NTK storage for performance
-        "parameters_epochs_stored": [],  # we skip parameter storage for performance
-        "parameter_vector_size": None,  # we skip parameter storage for performance
-    }
-
-    with open(os.path.join(output_dir, "results.json"), "w") as f:
-        json.dump(results, f, indent=4)
-
-    print(f"\nResults saved to {os.path.join(output_dir, 'results.json')}")
-
-    # we plot loss evolution
-    config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}, lr={config['lr_init']}"
-    fig = plt.figure(figsize=(8, 5))
-    plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)
-    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
-        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss (log scale)')
-    plt.title(f'Training Loss Evolution\n{config_str}')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'loss_evolution.png'), dpi=100)
-    plt.close()
-
-    # we plot errors
-    fig = plt.figure(figsize=(8, 5))
-    n = len(errors_test)
-    m = len(errors_train)
-    plt.plot(np.linspace(1, m, m)*50, np.log10(errors_train),
-            label="log10 training error", linewidth=2)
-    plt.plot(np.linspace(1, n, n)*50, np.log10(errors_test),
-            label="log10 test error", linewidth=2)
-    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
-        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
-    plt.xlabel('Epoch')
-    plt.ylabel('log10(error)')
-    plt.title(f'Error Evolution\n{config_str}')
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'error_evolution.png'), dpi=100)
-    plt.close()
+                def learned_nn(x):  # input and output are numpy.ndarray
+                    x = x.reshape([-1, 1])
+                    input_data = torch.tensor(x, dtype=mydtype).to(device)
+                    y = model(input_data)
+                    y = y.cpu().detach().numpy().reshape([-1])
+                    return y
 
 
-    # we plot losses std
-    fig = plt.figure(figsize=(8, 5))
-    plt.plot(np.linspace(1, m, m)*50, losses_std, 'b-', linewidth=2)
-    for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
-        plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss Std')
-    plt.title(f'Loss Std Evolution\n{config_str}')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'loss_std_evolution.png'), dpi=100)
-    plt.close()
+                x = np.random.rand(config["num_test_samples"]) * 2 - 1
+                y_nn = learned_nn(x)
+                y_true = func(x)
 
-    # we plot NTK eigenvalues (min/max) - COMMENTED OUT FOR PERFORMANCE
-    if len(ntk_eigenvalues) > 0:
-        # epochs_list = sorted(ntk_eigenvalues.keys())
-        # max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
-        # min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
+                # Calculate errors
 
-        # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
-        # fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
+                e = y_nn - y_true
+                e_max = np.max(np.abs(e))
+                e_mse = np.mean(e**2)
+                errors_test.append(e_mse)
+                errors_test_max.append(e_max)
 
-        # ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
-        # ax1.set_xlabel('Epoch')
-        # ax1.set_ylabel('Max Eigenvalue')
-        # ax1.set_title('NTK Maximum Eigenvalue')
-        # ax1.grid(True, alpha=0.3)
-        # ax1.set_yscale('log')
+                print("Test errors (MAX and MSE): " +
+                    f"{e_max:.2e} and {e_mse:.2e}")
 
-        # ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
-        # ax2.set_xlabel('Epoch')
-        # ax2.set_ylabel('|Min Eigenvalue|')
-        # ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
-        # ax2.grid(True, alpha=0.3)
-        # ax2.set_yscale('log')
+            # we compute NTK every 50 epochs (min/max only for print) - COMMENTED OUT FOR PERFORMANCE
+            if epoch % 5000 == 0:
+                
+                # ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
+                # ntk_eigenvalues[epoch] = eigenvalues
+                # ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
+                # ntk_eigenvalues_full[epoch] = eigenvalues
+                # print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+                pass  # we skip NTK computation for better performance
 
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
-        # plt.close()
-        pass  # we skip NTK eigenvalue plotting for better performance
-    else:
-        print("No NTK eigenvalues computed (commented out for performance)")
+            # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis - COMMENTED OUT FOR PERFORMANCE
+            if epoch % 50 == 0 and min(epoch, 1500) == epoch:
+                # ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
+                # ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
+                # ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
 
-    # we plot full NTK eigenvalue spectrum (every 1000 epochs) - COMMENTED OUT FOR PERFORMANCE
-    if len(ntk_eigenvalues_full) > 0:
-        # epochs_full = sorted(ntk_eigenvalues_full.keys())
+                # we store model parameters as a flattened tensor
+                # params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters() if p.requires_grad])
+                # parameters_snapshots[epoch] = params_flat.numpy()
 
-        # we create a plot with all eigenvalues at each epoch
-        # fig = plt.figure(figsize=(10, 6))
+                # print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
+                # print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
+                pass  # we skip NTK and parameter storage for better performance
 
-        # for epoch in epochs_full[:10]:
-        #     eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
-        #     indices = np.arange(len(eigs))
-        #     plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
+            # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
+            should_plot = False
+            if epoch <= 1000 and epoch % 100 == 0:
+                should_plot = True
+            elif 1000 < epoch <= 10000 and epoch % 1000 == 0:
+                should_plot = True
+            elif epoch > 10000 and epoch % 2000 == 0:
+                should_plot = True
+                
+            if should_plot:
+                # Plot the results
+                x = np.linspace(-1, 1, 1000)
+                y_nn = learned_nn(x)
+                y_true = func(x)
+                fig = plt.figure(figsize=(6, 4))
+                plt.plot(x, y_true, label='true function')
+                plt.plot(x, y_nn, label='learned network')
+                plt.xticks(np.linspace(*config["interval"], 5))
+                plt.tick_params(axis='both',
+                                which='major', labelsize=12)
+                plt.grid(True, axis='both', color='#AAAAAA',
+                        linestyle='--', linewidth=1.4)
+                config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
+                plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
+                plt.tight_layout()
+                plt.legend(loc="upper center", fontsize=13, ncol=2)
 
-        # plt.xlabel('Eigenvalue Index')
-        # plt.ylabel('|Eigenvalue| (log scale)')
-        # plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
-        # # i want to put the legend on the right side of the plot
-        # plt.legend(loc='right')
-        # plt.grid(True, alpha=0.3)
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
-        # plt.close()
+                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+                plt.close()
+            # we also store partial learned functions by layer at this checkpoint
+                layers_dir = os.path.join(output_dir, f"partials_epoch{epoch}")
+                os.makedirs(layers_dir, exist_ok=True)
+                teacher = MMNN(ranks=ranks,
+                                widths=widths,
+                                device=device,
+                                ResNet=config["use_resnet"])
+                teacher.load_state_dict(model.state_dict())
+                x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+                for layer_idx in range(1, len(teacher.fcs), 1):
+                    if layer_idx % 2 == 0:
+                        output_rank = ranks[layer_idx//2+1]
+                    else:
+                        output_rank = min(widths[(layer_idx)//2], 36)
+                    n_rows = int(np.ceil(np.sqrt(output_rank)))
+                    n_cols = int(np.ceil(output_rank / n_rows))
+                    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+                    if n_rows == 1 and n_cols == 1:
+                        axes = np.array([[axes]])
+                    elif n_rows == 1 or n_cols == 1:
+                        axes = axes.reshape(n_rows, n_cols)
+                    fig.suptitle(f'Layer {layer_idx} components (epoch {epoch}, rank {output_rank})', fontsize=14)
+                    with torch.no_grad():
+                        current = x_tensor
+                        for i in range(layer_idx):
+                            current = teacher.fcs[i](current)
+                            if i % 2 == 0:
+                                current = torch.relu(current)
+                        output = current.cpu().numpy()
+                        for idx in range(output_rank):
+                            i = idx // n_cols
+                            j = idx % n_cols
+                            axes[i, j].plot(x, output[:, idx], 'b-', linewidth=1)
+                            axes[i, j].set_title(f'Component {idx+1}')
+                            axes[i, j].grid(True, alpha=0.3)
+                            axes[i, j].set_xticks([-1, 0, 1])
+                    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+                    plt.savefig(os.path.join(layers_dir, f'layer_{layer_idx}_components.png'), dpi=100)
+                    plt.close()
+                    if config["show_plot"]:
+                        plt.show()
 
-        # we plot first 5 and last 5 eigenvalues over time
-        # fig, axes = plt.subplots(10, 1, figsize=(10, 16))
-        # fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
+        torch.save(model.state_dict(), os.path.join(output_dir, 'model_parameters.pth'))
+        np.savez(os.path.join(output_dir, "errors.npz"),
+                test=np.array(errors_test),
+                testmax=np.array(errors_test_max),
+                train=np.array(errors_train),
+                all_losses=np.array(all_losses),
+                losses_std=np.array(losses_std),
+                time=time.time()-time1
+                )
 
-        # we plot first 5 eigenvalues (smallest)
-        # for i in range(5):
-        #     ax = axes[i]
-        #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][i]) for ep in epochs_full]  # we use absolute value
-        #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
-        #     ax.set_ylabel(f'|λ_{i+1}|', fontsize=10)
-        #     ax.grid(True, alpha=0.3)
-        #     ax.set_yscale('log')
-        #     if i < 4:
-        #         ax.set_xticklabels([])
-
-        # we plot last 5 eigenvalues (largest)
-        # n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
-        # for i in range(5):
-        #     ax = axes[5 + i]
-        #     idx = n_eigs - 5 + i
-        #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][idx]) for ep in epochs_full]  # we use absolute value
-        #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
-        #     ax.set_ylabel(f'|λ_{idx+1}|', fontsize=10)
-        #     ax.grid(True, alpha=0.3)
-        #     ax.set_yscale('log')
-        #     if i < 4:
-        #         ax.set_xticklabels([])
-
-        # axes[-1].set_xlabel('Epoch', fontsize=12)
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
-        # plt.close()
-        # print("NTK first/last 5 eigenvalues plot saved")
-        pass  # we skip NTK full spectrum plotting for better performance
-    else:
-        print("No NTK full spectrum computed (commented out for performance)")
-
-    # we plot final prediction/fit
-    x_plot = np.linspace(-1, 1, 1000)
-    x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
-    with torch.no_grad():
-        y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
-    y_plot_true = func(x_plot_tensor.cpu().numpy())
-
-    fig = plt.figure(figsize=(8, 5))
-    plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
-    plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title(f'Final Prediction vs True Function\n{config_str}')
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=100)
-    plt.close()
-
-    print(f"\nAll plots saved to {output_dir}")
-    print(f"Total training time: {time.time()-time1:.2f}s")
-    # Plot functions learned by each low rank layer
-    teacher = MMNN(ranks=ranks,
-                    widths=widths,
-                    device=device,
-                    ResNet=config["use_resnet"])
-    teacher.load_state_dict(model.state_dict())
-
-    x = np.linspace(-1, 1, 1000)
-    x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
-
-    # For each layer with low rank output
-    # very bad complexity O(n^2)
-
-
-
-    for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
-        # if layer_idx is odd, we plot the first part of the layer, that means relu(something)
-        # if layer_idx is even, we plot the second part of the layer, that means something
-        # so we need to plot the first part of the layer if layer_idx is even, and the second part of the layer if layer_idx is odd
-        if layer_idx % 2 == 0:
-            output_rank = ranks[layer_idx//2+1]
+        # we save ntk matrices evolution - COMMENTED OUT FOR PERFORMANCE
+        if len(ntk_matrices) > 0:
+            # we convert epoch keys to strings for npz format
+            # ntk_matrices_str_keys = {f"epoch_{epoch}": matrix for epoch, matrix in ntk_matrices.items()}
+            # np.savez(os.path.join(output_dir, "ntk_matrices.npz"), **ntk_matrices_str_keys)
+            # print(f"\nSaved {len(ntk_matrices)} NTK matrices to ntk_matrices.npz")
+            # we also save epochs list for reference
+            # ntk_epochs = sorted(ntk_matrices.keys())
+            # print(f"NTK matrices stored at epochs: {ntk_epochs}")
+            # print(f"NTK matrix shape: {ntk_matrices[ntk_epochs[0]].shape}")
+            pass  # we skip NTK matrix saving for better performance
         else:
-            output_rank = min(widths[(layer_idx)//2], 36)
+            print("No NTK matrices computed (commented out for performance)")
+
+        # we save model parameters evolution - COMMENTED OUT FOR PERFORMANCE
+        if len(parameters_snapshots) > 0:
+            # we convert epoch keys to strings for npz format
+            # params_str_keys = {f"epoch_{epoch}": params for epoch, params in parameters_snapshots.items()}
+            # np.savez(os.path.join(output_dir, "parameters_evolution.npz"), **params_str_keys)
+            # print(f"\nSaved {len(parameters_snapshots)} parameter snapshots to parameters_evolution.npz")
+            # we also save epochs list for reference
+            # params_epochs = sorted(parameters_snapshots.keys())
+            # print(f"Parameters stored at epochs: {params_epochs}")
+            # print(f"Parameter vector size: {len(parameters_snapshots[params_epochs[0]])}")
+            pass  # we skip parameter evolution saving for better performance
+        else:
+            print("No parameter snapshots computed (commented out for performance)")
+
+        # we save results to json
+        results = {
+            "config": config,
+            "final_train_error": float(errors_train[-1]) if len(errors_train) > 0 else None,
+            "final_test_error": float(errors_test[-1]) if len(errors_test) > 0 else None,
+            "final_test_error_max": float(errors_test_max[-1]) if len(errors_test_max) > 0 else None,
+            "training_time_seconds": float(time.time()-time1),
+            "total_parameters": sum(p.numel() for p in model.parameters()),
+            "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
+            "optimizer_switch_epochs": switch_epochs,  # we store epochs where optimizer switched
+            "optimizer_switch_losses": switch_losses,  # we store losses at switching epochs
+            "optimizer_switch_targets": switch_targets,  # we store target criteria used for switching
+            "ntk_epochs_stored": [],  # we skip NTK storage for performance
+            "ntk_matrix_shape": None,  # we skip NTK storage for performance
+            "parameters_epochs_stored": [],  # we skip parameter storage for performance
+            "parameter_vector_size": None,  # we skip parameter storage for performance
+        }
+
+        with open(os.path.join(output_dir, "results.json"), "w") as f:
+            json.dump(results, f, indent=4)
+
+        print(f"\nResults saved to {os.path.join(output_dir, 'results.json')}")
+
+        # we plot loss evolution
+        config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}, lr={config['lr_init']}"
+        fig = plt.figure(figsize=(8, 5))
+        plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)
+        for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+            plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
+        for y_switch in switch_losses:  # we add horizontal red lines at switching losses
+            plt.axhline(y=y_switch, color='red', linestyle=':', linewidth=1.6, alpha=0.7)
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss (log scale)')
+        plt.title(f'Training Loss Evolution\n{config_str}')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'loss_evolution.png'), dpi=100)
+        plt.close()
+
+        # we plot errors
+        fig = plt.figure(figsize=(8, 5))
+        n = len(errors_test)
+        m = len(errors_train)
+        plt.plot(np.linspace(1, m, m)*50, np.log10(errors_train),
+                label="log10 training error", linewidth=2)
+        plt.plot(np.linspace(1, n, n)*50, np.log10(errors_test),
+                label="log10 test error", linewidth=2)
+        for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+            plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
+        plt.xlabel('Epoch')
+        plt.ylabel('log10(error)')
+        plt.title(f'Error Evolution\n{config_str}')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'error_evolution.png'), dpi=100)
+        plt.close()
 
 
-        print(f"Plotting layer {layer_idx} with output rank {output_rank}")
-        # Plot components in a roughly rectangular grid
-        n_rows = int(np.ceil(np.sqrt(output_rank)))
-        n_cols = int(np.ceil(output_rank / n_rows))
-        # Create subplot figure with dimensions based on output rank
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
-        if n_rows == 1 and n_cols == 1:
-            axes = np.array([[axes]])  # Make 2D array for consistent indexing
-        elif n_rows == 1 or n_cols == 1:
-            axes = axes.reshape(n_rows, n_cols)
-        fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
+        # we plot losses std
+        fig = plt.figure(figsize=(8, 5))
+        plt.plot(np.linspace(1, m, m)*50, losses_std, 'b-', linewidth=2)
+        for switch_epoch in switch_epochs:  # we add vertical red lines at switching epochs
+            plt.axvline(x=switch_epoch, color='red', linestyle='--', linewidth=2, alpha=0.7)
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss Std')
+        plt.title(f'Loss Std Evolution\n{config_str}')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'loss_std_evolution.png'), dpi=100)
+        plt.close()
 
-        # Get layer output
+        # we plot NTK eigenvalues (min/max) - COMMENTED OUT FOR PERFORMANCE
+        if len(ntk_eigenvalues) > 0:
+            # epochs_list = sorted(ntk_eigenvalues.keys())
+            # max_eigenvalues = [ntk_eigenvalues[ep][-1].item() for ep in epochs_list]
+            # min_eigenvalues = [abs(ntk_eigenvalues[ep][0].item()) for ep in epochs_list]  # we use absolute value
+
+            # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
+            # fig.suptitle(f'NTK Eigenvalue Evolution\n{config_str}', fontsize=12)
+
+            # ax1.plot(epochs_list, max_eigenvalues, 'b-', linewidth=2)
+            # ax1.set_xlabel('Epoch')
+            # ax1.set_ylabel('Max Eigenvalue')
+            # ax1.set_title('NTK Maximum Eigenvalue')
+            # ax1.grid(True, alpha=0.3)
+            # ax1.set_yscale('log')
+
+            # ax2.plot(epochs_list, min_eigenvalues, 'r-', linewidth=2)
+            # ax2.set_xlabel('Epoch')
+            # ax2.set_ylabel('|Min Eigenvalue|')
+            # ax2.set_title('NTK Minimum Eigenvalue (Absolute Value)')
+            # ax2.grid(True, alpha=0.3)
+            # ax2.set_yscale('log')
+
+            # plt.tight_layout()
+            # plt.savefig(os.path.join(output_dir, 'ntk_eigenvalues_minmax.png'), dpi=100)
+            # plt.close()
+            pass  # we skip NTK eigenvalue plotting for better performance
+        else:
+            print("No NTK eigenvalues computed (commented out for performance)")
+
+        # we plot full NTK eigenvalue spectrum (every 1000 epochs) - COMMENTED OUT FOR PERFORMANCE
+        if len(ntk_eigenvalues_full) > 0:
+            # epochs_full = sorted(ntk_eigenvalues_full.keys())
+
+            # we create a plot with all eigenvalues at each epoch
+            # fig = plt.figure(figsize=(10, 6))
+
+            # for epoch in epochs_full[:10]:
+            #     eigs = np.abs(ntk_eigenvalues_full[epoch])  # we use absolute value
+            #     indices = np.arange(len(eigs))
+            #     plt.semilogy(indices, eigs, '-o', markersize=3, label=f'Epoch {epoch}', alpha=0.7)
+
+            # plt.xlabel('Eigenvalue Index')
+            # plt.ylabel('|Eigenvalue| (log scale)')
+            # plt.title(f'Full NTK Eigenvalue Spectrum Evolution (Absolute Value)\n{config_str}')
+            # # i want to put the legend on the right side of the plot
+            # plt.legend(loc='right')
+            # plt.grid(True, alpha=0.3)
+            # plt.tight_layout()
+            # plt.savefig(os.path.join(output_dir, 'ntk_full_spectrum.png'), dpi=100)
+            # plt.close()
+
+            # we plot first 5 and last 5 eigenvalues over time
+            # fig, axes = plt.subplots(10, 1, figsize=(10, 16))
+            # fig.suptitle(f'NTK Eigenvalues Evolution (First 5 and Last 5, Absolute Value)\n{config_str}', fontsize=14, y=0.995)
+
+            # we plot first 5 eigenvalues (smallest)
+            # for i in range(5):
+            #     ax = axes[i]
+            #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][i]) for ep in epochs_full]  # we use absolute value
+            #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6)
+            #     ax.set_ylabel(f'|λ_{i+1}|', fontsize=10)
+            #     ax.grid(True, alpha=0.3)
+            #     ax.set_yscale('log')
+            #     if i < 4:
+            #         ax.set_xticklabels([])
+
+            # we plot last 5 eigenvalues (largest)
+            # n_eigs = len(ntk_eigenvalues_full[epochs_full[0]])
+            # for i in range(5):
+            #     ax = axes[5 + i]
+            #     idx = n_eigs - 5 + i
+            #     eigenvalues_over_time = [abs(ntk_eigenvalues_full[ep][idx]) for ep in epochs_full]  # we use absolute value
+            #     ax.plot(epochs_full, eigenvalues_over_time, 'o-', linewidth=2, markersize=6, color='C1')
+            #     ax.set_ylabel(f'|λ_{idx+1}|', fontsize=10)
+            #     ax.grid(True, alpha=0.3)
+            #     ax.set_yscale('log')
+            #     if i < 4:
+            #         ax.set_xticklabels([])
+
+            # axes[-1].set_xlabel('Epoch', fontsize=12)
+            # plt.tight_layout()
+            # plt.savefig(os.path.join(output_dir, 'ntk_first_last_eigenvalues.png'), dpi=100)
+            # plt.close()
+            # print("NTK first/last 5 eigenvalues plot saved")
+            pass  # we skip NTK full spectrum plotting for better performance
+        else:
+            print("No NTK full spectrum computed (commented out for performance)")
+
+        # we plot final prediction/fit
+        x_plot = np.linspace(-1, 1, 1000)
+        x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
         with torch.no_grad():
-            # Apply layers up to current one
-            current = x_tensor
-            for i in range(layer_idx ):
-                current = teacher.fcs[i](current)
-                if i % 2 == 0:  # Apply ReLU after first part of each layer
-                    current = torch.relu(current)
+            y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
+        y_plot_true = func(x_plot_tensor.cpu().numpy())
 
-            output = current.cpu().numpy()
+        fig = plt.figure(figsize=(8, 5))
+        plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
+        plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'Final Prediction vs True Function\n{config_str}')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=100)
+        plt.close()
 
-            for idx in range(output_rank):
-                i = idx // n_cols
-                j = idx % n_cols
-                axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
-                axes[i,j].set_title(f'Component {idx+1}')
-                axes[i,j].grid(True, alpha=0.3)
-                axes[i, j].set_xticks([-1, 0, 1])
+        print(f"\nAll plots saved to {output_dir}")
+        print(f"Total training time: {time.time()-time1:.2f}s")
+        # Plot functions learned by each low rank layer
+        teacher = MMNN(ranks=ranks,
+                        widths=widths,
+                        device=device,
+                        ResNet=config["use_resnet"])
+        teacher.load_state_dict(model.state_dict())
 
-            plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-            plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
-            plt.close()
+        x = np.linspace(-1, 1, 1000)
+        x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
 
-        print(f"Layer component plots saved to {output_dir}")
+        # For each layer with low rank output
+        # very bad complexity O(n^2)
+
+
+
+        for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
+            # if layer_idx is odd, we plot the first part of the layer, that means relu(something)
+            # if layer_idx is even, we plot the second part of the layer, that means something
+            # so we need to plot the first part of the layer if layer_idx is even, and the second part of the layer if layer_idx is odd
+            if layer_idx % 2 == 0:
+                output_rank = ranks[layer_idx//2+1]
+            else:
+                output_rank = min(widths[(layer_idx)//2], 36)
+
+
+            print(f"Plotting layer {layer_idx} with output rank {output_rank}")
+            # Plot components in a roughly rectangular grid
+            n_rows = int(np.ceil(np.sqrt(output_rank)))
+            n_cols = int(np.ceil(output_rank / n_rows))
+            # Create subplot figure with dimensions based on output rank
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+            if n_rows == 1 and n_cols == 1:
+                axes = np.array([[axes]])  # Make 2D array for consistent indexing
+            elif n_rows == 1 or n_cols == 1:
+                axes = axes.reshape(n_rows, n_cols)
+            fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
+
+            # Get layer output
+            with torch.no_grad():
+                # Apply layers up to current one
+                current = x_tensor
+                for i in range(layer_idx ):
+                    current = teacher.fcs[i](current)
+                    if i % 2 == 0:  # Apply ReLU after first part of each layer
+                        current = torch.relu(current)
+
+                output = current.cpu().numpy()
+
+                for idx in range(output_rank):
+                    i = idx // n_cols
+                    j = idx % n_cols
+                    axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
+                    axes[i,j].set_title(f'Component {idx+1}')
+                    axes[i,j].grid(True, alpha=0.3)
+                    axes[i, j].set_xticks([-1, 0, 1])
+
+                plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+                plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
+                plt.close()
+
+            print(f"Layer component plots saved to {output_dir}")
