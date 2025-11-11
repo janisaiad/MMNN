@@ -173,8 +173,8 @@ for num_layers in [4,6]:
             for gamma_2 in [0.99]:
                 for threshold in [3e-2,1e-2,7e-3,7e-2]:
                     for lr_decay_steps in [1000,500]:
-                        for batch_size in [100,500]: 
-                            for ratio in [2,5,7,10,12,15]:   
+                        for batch_size in [20,50]: 
+                            for ratio in [1.3,1.5]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
@@ -325,7 +325,7 @@ for config in configs:
         losses_std = []
 
         optim_string = f"Adam_{config['lr_init']}"
-        optimizer = optim.SGD(model.parameters(), lr=config["lr_init"])
+        optimizer = optim.Adam(model.parameters(), lr=config["lr_init"])
         scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
         criterion = nn.MSELoss()
 
