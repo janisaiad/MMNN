@@ -173,8 +173,8 @@ for num_layers in [4,6]:
             for gamma_2 in [0.99]:
                 for threshold in [3e-2,1e-2,7e-3,7e-2]:
                     for lr_decay_steps in [1000,500]:
-                        for batch_size in [20,50]: 
-                            for ratio in [1.3,1.5]:   
+                        for batch_size in [100,50]: 
+                            for ratio in [1.2,1.3]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
@@ -185,9 +185,9 @@ for num_layers in [4,6]:
                                     "use_resnet": False,
 
                                     # training hyperparameters
-                                    "num_epochs": 30000,
+                                    "num_epochs": 5000,
                                     "batch_size": batch_size,
-                                    "num_training_samples": batch_size,
+                                    "num_training_samples": 1000,
                                     "num_test_samples": 600,
 
                                     # learning rate schedule
@@ -515,9 +515,9 @@ for config in configs:
             # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
             should_plot = False
             if epoch <= 1000 and epoch % 500 == 0:
-                should_plot = False
-            elif 1000 < epoch <= 10000 and epoch % 3000 == 0:
-                should_plot = False
+                should_plot = True
+            elif 1000 < epoch <= 10000 and epoch % 1500 == 0:
+                should_plot = Tue
             elif epoch > 10000 and epoch % 4000 == 0:
                 should_plot = False
                 
