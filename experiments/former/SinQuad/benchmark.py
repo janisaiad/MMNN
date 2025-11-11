@@ -57,7 +57,8 @@ class MMNN(nn.Module):
         self.widths = widths
         self.ResNet = ResNet
         self.depth = len(widths)
-        
+        self.inverse_widths = [1/width for width in self.widths]
+        self.inverse_product = 1/self.product
         fc_sizes = [ ranks[0] ] 
         for j in range(self.depth):
             fc_sizes += [ widths[j], ranks[j+1] ]
@@ -70,9 +71,6 @@ class MMNN(nn.Module):
             fcs.append(fc)
         self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
         # mean-field initialization: we set each weight with unit variance and zero bias
-        for fc in self.fcs:
-            nn.init.normal_(fc.weight, mean=0.0, std=2.0)
-            nn.init.zeros_(fc.bias)
         
         if fixWb: # if True, the weights and biases are not updated during training
             for j in range(len(fcs)):
@@ -80,7 +78,7 @@ class MMNN(nn.Module):
                     self.fcs[j].weight.requires_grad = False
                     self.fcs[j].bias.requires_grad = False
  
-
+    
     def forward(self, x):
         for j in range(self.depth):
             if self.ResNet:
@@ -93,7 +91,7 @@ class MMNN(nn.Module):
                 if 0 < j < self.depth-1:
                     n = min(x.shape[1], x_id.shape[1])
                     x[:,:n] = x[:,:n] + x_id[:,:n]
-        return x/self.product
+        return x
 
 # %%
 import torch
@@ -170,13 +168,13 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
    
 
 for num_layers in [4,6]:
-    for hidden_width in [512,666,1024]:
-        for hidden_rank in [50,30,15]:                                
+    for hidden_width in [666]:
+        for hidden_rank in [50,15]:                                
             for gamma_2 in [0.99]:
-                for threshold in [1e-2,3e-2,1e-2,7e-3,1e-1,7e-2]:
-                    for lr_decay_steps in [1000]:
-                        for batch_size in [100]: 
-                            for ratio in [5,10,15]:   
+                for threshold in [3e-2,1e-2,7e-3,7e-2]:
+                    for lr_decay_steps in [1000,500]:
+                        for batch_size in [100,500]: 
+                            for ratio in [2,5,7,10,12,15]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
@@ -187,19 +185,19 @@ for num_layers in [4,6]:
                                     "use_resnet": False,
 
                                     # training hyperparameters
-                                    "num_epochs": 30000,
+                                    "num_epochs": 60000,
                                     "batch_size": batch_size,
-                                    "num_training_samples": 600,
-                                    "num_test_samples": 1000,
+                                    "num_training_samples": batch_size,
+                                    "num_test_samples": 600,
 
                                     # learning rate schedule
                                     "lr_init": 0.001,
-                                    "lr_gamma": 0.99,
-                                    "lr_step_size": 1000,
+                                    "lr_gamma": gamma_2,
+                                    "lr_step_size": lr_decay_steps,
 
                                     # problem setup
                                     "interval": [-1, 1],
-                                    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi* (x+0.5)^2)",
+                                    "function": "cos(36*pi*x^2) - 0.8*cos(17*pi* (x+0.5)^2)",
 
                                     # monitoring
                                     "show_plot": False,
@@ -269,7 +267,7 @@ for config in configs:
                     f"lr_decay_steps{config['lr_decay_steps']}"
                     f"gamma_2{config['gamma_2']}")
         # we create output directory
-        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_shifted",sub_folder_name,folder_name,f"time{time2}")
+        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_1111biggerbatch",sub_folder_name,folder_name,f"time{time2}")
         os.makedirs(output_dir, exist_ok=True)
 
         # we save config to json
@@ -516,11 +514,11 @@ for config in configs:
 
             # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
             should_plot = False
-            if epoch <= 1000 and epoch % 100 == 0:
+            if epoch <= 1000 and epoch % 500 == 0:
                 should_plot = True
-            elif 1000 < epoch <= 10000 and epoch % 1000 == 0:
+            elif 1000 < epoch <= 10000 and epoch % 3000 == 0:
                 should_plot = True
-            elif epoch > 10000 and epoch % 2000 == 0:
+            elif epoch > 10000 and epoch % 4000 == 0:
                 should_plot = True
                 
             if should_plot:
