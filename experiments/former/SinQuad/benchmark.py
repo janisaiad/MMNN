@@ -185,7 +185,7 @@ for num_layers in [4,6]:
                                     "use_resnet": False,
 
                                     # training hyperparameters
-                                    "num_epochs": 60000,
+                                    "num_epochs": 30000,
                                     "batch_size": batch_size,
                                     "num_training_samples": batch_size,
                                     "num_test_samples": 600,
@@ -267,7 +267,7 @@ for config in configs:
                     f"lr_decay_steps{config['lr_decay_steps']}"
                     f"gamma_2{config['gamma_2']}")
         # we create output directory
-        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_training_1111biggerbatch",sub_folder_name,folder_name,f"time{time2}")
+        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_noplot_sgdfirst",sub_folder_name,folder_name,f"time{time2}")
         os.makedirs(output_dir, exist_ok=True)
 
         # we save config to json
@@ -325,7 +325,7 @@ for config in configs:
         losses_std = []
 
         optim_string = f"Adam_{config['lr_init']}"
-        optimizer = optim.Adam(model.parameters(), lr=config["lr_init"])
+        optimizer = optim.SGD(model.parameters(), lr=config["lr_init"])
         scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
         criterion = nn.MSELoss()
 
@@ -515,11 +515,11 @@ for config in configs:
             # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
             should_plot = False
             if epoch <= 1000 and epoch % 500 == 0:
-                should_plot = True
+                should_plot = False
             elif 1000 < epoch <= 10000 and epoch % 3000 == 0:
-                should_plot = True
+                should_plot = False
             elif epoch > 10000 and epoch % 4000 == 0:
-                should_plot = True
+                should_plot = False
                 
             if should_plot:
                 # Plot the results
