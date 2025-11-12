@@ -188,6 +188,19 @@ in fact mmnn is Low rank random features networkn
 goodnotes : https://web.goodnotes.com/s/F0IFxLELb1470d6AGRdbxH#page-2
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## paper whole timeline
 The goal of the paper is 1st to provide extensive results explaining numerical experiments related to mmnn, especially the super convergence observed
 especially 3 part of training where the problem convexify
@@ -201,6 +214,7 @@ to combine RF and low rank is mainly due to  https://arxiv.org/pdf/2209.13569 re
 
 in fact the early part of training appears to be very bad for SGD and the NTK can partly explain this ?  this is a line of research that is investigated for mmnns
 we try to use NTK to explain early training and the apparently bad conditionned starting
+
 
 we use the NTK to confirm that in this regime there is no disadvantage of using this kind of network due to RKHS being the same
 
@@ -363,3 +377,154 @@ this can lead to a great future direction of research because of tractability fo
 
 also we have a NTK theory for 2 layers 
 
+
+
+
+for mmnn we use the ntk to explain  that high frequencies are not learned directly through the RKHS becasue same as MLP , but there is more low to high frequency bias
+we can tune the frequency learning in the variance of weights at init and maximal update param (mu param)
+
+
+we can have a concentration bound between 2*NTK_MMNN-NTK_MLP for large r, ntk_mmnn std edcay in 1/r²
+we can be in the NTK regime very easily 
+
+there is still the lr decay anad batch size contribution to disentangle
+at init there is a very bad conditionning so NTK explain partially the training
+
+
+(it will remains finite width corrections to try to explain partly the mean field training)
+mean field point of view can be satisfying and we have supportive results explains well the 2nd part of training where SGD have a much more convex training
+(And now we have to fill with mean field previsions and reality)
+
+
+the paper timeline is shaped in 3 part : 'The landscape of random features low rank neural networks'
+
+
+1st part with NTK and finite width
+
+2nd part with mean field and stepwise loss (benarous & mean field), we explain in which case sgd gets stucked but helps us where adam fails because of the wobbling part
+we think that the wobbling  occurs in a subspace orthogonal to this of  the symmetry condition by the mean field approach,
+Hessian and gauss newton is easy to calculate in this regime and supported by the plot through training of the TK/GN matrix
+explained by central flow the high frequency grokking is explained by the last part of the functions high frequency learned by spikes
+
+SGD is great at learning the final spikes after the global direction is given, ie the high spike given the high frequency variation given see "G:\Mon Drive\JANIS AIAD Internship - NTK for NN\mmnn_training_shifted\mmnn_training_shifted\L4_W512_R15_E30000_lr0.001_bs100_ratio5\L4_W512_R15_E30000_lr0.001_bs100_ratio5\th0.03lr_decay_steps1000gamma_20.99\mmnn_epoch10000_1D.png"
+those steps can be explained in the teacher student perspective when seen in the fourier space
+in fact  we believe it is only the 1st quadratic part of relu that works the most 
+
+the approx interpretation with the dictionary we want to place somewhere ..
+
+the mean field approach in fourier space can explain the same thing as ben arous ?, this is what we observe, big frequency training when the loss decay fast
+and I think that the random features allow to grok that because it push dictionary functions at any place over the interval, it's just a matter of chosing which one
+and having sufficient depth to build more and more frequencies
+
+we only can track fourier training in bandlimited with barron space (same as haizhao)
+
+the landscape is sharp, very sharp after having passed the low pass stuff
+
+ "low-pass filter" limitation of shallow networks.
+last part with convergence adn dynamical stability
+ we still have the wavelet training to do
+ Pinn fourier loss to try at the end to see if it mitigates (other section)
+
+ this G:\Mon Drive\JANIS AIAD Internship - NTK for NN\mmnn_training_shifted\mmnn_training_shifted\L4_W512_R15_E30000_lr0.001_bs100_ratio5\L4_W512_R15_E30000_lr0.001_bs100_ratio5\th0.007lr_decay_steps1000gamma_20.99 explain a lot the low to high frequency bias
+
+more depth = more frequency (make a plot depth against high fequency)
+scatter loss vs depth/highest frequency
+
+
+we observe also 2n spikes for 2n layers
+
+we think growing r makes the ladnscape having exponentially more minimia
+many dictionary functions learned are the same as PHI in mmnn construction , that select a range of interval, which is true
+for what's happening for the 1st part/2nd part, we select this interval range and put a blob on this by thresholding randomly
+then those blobs are assembled to form the high frequency function
+
+this is a concurrent point of view from the approximation result but we decompose fèi psièi with this 2 interpretation
+
+
+contrary to openai paper, shallow is low pass filter
+in some numerical experiments adam makes us escape the global minma very fast 
+
+fourier interpreatation in terms of multi index learning, in fourier spac 
+
+we go beyong multi index models and in 1d we learn high frequency localzized part directly (instead of direction, a localization directly)
+
+## fourier
+
+
+
+## dictionary learning
+
+- "we can clearly see in our experiments that MMNNs gives dictionary learning or even wavelet learning ! it performs learning of base functions to be streched and placed at a particular interval"
+
+- "then we describe all our experiments showing this dictionary feature learning, behavior accross layers for several dimensional tasks"
+
+- "the approx interpretation with the dictionary we want to place somewhere .."
+
+- "many dictionary functions learned are the same as PHI in mmnn construction , that select a range of interval, which is true for what's happening for the 1st part/2nd part, we select this interval range and put a blob on this by thresholding randomly then those blobs are assembled to form the high frequency function"
+
+- "this is a concurrent point of view from the approximation result but we decompose fèi psièi with this 2 interpretation"
+
+
+
+
+# depth
+- "more depth = more frequency (make a plot depth against high fequency)"
+- "scatter loss vs depth/highest frequency"
+- "with this 1/r expansion maybe this is the premise to the finite width correction in infinite depth !! great idea to explore then"
+- "we're doing our full analysis on 2 mmnn layers because of untractable integral arising after the 2nd mmnn layer, we can tackle infinite layer NTK with the 1/r exponential expansion"
+- "since we only have 2 hidden layers, finite width corrections are tractable ! and we can try to have Nr and r/d scaling law"
+- "also we recall that we're doing this as taking the random feature space being high dimensional ! because of large width
+and we train on that, and we do that both"
+- "mainly my results lie in the mean field framework (between 500 and 5000 width), and I need to prove that it beats MLP for conference paper also by adding the benchmark
+in comparison for 3 layers
+so for the arxiv i before put all the math i've done to have a great math paper, for the conference i'll work on the benchmark, sincerely all the math i've done so far
+
+i'll also give the insight for 3 layers by convergence theorem and universal approximation as explained in globalconvergencesthreelayers because this is what we see in the experimental results"
+
+- "The landscape is sharp, very sharp after having passed the low pass stuff"
+
+- "the paper timeline is shaped in 3 part : 'The landscape of random features low rank neural networks'" (context: different parts, including depth/width considerations)
+
+- "for mmnn we use the ntk to explain  that high frequencies are not learned directly through the RKHS becasue same as MLP , but there is more low to high frequency bias
+we can tune the frequency learning in the variance of weights at init and maximal update param (mu param)"
+
+- "with this 1/r expansion maybe this is the premise to the finite width correction in infinite depth !! great idea to explore then"
+
+- "reminder : i should write the proof of kibble and fisher distrib !!" (context: exploring topics as depth and width)
+
+- "for the NTK there is a expansion in sum of C_i/r^i (1 to L) for L layers and C_i a random variable to be computed according to rho_i, from rho the cosine dist between x and y vector
+finer analysis of the constant from lyapunov product analysis of those (1-arccos(rho_i)/pi) ; the pertubation in the kernel random matrix leads
+to a bulk spectrum/outlier that differs from MLP"
+
+- "the approx interpretation with the dictionary we want to place somewhere .." (context: perhaps related to depth vs width in network dictionary learning)
+
+- "scatter loss vs depth/highest frequency"
+
+
+todo  : 
+2 layers analysis only 
+littearature of random features, curse of dim for  approx theorem mean file 
+recup anciens resultats probants
+concentration of the low rank ntk
+ntk outlier analysis (cf ben arous)
+bias not removable for apporx results; 
+finite width NTK
+EOS, dynamical stability and 3rd order tensor
+
+tester en 2d le curse od fim mean field
+
+trouver un threshold qui fonctionne parfait et l'utiliser
+
+low rank allow to have good minima exponentially in r, to test
+
+depth wrt high frequency
+
+passer en ntk et mu param
+
+wavelet training ; signel multi index models
+mean field do not explain that because of what it requires with
+let high frequency thrive with standard init without preserving
+
+randomness in the data just move the bulk but outlier emerges from
+
+global convergence for all depth from mean field approach
