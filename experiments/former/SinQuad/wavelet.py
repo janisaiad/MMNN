@@ -162,7 +162,7 @@ for lr_init in [0.001]:
                             "num_layers": num_layers,
                             "hidden_width": hidden_width,
                             "hidden_rank": hidden_rank,
-                            "input_rank": 1,
+                            "input_rank": 2,
                             "output_rank": 1,
                             "use_resnet": False,
 
@@ -231,7 +231,7 @@ for config in configs:
                 f"bs{config['batch_size']}_"
                 f"ntr{config['num_training_samples']}")
 
-    output_dir = os.path.join("/Data/janis.aiad/", "wavelet_training_extended", folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "wavelet_training_bigL", folder_name)
     os.makedirs(output_dir, exist_ok=True)
     
     if not os.path.exists(os.path.join(output_dir, 'final_prediction.png')): 
@@ -259,7 +259,8 @@ for config in configs:
                         device=device,
                         ResNet=config["use_resnet"])
         def func(x):
-            y = np.cos(np.pi* np.abs(np.pi*x)**config["alpha"])
+            x1, x2 = x[:, 0], x[:, 1]
+            y = np.cos(np.pi* np.abs(np.pi*x1)**config["alpha"]) * np.cos(np.pi* np.abs(np.pi*x2)**config["alpha"])
             return y
 
 
@@ -277,7 +278,7 @@ for config in configs:
             print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
 
 
-        x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 1])
+        x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 2])
         y_train = func(x_train)
         x_train = torch.tensor(x_train, device=device, dtype=mydtype)
         y_train = torch.tensor(y_train, device=device, dtype=mydtype)
@@ -311,7 +312,7 @@ for config in configs:
             
         
             def learned_nn(x):  # input and output are numpy.ndarray
-                x = x.reshape([-1, 1])
+                x = x.reshape([-1, 2])
                 input_data = torch.tensor(x, dtype=mydtype).to(device)
                 y = model(input_data)
                 y = y.cpu().detach().numpy().reshape([-1])
@@ -341,7 +342,7 @@ for config in configs:
 
 
 
-                x = np.random.rand(config["num_test_samples"]) * 2 - 1
+                x = np.random.rand(config["num_test_samples"], 2) * 2 - 1
                 y_nn = learned_nn(x)
                 y_true = func(x)
 
@@ -388,7 +389,7 @@ for config in configs:
                 should_plot = True
 
             if should_plot:
-                x = np.linspace(-1, 1, 1000)
+                x = np.linspace(-1, 1, 1000).reshape([-1, 2])
                 y_nn = learned_nn(x)
                 y_true = func(x)
                 fig = plt.figure(figsize=(6, 4))
@@ -404,7 +405,7 @@ for config in configs:
                 plt.tight_layout()
                 plt.legend(loc="upper center", fontsize=13, ncol=2)
 
-                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_1D.png"), dpi=50)
+                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_2D.png"), dpi=50)
                 plt.close()
                 if config["show_plot"]:
                     plt.show()
@@ -625,22 +626,48 @@ for config in configs:
             plt.close()
             print("NTK first/last 5 eigenvalues plot saved")
 
-        # we plot final prediction/fit
-        x_plot = np.linspace(-1, 1, 1000)
-        x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
-        with torch.no_grad():
-            y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
-        y_plot_true = func(x_plot_tensor.cpu().numpy())
+        # 2D final prediction/fit plotting
 
-        fig = plt.figure(figsize=(8, 5))
-        plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
-        plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title(f'Final Prediction vs True Function\n{config_str}')
-        plt.grid(True, alpha=0.3)
-        plt.legend()
-        plt.tight_layout()
+        # Generate a 2D grid for plotting
+        N_plot = 150
+        x1_plot = np.linspace(-1, 1, N_plot)
+        x2_plot = np.linspace(-1, 1, N_plot)
+        X1, X2 = np.meshgrid(x1_plot, x2_plot)
+        x_plot = np.stack([X1.ravel(), X2.ravel()], axis=-1)
+
+        x_plot_tensor = torch.tensor(x_plot, dtype=mydtype).to(device)
+        with torch.no_grad():
+            y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape(N_plot, N_plot)
+        y_plot_true = func(x_plot_tensor.cpu().numpy()).reshape(N_plot, N_plot)
+
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+        im0 = axes[0].imshow(
+            y_plot_true,
+            extent=(-1, 1, -1, 1),
+            origin='lower',
+            aspect='auto',
+            cmap='viridis'
+        )
+        axes[0].set_title('True function')
+        axes[0].set_xlabel('$x_1$')
+        axes[0].set_ylabel('$x_2$')
+        fig.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
+
+        im1 = axes[1].imshow(
+            y_plot_nn,
+            extent=(-1, 1, -1, 1),
+            origin='lower',
+            aspect='auto',
+            cmap='viridis'
+        )
+        axes[1].set_title('Learned network')
+        axes[1].set_xlabel('$x_1$')
+        axes[1].set_ylabel('$x_2$')
+        fig.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
+
+        plt.suptitle(f'Final Prediction vs True Function\n{config_str}', fontsize=14)
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
         plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=100)
         plt.close()
 
