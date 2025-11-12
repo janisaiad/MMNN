@@ -152,11 +152,11 @@ print(f"Training on device: {device}")
 configs = []
 
 for lr_init in [0.001]:
-    for num_layers in [2,4,8]:
+    for num_layers in [10,12,15]:
         for hidden_width in [64,256,512,2048]:
             for hidden_rank in [10,20,50]:
-                for batch_size in [10,35,65,150250,500,1000]:    
-                    for alpha in [1.0,1.5,2,3,4,5,6,7,8,9,10]:
+                for batch_size in [10,35,65,150,250,500,1000]:    
+                    for alpha in [0.1,0.2,0.5,1,3,5,8,13]:
                         configs.append({
                             # architecture hyperparameters
                             "num_layers": num_layers,
@@ -179,7 +179,7 @@ for lr_init in [0.001]:
 
                             # problem setup
                             "interval": [-1, 1],
-                            "function": f"cos(pi*x^{alpha})",
+                            "function": f"cos(pi*|pi*x|^{alpha})",
                             "alpha": alpha,
                             
                             'show_plot': False,
@@ -259,7 +259,7 @@ for config in configs:
                         device=device,
                         ResNet=config["use_resnet"])
         def func(x):
-            y = np.cos(np.pi* np.abs(x)**config["alpha"])
+            y = np.cos(np.pi* np.abs(np.pi*x)**config["alpha"])
             return y
 
 
