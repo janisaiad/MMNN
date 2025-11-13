@@ -70,7 +70,17 @@ class MMNN(nn.Module):
             # setattr(self, f"fc{j}", fc)
             fcs.append(fc)
         self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
-        # mean-field initialization: we set each weight with unit variance and zero bias
+        # mu-parameterization init: we zero biases and scale output heads by 1/sqrt(width)  # we implement mu parameterization with minimal changes
+        for j, fc in enumerate(self.fcs):
+            with torch.no_grad():
+                
+                if j % 2 == 1:  # we scale width→rank weights (odd indices) by 1/sqrt(hidden width)
+                    hidden_width = widths[j // 2]  # we get hidden width for this block
+                    fc.weight.normal_(mean=0.0, std=1.0/np.sqrt(hidden_width))  # we apply mu scaling
+                    fc.bias.normal_(mean=0.0, std=1/np.sqrt(hidden_width))  # we set bias to normal 
+                else:
+                    fc.weight.normal_(mean=0.0, std=1/np.sqrt(ranks[j//2]))  # we keep unit variance for rank→width weights
+                    fc.bias.normal_(mean=0.0, std=1/np.sqrt(ranks[j//2]))  # we keep unit variance for rank→width weights
         
         if fixWb: # if True, the weights and biases are not updated during training
             for j in range(len(fcs)):
@@ -104,6 +114,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import json
+import random
 
 
 
@@ -166,13 +177,13 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
                         for batch_size in [100, 250, 500, 1000]:
    """                                     
    
-for batch_size in [100,50,250,500]: 
+for batch_size in [100]: 
     for num_layers in [2,3,4,5,6]:
-        for hidden_width in [2000,8000,16000,32000,64000]:
+        for hidden_width in [64000,32000,20000,16000,8000,2000]:
             for hidden_rank in [50,15]:                                
-                for gamma_2 in [0.99]:
-                    for threshold in [8e-3]:
-                        for lr_decay_steps in [1000]:
+                for gamma_2 in [0.97]:
+                    for threshold in [1e-1]:
+                        for lr_decay_steps in [500]:
                             for ratio in [1.3]:   
                                 configs.append({
                                     # architecture hyperparameters
@@ -190,7 +201,7 @@ for batch_size in [100,50,250,500]:
                                     "num_test_samples": 600,
 
                                     # learning rate schedule
-                                    "lr_init": 0.001,
+                                    "lr_init": 0.00001,
                                     "lr_gamma": gamma_2,
                                     "lr_step_size": lr_decay_steps,
 
@@ -243,6 +254,8 @@ config = {
     "dtype": str(mydtype)
 }
 '''
+random.shuffle(configs)
+
 for config in configs:
     for step in range(step_number):
         time2 = time.time()
@@ -266,7 +279,7 @@ for config in configs:
                     f"lr_decay_steps{config['lr_decay_steps']}"
                     f"gamma_2{config['gamma_2']}")
         # we create output directory
-        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_noplot_sgdfirst",sub_folder_name,folder_name,f"time{time2}")
+        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_largewdith",sub_folder_name,folder_name,f"time{time2}")
         os.makedirs(output_dir, exist_ok=True)
 
         # we save config to json
@@ -340,7 +353,17 @@ for config in configs:
         switch_losses = []  # we track losses at the switching epochs
         switch_targets = []  # we track target criteria used for switching
         last_switch_loss = None  # we track the last switching loss to define the next target
+        patience_stationarity = 2000  # we stop if no meaningful loss improvement for this many epochs
+        min_delta_stationarity = 1e-1  # we treat improvements smaller than this as no improvemen
+        best_loss = float("inf")  # we track the best loss so far
+        epochs_since_improvement = 0  # we count epochs without improvement
+        max_training_seconds = 600.0  # we cap training time per config to 10 minutes
+        epoch_durations = []  # we store per-epoch durations
+        epochs_target_set = False  # we mark when we have computed the epoch budget
+        planned_total_epochs = config["num_epochs"]  # we default to configured epochs
+        mean_epoch_time = None  # we store the mean epoch time over the first 10 epochs
         for epoch in range(1, 1 + config["num_epochs"]):
+            epoch_start_time = time.time()  # we start timing this epoch
             for inputs, targets in train_loader:
                 optimizer.zero_grad()
                 outputs = model(inputs)
@@ -352,6 +375,27 @@ for config in configs:
 
             all_losses.append(loss.item())  # we store loss
             scheduler.step()
+            epoch_duration = time.time() - epoch_start_time  # we compute epoch duration
+            epoch_durations.append(epoch_duration)  # we store epoch duration
+            if not epochs_target_set and len(epoch_durations) >= 10:  # we compute epoch budget after 10 epochs
+                mean_epoch_time = float(np.mean(epoch_durations[:10]))  # we estimate mean epoch time
+                safe_mean = max(mean_epoch_time, 1e-9)  # we avoid division by zero
+                budget_epochs = int(max_training_seconds // safe_mean)  # we compute epoch budget under 10 minutes
+                budget_epochs = max(10, budget_epochs)  # we ensure at least the 10 measured epochs
+                planned_total_epochs = int(min(config["num_epochs"], budget_epochs))  # we cap by configured max
+                epochs_target_set = True  # we mark budget computed
+                print(f"Epoch-time calibration: mean={mean_epoch_time:.3f}s over 10 epochs, planned_total_epochs={planned_total_epochs}")  # we log calibration
+            if loss.item() + min_delta_stationarity < best_loss:  # we detect meaningful improvement
+                best_loss = loss.item()  # we update best loss
+                epochs_since_improvement = 0  # we reset counter
+            else:
+                epochs_since_improvement += 1  # we increment counter when no improvement
+            if epochs_since_improvement >= patience_stationarity:  # we stop when patience exceeded
+                print(f"Early stopping: loss stationary for {patience_stationarity} epochs (best={best_loss:.3e}, current={loss.item():.3e})")  # we log early stop reason
+                break  # we exit training loop
+            if epochs_target_set and epoch >= planned_total_epochs:  # we stop when epoch budget reached
+                print(f"Stopping at epoch budget {planned_total_epochs} under 10-minute cap")  # we log budget stop
+                break  # we exit training loop
                 
                 
                     
@@ -451,15 +495,44 @@ for config in configs:
                 
 
 
-            if epoch % 50 == 0:
+            if epoch % 2 == 0:
                 # we print the day hour etc ;;
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 training_error = loss.item()
-                print(f"\nEpoch {epoch} / {config['num_epochs']}" +
-                    f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
-                    f"\nTraining error (MSE): { training_error :.2e}" +
-                    f"\nTime used: { time.time() - time1 :.2f}s" +
-                    f"\nOptimizer: {optim_string}")
+                    
+                # if loss is less than 5e-4, we finish the training
+                if training_error < 5e-4:
+                    print(f"Training finished at epoch {epoch}")
+                    break
+                print(f"\nEpoch {epoch} / {planned_total_epochs}"
+                      f"  ( {epoch/planned_total_epochs*100:.2f}% )"
+                      f"\nTraining error (MSE): {training_error:.2e}"
+                      f"\nTime used: {time.time() - time1:.2f}s"
+                      f"\nOptimizer: {optim_string}")
+                print("CONFIG:",
+                      f"num_layers={config['num_layers']}",
+                      f"hidden_width={config['hidden_width']}",
+                      f"hidden_rank={config['hidden_rank']}",
+                      f"input_rank={config['input_rank']}",
+                      f"output_rank={config['output_rank']}",
+                      f"use_resnet={config['use_resnet']}",
+                      f"num_epochs={config['num_epochs']}",
+                      f"batch_size={config['batch_size']}",
+                      f"num_training_samples={config['num_training_samples']}",
+                      f"num_test_samples={config['num_test_samples']}",
+                      f"lr_init={config['lr_init']}",
+                      f"lr_gamma={config['lr_gamma']}",
+                      f"lr_step_size={config['lr_step_size']}",
+                      f"interval={config['interval']}",
+                      f"function={config['function']}",
+                      f"show_plot={config['show_plot']}",
+                      f"device={config['device']}",
+                      f"dtype={config['dtype']}",
+                      f"lr_decay_steps={config['lr_decay_steps']}",
+                      f"gamma_2={config['gamma_2']}",
+                      f"threshold={config['threshold']}",
+                      f"ratio={config['ratio']}",
+                      sep="  |  ")
                 errors_train.append(training_error)
                 # we compute the std for the last 50 losses in the log space
                 losses_std.append(np.std(np.log10(all_losses[-50:])))
@@ -512,6 +585,8 @@ for config in configs:
                 pass  # we skip NTK and parameter storage for better performance
 
             # we plot with adaptive frequency: every 100 until 1000, every 1000 until 10000, every 10000 after
+            
+            
             should_plot = False
             if epoch <= 1000 and epoch % 500 == 0:
                 should_plot = False
@@ -636,6 +711,10 @@ for config in configs:
             "ntk_matrix_shape": None,  # we skip NTK storage for performance
             "parameters_epochs_stored": [],  # we skip parameter storage for performance
             "parameter_vector_size": None,  # we skip parameter storage for performance
+            "planned_epochs_10min": int(planned_total_epochs),
+            "mean_epoch_time_seconds": float(mean_epoch_time) if mean_epoch_time is not None else (float(np.mean(epoch_durations)) if len(epoch_durations) > 0 else None),
+            "epochs_run": int(len(all_losses)),
+            "epoch_durations": [float(d) for d in epoch_durations],
         }
 
         with open(os.path.join(output_dir, "results.json"), "w") as f:
