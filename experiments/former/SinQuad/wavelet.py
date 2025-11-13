@@ -231,7 +231,7 @@ for config in configs:
                 f"bs{config['batch_size']}_"
                 f"ntr{config['num_training_samples']}")
 
-    output_dir = os.path.join("/Data/janis.aiad/", "wavelet_training_bigL", folder_name)
+    output_dir = os.path.join("/Data/janis.aiad/", "wavelet_2d", folder_name)
     os.makedirs(output_dir, exist_ok=True)
     
     if not os.path.exists(os.path.join(output_dir, 'final_prediction.png')): 
@@ -388,27 +388,39 @@ for config in configs:
             elif epoch > checkpoint*1000 and epoch % (checkpoint*100) == 0:
                 should_plot = True
 
-            if should_plot:
-                x = np.linspace(-1, 1, 1000).reshape([-1, 2])
-                y_nn = learned_nn(x)
-                y_true = func(x)
-                fig = plt.figure(figsize=(6, 4))
-                plt.plot(x, y_true, label='true function')
-                plt.plot(x, y_nn, label='learned network')
-                plt.xticks(np.linspace(*config["interval"], 5))
-                plt.tick_params(axis='both',
-                                which='major', labelsize=12)
-                plt.grid(True, axis='both', color='#AAAAAA',
-                        linestyle='--', linewidth=1.4)
+            if should_plot: # we plot the results as 2d heatmap of the difference
+                N_plot = 150
+                x1_plot = np.linspace(-1, 1, N_plot)
+                x2_plot = np.linspace(-1, 1, N_plot)
+                X1, X2 = np.meshgrid(x1_plot, x2_plot)
+                x_plot = np.stack([X1.ravel(), X2.ravel()], axis=-1)
+                y_nn = learned_nn(x_plot).reshape(N_plot, N_plot)
+                y_true = func(x_plot).reshape(N_plot, N_plot)
+                diff = y_nn - y_true
+                vmin = np.min(diff)
+                vmax = np.max(diff)
+                fig, ax = plt.subplots(figsize=(6, 5))
+                im = ax.imshow(
+                    diff,
+                    extent=(-1, 1, -1, 1),
+                    origin='lower',
+                    aspect='auto',
+                    cmap='bwr',
+                    vmin=vmin,
+                    vmax=vmax
+                )
+                plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="NN - True")
                 config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
-                plt.title(f'True function and learned network (Epoch {epoch})\n{config_str}')
+                ax.set_title(f'Network - True (Epoch {epoch})\n{config_str}')
+                ax.set_xlabel('$x_1$')
+                ax.set_ylabel('$x_2$')
                 plt.tight_layout()
-                plt.legend(loc="upper center", fontsize=13, ncol=2)
-
-                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_2D.png"), dpi=50)
+                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_2D.png"), dpi=100)
                 plt.close()
+                
                 if config["show_plot"]:
                     plt.show()
+                    
                 layers_dir = os.path.join(output_dir, f"partials_epoch{epoch}")
                 os.makedirs(layers_dir, exist_ok=True)
                 teacher = MMNN(ranks=ranks,
@@ -416,7 +428,10 @@ for config in configs:
                                 device=device,
                                 ResNet=config["use_resnet"])
                 teacher.load_state_dict(model.state_dict())
-                x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+                
+                x_line = np.linspace(-1, 1, 1000)
+                x_components_eval = np.stack([x_line, np.zeros_like(x_line)], axis=-1)
+                x_tensor = torch.tensor(x_components_eval, dtype=mydtype).to(device)
                 for layer_idx in range(1, len(teacher.fcs), 1):
                     if layer_idx % 2 == 0:
                         output_rank = ranks[layer_idx//2+1]
@@ -440,7 +455,7 @@ for config in configs:
                         for idx in range(output_rank):
                             row_idx = idx // n_cols
                             col_idx = idx % n_cols
-                            axes[row_idx, col_idx].plot(x, output[:, idx], 'b-', linewidth=1)
+                            axes[row_idx, col_idx].plot(x_line, output[:, idx], "b-", linewidth=1)
                             axes[row_idx, col_idx].set_title(f'Component {idx+1}')
                             axes[row_idx, col_idx].grid(True, alpha=0.3)
                             axes[row_idx, col_idx].set_xticks([-1, 0, 1])
@@ -703,8 +718,9 @@ for config in configs:
                         ResNet=config["use_resnet"])
         teacher.load_state_dict(model.state_dict())
 
-        x = np.linspace(-1, 1, 1000)
-        x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+        x_line = np.linspace(-1, 1, 1000)
+        x_components_eval = np.stack([x_line, np.zeros_like(x_line)], axis=-1)
+        x_tensor = torch.tensor(x_components_eval, dtype=mydtype).to(device)
 
         # For each layer with low rank output
         # very bad complexity O(n^2)
@@ -747,7 +763,7 @@ for config in configs:
                 for idx in range(output_rank):
                     i = idx // n_cols
                     j = idx % n_cols
-                    axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
+                    axes[i,j].plot(x_line, output[:,idx], "b-", linewidth=1)
                     axes[i,j].set_title(f'Component {idx+1}')
                     axes[i,j].grid(True, alpha=0.3)
                     axes[i, j].set_xticks([-1, 0, 1])
