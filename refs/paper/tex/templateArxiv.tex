@@ -193,12 +193,7 @@ The considered architecture is:
 \end{figure}
 
 \subsection*{Key Questions}
-\begin{itemize}
-    \item \textbf{Q1.} How does band-by-band Fourier mode activation in mean-field kernel gradient flow explain the observed stepwise loss curves in MMNN training?
-    \item \textbf{Q2.} How does the universal approximation property holding at all finite times (from three-layer mean-field theory) ensure global convergence despite non-convexity?
-    \item \textbf{Q3.} How do low-rank bottlenecks of rank \( r \) shape NTK fluctuations (\( O(1/r) \) or \( O(1/r^2) \)) and induce scaling laws in the extensive-rank regime \( r \asymp d^\beta \)?
-    \item \textbf{Q4.} How does depth correlate with maximal learned frequency, and why do we observe \( 2n \) spikes for \( 2n \) layers?
-\end{itemize}
+This work is guided by four overarching questions. First, we ask how the band-by-band activation of Fourier modes in the time-varying kernel gradient flow accounts for the empirically observed stepwise loss curves with long plateaus followed by sharp drops. Second, we examine how a universal approximation property that holds at all finite times—enabled here by frozen random features maintaining full support—yields global convergence guarantees even in non-convex settings. Third, we investigate how a rank-\( r \) low-rank bottleneck influences NTK fluctuations, leading to \( O(1/r) \) (or \( O(1/r^2) \) in doubly-random Gram regimes) concentration and to scaling laws in the extensive-rank regime \( r \asymp d^\beta \). Finally, we clarify the relationship between depth and spectral capacity by quantifying how the maximal learned frequency scales with depth and why one empirically observes approximately \( 2n \) localized spikes with \( 2n \) layers.
 
 \vspace{1em}
 \subsection{Related work and literature review}
@@ -399,12 +394,7 @@ When both feature randomness and low-rank structure interact, the NTK fluctuatio
 
 \vspace{1em}
 \subsection{NTK spectrum and conditioning at initialization}
-At initialization, the MMNN NTK exhibits poor conditioning, explaining the difficulty of SGD in early training. We analyze the spectrum via:
-\begin{itemize}
-    \item \textbf{Lyapunov product expansion:} The recursive NTK structure yields a product of \( (1 - \arccos(\rho_\ell)/\pi) \) factors across layers, where \( \rho_\ell \) is the layer-\( \ell \) cosine similarity. This product concentrates around small values at initialization, yielding a flat spectrum with tiny outliers.
-    \item \textbf{Random matrix perturbations:} The rank-\( r \) bottleneck induces random matrix perturbations to the base kernel. Using results from~\cite{spectrum_kernel_random_matrices}, we characterize bulk and outlier behavior: the bulk follows a Marchenko-Pastur law (when \( N/d = O(1) \)), and a single large outlier emerges controlling early training speed.
-    \item \textbf{Comparison with MLPs:} Using Terjék-style analysis, we show that MMNN NTK outliers decay slower than MLP outliers due to the \( O(1/r) \) expansion, yielding improved conditioning for moderate \( r \approx 20{-}30 \).
-\end{itemize}
+At initialization, the MMNN NTK is typically poorly conditioned, which partially explains the difficulty of training with plain SGD in the earliest phase. The recursive structure of the NTK induces a Lyapunov-type product across layers, with factors of the form \( 1-\arccos(\rho_\ell)/\pi \) depending on the cosine similarities \( \rho_\ell \). These products concentrate near small values at initialization, producing a relatively flat spectrum with one dominant outlier. The low-rank bottleneck of rank \( r \) acts as a structured random perturbation of the base kernel; by appealing to results on spectra of kernel random matrices, one obtains a bulk that follows a Marchenko–Pastur law (when \( N/d = O(1) \)) together with a single large outlier that governs early training speed. In comparison to fully connected MLPs, the MMNN outlier is better behaved for moderate ranks \( r\approx 20{-}30 \) due to the \( O(1/r) \) (and, in Gram regimes, \( O(1/r^2) \)) control, leading to improved conditioning in practice.
 
 \vspace{1em}
 \subsection{NTK concentration bounds}
@@ -492,22 +482,11 @@ This bias can be tuned via:
 \subsection{Mean-field framework and extensive-rank regime}
 Beyond the lazy training regime (\( t \lesssim t_{\text{lazy}} \)), the network enters a mean-field regime where parameters evolve significantly. Unlike the NTK viewpoint (which freezes the kernel), mean-field theory tracks the \emph{time-varying} kernel \( \Theta_t \) induced by the particle distribution \( \rho_t \) of trainable weights \( A^{(\ell)} \).
 
-In the extensive-rank regime \( r \asymp d^\beta \) for \( \beta \in (0,1) \), the training dynamics exhibit emergent (staircase-like) behavior:
-\begin{itemize}
-    \item Each plateau corresponds to a subset of latent directions (multi-index model) being inactive.
-    \item Each sharp drop corresponds to activating a new direction (or frequency band in Fourier space).
-    \item The number of accessible directions scales as \( O(r) \), consistent with the rank bottleneck.
-\end{itemize}
+In the extensive-rank regime \( r \asymp d^\beta \) for \( \beta \in (0,1) \), the training dynamics exhibit emergent (staircase-like) behavior: each plateau corresponds to a subset of latent directions (multi-index model) being inactive; each sharp drop corresponds to activating a new direction (or frequency band in Fourier space); and the number of accessible directions scales as \( O(r) \), consistent with the rank bottleneck.
 
 \vspace{1em}
 \subsection{Band-by-band Fourier mode activation}
-We propose that the stepwise loss curve arises from sequential activation of Fourier modes:
-\begin{enumerate}
-    \item \textbf{Initial phase} (\( t \lesssim t_1 \)): Low frequencies \( |\omega| \lesssim \omega_1 \) are learned via large \( \kappa_t(\omega) \). Loss drops rapidly as \( \mathcal{L}(t) \sim \int_{|\omega| \lesssim \omega_1} |\hat{e}_0(\omega)|^2 e^{-2\int_0^t \kappa_s(\omega) ds} d\omega \to 0 \).
-    \item \textbf{First plateau} (\( t \approx t_1 \)): Residual energy sits in \( \omega_1 < |\omega| < \omega_2 \), where \( \kappa_t(\omega) \approx 0 \). No learning occurs; loss is flat.
-    \item \textbf{Second phase} (\( t \gtrsim t_1 \)): Mean-field transport of \( A^{(\ell)} \) causes \( \kappa_t(\omega) \) to grow on \( \omega_1 < |\omega| < \omega_2 \). New modes activate; loss drops again.
-    \item This process repeats across \( O(r) \) bands, each corresponding to a latent direction in the extensive-rank additive model.
-\end{enumerate}
+We propose that the stepwise loss curve arises from sequential activation of Fourier modes. In the \emph{initial phase} (\( t \lesssim t_1 \)), low frequencies \( |\omega| \lesssim \omega_1 \) are learned where \( \kappa_t(\omega) \) is large, and the loss decays rapidly. Around the \emph{first plateau} (\( t \approx t_1 \)), residual energy concentrates in \( \omega_1<|\omega|<\omega_2 \) where \( \kappa_t(\omega)\approx 0 \), so progress stalls. As mean-field transport of \( A^{(\ell)} \) increases \( \kappa_t(\omega) \) on that band, the loss drops again. This process repeats across \( O(r) \) bands, each corresponding to a latent direction in the extensive-rank additive model.
 
 \begin{theorem}[Training evolution through frequency bands]
 \label{thm:frequency_evolution}
@@ -524,23 +503,12 @@ A multi-index model has the form:
 \[
 f^*(x) = \sum_{j=1}^r g_j(\langle v_j, x \rangle),
 \]
-where \( v_j \in \mathbb{R}^d \) are latent directions and \( g_j : \mathbb{R} \to \mathbb{R} \) are ridge functions. Classical multi-index learning exhibits staircase behavior because directions \( v_j \) are learned sequentially~\cite{benarous2021online}. In MMNN:
-\begin{itemize}
-    \item Frozen random features \( w^{(\ell)} \) provide a dense span approximating all possible directions \( v_j \).
-    \item The low-rank bottleneck \( r \) limits how many directions can be simultaneously active.
-    \item Training greedily activates directions in order of decreasing correlation with the residual.
-\end{itemize}
+where \( v_j \in \mathbb{R}^d \) are latent directions and \( g_j : \mathbb{R} \to \mathbb{R} \) are ridge functions. Classical multi-index learning exhibits staircase behavior because directions \( v_j \) are learned sequentially~\cite{benarous2021online}. In the MMNN setting, frozen random features \( w^{(\ell)} \) provide a dense span approximating all possible directions \( v_j \); the low-rank bottleneck \( r \) limits how many directions can be simultaneously active; and training tends to activate directions in decreasing order of correlation with the residual.
 
 \paragraph{Beyond multi-index models: Direct localization in 1D.}
 An important distinction is that MMNN goes \emph{beyond} classical multi-index models when learning functions in low-dimensional spaces, particularly in 1D. In the standard multi-index framework, one learns global directions \( v_j \in \mathbb{R}^d \) and ridge functions \( g_j : \mathbb{R} \to \mathbb{R} \), which are inherently non-localized objects—each direction \( v_j \) affects the entire input space.
 
-In contrast, for 1D functions \( f : [0, 2\pi] \to \mathbb{R} \), MMNN learns \emph{localized high-frequency features directly}:
-\begin{itemize}
-    \item Instead of learning a "direction" (which is trivial in 1D), the network learns \emph{spatial localization}—where in the domain \( [0, 2\pi] \) each high-frequency spike is placed.
-    \item Each frozen random feature \( \ReLU(w_j x + b_j) \) naturally provides spatial localization via the bias \( b_j \), which determines the spike location.
-    \item The trainable coefficients \( A_j \) select which locations are active and with what amplitude, directly constructing localized bumps/spikes.
-    \item High frequencies are built by \emph{combining localized spikes} across layers, not by projecting onto global Fourier modes.
-\end{itemize}
+In contrast, for 1D functions \( f : [0, 2\pi] \to \mathbb{R} \), MMNN learns \emph{localized high-frequency features directly}. Instead of learning a global direction (trivial in 1D), the network learns \emph{where} in the domain each high-frequency spike should be placed. Each frozen random feature \( \ReLU(w_j x + b_j) \) naturally provides spatial localization via the bias \( b_j \), which sets the spike location. The trainable coefficients \( A_j \) then select which locations are active and with what amplitudes, directly constructing localized bumps. High frequencies are built by \emph{combining localized spikes} across layers, rather than by projecting onto global Fourier modes.
 
 This is a qualitative difference from multi-index models: whereas multi-index learning in high dimensions reduces complexity by finding low-dimensional subspaces (directions), MMNN in 1D reduces complexity by finding sparse \emph{spatial support} (localized regions). The stepwise loss curve in 1D thus corresponds not to discovering new directions, but to activating new spatial locations and building increasingly fine-scale localized features at those locations.
 
@@ -548,12 +516,7 @@ In higher dimensions, MMNN combines both mechanisms: direction selection (via th
 
 \vspace{1em}
 \subsection{Dictionary and wavelet learning}
-Empirical observations reveal that MMNN learns \emph{dictionary functions} or \emph{wavelets}:
-\begin{itemize}
-    \item \textbf{Spike localization:} ReLU gating selects intervals where spikes occur. The learned functions exhibit sharp, localized spikes rather than smooth low-frequency components.
-    \item \textbf{Recursive frequency building:} Each layer builds higher frequencies by combining spikes from the previous layer. Depth correlates directly with maximal learned frequency: deeper networks achieve higher \( \omega_{\max} \).
-    \item \textbf{Observation:} \( 2n \) layers yield approximately \( 2n \) distinct spikes in the learned function, suggesting a recursive doubling mechanism.
-\end{itemize}
+Empirical observations reveal that MMNN learns \emph{dictionary functions} or \emph{wavelets}. ReLU gating selects intervals where spikes occur, so the learned functions exhibit sharp, localized spikes rather than only smooth low-frequency components. Each layer builds higher frequencies by combining spikes from the previous layer, and depth correlates directly with maximal learned frequency: deeper networks achieve higher \( \omega_{\max} \). Empirically, \( 2n \) layers yield approximately \( 2n \) distinct spikes in the learned function, suggesting a recursive doubling mechanism.
 
 \paragraph{Interpretation via Barron space.}
 The learned functions are bandlimited and lie in the Barron space (Fourier transform decays appropriately). The dictionary interpretation is:
@@ -599,11 +562,7 @@ Central flow also relates to the dynamical stability analysis (see Section~\ref{
 \vspace{1em}
 \subsection{Optimizer switching: Adam to SGD}
 A critical empirical discovery is that \emph{optimizer switching} dramatically improves training:
-\begin{itemize}
-    \item \textbf{Early/mid training:} Adam with adaptive learning rates handles the poorly conditioned early landscape and navigates the mean-field plateaus effectively.
-    \item \textbf{Edge of stability (EOS):} At certain critical times, Adam becomes unstable due to large eigenvalues of the Hessian. Loss wobbles; training stagnates.
-    \item \textbf{Switch to SGD:} Switching to SGD with small learning rate stabilizes training. SGD is better at learning the final high-frequency spikes (sharp, localized features) after the global structure is established.
-\end{itemize}
+in early and mid training, Adam with adaptive learning rates handles the poorly conditioned landscape and navigates mean-field plateaus effectively. At certain critical times near the edge of stability (EOS), Adam becomes unstable due to large Hessian eigenvalues, leading to loss wobbling and stagnation. Switching to SGD with a small learning rate stabilizes the dynamics and is better suited to learning the final high-frequency spikes—sharp, localized features—after the global structure is established.
 The switching time provides a quantitative measure of when the landscape \emph{convexifies} (becomes more benign). This will be investigated in future work; here we note that the wobbling occurs in a subspace orthogonal to the mean-field symmetry directions.
 
 \vspace{2em}
@@ -757,12 +716,7 @@ For stability, we require:
 For Adam, the effective learning rate in direction \( i \) is \( \tilde{\eta}_i \approx \eta / \sqrt{v_i} \), where \( v_i \) is the running variance. In sharp directions (\( \lambda_i \gg 1 \)), if \( v_i \) remains small (low gradient activity), then \( \tilde{\eta}_i \lambda_i \) can exceed 2, violating stability. This explains the Adam escape phenomenon: sharp minima with heterogeneous curvature are unstable under adaptive learning rates.
 
 \paragraph{SGD implicit bias toward flat minima.}
-SGD with constant learning rate \( \eta \) and batch size \( B \) exhibits implicit regularization toward flatter minima:
-\begin{itemize}
-    \item The injected noise scales as \( \sigma_{\text{noise}}^2 \propto \eta^2 / B \).
-    \item At equilibrium (if SGD converges to a stationary distribution), the effective "temperature" \( T \propto \eta / B \) biases sampling toward wider basins.
-    \item Sharp minima require exponentially precise parameter values; noise makes them entropically unfavorable.
-\end{itemize}
+SGD with constant learning rate \( \eta \) and batch size \( B \) exhibits implicit regularization toward flatter minima. The injected noise scales as \( \sigma_{\text{noise}}^2 \propto \eta^2/B \), and at equilibrium (if SGD converges to a stationary distribution) the effective "temperature" \( T \propto \eta/B \) biases sampling toward wider basins. Sharp minima require exponentially precise parameter values, which makes them entropically unfavorable in the presence of noise. In the MMNN context, this bias is beneficial: flatter minima in parameter space correspond to functions that are more robust to perturbations and generalize better. The high-frequency spikes are sharp in function space (requiring precise alignment) but can be realized by flatter regions in parameter space due to the low-rank structure.
 In the MMNN context, this bias is beneficial: flatter minima in parameter space correspond to functions that are more robust to perturbations and generalize better. The high-frequency spikes are sharp in function space (requiring precise alignment) but can be realized by flatter regions in parameter space due to the low-rank structure.
 
 \paragraph{Wasserstein gradient flow perspective.}
@@ -773,12 +727,7 @@ In the mean-field limit, SGD on the particle distribution \( \rho_t \) correspon
 where \( R(\rho) \) is the population risk. This flow is a diffusion process with implicit entropy regularization; it naturally favors flatter landscapes and avoids narrow spikes in \( \rho \)-space. The frozen random features ensure that the flow remains non-degenerate (support never collapses), guaranteeing long-time convergence.
 
 \paragraph{Practical implications.}
-\begin{itemize}
-    \item \textbf{Learning rate schedules:} When using Adam, decay the learning rate aggressively in late training to reduce effective temperature and prevent escape.
-    \item \textbf{Optimizer switching:} Switch from Adam to SGD when entering the sharp regime (quantified by \( \lambda_{\max}(H) > \text{threshold} \)).
-    \item \textbf{Batch size tuning:} Larger batch sizes reduce noise, improving stability near sharp minima but potentially slowing convergence in early training.
-    \item \textbf{Monitoring sharpness:} Track \( \lambda_{\max}(H_t) \) and \( \text{tr}(H_t) / \text{tr}(G_t) \) as early indicators of when to adjust the optimization strategy.
-\end{itemize}
+Learning rate schedules should decay aggressively in late training when using Adam to reduce the effective temperature and prevent escape. Optimizer switching is beneficial: transition from Adam to SGD upon entering the sharp regime, which can be monitored by thresholds on \( \lambda_{\max}(H) \). Batch size tuning trades off stability and speed: larger batches reduce noise and improve stability near sharp minima but may slow early convergence. Throughout training, track \( \lambda_{\max}(H_t) \) and \( \text{tr}(H_t)/\text{tr}(G_t) \) as early indicators for when to adjust the optimization strategy.
 
 \vspace{2em}
 \section{Numerical experiments}
@@ -786,12 +735,7 @@ We present empirical validation of the theoretical predictions across three trai
 
 \vspace{1em}
 \subsection{Early training: NTK predictions and frequency cutoff}
-\begin{itemize}
-    \item \textbf{Experiment 1:} Cosine regression on \( [0, 2\pi] \) with varying \( d, r, n \). We measure NTK eigenvalue spectrum at initialization and compare to theoretical predictions (Marchenko-Pastur bulk + single outlier).
-    \item \textbf{Experiment 2:} Fourier decomposition of learned functions at \( t = t_{\text{early}} \). We confirm that only low frequencies \( |\omega| < \omega_0 \) are learned, with \( \omega_0 \) predicted by the NTK symbol \( \kappa_0(\omega) \).
-    \item \textbf{Experiment 3:} Inductive bias validation: targets with low-frequency content are learned exponentially faster than high-frequency targets.
-    \item \textbf{Experiment 3b (TO BE COMPLETED):} Two-layer width scheme investigation. For 2-layer MMNN (\( L=2 \)), we systematically vary width configurations \( (n_1, n_2) \) and rank \( r \) to test finite-width NTK predictions. We compare: (i) theoretical NTK from Theorem~\ref{thm:finite_width_ntk} with finite-width corrections \( O(1/n) + O(1/r) \), (ii) empirical NTK computed via finite differences at initialization, and (iii) actual training dynamics deviation from kernel regression predictions. Width schemes tested: \( n_1, n_2 \in \{128, 256, 512, 1024, 2048\} \) with \( r \in \{5, 10, 20, 30, 50\} \). We measure: (a) relative error \( \|\Kop_{\text{empirical}} - \Kop_{\text{theory}}\|_F / \|\Kop_{\text{theory}}\|_F \), (b) deviation from kernel regime measured by \( \|f_t - f_{\text{NTK}}(t)\|_{L^2} \) where \( f_{\text{NTK}}(t) \) solves the linearized kernel regression, (c) variance of NTK entries across random initializations to verify concentration rates. This validates the \( O(1/r^2) \) concentration bound (doubly-random Gram regime) and identifies the minimal \( (n, r) \) for accurate kernel predictions.
-\end{itemize}
+Experiment 1 considers cosine regression on \( [0, 2\pi] \) with varying \( d, r, n \). We measure the NTK eigenvalue spectrum at initialization and compare it to theoretical predictions (Marchenko–Pastur bulk plus a single outlier). Experiment 2 examines the Fourier decomposition of the learned function at an early time \( t = t_{\text{early}} \), confirming that only low frequencies \( |\omega| < \omega_0 \) are learned initially, with \( \omega_0 \) predicted by the NTK symbol \( \kappa_0(\omega) \). Experiment 3 validates inductive bias: targets with low-frequency content are learned exponentially faster than those with predominantly high-frequency content. Experiment 3b (TO BE COMPLETED) investigates two-layer width schemes. For \( L=2 \), we systematically vary width configurations \( (n_1, n_2) \) and rank \( r \) to test finite-width NTK predictions. We compare: (i) theoretical NTK from Theorem~\ref{thm:finite_width_ntk} with finite-width corrections \( O(1/n) + O(1/r) \); (ii) empirical NTK computed via finite differences at initialization; and (iii) deviations from kernel regression predictions over the course of training. Width schemes are \( n_1, n_2 \in \{128, 256, 512, 1024, 2048\} \) with \( r \in \{5, 10, 20, 30, 50\} \). We measure: (a) relative error \( \|\Kop_{\text{empirical}} - \Kop_{\text{theory}}\|_F / \|\Kop_{\text{theory}}\|_F \); (b) deviation \( \|f_t - f_{\text{NTK}}(t)\|_{L^2} \); and (c) variance of NTK entries across random initializations to verify concentration rates. This validates the \( O(1/r^2) \) concentration bound and identifies minimal \( (n, r) \) for accurate kernel predictions.
 
 \begin{figure}[htbp]
     \centering
@@ -811,11 +755,7 @@ We present empirical validation of the theoretical predictions across three trai
 
 \vspace{1em}
 \subsection{Mid training: stepwise loss and mode activation}
-\begin{itemize}
-    \item \textbf{Experiment 4:} Training on synthetic multi-index targets \( f^*(x) = \sum_{j=1}^r g_j(\langle v_j, x \rangle) \). We track loss curves and measure the number of stepwise drops vs. \( r \), confirming \( O(r) \) scaling.
-    \item \textbf{Experiment 5:} Fourier energy distribution over time. We plot \( \|\hat{f}_t\|_{L^2(|\omega| \in [\omega_k, \omega_{k+1}])}^2 \) for frequency bands \( k = 1, \dots, K \), showing sequential activation (band \( k \) energy drops only after band \( k{-}1 \) is learned).
-    \item \textbf{Experiment 6:} Dictionary learning visualization. We plot the partial functions \( \phi_j(x) = A_j \ReLU(\langle w_j, x \rangle) \) and show spike localization and recursive frequency building across layers.
-\end{itemize}
+Experiment 4 trains on synthetic multi-index targets \( f^*(x) = \sum_{j=1}^r g_j(\langle v_j, x \rangle) \). We track loss curves and count the number of stepwise drops as a function of \( r \), confirming \( O(r) \) scaling. Experiment 5 measures Fourier energy through time by plotting \( \|\hat{f}_t\|_{L^2(|\omega| \in [\omega_k, \omega_{k+1}])}^2 \) across bands \( k=1,\dots,K \), which reveals sequential activation: energy in band \( k \) drops only after band \( k-1 \) has been learned. Experiment 6 visualizes dictionary learning by plotting the partial functions \( \phi_j(x) = A_j \ReLU(\langle w_j, x \rangle) \), demonstrating spike localization and recursive frequency building across layers.
 
 \begin{figure}[htbp]
     \centering
@@ -852,11 +792,7 @@ We present empirical validation of the theoretical predictions across three trai
 
 \vspace{1em}
 \subsection{Late training: sharpness and optimizer switching}
-\begin{itemize}
-    \item \textbf{Experiment 7:} Hessian spectrum through training. We compute \( \lambda_{\max}(H_t) \) and \( \text{tr}(H_t)/\text{tr}(G_t) \) at regular intervals, showing the sharpness transition at late training.
-    \item \textbf{Experiment 8:} Optimizer switching ablation. We compare (i) Adam only, (ii) SGD only, (iii) Adam \( \to \) SGD switching at various times. We measure final loss, training time, and generalization gap.
-    \item \textbf{Experiment 9:} Depth vs. frequency. We train networks with \( L = 2, 3, 4, 5, 6 \) layers on the same target and measure \( \omega_{\max} \) (maximal learned frequency). We confirm \( \omega_{\max} \propto L \) and observe \( 2L \) spikes for \( L \) layers.
-\end{itemize}
+Experiment 7 tracks the Hessian spectrum throughout training by computing \( \lambda_{\max}(H_t) \) and the ratio \( \text{tr}(H_t)/\text{tr}(G_t) \) at regular intervals, clearly capturing the transition to a sharp landscape late in training. Experiment 8 studies optimizer switching by comparing Adam-only, SGD-only, and Adam \( \to \) SGD schedules, reporting final loss, training time, and generalization gap. Experiment 9 examines the relationship between depth and frequency: training networks with \( L=2,3,4,5,6 \) on the same target, we measure the maximal learned frequency \( \omega_{\max} \) and confirm that \( \omega_{\max} \propto L \) while observing approximately \( 2L \) spikes for \( L \) layers.
 
 \begin{figure}[htbp]
     \centering
@@ -965,11 +901,7 @@ The \( 1/r \) expansion suggests a promising avenue for tackling \emph{infinite-
 Our full NTK analysis focuses on 2 hidden MMNN layers (i.e., \( L = 2 \)) because integrals arising after the 2nd layer become analytically intractable. However, since we have only 2 hidden layers, finite-width corrections are tractable, and we can derive explicit scaling laws in terms of \( Nr \) (number of trainable parameters) and \( r/d \) (rank-to-dimension ratio). For deeper networks (\( L > 2 \)), we rely on the \( 1/r \) exponential expansion and numerical validation.
 
 \paragraph{Frequency tuning via initialization.}
-We can tune the frequency learning behavior by adjusting:
-\begin{itemize}
-    \item \textbf{Variance of \( w \) at initialization:} Larger \( \sigma_w^2 \) increases the frequency cutoff \( \omega_0 \), allowing the network to learn higher frequencies earlier in training.
-    \item \textbf{muP parameterization:} Adjusting the maximal update parameter (muP) controls the effective kernel scale, shifting the spectral bias and enabling learning of different frequency ranges.
-\end{itemize}
+We can tune the frequency learning behavior via initialization choices. Increasing the variance \( \sigma_w^2 \) of \( w \) at initialization raises the frequency cutoff \( \omega_0 \), enabling the network to learn higher frequencies earlier. Likewise, adjusting the maximal update parameter in \( \mu \)P parameterization controls the effective kernel scale, shifting the spectral bias and permitting different frequency ranges to be learned.
 High frequencies are not learned directly through the RKHS (which is the same as MLP for large \( r \)), but there is a stronger low-to-high frequency bias in MMNNs that can be tuned via these initialization choices.
 
 \paragraph{Comparison with MLPs.}
@@ -978,19 +910,11 @@ A key future direction is to prove that MMNNs beat standard MLPs on benchmark ta
 \paragraph{Dictionary learning and wavelet interpretation.}
 Our experiments reveal that MMNNs perform \emph{dictionary learning} or \emph{wavelet learning}, where the network learns a set of base functions that are stretched and placed at particular intervals across the input domain. We observe this phenomenon consistently across multiple tasks and input dimensions.
 
-The learned dictionary functions exhibit two distinct behaviors depending on the training phase:
-\begin{itemize}
-    \item \textbf{Interval selection:} Many learned basis functions resemble the ReLU activation structure \( \Phi(x) = \ReLU(\langle w, x \rangle) \) from the MMNN construction. These functions select a range of intervals where they are active, effectively partitioning the input space.
-    \item \textbf{Blob placement:} Within each selected interval, the network places localized "blobs" or spikes via thresholding. These blobs are positioned randomly at initialization but become organized during training to match the target function's structure.
-\end{itemize}
+The learned dictionary functions exhibit two distinct behaviors depending on the training phase. First, \emph{interval selection:} many learned basis functions resemble the ReLU structure \( \Phi(x) = \ReLU(\langle w, x \rangle) \), selecting ranges of intervals and effectively partitioning the input space. Second, \emph{blob placement:} within each selected interval, the network places localized "blobs" or spikes via thresholding; blobs are positioned randomly at initialization but become organized during training to match the target's structure.
 
 The final learned function is assembled by combining these blobs across layers: first-layer blobs form simple local features, second-layer blobs combine first-layer outputs to create moderate-frequency patterns, and deeper layers recursively assemble increasingly complex high-frequency structures. This hierarchical assembly process explains both the dictionary interpretation (sparse selection from an overcomplete basis) and the wavelet interpretation (multi-scale decomposition via recursive composition).
 
-Importantly, this provides a dual perspective on MMNN approximation:
-\begin{enumerate}
-    \item \textbf{Classical view:} The network approximates the target as \( f(x) \approx \sum_j a_j \phi_j(x) \), where \( \phi_j \) are learned basis functions and \( a_j \) are their coefficients (trained weights \( A^{(\ell)} \)).
-    \item \textbf{Dictionary view:} The network decomposes \( f \) into localized features \( f = \sum_j \psi_j \), where each \( \psi_j \) is a blob placed at a specific location and scale, selected from the frozen random feature dictionary.
-\end{enumerate}
+Importantly, this yields a dual perspective on MMNN approximation. In the classical view, the network approximates the target as \( f(x) \approx \sum_j a_j \phi_j(x) \), where \( \phi_j \) are learned basis functions and \( a_j \) are their coefficients (the trained \( A^{(\ell)} \)). In the dictionary view, the network decomposes \( f \) into localized features \( f = \sum_j \psi_j \), where each \( \psi_j \) is a blob placed at a specific location and scale, selected from the frozen random feature dictionary.
 These two interpretations are concurrent but complementary: the first emphasizes functional approximation theory, while the second emphasizes the sparse feature selection mechanism enabled by low-rank bottlenecks and frozen random features.
 
 Figures~\ref{fig:partial_functions} and~\ref{fig:wavelet_depth} illustrate this dictionary learning behavior across layers and depths. In Figure~\ref{fig:partial_functions}, we clearly see the progression from simple interval-selecting functions at layer 1, to blob-decorated features at layer 2, to complex high-frequency assemblies at layer 4. Figure~\ref{fig:wavelet_depth} demonstrates how increasing depth \( L \) allows the network to learn a richer dictionary with more localized wavelets, directly correlating with the maximal learnable frequency \( \omega_{\max}(L) \).
@@ -1005,46 +929,26 @@ We use (i) synthetic 1D/2D functions (cosine, Gaussian bumps, piecewise linear) 
 A central question is whether the low-rank random feature architecture provides genuine advantages over standard fully-connected MLPs, or merely offers computational efficiency. We address this by directly comparing MMNN and MLP on matched tasks, analyzing (i) NTK spectrum at initialization, (ii) training dynamics and stepwise loss behavior, and (iii) final performance at matched parameter budgets.
 
 \paragraph{Experimental setup.}
-We compare:
-\begin{itemize}
-    \item \textbf{MMNN:} Low-rank architecture with rank \( r \) bottleneck, parameter budget \( O(rn) \).
-    \item \textbf{MLP:} Standard fully-connected network with same total parameter count, parameter budget \( O(n^2) \) but matched to \( O(rn) \) by adjusting width.
-\end{itemize}
-For fair comparison, we match total trainable parameters and apply identical optimization protocols (Adam with same learning rate schedule, batch size, etc.).
+We compare a low-rank MMNN with rank \( r \) bottleneck and parameter budget \( O(rn) \) against a standard fully connected MLP with the same total parameter count (achieved by adjusting width from its \( O(n^2) \) baseline). For fairness, we match the number of trainable parameters and use identical optimization protocols (Adam schedule, batch size, etc.).
 
 \paragraph{NTK spectrum comparison (TO BE COMPLETED).}
 \textbf{Experiment 10:} NTK eigenvalue spectrum at initialization for MMNN vs. MLP.
-\begin{itemize}
-    \item \textbf{Theory prediction:} MMNN should exhibit improved concentration with \( O(1/r^2) \) decay (doubly-random Gram regime) vs. MLP's standard \( O(1/N) \) decay. For matched parameter budgets, this implies MMNN reaches the deterministic kernel limit faster.
-    \item \textbf{Outlier structure:} Both architectures should show a single dominant outlier controlling early training (Terjék-style), but MMNN's outlier magnitude should be better conditioned due to low-rank structure.
-    \item \textbf{Bulk spectrum:} MMNN bulk follows Marchenko-Pastur law with better concentration; MLP bulk is broader with larger fluctuations.
-\end{itemize}
+Theory predicts improved concentration for MMNN with \( O(1/r^2) \) decay (doubly-random Gram regime) versus MLP's \( O(1/N) \) decay; at matched parameter budgets, MMNN should therefore reach the deterministic kernel limit faster. Both architectures are expected to exhibit a single dominant outlier governing early training (Terjék-style), but the MMNN outlier should be better conditioned due to the low-rank structure, while the bulk should follow a Marchenko–Pastur law with tighter concentration for MMNN and a broader bulk for MLP.
 \textbf{Results (TO BE ADDED):} Plots comparing NTK eigenvalue distributions, confirming \( 1/r^2 \) vs. \( 1/N \) concentration rates.
 
 \paragraph{Stepwise loss dynamics comparison (TO BE COMPLETED).}
 \textbf{Experiment 11:} Training loss curves on identical synthetic targets exhibiting multi-index structure.
-\begin{itemize}
-    \item \textbf{MMNN prediction:} Clear stepwise (staircase) loss behavior with \( O(r) \) distinct drops corresponding to rank-\( r \) bottleneck limiting simultaneous direction learning.
-    \item \textbf{MLP prediction:} May exhibit smoother loss curves or less pronounced stepwise structure due to higher-dimensional parameter space allowing more directions to be learned simultaneously.
-    \item \textbf{Convergence speed:} MMNN should converge faster in early training (better NTK conditioning) but may show plateaus due to rank bottleneck; MLP may be slower initially but avoid rank-induced plateaus.
-\end{itemize}
+For MMNN we expect clear stepwise (staircase) loss with \( O(r) \) distinct drops reflecting the rank-\( r \) constraint on simultaneous direction learning; MLP, with a higher-dimensional parameter space, may display smoother curves or less pronounced steps. Convergence speed should favor MMNN in early training due to better NTK conditioning, with possible plateaus induced by the rank bottleneck, whereas MLP may start slower but avoid rank-induced plateaus.
 \textbf{Results (TO BE ADDED):} Side-by-side loss curves showing MMNN's characteristic staircase vs. MLP's smoother descent. Analysis of number of stepwise drops vs. architecture parameters.
 
 \paragraph{Landscape geometry comparison (TO BE COMPLETED).}
 \textbf{Experiment 12:} Hessian spectrum evolution and landscape sharpness through training.
-\begin{itemize}
-    \item \textbf{Initialization:} Compare \( \lambda_{\max}(H_0) \) and condition number for MMNN vs. MLP.
-    \item \textbf{Mid-training:} Compare landscape convexification rates and sharpness transitions.
-    \item \textbf{Convergence:} Compare sharpness of final minima and generalization performance.
-\end{itemize}
+We compare \( \lambda_{\max}(H_0) \) and condition numbers at initialization, landscape convexification rates and sharpness transitions mid-training, and finally the sharpness of minima and generalization performance at convergence.
 \textbf{Results (TO BE ADDED):} Hessian eigenvalue evolution plots for both architectures, demonstrating that MMNN achieves comparable or better conditioning despite lower parameter count.
 
 \paragraph{Performance at matched parameter budgets (TO BE COMPLETED).}
 \textbf{Experiment 13:} Final test accuracy on real datasets (MNIST, CIFAR-10) with matched total parameters.
-\begin{itemize}
-    \item \textbf{Hypothesis:} MMNN achieves competitive or superior performance to MLP at \( O(rn) \) parameters vs. MLP at same parameter count.
-    \item \textbf{Efficiency metric:} MMNN with \( r \approx 20{-}30 \) should match MLP performance while being \( 10{\times}{-}50{\times} \) more parameter-efficient.
-\end{itemize}
+Our hypothesis is that MMNN achieves competitive or superior performance to MLP at \( O(rn) \) parameters when controlling for total parameter count. An efficiency metric will quantify that MMNN with \( r \approx 20{-}30 \) matches MLP performance while being \( 10{\times}{-}50{\times} \) more parameter-efficient.
 \textbf{Results (TO BE ADDED):} Performance vs. parameter budget curves, demonstrating MMNN's superior parameter efficiency.
 
 \begin{figure}[htbp]
@@ -1086,42 +990,40 @@ The key enabling property is \emph{universal approximation at all finite times} 
 
 \vspace{1em}
 \subsection{Future directions}
-\begin{itemize}
-    \item \textbf{Finite-width corrections:} Extend NTK analysis to finite \( n \) with \( 1/r \) expansion in depth, potentially explaining infinite-depth limits.
-    \item \textbf{Quantitative bounds:} Derive rigorous convergence rates for stepwise loss, tightening connections to multi-index learning theory.
-    \item \textbf{Tensor programs:} Apply tensor program framework for hyperparameter transfer and feature learning beyond NTK.
-    \item \textbf{Feynman diagrams and \( \mu \)-parameterization:} Develop systematic NTK computation rules using Feynman diagram techniques combined with tensor program formalism for \( \mu \)-parameterization. This provides a unified computational framework for deriving global NTK theory across arbitrary depth \( L \), heterogeneous width schemes, and low-rank bottlenecks, systematically analyzing finite-width corrections via diagrammatic expansion orders.
-    \item \textbf{PINN and Sobolev training:} Extend to physics-informed neural networks with Fourier-space loss functions to mitigate spectral bias.
-    \item \textbf{Transformers and attention:} Adapt low-rank random feature ideas to attention mechanisms and self-attention layers.
-    \item \textbf{Benchmark comparison:} Systematic comparison with MLPs on standard benchmarks (ResNets, Vision Transformers) at matched parameter budgets.
-\end{itemize}
+We outline several promising directions. First, finite-width corrections should be extended to finite \( n \) with a \( 1/r \) expansion in depth, potentially enabling controlled infinite-depth limits. Second, deriving rigorous convergence rates for the stepwise loss would sharpen the connection to multi-index learning theory. Third, the tensor program framework offers a path for principled hyperparameter transfer and feature learning beyond NTK. Fourth, combining Feynman diagram techniques with tensor programs under \( \mu \)-parameterization could yield systematic NTK computation rules and a unified global NTK theory across arbitrary depths, heterogeneous width schemes, and low-rank bottlenecks, while organizing finite-width corrections by diagrammatic order. Finally, applications to physics-informed neural networks (Sobolev/Fourier losses to mitigate spectral bias), adaptations to attention mechanisms, and benchmark-scale comparisons to MLPs at matched parameter budgets are natural next steps.
 
 \vspace{2em}
 \section{Notation}
 We summarize the main symbols and conventions used throughout the paper.
-\begin{itemize}
-    \item \textbf{Inputs:} \( x,x' \in \mathbb{R}^{d_0} \); cosine similarity \( \rho=\langle x,x'\rangle/(\|x\|\|x'\|) \) when inputs are normalized.
-    \item \textbf{Layers:} \( \bm{h}^{(0)}(x)=x \) and \( \bm{h}^{(\ell)}(x) \) denotes the layer-\( \ell \) representation; \( n_\ell \) is the width of layer \( \ell \); \( L \) is the total depth.
-    \item \textbf{Activation:} \( \ReLU(\cdot) \); its weak derivative is denoted \( \dot{\ReLU}(\cdot) \) (equals \( \mathbf{1}\{\cdot>0\} \) a.e.).
-    \item \textbf{Parameters:} \( \bm{A}^{(\ell)} \in \mathbb{R}^{d_{\ell} \times n_\ell} \) are trainable output weights at layer \( \ell \). In the simplified model, we use unit scaling (no \( \sigma_A, \sigma_c, \beta \)).
-    \item \textbf{Random features:} \( \bm{w}^{(\ell)} \) are frozen random parameters at layer \( \ell \); unless stated, \( \bm{w}^{(\ell)} \) are i.i.d. across neurons and layers with centered Gaussian laws. Bias can be absorbed via data augmentation \( x \mapsto [x, 1] \).
-    \item \textbf{Kernels:}
-    \begin{itemize}
-        \item NNGP base kernel at layer \( \ell \): \( \displaystyle \Sigma^{(\ell)}(x,x')=\mathbb{E}_{\bm{w}}\big[\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x))\,\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x'))\big] \).
-        \item Derivative kernel: \( \displaystyle \dot{\Sigma}^{(\ell)}(x,x')=\mathbb{E}_{\bm{w}}\big[\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x))\,\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x'))\,\bm{w}^\top\bm{w}\big] \).
-        \item NTK at layer \( \ell \): \( \Kop^{(\ell)}(x,x') \) with recursion \( \Kop^{(\ell)} = \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \).
-        \item Fourier symbol: \( \kappa_t(\omega) \) is the time-varying Fourier transform of the kernel operator \( \Theta_t \), diagonalizing the gradient flow in frequency space.
-    \end{itemize}
-    \item \textbf{Expectations:} \( \mathbb{E}_{\bm{w}}[\cdot] \) indicates expectation over the layer-\( \ell \) random parameters \( \bm{w}^{(\ell)} \); other expectations are indicated explicitly.
-    \item \textbf{Limits:} we take widths \( n_1\to\infty,\dots,n_L\to\infty \) \emph{sequentially}; LLN applies conditionally at each step.
-    \item \textbf{Low-rank bottleneck:} \( r \) denotes the intermediate rank; kernel fluctuations scale as \( O(1/r) \) or \( O(1/r^2) \) depending on the regime.
-    \item \textbf{Extensive-rank regime:} \( r \asymp d^\beta \) for \( \beta \in (0,1) \), motivated by multi-index learning and scaling laws.
-    \item \textbf{Mean-field:} \( \rho_t \) denotes the particle distribution of trainable weights; \( R(\rho) \) is the population risk functional.
-    \item \textbf{Fourier modes:} \( \hat{f}(\omega) \) is the Fourier transform; \( \hat{e}_t(\omega) = \hat{f}_t(\omega) - \hat{f}^*(\omega) \) is the residual in frequency space.
-    \item \textbf{Sharpness:} \( H = \nabla^2 \mathcal{L} \) is the Hessian; \( G = J^\top J \) is the Gauss-Newton matrix; \( \lambda_{\max}(H) \) is the maximum eigenvalue.
-    \item \textbf{Operators:} \( \mathbf{I}_d \) is the \( d\times d \) identity; \( \|\cdot\| \) is the Euclidean/operator norm depending on context.
-    \item \textbf{Zonal kernels:} "zonal" refers to rotation-invariant kernels on the sphere (dependence on \( \rho \) only).
-\end{itemize}
+\paragraph{Inputs.} We denote inputs \( x,x' \in \mathbb{R}^{d_0} \) and use cosine similarity \( \rho=\langle x,x'\rangle/(\|x\|\|x'\|) \) when inputs are normalized.
+
+\paragraph{Layers.} The representation \( \bm{h}^{(0)}(x)=x \) and \( \bm{h}^{(\ell)}(x) \) denotes the layer-\( \ell \) output; \( n_\ell \) is the width of layer \( \ell \) and \( L \) is the total depth.
+
+\paragraph{Activation.} We use \( \ReLU(\cdot) \); its weak derivative is \( \dot{\ReLU}(\cdot) \) (equal to \( \mathbf{1}\{\cdot>0\} \) a.e.).
+
+\paragraph{Parameters.} The matrices \( \bm{A}^{(\ell)} \in \mathbb{R}^{d_{\ell} \times n_\ell} \) are the trainable output weights. In the simplified model we use unit scaling (no \( \sigma_A, \sigma_c, \beta \)).
+
+\paragraph{Random features.} The \( \bm{w}^{(\ell)} \) are frozen random parameters; unless stated, \( \bm{w}^{(\ell)} \) are i.i.d. across neurons and layers with centered Gaussian laws. Bias can be absorbed via augmentation \( x \mapsto [x, 1] \).
+
+\paragraph{Kernels.} The NNGP base kernel at layer \( \ell \) is \( \displaystyle \Sigma^{(\ell)}(x,x')=\mathbb{E}_{\bm{w}}[\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x))\,\ReLU(\bm{w}^\top \bm{h}^{(\ell-1)}(x'))] \). The derivative kernel is \( \displaystyle \dot{\Sigma}^{(\ell)}(x,x')=\mathbb{E}_{\bm{w}}[\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x))\,\dot{\ReLU}(\bm{w}^\top \bm{h}^{(\ell-1)}(x'))\,\bm{w}^\top\bm{w}] \). The NTK satisfies the recursion \( \Kop^{(\ell)} = \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \). In Fourier space, \( \kappa_t(\omega) \) denotes the time-varying symbol of \( \Theta_t \), diagonalizing the gradient flow by frequency.
+
+\paragraph{Expectations.} The notation \( \mathbb{E}_{\bm{w}}[\cdot] \) indicates expectation over the layer-\( \ell \) random parameters \( \bm{w}^{(\ell)} \); other expectations are indicated explicitly.
+
+\paragraph{Limits.} We take widths \( n_1\to\infty,\dots,n_L\to\infty \) sequentially so that LLN applies conditionally at each step.
+
+\paragraph{Low-rank bottleneck.} The intermediate rank \( r \) controls fluctuations, which scale as \( O(1/r) \) or \( O(1/r^2) \) depending on the regime.
+
+\paragraph{Extensive-rank regime.} We use \( r \asymp d^\beta \) for \( \beta \in (0,1) \), motivated by multi-index learning and scaling laws.
+
+\paragraph{Mean-field.} We write \( \rho_t \) for the particle distribution of trainable weights and \( R(\rho) \) for the population risk functional.
+
+\paragraph{Fourier modes.} The Fourier transform \( \hat{f}(\omega) \) and residual \( \hat{e}_t(\omega) = \hat{f}_t(\omega) - \hat{f}^*(\omega) \) are used in frequency-space analysis.
+
+\paragraph{Sharpness.} The Hessian is \( H = \nabla^2 \mathcal{L} \); the Gauss–Newton matrix is \( G = J^\top J \) with \( J \) the Jacobian; \( \lambda_{\max}(H) \) denotes the largest eigenvalue.
+
+\paragraph{Operators.} We use \( \mathbf{I}_d \) for the \( d\times d \) identity and \( \|\cdot\| \) for Euclidean/operator norms.
+
+\paragraph{Zonal kernels.} “Zonal” refers to rotation-invariant kernels on the sphere (dependence on \( \rho \) only).
 
 \section*{Acknowledgments}
 We thank David Terjék and G. Ben Arous for insightful discussions NTK spectrum related topics.

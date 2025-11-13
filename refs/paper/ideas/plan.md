@@ -158,6 +158,8 @@ Experiments:
 - 4 new experiments (10-13) covering NTK spectrum, stepwise dynamics, landscape geometry, and performance
 - All marked as TO BE COMPLETED with clear theoretical predictions and experimental setup
 - 3 figure placeholders added (TO BE GENERATED)
+- quantifying sharpness with central flows
+
 
 **Original items (1-7):**
 1. Experiments confirming NTK training behavior for practical tasks
@@ -207,6 +209,18 @@ Experiments:
 - Dynamical stability analysis
 - Glass theory for multiple minima
 - Wasserstein gradient flows
+
+
+
+
+
+
+
+
+
+
+
+
 
 **TOTAL STATUS:**
 - DONE: 25 items (✓) - **UPDATED: Added 2 major NTK contributions (RKHS + improved concentration)**

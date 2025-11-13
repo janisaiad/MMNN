@@ -528,3 +528,11 @@ let high frequency thrive with standard init without preserving
 randomness in the data just move the bulk but outlier emerges from
 
 global convergence for all depth from mean field approach
+
+
+
+
+
+
+## wavelet 
+ develop an original wavelet sparse decomposition precisely, so that if a function has sparse wavelet decomposition, it's written as a sum of sparse wavelet, in 1d exponetialy decreasing cosines and sines localized, then it's well described in laplace RKHS and can be learned through NTK that has same laplace RKHS, that is this link i want to investigate so that i understand more the landscape, 
