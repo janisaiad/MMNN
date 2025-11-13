@@ -166,15 +166,14 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
                         for batch_size in [100, 250, 500, 1000]:
    """                                     
    
-
-for num_layers in [4,6]:
-    for hidden_width in [666]:
-        for hidden_rank in [50,15]:                                
-            for gamma_2 in [0.99]:
-                for threshold in [8e-2,5e-2,3e-2,1e-2,7e-3,7e-2]:
-                    for lr_decay_steps in [1000,500]:
-                        for batch_size in [100,50]: 
-                            for ratio in [2,5,10,15]:   
+for batch_size in [100,50,250,500]: 
+    for num_layers in [2,3,4,5,6]:
+        for hidden_width in [2000,8000,16000,32000,64000]:
+            for hidden_rank in [50,15]:                                
+                for gamma_2 in [0.99]:
+                    for threshold in [8e-3]:
+                        for lr_decay_steps in [1000]:
+                            for ratio in [1.3]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
