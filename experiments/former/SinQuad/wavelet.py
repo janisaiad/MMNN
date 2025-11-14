@@ -19,6 +19,10 @@ import matplotlib.pyplot as plt
 import time
 import os
 import json
+import random
+import threading
+import sys
+import select
 
 
 # %%
@@ -92,17 +96,6 @@ class MMNN(nn.Module):
         return x
 
 # %%
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import StepLR
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import time
-import os
-import json
-
 
 def compute_ntk_gram(model, x, device):
     """we compute ntk using vectorized jacobian computation
@@ -143,100 +136,167 @@ def compute_ntk_gram(model, x, device):
 
     return ntk_cpu, eigenvalues
 
+
+
+
 # torch.set_default_dtype(torch.float64)
 mydtype = torch.get_default_dtype()
 device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"Training on device: {device}")
 ##############################
 
-configs = []
 
-for lr_init in [0.001]:
-    for num_layers in [10,12,15]:
-        for hidden_width in [64,256,512,2048]:
-            for hidden_rank in [10,20,50]:
-                for batch_size in [10,35,65,150,250,500,1000]:    
-                    for alpha in [0.1,0.2,0.5,1,3,5,8,13]:
+# we create global flags for keyboard control
+skip_current_config = False
+quit_all_training = False
+
+def keyboard_listener():
+    """we listen for keyboard input in a separate thread"""
+    global skip_current_config, quit_all_training
+    print("\n=== KEYBOARD CONTROLS ===")
+    print("Press 's' + ENTER to skip current config")
+    print("Press 'q' + ENTER to quit all training")
+    print("========================\n")
+    
+    while not quit_all_training:
+        try:
+            # we check if input is available (works on linux)
+            user_input = input()
+            if user_input.lower() == 's':
+                skip_current_config = True
+                print("\n>>> SKIP REQUESTED - will skip current config after current epoch <<<\n")
+            elif user_input.lower() == 'q':
+                quit_all_training = True
+                print("\n>>> QUIT REQUESTED - will stop all training after current epoch <<<\n")
+        except:
+            pass
+
+# we start keyboard listener thread
+listener_thread = threading.Thread(target=keyboard_listener, daemon=True)
+listener_thread.start()
+
+
+configs = []
+for alpha in [1.0]:
+    for lr_init in [0.001]:
+        for batch_size in [int(300*alpha)]:
+            for num_layers in [0,1,2,3,4,5]:
+                for hidden_width in [64,128,256,512,1024,2048]:
+                    for hidden_rank in [1,2,3,4,5,6,7,8,9,10,20,30,50]:
+                        seed = np.random.randint(0, 1000000)
+                        
                         configs.append({
                             # architecture hyperparameters
+                            "seed": seed,
+                            "device": str(device),
+                            "dtype": str(mydtype),
                             "num_layers": num_layers,
                             "hidden_width": hidden_width,
                             "hidden_rank": hidden_rank,
-                            "input_rank": 2,
+                            "input_rank": 1,
                             "output_rank": 1,
                             "use_resnet": False,
 
                             # training hyperparameters
-                            "num_epochs": max(1000,int(3000/np.sqrt(batch_size))),
+                            "num_epochs": 5000,
                             "batch_size": batch_size,
-                            "num_training_samples": 1000,
+                            "num_training_samples": 600,
                             "num_test_samples": 1000,
 
                             # learning rate schedule
                             "lr_init": lr_init,
                             "lr_gamma": 0.99,
-                            "lr_step_size": 500,
+                            "lr_step_size": 300,
 
                             # problem setup
                             "interval": [-1, 1],
-                            "function": f"cos(pi*|pi*x|^{alpha})",
+                            "function": f"cos(pi*x^{alpha})",
                             "alpha": alpha,
                             
                             'show_plot': False,
                         })
+            random.shuffle(configs)
+            temp = []
+            for num_layers in [6,8,10,12,15]:
+                for hidden_width in [64,128,256,512,1024,2048]:
+                    for hidden_rank in [1,2,3,4,5,6,7,8,9,10,20,30,50]:
+                        seed = np.random.randint(0, 1000000)
+                        
+                        temp.append({
+                            # architecture hyperparameters
+                            "seed": seed,
+                            "device": str(device),
+                            "dtype": str(mydtype),
+                            "num_layers": num_layers,
+                            "hidden_width": hidden_width,
+                            "hidden_rank": hidden_rank,
+                            "input_rank": 1,
+                            "output_rank": 1,
+                            "use_resnet": False,
 
-import random
-random.shuffle(configs)
+                            # training hyperparameters
+                            "num_epochs": 5000,
+                            "batch_size": batch_size,
+                            "num_training_samples": 600,
+                            "num_test_samples": 1000,
 
-# we define configuration dictionary with all hyperparameters
-'''
-config = {
-    # architecture hyperparameters
-    "num_layers": 6,  # number of hidden layers
-    "hidden_width": 666,  # width of each hidden layer
-    "hidden_rank": 15,  # rank of each hidden layer
-    "input_rank": 1,  # rank of input layer
-    "output_rank": 1,  # rank of output layer
-    "use_resnet": False,  # whether to use resnet architecture
+                            # learning rate schedule
+                            "lr_init": lr_init,
+                            "lr_gamma": 0.99,
+                            "lr_step_size": 300,
 
-    # training hyperparameters
-    "num_epochs": 3000,
-    "batch_size": 100,
-    "num_training_samples": 1000,  # uniform grid samples
-    "num_test_samples": 1234,  # random samples
+                            # problem setup
+                            "interval": [-1, 1],
+                            "function": f"cos(pi*x^{alpha})",
+                            "alpha": alpha,
+                            
+                            'show_plot': False,
+                        })
+            random.shuffle(temp)
+            configs+=temp
 
-    # learning rate schedule: lr_init*lr_gamma**floor(k/lr_step_size)
-    "lr_init": 0.001,
-    "lr_gamma": 0.9,
-    "lr_step_size": 100,
 
-    # problem setup
-    "interval": [-1, 1],
-    "function": "cos(36*pi*x^2) - 0.8*cos(12*pi*x^2)",
 
-    # monitoring
-    "show_plot": False,
-    "device": str(device),
-    "dtype": str(mydtype)
-}
-'''
-for config in configs:
-   
+
+plot_threshold = 0.5
+for config_idx, config in enumerate(configs):
+    
+    # we check if quit was requested
+    if quit_all_training:
+        print(f"\n=== QUIT REQUESTED - Stopping all training (processed {config_idx}/{len(configs)} configs) ===\n")
+        break
+    
+    # we reset skip flag for this config
+    skip_current_config = False
+    
+    # we set seeds 
+    np.random.seed(config["seed"])
+    torch.manual_seed(config["seed"])
+    
+    # we create subfolder associated to alpha
+    
     # we create folder name from config
     folder_name = (f"wavelet_L{config['num_layers']}_"
                 f"W{config['hidden_width']}_"
                 f"R{config['hidden_rank']}_"
+                f"alpha{config['alpha']}_"
                 f"E{config['num_epochs']}_"
                 f"lr{config['lr_init']}_"
                 f"bs{config['batch_size']}_"
                 f"ntr{config['num_training_samples']}")
 
-    output_dir = os.path.join("/Data/janis.aiad/", "wavelet_2d", folder_name)
+    sub_folder_name = f"alpha{config['alpha']}"
+    base_dir = os.path.join("/Data/janis.aiad/", "wavelet_lotplot", sub_folder_name)
+    os.makedirs(base_dir, exist_ok=True)
+
+    output_dir = os.path.join(base_dir, folder_name)
     os.makedirs(output_dir, exist_ok=True)
     
     if not os.path.exists(os.path.join(output_dir, 'final_prediction.png')): 
         
-        print(f"Training config: {config}")
+        print(f"\n{'='*80}")
+        print(f"CONFIG {config_idx+1}/{len(configs)} - Training config: {config}")
+        print(f"{'='*80}\n")
         # we construct ranks and widths from config
         ranks = [config["input_rank"]] + [config["hidden_rank"]] * config["num_layers"] + [config["output_rank"]]
         widths = [config["hidden_width"]] * (config["num_layers"] + 1)
@@ -244,6 +304,8 @@ for config in configs:
 
         # we create output directory
         
+        # we write the seed to the config
+            
         # we save config to json
         with open(os.path.join(output_dir, "config.json"), "w") as f:
             json.dump(config, f, indent=4)
@@ -259,8 +321,7 @@ for config in configs:
                         device=device,
                         ResNet=config["use_resnet"])
         def func(x):
-            x1, x2 = x[:, 0], x[:, 1]
-            y = np.cos(np.pi* np.abs(np.pi*x1)**config["alpha"]) * np.cos(np.pi* np.abs(np.pi*x2)**config["alpha"])
+            y = np.cos(np.pi* np.abs(x)**config["alpha"])
             return y
 
 
@@ -278,7 +339,7 @@ for config in configs:
             print(f"Layer {j} ({frozen}): weight_norm={w_norm:.3f}, weight_mean={w_mean:.6f}, weight_std={w_std:.6f}, bias_norm={b_norm:.3f}")
 
 
-        x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 2])
+        x_train = np.linspace(*config["interval"], config["num_training_samples"]).reshape([-1, 1])
         y_train = func(x_train)
         x_train = torch.tensor(x_train, device=device, dtype=mydtype)
         y_train = torch.tensor(y_train, device=device, dtype=mydtype)
@@ -306,17 +367,20 @@ for config in configs:
         has_changed_optimizer = False
         has_changed_optimizer_2 = False
         
-            
-            
-        for epoch in range(1, 1 + config["num_epochs"]):
-            
         
-            def learned_nn(x):  # input and output are numpy.ndarray
-                x = x.reshape([-1, 2])
-                input_data = torch.tensor(x, dtype=mydtype).to(device)
-                y = model(input_data)
-                y = y.cpu().detach().numpy().reshape([-1])
-                return y
+        initial_loss = criterion(model(x_train), y_train)
+        next_plot_threshold = initial_loss * 0.8
+        halving_index = 0
+        
+        for epoch in range(1, 1 + config["num_epochs"]):
+            # we check if skip or quit was requested
+            if skip_current_config:
+                print(f"\n=== SKIP REQUESTED - Skipping config at epoch {epoch}/{config['num_epochs']} ===\n")
+                break
+            if quit_all_training:
+                print(f"\n=== QUIT REQUESTED - Stopping training at epoch {epoch}/{config['num_epochs']} ===\n")
+                break
+            
             for inputs, targets in train_loader:
                 optimizer.zero_grad()
                 outputs = model(inputs)
@@ -326,23 +390,65 @@ for config in configs:
 
             all_losses.append(loss.item())  # we store loss
             scheduler.step()
+            
+            
+            if float(loss.item()) <= 1e-5:
+                print(f"\n=== CONVERGED - Loss below threshold at epoch {epoch} ===\n")
+                break
+            
+            if float(loss.item()) <= float(next_plot_threshold):
+                # we update the halving index
+                halving_index += 1
+                # we update the next plot threshold
+                next_plot_threshold = initial_loss * 0.8 ** halving_index
+                
+                
+                # we print the day hour, halving index, and the full config, matching benchmark.py style
 
-
-            if epoch % 10 == 0:
-                # we print the day hour etc ;;
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 training_error = loss.item()
-                print(f"\nEpoch {epoch} / {config['num_epochs']}" +
-                    f"  ( {epoch/config['num_epochs']*100:.2f}% )" +
-                    f"\nTraining error (MSE): { training_error :.2e}" +
-                    f"\nTime used: { time.time() - time1 :.2f}s")
+                print(f"\nEpoch {epoch} / {config['num_epochs']}"
+                      f"  ( {epoch/config['num_epochs']*100:.2f}% )"
+                      f"\nTraining error (MSE): {training_error:.2e}"
+                      f"\nTime used: {time.time() - time1:.2f}s"
+                      f"\nOptimizer: Adam")
+                print(f"halving_index={halving_index}", end="  |  ")
+                print("CONFIG:",
+                      f"num_layers={config['num_layers']}",
+                      f"hidden_width={config['hidden_width']}",
+                      f"hidden_rank={config['hidden_rank']}",
+                      f"input_rank={config['input_rank']}",
+                      f"output_rank={config['output_rank']}",
+                      f"use_resnet={config['use_resnet']}",
+                      f"num_epochs={config['num_epochs']}",
+                      f"batch_size={config['batch_size']}",
+                      f"alpha={config['alpha']}",
+                      f"num_training_samples={config['num_training_samples']}",
+                      f"num_test_samples={config['num_test_samples']}",
+                      f"lr_init={config['lr_init']}",
+                      f"lr_gamma={config['lr_gamma']}",
+                      f"lr_step_size={config['lr_step_size']}",
+                      f"interval={config['interval']}",
+                      f"function={config['function']}",
+                      f"show_plot={config['show_plot']}",
+                      f"device={config['device']}",
+                      f"dtype={config['dtype']}",
+                        sep="  |  ")
                 errors_train.append(training_error)
+                
+                
                 # we compute the std for the last 50 losses in the log space
                 losses_std.append(np.std(np.log10(all_losses[-50:])))
 
+                def learned_nn(x):  # input and output are numpy.ndarray
+                    x = x.reshape([-1, 1])
+                    input_data = torch.tensor(x, dtype=mydtype).to(device)
+                    y = model(input_data)
+                    y = y.cpu().detach().numpy().reshape([-1])
+                    return y
 
 
-                x = np.random.rand(config["num_test_samples"], 2) * 2 - 1
+                x = np.random.rand(config["num_test_samples"]) * 2 - 1
                 y_nn = learned_nn(x)
                 y_true = func(x)
 
@@ -356,114 +462,200 @@ for config in configs:
 
                 print("Test errors (MAX and MSE): " +
                     f"{e_max:.2e} and {e_mse:.2e}")
+                
+                
 
-                # we compute NTK every 50 epochs (min/max only for print)
-                if epoch % 700 == 0:
-                    
-                    ntk, eigenvalues = compute_ntk_gram(model, x_train, device)
-                    ntk_eigenvalues[epoch] = eigenvalues
-                    ntk,eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0])
-                    ntk_eigenvalues_full[epoch] = eigenvalues
-                    print(f"NTK eigenvalues: min={eigenvalues[0]:.3e}, max={eigenvalues[-1]:.3e}")
+                new_output_dir = os.path.join(output_dir, f"halving_{halving_index}_epoch_{epoch}")
+                os.makedirs(new_output_dir, exist_ok=True)
+                # ---- Do plot: prediction/output + all partial functions ----
+                # 1. Plot final prediction/fit at this "halving" milestone
+                x_plot = np.linspace(-1, 1, 1000)
+                x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
+                with torch.no_grad():
+                    y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
+                y_plot_true = func(x_plot_tensor.cpu().numpy())
 
-            # we store full eigenvalue spectrum, ntk matrices and model parameters every 100 epochs for detailed analysis
-            if epoch % 500 == 0 and min(epoch, 1500) == epoch:
-                ntk, eigenvalues = torch.zeros(x_train.shape[0], x_train.shape[0]), torch.zeros(x_train.shape[0]) #compute_ntk_gram(model, x_train, device)
-                ntk_eigenvalues_full[epoch] = eigenvalues.cpu().numpy()  # we store as numpy array
-                ntk_matrices[epoch] = ntk.cpu().numpy()  # we store full ntk matrix as numpy array
+                config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}, halving={halving_index}"
 
+                fig = plt.figure(figsize=(8, 5))
+                plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
+                plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.title(f'Halving idx {halving_index}: Prediction vs True Function\n{config_str}')
+                plt.grid(True, alpha=0.3)
+                plt.legend()
+                plt.tight_layout()
+                plot_basename = f'prediction_halving_{halving_index}.png'
+                plt.savefig(os.path.join(new_output_dir, plot_basename), dpi=100)
+                plt.close()
+                
                 # we store model parameters as a flattened tensor
                 params_flat = torch.cat([p.data.view(-1).cpu() for p in model.parameters()])
                 parameters_snapshots[epoch] = params_flat.numpy()
-
-                print(f"Stored full NTK spectrum and matrix at epoch {epoch}: {len(eigenvalues)} eigenvalues, matrix shape {ntk.shape}")
-                print(f"Stored model parameters at epoch {epoch}: {len(params_flat)} total parameters")
-
-            should_plot = False
-            checkpoint = config["num_epochs"]//20
-            if epoch <= checkpoint*10 and epoch % checkpoint == 0:
-                should_plot = True
-            elif epoch > checkpoint*100 and epoch % (checkpoint*10) == 0:
-                should_plot = True
-            elif epoch > checkpoint*1000 and epoch % (checkpoint*100) == 0:
-                should_plot = True
-
-            if should_plot: # we plot the results as 2d heatmap of the difference
-                N_plot = 150
-                x1_plot = np.linspace(-1, 1, N_plot)
-                x2_plot = np.linspace(-1, 1, N_plot)
-                X1, X2 = np.meshgrid(x1_plot, x2_plot)
-                x_plot = np.stack([X1.ravel(), X2.ravel()], axis=-1)
-                y_nn = learned_nn(x_plot).reshape(N_plot, N_plot)
-                y_true = func(x_plot).reshape(N_plot, N_plot)
-                diff = y_nn - y_true
-                vmin = np.min(diff)
-                vmax = np.max(diff)
-                fig, ax = plt.subplots(figsize=(6, 5))
-                im = ax.imshow(
-                    diff,
-                    extent=(-1, 1, -1, 1),
-                    origin='lower',
-                    aspect='auto',
-                    cmap='bwr',
-                    vmin=vmin,
-                    vmax=vmax
-                )
-                plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="NN - True")
-                config_str = f"L={config['num_layers']}, W={config['hidden_width']}, R={config['hidden_rank']}"
-                ax.set_title(f'Network - True (Epoch {epoch})\n{config_str}')
-                ax.set_xlabel('$x_1$')
-                ax.set_ylabel('$x_2$')
-                plt.tight_layout()
-                plt.savefig(os.path.join(output_dir, f"mmnn_epoch{epoch}_2D.png"), dpi=100)
-                plt.close()
+               
                 
-                if config["show_plot"]:
-                    plt.show()
-                    
-                layers_dir = os.path.join(output_dir, f"partials_epoch{epoch}")
-                os.makedirs(layers_dir, exist_ok=True)
+                
+
+                # 2. Plot all partial/layer functions and save it also in sepated folder for each layer_idx and for each idx
+                
+                
                 teacher = MMNN(ranks=ranks,
                                 widths=widths,
                                 device=device,
                                 ResNet=config["use_resnet"])
                 teacher.load_state_dict(model.state_dict())
-                
-                x_line = np.linspace(-1, 1, 1000)
-                x_components_eval = np.stack([x_line, np.zeros_like(x_line)], axis=-1)
-                x_tensor = torch.tensor(x_components_eval, dtype=mydtype).to(device)
+
+                x = np.linspace(-1, 1, 1000)
+                x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
+
+                # we compute all layer outputs linearly in one forward pass
+                layer_outputs = {}  # we store output after each layer operation, keyed by layer_idx
+                with torch.no_grad():
+                    current = x_tensor
+                    for i in range(len(teacher.fcs)):
+                        current = teacher.fcs[i](current)
+                        layer_outputs[i] = current.cpu().numpy()  # we store output after linear layer (before relu if applicable)
+                        if i % 2 == 0:  # we apply relu after first part of each layer
+                            current = torch.relu(current)
+                            # we update with post-relu output for even layers
+                            layer_outputs[i] = current.cpu().numpy()
+
+                # we now plot each layer using precomputed outputs
                 for layer_idx in range(1, len(teacher.fcs), 1):
-                    if layer_idx % 2 == 0:
-                        output_rank = ranks[layer_idx//2+1]
-                    else:
-                        output_rank = min(widths[(layer_idx)//2], 36)
+                    # we create a separated folder for each layer
+                    layer_output_dir = os.path.join(new_output_dir, f"layer_{layer_idx}")
+                    os.makedirs(layer_output_dir, exist_ok=True)
+                    
+                    # we get precomputed output for this layer
+                    output = layer_outputs[layer_idx]
+                    
+                    # we ensure output is 2d
+                    if len(output.shape) == 1:
+                        output = output.reshape(-1, 1)
+                    
+                    # we use actual output shape instead of theoretical rank
+                    output_rank = output.shape[1]
+                    
+                    
+                    
+                    output_rank = min(output_rank, 36)
+                    
+                    # we skip if output_rank is incompatible
+                    if output_rank > output.shape[1]:
+                        print(f"Warning: skipping layer {layer_idx}, output_rank={output_rank} > actual shape {output.shape}")
+                        continue
+                    
                     n_rows = int(np.ceil(np.sqrt(output_rank)))
                     n_cols = int(np.ceil(output_rank / n_rows))
+                    
+                    
                     fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
                     if n_rows == 1 and n_cols == 1:
                         axes = np.array([[axes]])
                     elif n_rows == 1 or n_cols == 1:
                         axes = axes.reshape(n_rows, n_cols)
-                    fig.suptitle(f'Layer {layer_idx} components (epoch {epoch}, rank {output_rank})', fontsize=14)
-                    with torch.no_grad():
-                        current = x_tensor
-                        for i_layer in range(layer_idx):
-                            current = teacher.fcs[i_layer](current)
-                            if i_layer % 2 == 0:
-                                current = torch.relu(current)
-                        output = current.cpu().numpy()
-                        for idx in range(output_rank):
-                            row_idx = idx // n_cols
-                            col_idx = idx % n_cols
-                            axes[row_idx, col_idx].plot(x_line, output[:, idx], "b-", linewidth=1)
-                            axes[row_idx, col_idx].set_title(f'Component {idx+1}')
-                            axes[row_idx, col_idx].grid(True, alpha=0.3)
-                            axes[row_idx, col_idx].set_xticks([-1, 0, 1])
+                    
+                    fig.suptitle(f'[halving {halving_index}] Functions learned by Layer {layer_idx} (rank {output_rank})', fontsize=16)
+
+                    for idx in range(output_rank):
+                        i = idx // n_cols
+                        j = idx % n_cols
+                        # we plot on the big combined figure
+                        axes[i, j].plot(x, output[:, idx], 'b-', linewidth=1)
+                        axes[i, j].set_title(f'Component {idx+1}')
+                        axes[i, j].grid(True, alpha=0.3)
+                        axes[i, j].set_xticks([-1, 0, 1])
+                        
+                        # we create individual plot for this component
+                        subfig = plt.figure(figsize=(8, 5))
+                        plt.plot(x, output[:, idx], 'b-', linewidth=2)
+                        plt.title(f'Layer {layer_idx} Component {idx+1}')
+                        plt.xlabel('x')
+                        plt.ylabel('value')
+                        plt.grid(True, alpha=0.3)
+                        plt.xticks([-1, 0, 1])
+                        plt.tight_layout()
+                        plt.savefig(os.path.join(layer_output_dir, f"component_{idx}.png"), dpi=100)
+                        plt.close(subfig)
+                        
+                        
+                    # we save the big combined plot
                     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-                    plt.savefig(os.path.join(layers_dir, f'layer_{layer_idx}_components.png'), dpi=100)
-                    plt.close()
-                    if config["show_plot"]:
-                        plt.show()
+                    components_plot_basename = f'layer_{layer_idx}_components_halving_{halving_index}.png'
+                    plt.savefig(os.path.join(new_output_dir, components_plot_basename), dpi=100)
+                    plt.close(fig)
+                        
+            
+                print(f"\n[Halving {halving_index}] component plots (combined + individual) saved to {new_output_dir} at epoch {epoch}\n")
+            
+
+        
+
+            if epoch % 50 == 0:
+                
+                
+                # we print the day hour, halving index, and the full config, matching benchmark.py style
+
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                training_error = loss.item()
+                print(f"\nEpoch {epoch} / {config['num_epochs']}"
+                      f"  ( {epoch/config['num_epochs']*100:.2f}% )"
+                      f"\nTraining error (MSE): {training_error:.2e}"
+                      f"\nTime used: {time.time() - time1:.2f}s"
+                      f"\nOptimizer: Adam")
+                print(f"halving_index={halving_index}", end="  |  ")
+                print("CONFIG:",
+                      f"num_layers={config['num_layers']}",
+                      f"hidden_width={config['hidden_width']}",
+                      f"hidden_rank={config['hidden_rank']}",
+                      f"input_rank={config['input_rank']}",
+                      f"output_rank={config['output_rank']}",
+                      f"use_resnet={config['use_resnet']}",
+                      f"num_epochs={config['num_epochs']}",
+                      f"batch_size={config['batch_size']}",
+                      f"alpha={config['alpha']}",
+                      f"num_training_samples={config['num_training_samples']}",
+                      f"num_test_samples={config['num_test_samples']}",
+                      f"lr_init={config['lr_init']}",
+                      f"lr_gamma={config['lr_gamma']}",
+                      f"lr_step_size={config['lr_step_size']}",
+                      f"interval={config['interval']}",
+                      f"function={config['function']}",
+                      f"show_plot={config['show_plot']}",
+                      f"device={config['device']}",
+                      f"dtype={config['dtype']}",
+                        sep="  |  ")
+                errors_train.append(training_error)
+                
+                
+                # we compute the std for the last 50 losses in the log space
+                losses_std.append(np.std(np.log10(all_losses[-50:])))
+
+                def learned_nn(x):  # input and output are numpy.ndarray
+                    x = x.reshape([-1, 1])
+                    input_data = torch.tensor(x, dtype=mydtype).to(device)
+                    y = model(input_data)
+                    y = y.cpu().detach().numpy().reshape([-1])
+                    return y
+
+
+                x = np.random.rand(config["num_test_samples"]) * 2 - 1
+                y_nn = learned_nn(x)
+                y_true = func(x)
+
+                # Calculate errors
+
+                e = y_nn - y_true
+                e_max = np.max(np.abs(e))
+                e_mse = np.mean(e**2)
+                errors_test.append(e_mse)
+                errors_test_max.append(e_max)
+
+                print("Test errors (MAX and MSE): " +
+                    f"{e_max:.2e} and {e_mse:.2e}")
+                
+             
 
         torch.save(model.state_dict(), os.path.join(output_dir, 'model_parameters.pth'))
         np.savez(os.path.join(output_dir, "errors.npz"),
@@ -511,6 +703,7 @@ for config in configs:
             "parameters_epochs_stored": sorted(parameters_snapshots.keys()) if len(parameters_snapshots) > 0 else [],
             "parameter_vector_size": len(parameters_snapshots[list(parameters_snapshots.keys())[0]]) if len(parameters_snapshots) > 0 else None,
         }
+        
 
         with open(os.path.join(output_dir, "results.json"), "w") as f:
             json.dump(results, f, indent=4)
@@ -641,76 +834,34 @@ for config in configs:
             plt.close()
             print("NTK first/last 5 eigenvalues plot saved")
 
-        # 2D final prediction/fit plotting
 
-        # Generate a 2D grid for plotting
-        N_plot = 150
-        x1_plot = np.linspace(-1, 1, N_plot)
-        x2_plot = np.linspace(-1, 1, N_plot)
-        X1, X2 = np.meshgrid(x1_plot, x2_plot)
-        x_plot = np.stack([X1.ravel(), X2.ravel()], axis=-1)
 
-        x_plot_tensor = torch.tensor(x_plot, dtype=mydtype).to(device)
+
+
+        # we plot final prediction/fit
+        final_output_dir = os.path.join(output_dir, 'final_prediction')
+        os.makedirs(final_output_dir, exist_ok=True)
+        x_plot = np.linspace(-1, 1, 1000)
+        x_plot_tensor = torch.tensor(x_plot.reshape([-1, 1]), dtype=mydtype).to(device)
         with torch.no_grad():
-            y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape(N_plot, N_plot)
-        y_plot_true = func(x_plot_tensor.cpu().numpy()).reshape(N_plot, N_plot)
+            y_plot_nn = model(x_plot_tensor).cpu().numpy().reshape([-1])
+        y_plot_true = func(x_plot_tensor.cpu().numpy())
 
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-
-        im0 = axes[0].imshow(
-            y_plot_true,
-            extent=(-1, 1, -1, 1),
-            origin='lower',
-            aspect='auto',
-            cmap='viridis'
-        )
-        axes[0].set_title('True function')
-        axes[0].set_xlabel('$x_1$')
-        axes[0].set_ylabel('$x_2$')
-        fig.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
-
-        im1 = axes[1].imshow(
-            y_plot_nn,
-            extent=(-1, 1, -1, 1),
-            origin='lower',
-            aspect='auto',
-            cmap='viridis'
-        )
-        axes[1].set_title('Learned network')
-        axes[1].set_xlabel('$x_1$')
-        axes[1].set_ylabel('$x_2$')
-        fig.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
-
-        plt.suptitle(f'Final Prediction vs True Function\n{config_str}', fontsize=14)
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        fig = plt.figure(figsize=(8, 5))
+        plt.plot(x_plot, y_plot_true, 'b-', label='True function', linewidth=2)
+        plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'Final Prediction vs True Function\n{config_str}')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'final_prediction.png'), dpi=100)
         plt.close()
 
         print(f"\nAll plots saved to {output_dir}")
         print(f"Total training time: {time.time()-time1:.2f}s")
-        final_train_loss = float(errors_train[-1]) if len(errors_train) > 0 else float(all_losses[-1]) if len(all_losses) > 0 else None
-        min_train_loss = float(min(errors_train)) if len(errors_train) > 0 else float(min(all_losses)) if len(all_losses) > 0 else None
-        final_test_loss = float(errors_test[-1]) if len(errors_test) > 0 else None
-        min_test_loss = float(min(errors_test)) if len(errors_test) > 0 else None
-        summary_lines = [
-            f"config: {json.dumps(config)}",
-            f"final_train_loss: {final_train_loss}",
-            f"min_train_loss: {min_train_loss}",
-            f"final_test_loss: {final_test_loss}",
-            f"min_test_loss: {min_test_loss}",
-            ""
-        ]
-        with open(os.path.join(output_dir, "loss_summary.txt"), "a", encoding="utf-8") as summary_file:
-            summary_file.write("\n".join(summary_lines))
-        loss_curves_payload = {
-            "train_losses": errors_train,
-            "test_losses": errors_test,
-            "test_max_losses": errors_test_max,
-            "all_losses": all_losses,
-            "losses_std": losses_std
-        }
-        with open(os.path.join(output_dir, "loss_curves.json"), "w", encoding="utf-8") as curves_file:
-            json.dump(loss_curves_payload, curves_file, indent=4)
+        
         # Plot functions learned by each low rank layer
         teacher = MMNN(ranks=ranks,
                         widths=widths,
@@ -718,15 +869,12 @@ for config in configs:
                         ResNet=config["use_resnet"])
         teacher.load_state_dict(model.state_dict())
 
-        x_line = np.linspace(-1, 1, 1000)
-        x_components_eval = np.stack([x_line, np.zeros_like(x_line)], axis=-1)
-        x_tensor = torch.tensor(x_components_eval, dtype=mydtype).to(device)
+        x = np.linspace(-1, 1, 1000)
+        x_tensor = torch.tensor(x.reshape([-1, 1]), dtype=mydtype).to(device)
 
-        # For each layer with low rank output
+        
+        
         # very bad complexity O(n^2)
-
-
-
         for layer_idx in range(1, len(teacher.fcs), 1):  # Even indices correspond to first part of each layer
             # if layer_idx is odd, we plot the first part of the layer, that means relu(something)
             # if layer_idx is even, we plot the second part of the layer, that means something
@@ -763,13 +911,20 @@ for config in configs:
                 for idx in range(output_rank):
                     i = idx // n_cols
                     j = idx % n_cols
-                    axes[i,j].plot(x_line, output[:,idx], "b-", linewidth=1)
+                    axes[i,j].plot(x, output[:,idx], 'b-', linewidth=1)
                     axes[i,j].set_title(f'Component {idx+1}')
                     axes[i,j].grid(True, alpha=0.3)
                     axes[i, j].set_xticks([-1, 0, 1])
 
                 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-                plt.savefig(os.path.join(output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
+                plt.savefig(os.path.join(final_output_dir, f'layer_{layer_idx}_components.png'), dpi=100)
                 plt.close()
 
-            print(f"Layer component plots saved to {output_dir}")
+            print(f"Layer component plots saved to {final_output_dir}")
+        # we save the losses as a JSON file
+        import json
+        loss_history = [{"epoch": epoch, "loss": float(loss)} for epoch, loss in enumerate(all_losses)]
+        with open(os.path.join(output_dir, 'loss.json'), 'w') as f:
+            json.dump(loss_history, f, indent=2)
+            
+        

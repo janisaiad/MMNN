@@ -32,7 +32,7 @@ class MMNN(nn.Module):
                  widths = [366]*6,
                  device = "cuda", 
                  ResNet = False,
-                 fixWb = True):
+                 fixWb = False):
         super().__init__()
         """
         A class to configure the neural network model.
@@ -163,7 +163,7 @@ device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 print(f"Training on device: {device}")
 ##############################
 
-step_number= 5
+step_number= 1
 # Generate configs with different depths, hidden ranks and widths
 configs = []
 
@@ -177,14 +177,14 @@ for num_layers in [2,4,6,8,10,12,15,20,25]:
                         for batch_size in [100, 250, 500, 1000]:
    """                                     
    
-for batch_size in [100]: 
-    for num_layers in [2,3,4,5,6]:
-        for hidden_width in [64000,32000,20000,16000,8000,2000]:
-            for hidden_rank in [50,15]:                                
+for batch_size in [100,10,1000]: 
+    for num_layers in [2,4,6,8,10]:
+        for hidden_width in [32,64,128,256,512,1024,2048]:
+            for hidden_rank in [50,35,20,10,5]:                                
                 for gamma_2 in [0.97]:
-                    for threshold in [1e-1]:
+                    for threshold in [1e-2]:
                         for lr_decay_steps in [500]:
-                            for ratio in [1.3]:   
+                            for ratio in [1.5]:   
                                 configs.append({
                                     # architecture hyperparameters
                                     "num_layers": num_layers,
@@ -201,7 +201,7 @@ for batch_size in [100]:
                                     "num_test_samples": 600,
 
                                     # learning rate schedule
-                                    "lr_init": 0.00001,
+                                    "lr_init": 0.0001,
                                     "lr_gamma": gamma_2,
                                     "lr_step_size": lr_decay_steps,
 
@@ -279,7 +279,7 @@ for config in configs:
                     f"lr_decay_steps{config['lr_decay_steps']}"
                     f"gamma_2{config['gamma_2']}")
         # we create output directory
-        output_dir = os.path.join("/Data/janis.aiad/", "mmnn_largewdith",sub_folder_name,folder_name,f"time{time2}")
+        output_dir = os.path.join("/Data/janis.aiad/", "nofixed/normalsetup",sub_folder_name,folder_name,f"time{time2}")
         os.makedirs(output_dir, exist_ok=True)
 
         # we save config to json
@@ -495,7 +495,7 @@ for config in configs:
                 
 
 
-            if epoch % 2 == 0:
+            if epoch % 50 == 0:
                 # we print the day hour etc ;;
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 training_error = loss.item()
