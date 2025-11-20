@@ -536,3 +536,33 @@ global convergence for all depth from mean field approach
 
 ## wavelet 
  develop an original wavelet sparse decomposition precisely, so that if a function has sparse wavelet decomposition, it's written as a sum of sparse wavelet, in 1d exponetialy decreasing cosines and sines localized, then it's well described in laplace RKHS and can be learned through NTK that has same laplace RKHS, that is this link i want to investigate so that i understand more the landscape, 
+
+
+
+what we clearly see here is this less good training on interval border, 3 quadratic spikes
+ G:\Mon Drive\JANIS AIAD Internship - NTK for NN\wavelet_training\wavelet_L4_W256_R6_E10000_lr0.001_bs300_ntr600
+
+random features put us high dimensional ! 
+
+
+
+
+
+## 
+G:\Mon Drive\JANIS AIAD Internship - NTK for NN\wavelet_lotplot\alpha8\wavelet_L8_W512_R9_E5000_lr0.001_bs2400_ntr600
+from this we can see that the learning is pretty linear and removing adam could lead to strong viz,
+
+from G:\Mon Drive\JANIS AIAD Internship - NTK for NN\wavelet_lotplot\alpha8\wavelet_L8_W512_R10_E5000_lr0.001_bs2400_ntr600 
+we can see that dictionary functions are the same but shifted ;; we should look at how activations beahve to see weights how the dictionary is used to make high frequency functions;
+we can clearly see linear scale wrt L in magnitude of functions learned at EOS
+
+
+from R3 to R10 we see growing R lead to exponential scaling of the final loww for small R due to dictionary learning
+from R10 to R30, growing more just regularize a bit more the problem but not significant, it allows super grokking
+
+at 128 width, we have nothing interestin 
+
+
+a lot of training are unstable !! a lot more epochs can be needed .. not very efficient
+idea is to use MMNN as a type of PINN to fit high frequency functinos that occurs in your problem because 
+NN can't ! 

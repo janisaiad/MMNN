@@ -1,0 +1,56 @@
+\subsection{Lazy training regime and RKHS characterization}
+In the NTK regime, training dynamics linearize: \( f_t(x) \approx f_0(x) + \langle \nabla_\theta f_0(x), \theta_t - \theta_0 \rangle \). The learned function stays in the RKHS induced by \( \Theta \), with norm:
+\[
+\|f\|_{\mathcal{H}_\Theta}^2 = \langle f, \Theta^{-1} f \rangle_{L^2}.
+\]
+For RF-LR with frozen random features, the RKHS is characterized by:
+\begin{itemize}
+    \item \textbf{Random feature expressivity:} Universal approximation holds due to full support of \( w^{(\ell)} \) (frozen Gaussian draws). Any function in the Barron space can be approximated with error \( O(1/\sqrt{n}) \).
+    \item \textbf{Low-rank bottleneck effect:} The rank-\( r \) layer acts as a spectral filter, removing directions with tiny eigenvalues and improving generalization by implicit regularization.
+    \item \textbf{Comparison with MLPs:} The RF-LR RKHS is \emph{nearly identical} to the MLP RKHS for large \( r \), confirming no expressivity loss, while parameter budget drops from \( O(n^2) \) to \( O(rn) \).
+\end{itemize}
+
+\vspace{0.5em}
+\subsection{No RKHS disadvantage (deep equals shallow in NTK regime)}
+\begin{theorem}[No disadvantage in RKHS]\label{thm:no_rkhs_disadvantage}
+Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. We use this statement as provided by Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
+\end{theorem}
+\begin{corollary}[Spectral decay on \( \mathbb{S}^{d-1} \) via endpoint expansions]\label{cor:spectral_decay_bietti}
+Let \( \kappa:[-1,1]\to\mathbb{R} \) be the rotation-invariant kernel associated to the (deep or shallow) ReLU NTK on \( \mathbb{S}^{d-1} \). Assume \( \kappa \in C^\infty(-1,1) \) and admits the asymptotic expansions, for \( t\ge 0 \),
+\[
+\kappa(1-t) = p_1(t) + c_1 t^{\nu} + o(t^{\nu}),\qquad
+\kappa(-1+t) = p_{-1}(t) + c_{-1} t^{\nu} + o(t^{\nu}),
+\]
+where \( p_1,p_{-1} \) are polynomials, \( \nu>0 \) non-integer, and derivatives satisfy analogous expansions. Then there exists a constant \( C(d,\nu)>0 \) such that the eigenvalues \( \mu_k \) (in the spherical harmonics basis) satisfy:
+\begin{itemize}
+    \item For even \(k\) and \( c_1 \neq -c_{-1}\): \( \mu_k \sim (c_1+c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
+    \item For odd \(k\) and \( c_1 \neq c_{-1}\): \( \mu_k \sim (c_1-c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
+\end{itemize}
+If \( |c_1|=|c_{-1}| \), then \( \mu_k = o\big(k^{-d-2\nu+1}\big) \) for one parity (or both if \(c_1=c_{-1}=0\)). If \( \kappa \) is \( C^\infty \) on \([{-}1,1]\) with no such \( \nu \), then \( \mu_k \) decays faster than any polynomial. See~\cite{bietti2021deepequalsshallowrelu}.
+\end{corollary}
+\begin{remark}
+Corollary~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Theorem~\ref{thm:no_rkhs_disadvantage}).
+\end{remark}
+
+\vspace{0.5em}
+\subsection{Rank-driven concentration in RKHS (Gaussian norms product)}
+\begin{theorem}[Exponential concentration in rank]\label{thm:rkhs_rank_concentration}
+Let \( x_1, y_1 \in \mathbb{R}^r \) be the rank-\( r \) Gaussian projections of inputs \( x, y \), with arbitrary fixed correlation \( \rho \in [-1,1] \). Define
+\[
+W \;=\; \frac{\|x_1\|\,\|y_1\|}{r}.
+\]
+Then for any \( \epsilon \in (0,1) \),
+\[
+\mathbb{P}\!\left(\left|W-1\right|\;\ge\;\epsilon\right)\;\le\;4\,\exp\!\left(-\frac{r\,\epsilon^2}{8}\right).
+\]
+Moreover, for larger deviations \( \epsilon \ge 1 \), there exist absolute constants \( c_1,c_2>0 \) such that
+\[
+\mathbb{P}\!\left(\left|W-1\right|\;\ge\;\epsilon\right)\;\le\;c_1\,\exp\!\left(-c_2\,r\,\epsilon\right).
+\]
+In particular, the radial component of the RF-LR NTK concentrates exponentially fast in \( r \), yielding high-dimensional control of RKHS fluctuations.
+\end{theorem}
+\paragraph{Proof intuition.}
+Set \( U=\|x_1\|/\sqrt{r} \) and \( V=\|y_1\|/\sqrt{r} \). The Euclidean norm is 1-Lipschitz for Gaussians, so \( U \) and \( V \) concentrate around 1 with sub-Gaussian tails \( \exp(-r\delta^2) \). Using \( |UV-1|\le |U-1|+|V-1|+|U-1||V-1| \) and a union bound with \( \delta=\epsilon/2 \) yields the stated \( 4\exp(-r\epsilon^2/8) \) bound. Large deviations use standard sub-exponential tails of \( \chi \)-norms. The full proof is given in Appendix~\ref{appendix:proof-rkhs-rank-concentration}.
+\begin{remark}
+The result avoids direct manipulation of Kibble's bivariate chi-square density, relying instead on Gaussian isoperimetry for norms and a simple algebraic bound for products. Tighter constants are obtainable with refined quadratic control, but the stated \( e^{-r\epsilon^2} \) and \( e^{-r\epsilon} \) regimes capture the correct high-dimensional decay.
+\end{remark}
