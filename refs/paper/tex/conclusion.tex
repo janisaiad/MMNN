@@ -1,0 +1,48 @@
+% Conclusion and discussion focused strictly on NTK-related points present in plan.md and idea1.md
+\section{Conclusion and Discussion}
+
+This section summarizes the Neural Tangent Kernel (NTK) insights for low-rank random feature architectures (MMNN/RF-LR) distilled strictly from the internal notes \texttt{plan.md} and \texttt{idea1.md}. Our discussion isolates the lazy-training/kernel perspective and its finite-width corrections, without relying on mean-field arguments except where explicitly stated in those notes.
+
+\paragraph{No RKHS disadvantage and linear width scaling.}
+A central conclusion is that low-rank random features incur no RKHS disadvantage compared to fully-connected networks when the rank \( r \) is moderately large. The induced RKHS coincides in the relevant limits, so expressivity is not compromised. Crucially, the kernel regime can be reached at a \emph{linear} parameter budget \( O(rn) \) rather than the quadratic \( O(n^2) \) of dense layers, establishing a decisive advantage for entering the NTK regime with fewer parameters. This linear-width scaling is an architectural efficiency benefit, not merely a computational one: it lowers the threshold for when NTK predictions become accurate.
+
+\paragraph{Improved concentration: \( O(1/r^2) \) vs.\ classical \( O(1/N) \).}
+The notes emphasize a doubly-random Gram matrix regime in which NTK fluctuations decay as \( O(1/r^2) \), markedly faster than the classical \( O(1/N) \) decay. For a fixed total parameter budget \( N_{\text{total}} = rn \), this yields a quadratic improvement in the reliability of kernel approximations when \( r \) is moderate and \( n \) is large. Practically, this means the deterministic NTK limit is reached sooner, with smaller models. This improved concentration is a fundamental theoretical advantage of low-rank random features in the lazy regime.
+
+\paragraph{Spectrum: bulk–outlier structure and early training.}
+The NTK spectrum at initialization exhibits a bulk consistent with Marchenko–Pastur theory and a \emph{single dominant outlier}, in line with Terj\'ek-style analyses. The outlier governs the fastest decaying direction of the training error under kernel gradient flow, while the poorly conditioned bulk explains slow directions and the observed bad conditioning at initialization. The low-rank random feature structure makes this outlier analysis more tractable and suggests cleaner comparisons to fully-connected networks at matched parameter budgets.
+
+\paragraph{Finite-width corrections and the \( 1/r \) expansion.}
+Finite-width corrections for MMNN NTKs naturally organize into a \( 1/r \) expansion across depth \( L \), with explicit \( O(1/r) \) and \( O(1/r^2) \) terms highlighted. Two-layer setups are singled out as especially tractable, enabling precise checks of theory against empirical NTKs and training trajectories. The notes further suggest corrections scaling in \( Nr \) due to edge-of-chaos considerations for MMNNs, providing a concrete path to quantify deviations from the infinite-width kernel limit in realistic models.
+
+\paragraph{Practical implications and recommended regimes.}
+The internal notes repeatedly point to a practically useful range \( r \in [5, 50] \), which appears to balance concentration, expressivity, and parameter efficiency across tasks. Sample complexity heuristics tie to the spectrum-of-kernel-random-matrices viewpoint, indicating a linear scaling in ambient dimension in appropriate regimes. Data normalization matters: on the sphere, a trace normalization \( \operatorname{Tr}=1 \) removes certain \( 1/r \) normalization effects and clarifies which NTK variant is appropriate, whereas hypercube settings suggest different norm/bias conventions (e.g., \( \operatorname{Tr}(\Sigma_w)=d \) and unit bias) to preserve approximation guarantees. These choices directly influence NTK variance and should be matched to the data domain.
+
+\paragraph{Partial training effect on NTK magnitude.}
+Training only output weights \( A^{(\ell)} \) while freezing input weights \( w^{(\ell)} \) reduces the NTK magnitude by approximately a factor of two relative to fully trainable counterparts. In the kernel regression regime, this effectively doubles the learning-rate scale for the same optimizer hyperparameters (or halves kernel eigenvalues), changing convergence speed but not the RKHS solution. The notes call for a formal derivation of this factor-of-two relationship in comparable architectures.
+
+\paragraph{Comparisons to MLPs at matched budgets.}
+The low-rank RF viewpoint predicts that, at matched total parameters, MMNNs enter the NTK regime with better concentration and a spectrum exhibiting a cleaner single outlier. Side-by-side comparisons of NTK eigenvalue distributions, loss staircase behavior on multi-index targets, condition numbers, and accuracy metrics are proposed to substantiate these claims empirically.
+
+\paragraph{Open NTK questions from the notes.}
+The following NTK-specific items are identified as open or slated for completion:
+\begin{itemize}
+    \item Non-Gaussian process propagation analysis distinct from NNGP fits.
+    \item Explicit bulk formula normalized in a \( \times r^2 \) manner.
+    \item Stated concentration bound for \( 2 \times \Kop_{\text{MMNN}} - \Kop_{\text{MLP}} \) at large \( r \).
+    \item Completion of concentration bounds (Theorem-level items marked to be filled) and outlier analysis in the NTK spectrum.
+    \item Finite-width NTK parts (remaining pieces to be completed) and the relationship to \( Nr \) scaling.
+    \item Stiefel-manifold assumptions and their implications for scaling laws in the extensive-rank regime.
+    \item Extension of NTK analysis to DSRN-like architectures.
+    \item Formal proof of the factor-of-two NTK magnitude reduction under partial training.
+\end{itemize}
+
+\paragraph{Experimental roadmap (NTK only) from the notes.}
+Planned experiments relevant to NTK include: (i) confirming NTK training behavior versus kernel predictions and locating the boundary of lazy training; (ii) empirical validation that \( r \in [5,50] \) yields strong concentration; (iii) two-layer width scheme sweeps to test \( O(1/n)+O(1/r) \) finite-width corrections and identify minimal \( (n,r) \) for accurate kernel predictions; (iv) MLP comparison suite probing NTK spectra, loss staircase dynamics on multi-index targets, Hessian/condition number evolution during training, and accuracy at matched parameter budgets. These are designed to verify the predicted \( O(1/r^2) \) concentration, single-outlier structure, and practical kernel-regime accessibility.
+
+\paragraph{Limitations and scope.}
+All statements here concern the lazy/NTK regime under the low-rank random feature architecture described in the notes. While the notes also present a broader mean-field picture (e.g., stepwise dynamics, central-flow arguments), those belong to a separate regime and are not used here except where they directly motivated NTK diagnostics at initialization. Several derivations and bounds are flagged as ``to be completed'' and will benefit from a full proof pass and targeted experiments.
+
+\paragraph{Outlook.}
+From the NTK viewpoint limited to \texttt{plan.md} and \texttt{idea1.md}, low-rank random features provide a clean and theoretically advantageous route to the kernel regime: same RKHS as dense networks, earlier entry into lazy training at linear parameter budgets, and significantly faster concentration of the kernel with \( O(1/r^2) \) decay. The bulk–outlier spectral picture clarifies early training behavior and conditioning. Completing the pending finite-width formulas, spectrum characterizations, and comparison experiments will turn this into a comprehensive NTK account of MMNNs, laying a solid foundation for subsequent analyses beyond the lazy regime.
+

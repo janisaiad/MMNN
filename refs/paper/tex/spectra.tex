@@ -1,0 +1,99 @@
+\section{Spectral theory of low-rank NTK (two-layer focus)}
+
+\subsection{General setup and scaling}
+\begin{definition}[RF-LR architecture and effective NTK]
+Consider a network with a random projection to width \(N\), a rank-\(r\) bottleneck, and an output layer. The effective two-layer NTK is denoted \( \Theta^{(2)} \), induced by the composition of these layers under NTK parameterization.
+\end{definition}
+\begin{assumption}[Random-matrix scaling]\label{assump:RMT}
+As the number of data points \(n\to\infty\):
+\begin{itemize}
+    \item Hidden widths scale as \( N \sim n^2 \) (infinite-width linearization regime).
+    \item Rank scales as \( r \asymp n \) with ratio \( \gamma_{\mathrm{ratio}} \equiv \lim_{n\to\infty} \tfrac{n}{r} \in (0,\infty) \) (Marchenko–Pastur regime).
+\end{itemize}
+\end{assumption}
+
+\subsection{Microscopic distributions: Fisher–Kibble decoupling}
+\begin{lemma}[Fisher–Kibble decoupling]\label{lem:fisher-kibble}
+Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
+\begin{itemize}
+    \item \( \rho_1 \) follows Fisher's correlation distribution (1915), centered at the true correlation \( \rho \).
+    \item \( (u,v) \) follow Kibble's (1941) bivariate Gamma (chi-square) law.
+    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
+\end{itemize}
+Proof: See Appendix C.1.
+\end{lemma}
+
+\subsection{Signal–noise decomposition of the empirical NTK}
+\begin{theorem}[Asymptotic signal–noise decomposition]\label{thm:signal-noise}
+Under Assumption~\ref{assump:RMT}, for large \(r\),
+\[
+\Theta^{(2)}_{\mathrm{obs}}(\rho) = K_{\infty}(\rho) + \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) + o(r^{-1/2}),
+\]
+where \( K_{\infty}(\rho)=\mathbb{E}[\Theta^{(2)}_{\mathrm{obs}}(\rho)] \) is the deterministic limit and \( \mathcal{G}(\rho) \) is a centered Gaussian field with variance
+\[
+\mathrm{Var}(\mathcal{G}(\rho)) = \underbrace{\big[K_{\infty}'(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)}} \;+\; \underbrace{\big[2\,\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
+\]
+In the two-layer case with ReLU features,
+\[
+K_{\infty}(\rho) \;=\; \Theta^{(1)}(\rho)\,\Big(1 - \tfrac{\arccos(\rho)}{\pi}\Big) \;+\; 2\,\Sigma^{(1)}(\rho) \;+\; 1.
+\]
+Proof: See Appendix C.2.
+\end{theorem}
+\begin{remark}
+An observed empirical variance in \(1/r^2\) indicates an additional \(1/\sqrt{r}\) normalization of the kernel or cancellations of order-one terms.
+\end{remark}
+
+\subsection{Macroscopic spectrum: deformed Marchenko–Pastur law}
+\begin{theorem}[Spike + bulk spectral limit]\label{thm:spike-bulk}
+Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumption~\ref{assump:RMT}, as \( n\to\infty \), the empirical spectrum of \( \mathbf{M} \) converges to a deformed Marchenko–Pastur law with:
+\begin{itemize}
+    \item A rank-one outlier (spike) of order \(O(n)\): \( \lambda_{\mathrm{spike}} \approx n\,\alpha \), with \( \alpha = K_{\infty}(0) \).
+    \item A continuous bulk of order \(O(1)\) supported on
+    \[
+    \Big[\;\gamma + \beta\,(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\;\; \gamma + \beta\,(1+\sqrt{\gamma_{\mathrm{ratio}}})^2\;\Big],
+    \]
+    where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel’s diagonal argument).
+\end{itemize}
+Proof: See Appendix C.3 (via El Karoui, 2010).
+\end{theorem}
+
+\subsection{Outlier stability (BBP transition) under additive noise}
+\begin{theorem}[BBP-type transition]\label{thm:bbp}
+Perturb the kernel by an additive noise \( r^{\eta} g(\rho) \). Then:
+\begin{itemize}
+    \item If \( \eta < -\tfrac{1}{2} \): the noise is spectrally negligible; spike and bulk persist.
+    \item If \( \eta = -\tfrac{1}{2} \): the bulk undergoes free convolution with a Wigner law (critical blurring).
+    \item If \( \eta \ge \tfrac{1}{2} \): noise yields \(O(n)\) spectral scale and engulfs the spike (signal collapse).
+\end{itemize}
+Proof: See Appendix C.4.
+\end{theorem}
+
+\subsection{Two-layer case summary}
+Specializing to two layers with ReLU features:
+\begin{itemize}
+    \item \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\tfrac{\arccos(\rho)}{\pi}\big) + 2\,\Sigma^{(1)}(\rho)+1 \).
+    \item Spike scale: \( \lambda_{\mathrm{spike}} \approx n\,K_{\infty}(0) \).
+    \item Bulk support as in Theorem~\ref{thm:spike-bulk} with \(\beta=K_{\infty}'(0)\), \(\gamma\) the diagonal shift.
+\end{itemize}
+
+\subsection{Asymptotic signal–noise (kernel CLT)}
+\begin{theorem}[Asymptotic Normality of the Low-Rank Kernel]\label{thm:kernel_clt}
+Let \(x, y \in \mathbb{R}^r\) be rank-\(r\) Gaussian projections with population correlation \( \rho \). Define
+\[
+\Psi(u,w) \;=\; \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; 2\,w\,\Sigma^{(1)}(u) \;+\; 1,
+\]
+and the empirical kernel \( \hat{\Theta}^{(2)}_r \;=\; \Psi(\hat{\rho}_r, \hat{w}_r) \), where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x\|\,\|y\|/r \). As \( r\to\infty \),
+\[
+\hat{\Theta}^{(2)}_r \;\xrightarrow{d}\; K_\infty(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho),
+\]
+where \( K_\infty(\rho) \) is the deterministic limit and \( \mathcal{G}(\rho) \sim \mathcal{N}\!\big(0,\sigma_{\mathrm{tot}}^2(\rho)\big) \) with
+\[
+\sigma_{\mathrm{tot}}^2(\rho) \;=\; \big(\partial_\rho K_\infty(\rho)\big)^2 (1-\rho^2)^2 \;+\; \big(2\,\Sigma^{(1)}(\rho)\big)^2 (1+\rho^2).
+\]
+\end{theorem}
+\paragraph{Proof intuition.}
+We decouple the randomness of the angle and the norms of isotropic Gaussians (Fisher for \( \hat{\rho}_r \), Kibble for \( \|x\|,\|y\| \)), which are independent. By a joint CLT,
+\( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \) is asymptotically Gaussian with diagonal covariance \( \mathrm{diag}\big((1-\rho^2)^2,\ 1+\rho^2\big) \).
+Applying the multivariate Delta method to \( \Psi(u,w) \) at \( (\rho,1) \), the gradient contributes
+\( \partial_u \Psi(\rho,1)=\partial_\rho K_\infty(\rho) \) and \( \partial_w \Psi(\rho,1)=2\Sigma^{(1)}(\rho) \), yielding the stated variance with no cross term by independence. The limit therefore splits into a deterministic kernel plus an \( r^{-1/2} \) Gaussian fluctuation governed by angular and radial noises.
+

@@ -1,0 +1,111 @@
+\subsection{Single-layer NNGP kernel (MMFN)}
+\begin{theorem}[NNGP kernel for a single-layer ReLU MMFN]
+Let the pre-activations \( (g_1, g_2) \) be jointly Gaussian with means \( (\mu_1,\mu_2) \), variances \( (\sigma_1^2,\sigma_2^2) \), and correlation \( \rho \). Then the single-layer NNGP kernel
+\[
+\Sigma^{(1)}(x,x') \;=\; \mathbb{E}\!\left[\ReLU(g_1)\,\ReLU(g_2)\right]
+\]
+admits the decomposition
+\[
+\boxed{\;\Sigma^{(1)} \;=\; \sigma_1\sigma_2 \cdot I_{12} \;+\; \mu_1\sigma_2 \cdot I_{01} \;+\; \mu_2\sigma_1 \cdot I_{10} \;+\; \mu_1\mu_2 \cdot I_{00}\;}
+\]
+where \( I_{ij} \) are truncated-moment integrals of standardized bivariate normal variables \( (Z_1,Z_2) \) with thresholds \( a_1=-\mu_1/\sigma_1 \) and \( a_2=-\mu_2/\sigma_2 \). Closed-form expressions for \( I_{ij} \) are standard in the literature.
+\end{theorem}
+
+\subsection{NTK recursion}
+\begin{theorem}[Infinite-width NTK recursion]
+\label{thm:ntk_recursion}
+Under NTK parameterization \( 1/\sqrt{n_\ell} \) and a sequential limit \( n_1\to\infty,\dots,n_L\to\infty \) with \( \bm{w}^{(\ell)} \sim \mathcal{N}(0, \mathbf{I}_{d_{\ell-1}}) \) i.i.d. frozen after initialization, the layer-\( \ell \) NTK satisfies
+\begin{align}
+\Kop^{(0)}(x,x') \;&=\; 0, \\
+\Kop^{(\ell)}(x,x') \;&=\; \Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x')\;+\;\Sigma^{(\ell)}(x,x'),\quad \ell\ge1,
+\end{align}
+where
+\begin{align}
+\Sigma^{(\ell)}(x,x') &= \mathbb{E}_{\bm{w}}\Big[\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\Big], \\
+\dot{\Sigma}^{(\ell)}(x,x') &= \mathbb{E}_{\bm{w}}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\;\bm{w}^\top\bm{w}\Big].
+\end{align}
+For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with width and with the rank \( r \) of bottlenecks.
+
+Furthermore, the gradient flow dynamics in the NTK regime satisfy
+\[
+\frac{d}{dt}f_t(x) = -\int \Kop^{(L)}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
+\]
+where \( \mu \) is the data distribution and \( y \) is the target function.
+\end{theorem}
+
+\paragraph{Interpretation.} The additive term \( \Sigma^{(\ell)} \) encodes fresh basis contribution at layer \( \ell \), while the multiplicative coupling \( \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} \) transports geometry through layers via the derivative kernel.
+
+\medskip
+\noindent\textbf{Corollary (Two-layer NTK).}
+Consider \( L=2 \). Then
+\begin{align*}
+\Kop^{(1)}(x,x') \;&=\; \Sigma^{(1)}(x,x'),\\
+\Kop^{(2)}(x,x') \;&=\; \Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \Sigma^{(2)}(x,x'),
+\end{align*}
+where \( \Sigma^{(1)}(x,x')=\mathbb{E}_{\bm{w}}\big[\ReLU(\bm{w}^\top x)\ReLU(\bm{w}^\top x')\big] \) and
+\[
+\dot{\Sigma}^{(2)}(x,x')=\mathbb{E}_{\bm{w}}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x)\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x')\big)\,\bm{w}^\top\bm{w}\Big],\quad
+\Sigma^{(2)}(x,x')=\mathbb{E}_{\bm{w}}\Big[\ReLU(\cdot)\ReLU(\cdot)\Big].
+\]
+Proof: See Appendix A.2.
+
+\medskip
+\noindent\textbf{Corollary (General L-layer NTK).}
+\label{cor:general_L_layer_ntk}
+For any depth \( L \geq 1 \), the NTK admits the explicit form:
+\begin{equation}
+\label{eq:ntk_explicit_form}
+\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
+\end{equation}
+where we use the convention that an empty product equals 1 (so the \( \ell=L \) term is just \( \Sigma^{(L)}(x,x') \)).
+
+Equivalently, expanding the recursion yields:
+\begin{align}
+\Kop^{(L)}(x,x') &= \Sigma^{(L)}(x,x') + \Sigma^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') \nonumber\\
+&\quad + \Sigma^{(L-2)}(x,x')\cdot\dot{\Sigma}^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') \nonumber\\
+&\quad + \cdots + \Sigma^{(1)}(x,x')\cdot\prod_{k=2}^{L}\dot{\Sigma}^{(k)}(x,x').
+\end{align}
+
+\paragraph{Interpretation.}
+Each term in the sum corresponds to a path through the network:
+\begin{itemize}
+    \item The term \( \Sigma^{(\ell)} \prod_{k=\ell+1}^L \dot{\Sigma}^{(k)} \) represents learning at layer \( \ell \) (fresh basis contribution \( \Sigma^{(\ell)} \)) propagated through layers \( \ell+1, \dots, L \) (derivative kernel transport \( \dot{\Sigma}^{(k)} \)).
+    \item The deepest term \( \Sigma^{(L)} \) is learning at the final layer without transport.
+    \item The shallowest term \( \Sigma^{(1)} \prod_{k=2}^L \dot{\Sigma}^{(k)} \) is learning at the first layer transported through all subsequent layers.
+\end{itemize}
+
+\paragraph{Depth dependence and scaling.}
+The NTK magnitude scales roughly as:
+\[
+\Kop^{(L)}(x,x') \sim L \cdot \bar{\Sigma} \cdot (\bar{\dot{\Sigma}})^{L-1},
+\]
+where \( \bar{\Sigma} \) and \( \bar{\dot{\Sigma}} \) are typical magnitudes of the base and derivative kernels. For ReLU networks with normalized inputs:
+\begin{itemize}
+    \item \( \bar{\Sigma} = O(1) \) (bounded by input norm).
+    \item \( \bar{\dot{\Sigma}} = O(1) \) but typically \( < 1 \), causing exponential decay with depth.
+    \item The factor \( L \) provides polynomial growth, but \( (\bar{\dot{\Sigma}})^{L-1} \) causes exponential decay.
+\end{itemize}
+This explains the vanishing gradient problem in deep untrained networks and motivates careful initialization schemes to maintain \( \bar{\dot{\Sigma}} \approx 1 \).
+
+Proof: See Appendix A.3.
+
+ \medskip
+ \noindent\textbf{Theorem (NTK recursion with trainable biases and scaling).}
+ Under the same sequential limit and NTK parameterization, with trainable \( \{A^{(\ell)}_j\}_{j=1}^{n_\ell} \) and \( c^{(\ell)} \), and frozen random \( \{w^{(\ell)}_j,b^{(\ell)}_j\} \), the NTK obeys
+ \[
+ \Theta^{(0)}(x,x') = 0,\qquad
+ \boxed{\;\Theta^{(\ell)}(x,x') \;=\; \Theta^{(\ell-1)}(x,x')\cdot \Big(\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x')\Big) \;+\; \Sigma^{(\ell)}(x,x') \;+\; 1\;}
+ \]
+ where
+ \[
+ \Sigma^{(\ell)}(x,x') \;=\; \mathbb{E}_{w,b}\!\left[\sigma\!\big(w^\top h^{(\ell-1)}(x) + \beta b\big)\,\sigma\!\big(w^\top h^{(\ell-1)}(x') + \beta b\big)\right],
+ \]
+ \[
+ \dot{\Sigma}^{(\ell)}(x,x') \;=\; \mathbb{E}_{w,b}\!\left[\dot{\sigma}\!\big(w^\top h^{(\ell-1)}(x) + \beta b\big)\,\dot{\sigma}\!\big(w^\top h^{(\ell-1)}(x') + \beta b\big)\;w^\top w\right].
+ \]
+ Here the additive “\( +1 \)” is the contribution of the trainable bias \( c^{(\ell)} \) when \( \sigma_c^2=1 \). Equivalently, in the fully parameterized form one has
+ \[
+ \Theta^{(\ell)} \;=\; \Theta^{(\ell-1)}\cdot \big(\sigma_A^2\,\dot{\Sigma}^{(\ell)}\big) \;+\; \sigma_A^2\,\Sigma^{(\ell)} \;+\; \sigma_c^2,
+ \]
+ and absorbing \( \sigma_A^2 \) into \( \Sigma^{(\ell)} \) yields the boxed formula above. Proof: See Appendix, “Proof of the NTK Recurrence Relation.”
+
