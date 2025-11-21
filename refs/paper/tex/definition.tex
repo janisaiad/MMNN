@@ -2,100 +2,84 @@
 
 \vspace{1em}
 \subsection{RF-LR architecture}
-Let \( \bm{h}^{(0)}(\bm{x})=\bm{x}\in\mathbb{R}^{d_0} \). For \( \ell=1,\dots,L \),
+Let \( \bm{h}^{(0)}(x)=x\in\mathbb{R}^{\bm{d}_0} \). For \( \ell=1,\dots,L \),
 \begin{equation}
 \label{eq:RF-LR}
-\bm{h}^{(\ell)}(\bm{x})
-= \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}^{(\ell)}_j\,
-\ReLU\!\Big(\bm{w}^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(\bm{x}) + \beta\, b^{(\ell)}_j\Big) \;+\; \sigma_c\, c.
+\bm{h}^{(\ell)}(x)
+= \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,
+\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x) + b^{(\ell)}_j\Big) \;+\; c.
 \end{equation}
-\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{n_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll n_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
+\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{\bm{n}_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll \bm{n}_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
 
 \paragraph{Training parameters, biases, and initialization.}
-We use the biased activation and an output bias while keeping all symbols non-bold except the activation \( \ReLU \), which denotes a bold \( \boldsymbol{\sigma} \). The layer map with biases is
-\[
-h^{(\ell)}(x) \;=\; \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} A^{(\ell)}_j\;\ReLU\!\Big(w^{(\ell)\top}_j\,h^{(\ell-1)}(x) + \beta\, b^{(\ell)}_j\Big) \;+\; \sigma_c\, c, \quad \ell=1,\dots,L.
-\]
 Initialization is
 \[
-w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{d_{\ell-1}}/d_{\ell-1}\big),\quad
-b^{(\ell)}_j \sim \mathcal{N}(0, \beta_\ell^2),\quad
-A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, 1),\quad
-c \sim \mathcal{N}(0, 1),
+w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\big),\quad
+b^{(\ell)}_j \sim \mathcal{N}(0, \beta^2),\quad
+A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, \sigma_A^2),\quad
+c \sim \mathcal{N}(0, \sigma_c^2),
 \]
-We use the edge-of-chaos scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{d_{\ell-1}}/d_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
-The low-rank constraint is enforced as \( \mathrm{rank}\!\big(A^{(\ell)}\big)\le r_\ell \ll n_\ell \).
+We use the \emph{edge-of-chaos (EOC)} scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
+The low-rank constraint is enforced as \( \mathrm{rank}\!\big(A^{(\ell)}\big)\le r_\ell \ll \bm{n}_\ell \).
 
-Remarkably, EOC do not involve any condition on \beta ! This is because it is absorded into the random features manifold.
-
-\paragraph{Why this simplification?}
 We include an activation bias \( b^{(\ell)} \) and a scalar output bias \( c \) for completeness, but we avoid introducing extra scaling parameters for them. Output scaling can be absorbed into the learning rate; the mean-field and NTK structures remain qualitatively identical, and the Fourier-space interpretation and stepwise loss phenomenon depend on kernel geometry, not absolute scales.
 
-\paragraph{Activation homogeneity.}
-We only assume a positively 1-homogeneous nonlinearity \(\ReLU\) for Kibble/Fisher decoupling:
+With this setup in place, we now recall a minimal assumption on the activation that we will use throughout.
+
+\paragraph{Activation homogeneity.}\label{assump:homogeneous_activation}
+We only assume a positively 1-homogeneous nonlinearity \(\bm{\ReLU}\) for Fisher–Kibble decoupling (see Lemma~\ref{lem:fisher-kibble}):
 \[
 \ReLU(\alpha u) \,=\, \alpha\,\ReLU(u) \quad \text{for } \alpha \ge 0,\; u \in \mathbb{R}.
 \]
 This yields the scaling relation \(\ReLU(\alpha\, w^\top h) = \alpha\,\ReLU(w^\top h)\) and, away from zero, \(\dot{\ReLU}(\alpha u)=\dot{\ReLU}(u)\).
 
 \subsection{Parameterization, signal propagation, and kernels}
-\[
-\text{NTK scaling: } s_\ell \,=\, \frac{1}{\sqrt{n_\ell}}, \qquad
-\text{Mean-field scaling: } s_\ell \,=\, \frac{1}{n_\ell}.
-\]
 
-Define the per-layer variance
-\[
-q^{(\ell)} \,=\, \frac{\mathbb{E}\big[\|\bm{h}^{(\ell)}\|^2\big]}{d_\ell}.
-\]
-For ReLU and centered parameters,
-\[
-q^{(\ell)} \,=\, \sigma_c^2 \, + \, \frac{\sigma_A^2}{2}\,\Big(q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w) \, + \, \beta^2\Big),
-\]
-with \(\Sigma_w = \mathrm{Cov}(w^{(\ell)}_j)\). The edge-of-chaos condition is
-\[
-\frac{\sigma_A^2}{2}\,\mathrm{Tr}(\Sigma_w) \,=\, 1.
-\]
-Under \(\Sigma_w = I_{d_{\ell-1}}/d_{\ell-1}\), we obtain \(\sigma_A = \sqrt{2}\) and we set \(\sigma_c^2 = 1\) at EOC.
+With the model and initialization fixed, we can now examine parameterization choices, signal propagation at initialization, and the kernel quantities driving our analysis. We begin by tracking the layer-wise variance at initialization.
 
+For general weight variance \(\Sigma_w\ = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), define the per-layer variance \( q^{(\ell)} \), by weight independance we derive it's recursion:
+\[
+q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w), \]
+This leads to the \emph{(EOC)} condition: 
+\[ \frac{\sigma_A^2}{2}\mathrm{Tr}(\Sigma_w)=1. \]
+
+it is chosen to prevent activations (forward) and gradients (backward) from exploding or vanishing as they propagate through the layers. By tuning the initialization so that the update satisfies this fixed point, both the signal and its derivative maintain stable variance at each layer. For example, under \(\Sigma_w = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), the EOC choice gives \(\sigma_A = \sqrt{2}\) and typically \(\sigma_c^2 = 1\).
+
+
+With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel. We emphasize that these are not the NNGP kernel and the derivative kernel, but the base kernel and the derivative kernel of the Gaussian process \( \bm{h}^{(\ell)} \) conditional on \( \bm{h}^{(\ell-1)} \).
+By rotation invariance of Gaussian weights, these kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). We will therefore write \(\Sigma^{(\ell)}(\rho)\) and \(\dot{\Sigma}^{(\ell)}(\rho)\). When no confusion arises (e.g., for \(\ell=1\)), we will also abuse notation and write \(\sigma(\rho)\) for the scalar kernel function; this \(\sigma\) denotes the kernel-as-a-function-of-\(\rho\), not the activation \(\bm{\ReLU}\).
+We can now state the base and derivative kernels precisely.
+\begin{definition}[Base and derivative kernels]\label{def:base-derivative-kernels}
+\vspace{0.3cm}
 In the sequential infinite-width limit, the layer-\( \ell \) base kernel is
 \begin{equation}
 \Sigma^{(\ell)}(x,x')
-= \mathbb{E}_{\bm{w}}\Big[\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\Big],
+= \mathbb{E}_{w}\Big[\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x)\big)\,\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x')\big)\Big],
 \end{equation}
 and the derivative kernel is
 \begin{equation}
 \dot{\Sigma}^{(\ell)}(x,x')
-= \mathbb{E}_{\bm{w}}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\;\bm{w}^\top\bm{w}\Big].
+= \mathbb{E}_{w}\Big[\dot{\bm{\ReLU}}\!\big(w^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\bm{\ReLU}}\!\big(w^\top \bm{h}^{(\ell-1)}(x')\big)\;\|w\|^2\Big].
 \end{equation}
-For \( \ell=1 \) and centered Gaussian \( \bm{w} \), \( \Sigma^{(1)} \) is rotation-invariant with standard closed forms in terms of input cosine similarity \( \rho = \langle x,x'\rangle/(\|x\|\|x'\|) \):
+For \( \ell=1 \) and centered Gaussian \( w \), \( \Sigma^{(1)} \) is rotation-invariant with standard closed forms in terms of input cosine similarity \( \rho = \langle x,x'\rangle/(\|x\|\|x'\|) \):
 \[
 \Sigma^{(1)}(x,x') = \frac{\|x\|\|x'\|}{2\pi}\big((\pi-\theta)\cos\theta + \sin\theta\big), \quad \theta = \arccos(\rho).
 \]
+\end{definition}
 
-\vspace{1em}
-\subsection{NTK recursion}
-\begin{theorem}[Infinite-width NTK recursion]
-\label{thm:ntk_recursion}
-Under NTK parameterization \( 1/\sqrt{n_\ell} \) and a sequential limit \( n_1\to\infty,\dots,n_L\to\infty \) with \( \bm{w}^{(\ell)} \sim \mathcal{N}(0, \mathbf{I}_{d_{\ell-1}}) \) i.i.d. frozen after initialization, the layer-\( \ell \) NTK satisfies
-\begin{align}
-\Kop^{(0)}(x,x') \;&=\; 0, \\
-\Kop^{(\ell)}(x,x') \;&=\; \Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x')\;+\;\Sigma^{(\ell)}(x,x'),\quad \ell\ge1,
-\end{align}
-where
-\begin{align}
-\Sigma^{(\ell)}(x,x') &= \mathbb{E}_{\bm{w}}\Big[\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\Big], \\
-\dot{\Sigma}^{(\ell)}(x,x') &= \mathbb{E}_{\bm{w}}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(\ell-1)}(x')\big)\;\bm{w}^\top\bm{w}\Big].
-\end{align}
-For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with width and with the rank \( r \) of bottlenecks.
-
-Furthermore, the gradient flow dynamics in the NTK regime satisfy
-\[
-\frac{d}{dt}f_t(x) = -\int \Kop^{(L)}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
-\]
-where \( \mu \) is the data distribution and \( y \) is the target function.
+Given these definitions, we can now state the following composition result.
+\begin{theorem}[Gaussian process composition]\label{thm:gp-composition}
+\vspace{0.3cm}
+    In the sequential infinite-width limit, the hidden states \( \bm{h}^{(\ell)} \) form a composition of Gaussian processes:
+\begin{itemize}
+    \item Conditionally on \( \bm{h}^{(\ell-1)} \), for any finite collection of inputs \( \{x_1, \dots, x_m\} \), the vector \( (\bm{h}^{(\ell)}(x_1), \dots, \bm{h}^{(\ell)}(x_m)) \) converges in distribution to a multivariate Gaussian.
+    \item The conditional limiting Gaussian has mean zero and covariance matrix \( [\Sigma^{(\ell)}(x_i, x_j)]_{i,j=1}^m \), where \( \Sigma^{(\ell)} \) is the base kernel defined in Definition~\ref{def:base-derivative-kernels} and depends on \( \bm{h}^{(\ell-1)} \)
+\end{itemize}
 \end{theorem}
+\begin{proof}
+See Appendix~\ref{appendix:proof-gp-composition}.
+\end{proof}
 
-Proof: See Appendix A.1.
 
-\paragraph{Interpretation.} The additive term \( \Sigma^{(\ell)} \) encodes fresh basis contribution at layer \( \ell \), while the multiplicative coupling \( \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} \) transports geometry through layers via the derivative kernel.
+\paragraph{Composition of Gaussian processes} We highlight the main difference between the base kernel and the NNGP kernel arising in classical NTK analysis : Since \( \bm{h}^{(\ell-1)} \) itself is a (conditional) Gaussian process, the overall distribution is a composition of Gaussian processes, not a single Gaussian process.
+

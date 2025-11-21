@@ -5,7 +5,6 @@
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
-\usepackage{newtxtext}      % Times text font (standard for ML conferences)
 \usepackage{hyperref}       % hyperlinks
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
@@ -17,11 +16,15 @@
 
 % Math and theorem environments
 \usepackage{amsmath,amsthm,bm}
-\usepackage{newtxmath}      % Times math font with proper integrals (includes amssymb symbols)
+\usepackage{amssymb}        % Additional math symbols
 \usepackage{tikz}
 \usepackage{xcolor}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
+\usepackage{thmtools}       % Beautiful theorem styling
+\usepackage{needspace}      % Better page breaking control
+\usepackage{mdframed}       % Frames for theorems
+\usepackage{appendix}       % Enhanced appendix support with letter sections
 \definecolor{personalcontribcolor}{RGB}{30,136,229}
 \definecolor{k3color}{RGB}{233,30,99}
 
@@ -29,13 +32,133 @@
 \DeclareRobustCommand{\ReLU}{\mathrel{\boldsymbol{\sigma}}}
 
 \newcommand{\Kop}{\boldsymbol{\Theta}}
-\newtheorem{theorem}{Theorem}
-\newtheorem{proposition}{Proposition}
-\newtheorem{assumption}{Assumption}
-\newtheorem{corollary}{Corollary}
-\newtheorem{lemma}{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{remark}{Remark}
+
+% Beautiful theorem environments using amsthm with mdframed
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{assumption}{Assumption}[section]
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% Custom mdframed styles for beautiful theorem boxes (subtle white tones, breakable across pages)
+\mdfdefinestyle{theoremstyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{corollarystyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{definitionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{lemmastyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{propositionstyle}{%
+    linecolor=cyan!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=cyan!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{assumptionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{remarkstyle}{%
+    linecolor=gray!30!white,
+    linewidth=0.8pt,
+    backgroundcolor=gray!1!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+% Wrap theorem environments with beautiful boxes (breakable across pages)
+% mdframed automatically allows page breaks when boxes don't fit on one page
+% The needspace package helps prevent awkward breaks by checking available space
+\surroundwithmdframed[style=theoremstyle]{theorem}
+\surroundwithmdframed[style=corollarystyle]{corollary}
+\surroundwithmdframed[style=definitionstyle]{definition}
+\surroundwithmdframed[style=lemmastyle]{lemma}
+\surroundwithmdframed[style=propositionstyle]{proposition}
+\surroundwithmdframed[style=assumptionstyle]{assumption}
+\surroundwithmdframed[style=remarkstyle]{remark}
+
+% Configure mdframed to allow splitting with proper continuation styles
+\mdfsetup{skipabove=\topskip,skipbelow=\topskip}
 
 %% Title
 \title{Neural Tangent Kernel of Low-Rank Random Features Neural Networks}
@@ -75,8 +198,12 @@ This paper establishes the Neural Tangent Kernel (NTK) theory for low-rank rando
 \bibliography{references}
 
 % Appendix
-\appendix
+\newpage
+\begin{appendices}
+\renewcommand{\thesection}{\Alph{section}}  % Use letters A, B, C, ... for appendix sections
+\setcounter{section}{0}  % Reset section counter to start from A
 \input{appendix}
+\end{appendices}
 
 \end{document}
 

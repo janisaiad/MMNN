@@ -1,97 +1,90 @@
-\section{Spectral theory of low-rank NTK for two-layer RF-LR}
+\section{RF-LR Gram Marchenko–Pastur spectrum for two-layer case}
+
+Now that we have established RKHS properties to clarify that random features hold frozen through training has same effect as letting them free to move,  in a more applicative way we give NTK gram matrix spectrum asymptotic behavior.
+We hold strong data assumptions but could release them in future work.
 
 \subsection{General setup and scaling}
-\begin{definition}[RF-LR architecture and effective NTK]
-Consider a network with a random projection to width \(N\), a rank-\(r\) bottleneck, and an output layer. The effective two-layer NTK is denoted \( \Theta^{(2)} \), induced by the composition of these layers under NTK parameterization.
-\end{definition}
+
 \begin{assumption}[Random-matrix scaling]\label{assump:RMT}
 As the number of data points \(n\to\infty\):
 \begin{itemize}
     \item Hidden widths scale as \( N \sim n^2 \) (infinite-width linearization regime).
     \item Rank scales as \( r \asymp n \) with ratio \( \gamma_{\mathrm{ratio}} \equiv \lim_{n\to\infty} \tfrac{n}{r} \in (0,\infty) \) (Marchenko–Pastur regime).
+    \item Input dimension scales linearly with rank: \( d \asymp r \) (so \( d \asymp n \) as well).
 \end{itemize}
 \end{assumption}
 
-\subsection{Microscopic distributions: Fisher–Kibble decoupling}
-\begin{lemma}[Fisher–Kibble decoupling]\label{lem:fisher-kibble}
-Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
+We now introduce the random-matrix theory conditions that are necessary for the asymptotic analysis. Those strong assumptions can be removed in future work using techniques from \cite{benigni2025eigenvaluedistributionneuraltangent}
+
+\begin{assumption}[RMT Gaussian data]\label{assump:RMT-conditions}
+Following the framework of~\cite{El_Karoui_2010}, we impose the following conditions  as \( d \to \infty \):
 \begin{itemize}
-    \item \( \rho_1 \) follows Fisher's correlation distribution (1915), centered at the true correlation \( \rho \).
-    \item \( (u,v) \) follow Kibble's (1941) bivariate Gamma (chi-square) law.
-    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
-\end{itemize}
-\end{lemma}
+    
+    \item[(d)] \textbf{Data generation:} Input vectors satisfy \( X_i = \Sigma_d^{1/2} Y_i \), where \( \Sigma_d^{1/2} \) is the positive semi-definite square root of \( \Sigma_d \).
+    
+    \item[(e)] \textbf{Entrywise conditions:} The entries of \( Y_i \), a \( d \)-dimensional random vector, are i.i.d. Denoting by \( Y_i^{(k)} \) the \( k \)-th entry of \( Y_i \), we assume \( \mathbb{E}[Y_i^{(k)}] = 0 \), \( \mathrm{var}(Y_i^{(k)}) = 1 \), and \( \mathbb{E}[|Y_i^{(k)}|^{4+\varepsilon}] < \infty \) for some \( \varepsilon > 0 \) (i.e., \( Y_i \) has \( 4+\varepsilon \) absolute moments).
+    
+    \item[(b)] \textbf{Covariance structure:} Let \( \Sigma_d \) be the \( d \times d \) covariance matrix of the input distribution. Then \( \Sigma_d \) is positive semi-definite and its operator norm \( \|\Sigma_d\|_2 = \sigma_1(\Sigma_d) \) remains bounded in \( d \), that is, there exists \( K > 0 \) such that \( \sigma_1(\Sigma_d) \leq K \) for all \( d \).
+    
+    \item[(c)] \textbf{Trace normalization:} \( \Sigma_d/d \) has a finite limit, that is, there exists \( \ell \in \mathbb{R} \) such that \( \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d = \ell \).
+    \end{itemize}
+\end{assumption}
 
-\paragraph{Homogeneity assumption enabling decoupling.}
-The independence of angular and radial components relies on the \emph{positive 1-homogeneity} of the ReLU activation: \( \ReLU(\alpha z) = \alpha \ReLU(z) \) for \( \alpha > 0 \). This property ensures that the base kernel factorizes as
-\[
-\Sigma^{(1)}(x,x') = \|x\|\,\|x'\| \cdot \tilde{\Sigma}^{(1)}(\rho),
-\]
-where \( \tilde{\Sigma}^{(1)}(\rho) \) depends only on the cosine similarity \( \rho = \langle x,x'\rangle/(\|x\|\|x'\|) \), enabling the separation of radial norms from angular correlations. For isotropic Gaussian projections, rotational invariance guarantees that the empirical correlation \( \rho_1 \) and the norms \( (\|x_1\|,\|y_1\|) \) are statistically independent, yielding the factorization stated in the lemma.
+With these scaling assumptions in place, we can now analyze the microscopic structure of the kernel. The key insight is that the randomness in the low-rank projections decomposes into independent angular and radial components.
 
-Proof: See Appendix~\ref{appendix:fisher-kibble}.
+To apply \cite{El_Karoui_2010}, we need to confirm that the kernel function \( K_{\infty}(\rho) \) is \( C^1 \) in a neighborhood of \( \ell = \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d \) and \( C^3 \) in a neighborhood of \( 0 \).
+
+\begin{proposition}[Kernel regularity]\label{prop:kernel_regularity}
+The kernel function \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + \Sigma^{(1)}(\rho) + 1 \) is \( C^1 \) in a neighborhood of \( \ell = \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d \) and \( C^3 \) in a neighborhood of \( 0 \).
+\end{proposition}
+
+\begin{proof}
+Since we have explicit formulas for \( K_{\infty}(\rho) \), \( \Theta^{(1)}(\rho) \), and \( \Sigma^{(1)}(\rho) \), the regularity follows directly from the smoothness of the component functions. The function \( \arccos(\rho) \) is \( C^\infty \) on \( (-1,1) \), and the ReLU kernel \( \Sigma^{(1)}(\rho) \) is known to be \( C^1 \) except at \( \rho = 1 \) and \( C^3 \) in a neighborhood of \( 0 \). Since products and compositions of smooth functions preserve smoothness, \( K_{\infty}(\rho) \) inherits the required regularity properties.
+\end{proof}
 
 \subsection{Signal–noise decomposition of the empirical NTK}
-\begin{theorem}[Asymptotic signal–noise decomposition]\label{thm:signal-noise}
-Under Assumption~\ref{assump:RMT}, for large \(r\),
+\begin{theorem}[Asymptotic normality of the low-rank kernel]\label{thm:kernel_clt}
+Let \(x, y \in \mathbb{R}^r\) be rank-\(r\) Gaussian projections with population correlation \( \rho \). Define
 \[
-\Theta^{(2)}_{\mathrm{obs}}(\rho) = K_{\infty}(\rho) + \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) + o(r^{-1/2}),
+\Psi(u,w) \;=\; \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; w\,\Sigma^{(1)}(u) \;+\; 1,
 \]
-where \( K_{\infty}(\rho)=\mathbb{E}[\Theta^{(2)}_{\mathrm{obs}}(\rho)] \) is the deterministic limit and \( \mathcal{G}(\rho) \) is a centered Gaussian field with variance
+and the empirical kernel \( \hat{\Theta}^{(2)}_r \;=\; \Psi(\hat{\rho}_r, \hat{w}_r) \), where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x\|\,\|y\|/r \). Under Assumption~\ref{assump:RMT}, as \( r\to\infty \),
 \[
-\mathrm{Var}(\mathcal{G}(\rho)) = \underbrace{\big[K_{\infty}'(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)}} \;+\; \underbrace{\big[2\,\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
+\hat{\Theta}^{(2)}_r \;=\; \Theta^{(2)}_{\mathrm{obs}}(\rho) \;\xrightarrow{d}\; K_{\infty}(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) + o(r^{-1/2}),
 \]
-In the two-layer case with ReLU features,
+where \( K_{\infty}(\rho)=\mathbb{E}[\Theta^{(2)}_{\mathrm{obs}}(\rho)] \) is the deterministic limit and \( \mathcal{G}(\rho) \sim \mathcal{N}\!\big(0,\sigma_{\mathrm{tot}}^2(\rho)\big) \) is a centered Gaussian field with variance
 \[
-K_{\infty}(\rho) \;=\; \Theta^{(1)}(\rho)\,\Big(1 - \tfrac{\arccos(\rho)}{\pi}\Big) \;+\; 2\,\Sigma^{(1)}(\rho) \;+\; 1.
+\sigma_{\mathrm{tot}}^2(\rho) \;=\; \mathrm{Var}(\mathcal{G}(\rho)) \;=\; \underbrace{\big[\partial_\rho K_{\infty}(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)}} \;+\; \underbrace{\big[\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
 \]
-Proof: See Appendix C.2.
+Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 \end{theorem}
-\begin{remark}
-An observed empirical variance in \(1/r^2\) indicates an additional \(1/\sqrt{r}\) normalization of the kernel or cancellations of order-one terms.
-\end{remark}
+\paragraph{Proof intuition.}
+By Fisher–Kibble decoupling (Lemma~\ref{lem:fisher-kibble}), the angular \( \hat{\rho}_r \) and radial \( \hat{w}_r \) components are independent. A joint CLT gives \( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \xrightarrow{d} \mathcal{N}(\mathbf{0},\ \mathrm{diag}((1-\rho^2)^2,\ 1+\rho^2)) \). Applying the Delta method to \( \Psi \) at \( (\rho,1) \) with gradient \( (\partial_\rho K_{\infty}(\rho),\ \Sigma^{(1)}(\rho)) \) yields the stated variance (no cross term by independence). The limit is a deterministic kernel plus \( O_p(r^{-1/2}) \) Gaussian fluctuation.
+
+Having established the entrywise asymptotic distribution, we now turn to the macroscopic spectral properties of the kernel matrix. The eigenvalue distribution follows a deformed Marchenko–Pastur law with a characteristic spike-bulk structure.
 
 \subsection{Macroscopic spectrum: deformed Marchenko–Pastur law}
+Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes the eigenvalue distribution of the NTK in the quadratic scaling regime (\( N \sim n^2 \)) for single-layer networks, showing convergence to a deformed Marchenko–Pastur law with a spike-bulk structure. We extend this analysis to the two-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
+
 \begin{theorem}[Spike + bulk spectral limit]\label{thm:spike-bulk}
-Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumption~\ref{assump:RMT}, as \( n\to\infty \), the empirical spectrum of \( \mathbf{M} \) converges to a deformed Marchenko–Pastur law with:
+Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{assump:RMT} and~\ref{assump:RMT-conditions}, as \( n\to\infty \), the empirical spectrum of \( \mathbf{M} \) converges to a deformed Marchenko–Pastur law with:
 \begin{itemize}
     \item A rank-one outlier (spike) of order \(O(n)\): \( \lambda_{\mathrm{spike}} \approx n\,\alpha \), with \( \alpha = K_{\infty}(0) \).
     \item A continuous bulk of order \(O(1)\) supported on
     \[
     \Big[\;\gamma + \beta\,(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\;\; \gamma + \beta\,(1+\sqrt{\gamma_{\mathrm{ratio}}})^2\;\Big],
     \]
-    where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel’s diagonal argument).
+    where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel's diagonal argument).
 \end{itemize}
-Proof: See Appendix~\ref{appendix:marchenko-pastur} (via~\cite{El_Karoui_2010}).
+Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). The extension to two layers with random features follows the framework of~\cite{benigni2025eigenvaluedistributionneuraltangent} but incorporates the additional randomness from rank-\( r \) projections and frozen feature weights.
 \end{theorem}
 
+We can summarize the two-layer results as follows.
 
-\subsection{Two-layer case summary}
+\paragraph{Two-layer case summary.}
 Specializing to two layers with ReLU features, the deterministic kernel limit is
-\( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + 2\,\Sigma^{(1)}(\rho) + 1 \).
-At the dataset level, the corresponding Gram matrix exhibits a rank-one “spike” of size
+\( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + \Sigma^{(1)}(\rho) + 1 \).
+At the dataset level, the corresponding Gram matrix exhibits a rank-one ``spike'' of size
 \( \lambda_{\mathrm{spike}} \approx n\,K_{\infty}(0) \), superimposed on a deformed Marchenko–Pastur bulk.
 The bulk support is the interval given by Theorem~\ref{thm:spike-bulk}, with slope
-\( \beta = K'_{\infty}(0) \) and diagonal shift \( \gamma \) determined by the kernel’s on-diagonal value.
-
-\subsection{Asymptotic signal–noise (kernel CLT)}
-\begin{theorem}[Asymptotic Normality of the Low-Rank Kernel]\label{thm:kernel_clt}
-Let \(x, y \in \mathbb{R}^r\) be rank-\(r\) Gaussian projections with population correlation \( \rho \). Define
-\[
-\Psi(u,w) \;=\; \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; 2\,w\,\Sigma^{(1)}(u) \;+\; 1,
-\]
-and the empirical kernel \( \hat{\Theta}^{(2)}_r \;=\; \Psi(\hat{\rho}_r, \hat{w}_r) \), where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x\|\,\|y\|/r \). As \( r\to\infty \),
-\[
-\hat{\Theta}^{(2)}_r \;\xrightarrow{d}\; K_\infty(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho),
-\]
-where \( K_\infty(\rho) \) is the deterministic limit and \( \mathcal{G}(\rho) \sim \mathcal{N}\!\big(0,\sigma_{\mathrm{tot}}^2(\rho)\big) \) with
-\[
-\sigma_{\mathrm{tot}}^2(\rho) \;=\; \big(\partial_\rho K_\infty(\rho)\big)^2 (1-\rho^2)^2 \;+\; \big(2\,\Sigma^{(1)}(\rho)\big)^2 (1+\rho^2).
-\]
-\end{theorem}
-\paragraph{Proof intuition.}
-We decouple the randomness of the angle and the norms of isotropic Gaussians (Fisher for \( \hat{\rho}_r \), Kibble for \( \|x\|,\|y\| \)), which are independent. By a joint CLT,
-\( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \) is asymptotically Gaussian with diagonal covariance \( \mathrm{diag}\big((1-\rho^2)^2,\ 1+\rho^2\big) \).
-Applying the multivariate Delta method to \( \Psi(u,w) \) at \( (\rho,1) \), the gradient contributes
-\( \partial_u \Psi(\rho,1)=\partial_\rho K_\infty(\rho) \) and \( \partial_w \Psi(\rho,1)=2\Sigma^{(1)}(\rho) \), yielding the stated variance with no cross term by independence. The limit therefore splits into a deterministic kernel plus an \( r^{-1/2} \) Gaussian fluctuation governed by angular and radial noises.
-
+\( \beta = K'_{\infty}(0) \) and diagonal shift \( \gamma \) determined by the kernel's on-diagonal value.
