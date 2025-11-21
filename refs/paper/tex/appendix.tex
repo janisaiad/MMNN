@@ -146,25 +146,6 @@ completing the induction. The total number of terms is \( L + L = 2L \), which g
 \subsection{No RKHS Advantage}
 \label{appendix:no-rkhs-advantage}
 
-\begin{theorem}[No advantage in RKHS]
-\label{thm:appendix-no-rkhs-advantage}
-Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the same RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. We use this statement as provided by Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
-\end{theorem}
-
-\begin{corollary}[Spectral decay on \( \mathbb{S}^{d-1} \) via endpoint expansions]
-\label{cor:appendix-spectral-decay}
-Let \( \kappa:[-1,1]\to\mathbb{R} \) be the rotation-invariant kernel associated to the (deep or shallow) ReLU NTK on \( \mathbb{S}^{d-1} \). Assume \( \kappa \in C^\infty(-1,1) \) and admits the asymptotic expansions, for \( t\ge 0 \),
-\[
-\kappa(1-t) = p_1(t) + c_1 t^{\nu} + o(t^{\nu}),\qquad
-\kappa(-1+t) = p_{-1}(t) + c_{-1} t^{\nu} + o(t^{\nu}),
-\]
-where \( p_1,p_{-1} \) are polynomials, \( \nu>0 \) non-integer, and derivatives satisfy analogous expansions. Then there exists a constant \( C(d,\nu)>0 \) such that the eigenvalues \( \mu_k \) (in the spherical harmonics basis) satisfy:
-\begin{itemize}
-    \item For even \(k\) and \( c_1 \neq -c_{-1}\): \( \mu_k \sim (c_1+c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
-    \item For odd \(k\) and \( c_1 \neq c_{-1}\): \( \mu_k \sim (c_1-c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
-\end{itemize}
-If \( |c_1|=|c_{-1}| \), then \( \mu_k = o\big(k^{-d-2\nu+1}\big) \) for one parity (or both if \(c_1=c_{-1}=0\)). If \( \kappa \) is \( C^\infty \) on \([{-}1,1]\) with no such \( \nu \), then \( \mu_k \) decays faster than any polynomial. See~\cite{bietti2021deepequalsshallowrelu}.
-\end{corollary}
 
 \subsection{Proof of Theorem~\ref{thm:rkhs_rank_concentration}: Rank-driven concentration}
 \label{appendix:proof-rkhs-rank-concentration}
