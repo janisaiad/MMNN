@@ -1,66 +1,158 @@
-\subsection{NTK recursion}
-\begin{theorem}[NTK recursion with trainable biases and scaling]\label{thm:ntk_recursion_scaled}
-Assumptions:
-\begin{itemize}
-    \item NTK parameterization: each layer \( \ell \) has width \( n_\ell \) and scaling \( 1/\sqrt{n_\ell} \).
-    \item Sequential infinite-width limit: \( n_1\to\infty,\dots,n_L\to\infty \) with \( w^{(\ell)}_j \sim \mathcal{N}(0,\mathbf{I}) \) and \( b^{(\ell)}_j \sim \mathcal{N}(0,1) \) i.i.d., independent across layers.
-    \item Trainable parameters: \( \{A^{(\ell)}_j\}_{j=1}^{n_\ell} \) and \( c^{(\ell)} \) are trained; \( \{w^{(\ell)}_j,b^{(\ell)}_j\} \) are frozen.
-    \item Activation: \( \sigma \) is piecewise \( C^1 \) (e.g., ReLU); write \( \dot{\sigma} \) for its derivative a.e. Bias scale \( \beta \in \mathbb{R} \), output scales \( \sigma_A,\sigma_c\in\mathbb{R}_+ \).
-\end{itemize}
-Then the Neural Tangent Kernel (NTK) satisfies, for all \( \ell\ge1 \) and \( x,x' \in \mathbb{R}^{d_0} \),
+\section{NTK recursion}
+
+We now state the main result characterizing the NTK recursion for MMNNs. This recursion governs how the kernel evolves through layers and determines the training dynamics in the infinite-width limit.
+
+\begin{theorem}[Infinite-width NTK recursion]\label{thm:ntk_recursion}
+Under NTK parameterization \( 1/\sqrt{\bm{n}_\ell} \) and a sequential limit \( \bm{n}_1\to\infty,\dots,\bm{n}_L\to\infty \) with \( \bm{w}^{(\ell)} \sim \mathcal{N}(0, \mathbf{I}_{\bm{d}_{\ell-1}}) \) i.i.d. frozen after initialization, the layer-\( \ell \) NTK satisfies
+\begin{align}
+\Kop^{(0)}(x,x') \;&=\; 0, \\
+\Kop^{(\ell)}(x,x') \;&=\; 1+ \Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x')\;+\;\Sigma^{(\ell)}(x,x'),\quad \ell\ge1,
+\end{align}
+
+For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with the rank \( r \) of bottlenecks.
+
+\vspace{0.2cm}
+Furthermore, the gradient flow dynamics in the NTK regime satisfy
 \[
-\Theta^{(0)}(x,x') \;=\; 0,\qquad
-\boxed{\;\Theta^{(\ell)}(x,x') \;=\; \Theta^{(\ell-1)}(x,x')\cdot \Big(\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x')\Big) \;+\; \Sigma^{(\ell)}(x,x') \;+\; 1\;}
+\frac{d}{dt}f_t(x) = -\int \Kop^{(L)}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
 \]
-where (expectations taken over layer-\( \ell \) parameters \( (w,b) \))
-\[
-\Sigma^{(\ell)}(x,x') \;=\; \mathbb{E}_{w,b}\!\left[\sigma\!\big(w^\top h^{(\ell-1)}(x) + \beta b\big)\,\sigma\!\big(w^\top h^{(\ell-1)}(x') + \beta b\big)\right],
-\]
-\[
-\dot{\Sigma}^{(\ell)}(x,x') \;=\; \mathbb{E}_{w,b}\!\left[\dot{\sigma}\!\big(w^\top h^{(\ell-1)}(x) + \beta b\big)\,\dot{\sigma}\!\big(w^\top h^{(\ell-1)}(x') + \beta b\big)\;\underbrace{w^\top w}_{\text{explicit weight-norm factor}}\right].
-\]
-Here the additive \( +1 \) is the contribution of the trainable bias \( c^{(\ell)} \) when \( \sigma_c^2=1 \). Equivalently, in fully parameterized form,
-\[
-\Theta^{(\ell)} \;=\; \Theta^{(\ell-1)}\cdot (\sigma_A^2\,\dot{\Sigma}^{(\ell)}) \;+\; \sigma_A^2\,\Sigma^{(\ell)} \;+\; \sigma_c^2,
-\]
-and absorbing \( \sigma_A^2 \) into \( \Sigma^{(\ell)} \) yields the boxed formula above. Proof: See Appendix, “Proof of the NTK Recurrence Relation.”
+where \( \mu \) is the data distribution and \( y \) is the target function.
 \end{theorem}
 
-\medskip
-\noindent\textbf{Corollary (Two-layer NTK).}\label{cor:two_layer_ntk}
-Under the assumptions of Theorem~\ref{thm:ntk_recursion_scaled} with \( L=2 \),
-\[
-\Theta^{(1)}(x,x') \;=\; \Sigma^{(1)}(x,x') \;+\; 1,
-\]
-\[
-\Theta^{(2)}(x,x') \;=\; \big(\Sigma^{(1)}(x,x')+1\big)\cdot \big(\sigma_A^2\,\dot{\Sigma}^{(2)}(x,x')\big) \;+\; \Sigma^{(2)}(x,x') \;+\; 1,
-\]
-where \( \Sigma^{(1)}(x,x')=\mathbb{E}_{w,b}[\sigma(w^\top x+\beta b)\sigma(w^\top x'+\beta b)] \) and
-\[
-\dot{\Sigma}^{(2)}(x,x')=\mathbb{E}_{w,b}\!\left[\dot{\sigma}\!\big(w^\top h^{(1)}(x)+\beta b\big)\,\dot{\sigma}\!\big(w^\top h^{(1)}(x')+\beta b\big)\;w^\top w\right].
-\]
-Proof: Immediate from Theorem~\ref{thm:ntk_recursion_scaled}.
+Proof: See Appendix~\ref{appendix:proof-ntk-recursion}, Proof~\ref{proof:ntk_recursion}.
 
-\medskip
-\noindent\textbf{Corollary (General L-layer NTK; closed form).}\label{cor:general_L_layer_ntk}
-Under the assumptions of Theorem~\ref{thm:ntk_recursion_scaled}, for any \( L\ge1 \),
-\[
-\boxed{\;\Theta^{(L)}(x,x') \;=\; \sum_{\ell=1}^{L} \big(\Sigma^{(\ell)}(x,x')+1\big)\,\prod_{k=\ell+1}^{L}\Big(\sigma_A^2\,\dot{\Sigma}^{(k)}(x,x')\Big)\;}
-\]
-with the convention that an empty product equals \( 1 \). If \( \sigma_c^2=0 \) (no trainable bias), the \( +1 \) terms vanish and the expression reduces to the standard sum \( \sum_{\ell=1}^{L} \Sigma^{(\ell)}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)} \). Proof: By expanding the recursion in Theorem~\ref{thm:ntk_recursion_scaled}.
+\vspace{0.3cm}
+\paragraph{No weights particle coupling}
+We can now interpret the structure of the recursion. 
+Similarly to the original MLPs NTK recursion \cite{jacot2018neural}, the additive term \( \Sigma^{(\ell)} \) encodes fresh basis contribution at layer \( \ell \), while the multiplicative coupling \( \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} \) reflects the backward through layers via the derivative kernel, since there is no coupling between weights particles between 2 layers during training due to random features in the middle. 
+Nonetheless, this decoupling that makes the training easier to tackled under the mean-field limit is effectively lost at the NTK limit and allows to factorize the derivative kernel.
 
-\paragraph{Homogeneous activation hypothesis and two-layer compact form.}
-Assume \( \sigma \) is positively 1-homogeneous (e.g., ReLU), so \( \sigma(\alpha z)=\alpha\,\sigma(z) \) for \( \alpha\ge0 \). Then base kernels factor into a radial part and a zonal (angular) part. In the two-layer low-rank setting, if we denote
+\vspace{0.4cm}
+We can now derive an explicit closed-form expression for the NTK at any depth by expanding the recursion.
+
+\begin{corollary}[General L-layer NTK; closed form]\label{cor:general_L_layer_ntk}
+Under the assumptions of Theorem~\ref{thm:ntk_recursion}, for any \( L\ge1 \), the NTK admits the explicit form:
+\begin{equation}
+\label{eq:ntk_explicit_form}
+\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
+\end{equation}
+where the first sum represents contributions from the bias terms \( +1 \) at each layer \( \ell=1,\dots,L \), each multiplied by all subsequent derivative kernels, and we use the convention that an empty product equals 1.
+\end{corollary}
+
+\begin{remark}
+Equivalently, expanding the recursion \( \Kop^{(\ell)} = 1 + \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \) yields a quadratic number of terms. For example, for \( L=3 \):
+\begin{align}
+\Kop^{(3)}(x,x') &= \dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \dot{\Sigma}^{(3)} + 1 \nonumber\\
+&\quad + \Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \Sigma^{(3)}.
+\end{align}
+The first three terms (from the first sum with \( \ell=1,2,3 \)) come from the \( +1 \) contributions at layers 1, 2, and 3, each multiplied by all subsequent derivative kernels. The last three terms (from the second sum with \( \ell=1,2,3 \)) come from the \( \Sigma^{(\ell)} \) contributions, each multiplied by subsequent derivative kernels. In total, there are \( 2L = 6 \) terms for \( L=3 \).
+\end{remark}
+
+\begin{proof}
+\label{proof:general_L_ntk_inline}
+By expanding the recursion in Theorem~\ref{thm:ntk_recursion}. See Appendix~\ref{appendix:proof-general-L} for the detailed proof by induction.
+\end{proof}
+
+\vspace{0.3cm}
+\paragraph{Structure at depth \( L \).}
+Iterating the recursion \( \Kop^{(\ell)} = 1 + \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \) yields a quadratic number of terms. From the explicit form \eqref{eq:ntk_explicit_form}, we see two types of contributions:
+\begin{itemize}
+    \item \textbf{Bias terms:} Each layer's \( +1 \) contribution multiplies through all subsequent derivative kernels, giving \( L \) terms of the form \( \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)} \) for \( \ell=1,\dots,L \).
+    \item \textbf{Fresh basis terms:} Each layer's \( \Sigma^{(\ell)} \) contribution propagates through subsequent derivative kernels, giving \( L \) terms of the form \( \Sigma^{(\ell)}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)} \) for \( \ell=1,\dots,L \).
+\end{itemize}
+In total, the expansion contains \( 2L \) terms, each representing a different path through the network architecture. This linear growth in the number of terms (with respect to depth) becomes quadratic when considering all combinations of terms in finite-width corrections, making explicit computation and analysis very difficult to handle for deep networks.
+
+\vspace{0.4cm}
+We now specialize to the two-layer case, where we can obtain a particularly compact form under a homogeneity assumption on the activation function.
+
+\begin{corollary}[Two-layer NTK and homogeneous activation compact form]\label{cor:two_layer_ntk}
+Under the assumptions of Theorem~\ref{thm:ntk_recursion} with \( L=2 \),
 \[
-\rho_1 \;=\; \cos\angle(x_1,y_1),\qquad w_r \;=\; \frac{\|x_1\|\,\|y_1\|}{r},
+\Kop^{(1)}(x,x') \;=\; 1 + \Sigma^{(1)}(x,x'),
 \]
-the NTK admits the compact representation
 \[
-\Theta^{(2)}(x,y) \;=\; \Psi(\rho_1,w_r),\qquad
-\Psi(u,w) \;=\; \frac{2}{r}\,\Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; \frac{2}{r}\,w\,\Sigma^{(1)}(u) \;+\; 1,
+\Kop^{(2)}(x,x') \;=\; 1 + \Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \Sigma^{(2)}(x,x'),
 \]
-with \( \Sigma^{(1)}(u)=\frac{1}{\pi}\big(\sqrt{1-u^2}+u(1-\arccos u)\big) \). By rotational invariance (Fisher–Kibble decoupling),
+\end{corollary}
+
+\begin{proof}
+\label{proof:two_layer_ntk_inline}
+Immediate from Theorem~\ref{thm:ntk_recursion}.
+\end{proof}
+
+
+
+
+\vspace{0.3cm}
+We can now state a more compact representation under a homogeneity assumption. 
+\vspace{0.3cm}
+
+
+\subsection{Microscopic distributions: Fisher–Kibble decoupling}
+\begin{lemma}[Fisher–Kibble decoupling]\label{lem:fisher-kibble}
+Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
+\begin{itemize}
+    \item \( \rho_1 \) follows Fisher's correlation distribution (1915), centered at the true correlation \( \rho \).
+    \item \( (u,v) \) follow Kibble's (1941) bivariate Gamma (chi-square) law.
+    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
+\end{itemize}
+\end{lemma}
+
+Proof: See Appendix~\ref{appendix:fisher-kibble}, Proof~\ref{proof:fisher_kibble}.
+
+\paragraph{Homogeneity assumption enabling decoupling.}
+The independence of angular and radial components relies on the \emph{positive 1-homogeneity} of the ReLU activation: \( \ReLU(\alpha z) = \alpha \ReLU(z) \) for \( \alpha > 0 \). This property ensures that the base kernel factorizes as
 \[
-\rho_1 \sim \text{Fisher}(\rho,r),\qquad (\|x_1\|^2,\|y_1\|^2)\sim \text{Kibble}(r,\rho),
+\Sigma^{(1)}(x,x') = \|x\|\,\|x'\| \cdot \tilde{\Sigma}^{(1)}(\rho),
 \]
-and \( \rho_1 \) is independent of \( (\|x_1\|,\|y_1\|) \) to leading order, justifying the radial–angular separation captured by \( \Psi \).
+where \( \tilde{\Sigma}^{(1)}(\rho) \) depends only on the cosine similarity \( \rho = \langle x,x'\rangle/(\|x\|\|x'\|) \), enabling the separation of radial norms from angular correlations. For isotropic Gaussian projections, rotational invariance guarantees that the empirical correlation \( \rho_1 \) and the norms \( (\|x_1\|,\|y_1\|) \) are statistically independent, yielding the factorization stated in the lemma.
+
+This decoupling result enables us to derive the asymptotic distribution of the empirical kernel. We can state the following central limit theorem.
+
+
+
+In the two-layer low-rank setting, denote
+\[
+\rho_1 \;=\; \cos\angle(\bm{h}^{(1)}(x),\bm{h}^{(1)}(x')),\qquad w_r \;=\; \frac{\|\bm{h}^{(1)}(x)\|\,\|\bm{h}^{(1)}(x')\|}{r},
+\]
+then \emph{both \(\rho_1\) and \(w_r\) are random variables} induced by the randomness of the features and the rank-
+\(r\) projection; their values fluctuate with the initialization and with \(r\).
+The NTK admits the compact representation
+\[
+\Kop^{(2)}(x,y) \;=\; \Kop^{(1)}(\rho_1)\!\left(1-\frac{\arccos(\rho_1)}{\pi}\right) \;+\; w_r\,\Sigma^{(1)}(\rho_1) \;+\; 1
+\]
+with \( \Sigma^{(1)}(u) = \frac{1}{\pi}\big(\sqrt{1-u^2}+u(1-\arccos u)\big) \).
+
+\vspace{0.3cm}
+\paragraph{Remark (Fisher–Kibble decoupling and independence).}
+We can now characterize the statistical properties of the empirical correlation and norms. By rotational invariance, the empirical correlation and squared norms follow Fisher–Kibble decoupling:
+\[
+\rho_1 \sim \text{Fisher}(\rho,r),\qquad (\|\bm{h}^{(1)}(x)\|^2,\|\bm{h}^{(1)}(x')\|^2)\sim \text{Kibble}(r,\rho),
+\]
+ 
+
+\vspace{0.2cm}
+We now state the explicit forms of these distributions. The \textbf{Fisher distribution density}~\cite{fisher1915probable} is
+\[
+p(\rho_1 \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right),
+\]
+for \( r > 2 \). For large \( r \), the inverse Gudermann function applied to the complementary angle follows a normal distribution:
+\[
+\boxed{ \text{gd}^{-1}\!\left(\frac{\pi}{2} - \arccos(\rho_1)\right) \;\approx\; \mathcal{N}\!\left(\text{arctanh}(\rho),\; \frac{1}{r-3}\right) }
+\]
+where \( \rho_1 = \cos(\theta_1) \) is the empirical correlation and \( \theta_1 \) is the angle between the projected vectors. In particular, this implies \( \text{Var}(\rho_1) = O(1/r) \).
+
+\vspace{0.2cm}
+Similarly, \textbf{Kibble's~\cite{kibble1941two} bivariate chi-square law} for \( (u,v) = (\|\bm{h}^{(1)}(x)\|^2, \|\bm{h}^{(1)}(x')\|^2) \) has density
+\[
+\!f(u,v) = \frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\, I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right),\qquad u,v \ge 0,
+\]
+where \( I_\nu \) is the modified Bessel function of the first kind. Defining \( w_r = \sqrt{uv}/r \), concentration results (see Theorem~\ref{thm:rkhs_rank_concentration}) imply \( \mathbb{E}[w_r] \to 1 \) and \( \mathrm{Var}(w_r)=O(1/r) \).
+
+\vspace{0.15cm}
+The moments of this distribution are given by:
+\[
+\mathbb{E}[u]=\mathbb{E}[v]=r,\quad \text{Var}(u)=\text{Var}(v)=2r,\quad \text{Cov}(u,v)=2r\,\rho^2.
+\]
+ 
+The derivation of these distributions from Gaussian projections and the independence property are given in Appendix~\ref{appendix:fisher-kibble}.

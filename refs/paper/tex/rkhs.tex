@@ -1,39 +1,26 @@
-\section{No RKHS advantage}
+\section{No RKHS advantage}\label{sec:no-rkhs-advantage}
 In the NTK regime, training dynamics linearize: \( f_t(x) \approx f_0(x) + \langle \nabla_\theta f_0(x), \theta_t - \theta_0 \rangle \). The learned function stays in the RKHS induced by \( \Theta \), with norm:
 \[
 \|f\|_{\mathcal{H}_\Theta}^2 = \langle f, \Theta^{-1} f \rangle_{L^2}.
 \]
-For RF-LR with frozen random features, the RKHS is characterized as follows. Universal approximation holds due to full support of \( w^{(\ell)} \) (frozen Gaussian draws), so any function in the Barron space can be approximated with error \( O(1/\sqrt{n}) \). The rank-\( r \) bottleneck acts as a spectral filter that removes directions with tiny eigenvalues and improves generalization by implicit regularization. Finally, for large \( r \), the RF-LR RKHS is \emph{nearly identical} to the MLP RKHS, implying no expressivity loss, while the parameter budget drops from \( O(n^2) \) to \( O(rn) \).
+For RF-LR with frozen random features, the RKHS is characterized as follows. Universal approximation holds due to full support of \( w^{(\ell)} \) (frozen Gaussian draws), so any function in the Barron space~\cite{e2021barronspaceflowinducedfunction} can be approximated with error \( O(1/\sqrt{N}) \). 
+So the RKHS is the same as for MLPs NTK analysis shows weights are nearly frozen through training. We tackle directly this remark by freezing the weights instead of performing weights-deviation analysis on MLPs.
+This also removes the EOC condition on the bias.
+
+We can now state a result highly similar to ~\cite{bietti2021deepequalsshallowrelu}: even for in the extensive rank regime, RF-LR NTK under the NTK perspective, deeper architectures do not yield a larger RKHS than shallow networks.
 
 \vspace{0.5em}
+\subsection{Rank-driven concentration in RKHS (Gaussian norms product)}\label{subsec:rank-driven-concentration}
+Having established that low rank and depth confers no RKHS advantage, we now turn to quantifying how the low-rank structure controls kernel fluctuations. We can show that the radial component of the RF-LR NTK concentrates exponentially fast in the rank \( r \), yielding high-dimensional control of RKHS fluctuations. To state this result, we first require a homogeneity assumption on the activation function.
 
-\begin{theorem}[No advantage in RKHS]\label{thm:no_rkhs_advantage}
-Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. We use this statement as provided by Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
-\end{theorem}
-\begin{corollary}[Spectral decay on \( \mathbb{S}^{d-1} \) via endpoint expansions]\label{cor:spectral_decay_bietti}
-Let \( \kappa:[-1,1]\to\mathbb{R} \) be the rotation-invariant kernel associated to the (deep or shallow) ReLU NTK on \( \mathbb{S}^{d-1} \). Assume \( \kappa \in C^\infty(-1,1) \) and admits the asymptotic expansions, for \( t\ge 0 \),
-\[
-\kappa(1-t) = p_1(t) + c_1 t^{\nu} + o(t^{\nu}),\qquad
-\kappa(-1+t) = p_{-1}(t) + c_{-1} t^{\nu} + o(t^{\nu}),
-\]
-where \( p_1,p_{-1} \) are polynomials, \( \nu>0 \) non-integer, and derivatives satisfy analogous expansions. Then there exists a constant \( C(d,\nu)>0 \) such that the eigenvalues \( \mu_k \) (in the spherical harmonics basis) satisfy:
-\begin{itemize}
-    \item For even \(k\) and \( c_1 \neq -c_{-1}\): \( \mu_k \sim (c_1+c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
-    \item For odd \(k\) and \( c_1 \neq c_{-1}\): \( \mu_k \sim (c_1-c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
-\end{itemize}
-If \( |c_1|=|c_{-1}| \), then \( \mu_k = o\big(k^{-d-2\nu+1}\big) \) for one parity (or both if \(c_1=c_{-1}=0\)). If \( \kappa \) is \( C^\infty \) on \([{-}1,1]\) with no such \( \nu \), then \( \mu_k \) decays faster than any polynomial. See~\cite{bietti2021deepequalsshallowrelu}.
-\end{corollary}
-\begin{remark}
-Corollary~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Theorem~\ref{thm:no_rkhs_advantage}).
-\end{remark}
-
-\vspace{0.5em}
-\subsection{Rank-driven concentration in RKHS (Gaussian norms product)}
 \begin{assumption}[Homogeneous activation]
 The activation function \( \sigma \) is positively homogeneous: \( \sigma(\alpha z) = \alpha \sigma(z) \) for all \( \alpha \ge 0 \) and \( z \in \mathbb{R} \). In particular, ReLU satisfies this property.
 \end{assumption}
-\begin{theorem}[Exponential concentration in rank]\label{thm:rkhs_rank_concentration}
-Under Assumption~\ref{assump:homogeneous_activation}, let \( x_1, y_1 \in \mathbb{R}^r \) be the rank-\( r \) Gaussian projections of inputs \( x, y \), with arbitrary fixed correlation \( \rho \in [-1,1] \). Define
+
+We can now state our main concentration result.
+
+\begin{theorem}[Concentration in rank for homogeneous activation]\label{thm:rkhs_rank_concentration}
+Under homogeneous activation assumption (Assumption~\ref{assump:homogeneous_activation}), let \( x_1, y_1 \in \mathbb{R}^r \) be the rank-\( r \) Gaussian projections of inputs \( x, y \), with arbitrary fixed correlation \( \rho \in [-1,1] \). Define
 \[
 W \;=\; \frac{\|x_1\|\,\|y_1\|}{r}.
 \]
@@ -47,9 +34,96 @@ Moreover, for larger deviations \( \epsilon \ge 1 \), there exist absolute const
 \]
 In particular, the radial component of the RF-LR NTK concentrates exponentially fast in \( r \), yielding high-dimensional control of RKHS fluctuations.
 \end{theorem}
+
+We now provide an intuitive explanation of the proof strategy.
+
 \paragraph{Proof intuition.}
-Set \( U=\|x_1\|/\sqrt{r} \) and \( V=\|y_1\|/\sqrt{r} \). The Euclidean norm is 1-Lipschitz for Gaussians, so \( U \) and \( V \) concentrate around 1 with sub-Gaussian tails \( \exp(-r\delta^2) \). Using \( |UV-1|\le |U-1|+|V-1|+|U-1||V-1| \) and a union bound with \( \delta=\epsilon/2 \) yields the stated \( 4\exp(-r\epsilon^2/8) \) bound. Large deviations use standard sub-exponential tails of \( \chi \)-norms. The full proof is given in Appendix~\ref{appendix:proof-rkhs-rank-concentration}.
+Set \( U=\|x_1\|/\sqrt{r} \) and \( V=\|y_1\|/\sqrt{r} \). \( U \) and \( V \) concentrate around 1 with sub-Gaussian tails \( \exp(-r\delta^2) \). Using \( |UV-1|\le |U-1|+|V-1|+|U-1||V-1| \) and a union bound with \( \delta=\epsilon/2 \) yields the stated \( 4\exp(-r\epsilon^2/8) \) bound. The full proof is given in Appendix~\ref{appendix:proof-rkhs-rank-concentration}.
 \begin{remark}
-The result avoids direct manipulation of Kibble's bivariate chi-square density, relying instead on Gaussian isoperimetry for norms and a simple algebraic bound for products. Tighter constants are obtainable with refined quadratic control, but the stated \( e^{-r\epsilon^2} \) and \( e^{-r\epsilon} \) regimes capture the correct high-dimensional decay.
+The result avoids direct manipulation of Kibble's bivariate chi-square density, relying instead on Gaussian isoperimetry for norms and a simple algebraic bound for products.
 \end{remark}
 
+\vspace{0.5em}
+\subsection{Two-layer NTK concentration}\label{subsec:two-layer-ntk-concentration}
+We can now apply this concentration result to obtain bounds for the two-layer NTK.
+
+\begin{corollary}[Concentration bound for two-layer NTK]\label{cor:two_layer_ntk_concentration}
+Under Assumption~\ref{assump:homogeneous_activation}, let \( \hat{\Theta}^{(2)}_r(x,x') = \Psi(\hat{\rho}_r, \hat{w}_r) \) be the empirical two-layer NTK, where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \), with \( x_1, y_1 \in \mathbb{R}^r \) being the rank-\( r \) Gaussian projections of inputs \( x, y \) with population correlation \( \rho \in [-1,1] \). Let \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)(1 - \arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) be the deterministic kernel limit.
+
+Then for any \( \epsilon \in (0,1) \), there exist constants \( C_1, C_2 > 0 \) depending on \( \rho \) and the kernel smoothness such that
+\[
+\mathbb{P}\!\left(\left|\hat{\Theta}^{(2)}_r(x,x') - K_{\infty}(\rho)\right|\;\ge\;\epsilon\right)\;\le\;C_1\,\exp\!\left(-C_2\,r\,\epsilon^2\right).
+\]
+\end{corollary}
+
+Proof: See Appendix~\ref{appendix:proof-two-layer-ntk-concentration}.
+
+\begin{remark}[Critical cancellation of \( 1/r \) corrections]
+While the general concentration rate is \( O_p(1/\sqrt{r}) \) via Fisher's CLT, the randomness induced from the gaussian process low rank output remove the \( 1/r \) correction term in \( \Sigma^{(2)} \) that would normally appear through the radial component \( \hat{w}_r \). This cancellation is critical: it is precisely the path where finite-width corrections \( 1/N \) analysis~\cite{dyer2019asymptoticswidenetworksfeynman} and Feynman diagram decay come into play, proving that the fluctuation rate is \( 1/r \) rather than \( 1/\sqrt{r} \), yielding the exponential concentration bound above.
+\end{remark}
+
+\begin{remark}[Extension to general \( L \) layers]
+The extension of this concentration bound to general depth \( L \) layers under Assumption~\ref{assump:homogeneous_activation} requires controlling nested conditional means through \( L \) layers and managing a quadratic number \( O(L^2) \) of cross-terms arising from the recursive NTK structure. The technical challenge lies in tracking how the random correlations \( \rho_\ell \) and norm products \( \|h^{(\ell)}(x)\|\|h^{(\ell)}(x')\| \) propagate through layers while maintaining exponential concentration rates. This analysis is deferred to a future version.
+\end{remark}
+
+\vspace{0.5em}
+\subsection{Conditional mean NTK}\label{subsec:conditional-mean-ntk}
+Having established concentration results, we now turn to the mean NTK conditional on the random features. The mean NTK is defined as nested conditional expectations through \( L \) layers:
+
+\[
+\tilde{\Kop}^{(L)}(x,x') = \mathbb{E}_{w^{(L)}}\left[ \mathbb{E}_{w^{(L-1)}}\left[ \cdots \mathbb{E}_{w^{(1)}}\left[ \Kop^{(L)}(x,x') \mid h^{(L-1)} \right] \cdots \mid h^{(1)} \right] \mid x, x' \right].
+\]
+
+This represents the kernel obtained by averaging over the Gaussian processes \( h^{(\ell)} \) at each layer sequentially.
+
+\begin{corollary}[Conditional mean NTK has same RKHS]\label{cor:conditional_rkhs_homogeneous}
+Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (defined via nested conditional expectations over the Gaussian processes \( h^{(\ell)} \)) induces the same RKHS as the shallow (two-layer) ReLU kernel. In particular, the conditional mean RKHS coincides with the unconditional RKHS as sets with equivalent norms.
+
+For the two-layer case (\( L=2 \)), the mean NTK has the explicit expression (as a function of cosine similarity \( \rho \)):
+\[
+\tilde{\Kop}^{(2)}(\rho) = K_{\infty}(\rho) = \Theta^{(1)}(\rho)\,\Big(1 - \frac{\arccos(\rho)}{\pi}\Big) + \Sigma^{(1)}(\rho) + 1,
+\]
+where \( \Theta^{(1)}(\rho) \) and \( \Sigma^{(1)}(\rho) \) are the one-layer NTK and base kernel, respectively.
+\end{corollary}
+
+Proof: See Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}.
+
+\begin{remark}
+This corollary shows that even when conditioning on the realized random features (the Gaussian processes \( h^{(\ell)} \)) at each layer, the resulting conditional mean NTK preserves the same RKHS structure. This relies crucially on the homogeneity property of the activation function.
+\end{remark}
+
+\vspace{0.5em}
+\subsection{No advantage in RKHS}\label{subsec:no-advantage-in-rkhs}
+We can now state the main result that deeper architectures do not yield a larger RKHS than shallow networks.
+
+\begin{corollary}[No advantage in RKHS]\label{thm:no_rkhs_advantage}
+Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. We use this statement as provided by Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
+\end{corollary}
+
+\vspace{0.5em}
+\subsection{Spectral decay and Puiseux expansions}\label{subsec:spectral-decay-puiseux}
+Finally, we characterize the spectral decay of the RF-LR NTK via endpoint expansions. The base kernel \( \Sigma^{(1)} \) and derivative kernel \( \dot{\Sigma}^{(1)} \) are the fundamental building blocks for the NTK recursion. From the Puiseux series expansions, we have near \( \rho = 1 \) (for \( t \ge 0 \)):
+\[
+\Sigma^{(1)}(1-t) = 1 - \frac{2}{\pi} t^{1/2} + O(t^{3/2}),\qquad
+\dot{\Sigma}^{(1)}(1-t) = \frac{1}{2} - \frac{1}{\pi} t^{1/2} + O(t^{3/2}).
+\]
+
+For the mean NTK \( \tilde{\Kop}^{(2)}(\rho) = K_{\infty}(\rho) \), the Puiseux expansion near \( \rho = 1 \) follows from combining the base and derivative kernels. More generally, we have the following spectral decay characterization.
+
+\begin{theorem}[Spectral decay for RF-LR NTK on \( \mathbb{S}^{d-1} \)]\label{cor:spectral_decay_bietti}
+Let \( \kappa:[-1,1]\to\mathbb{R} \) be the rotation-invariant kernel associated to the (deep or shallow) ReLU NTK on \( \mathbb{S}^{d-1} \). Assume \( \kappa \in C^\infty(-1,1) \) and admits the asymptotic expansions, for \( t\ge 0 \),
+\[
+\kappa(1-t) = p_1(t) + c_1 t^{\nu} + o(t^{\nu}),\qquad
+\kappa(-1+t) = p_{-1}(t) + c_{-1} t^{\nu} + o(t^{\nu}),
+\]
+where \( p_1,p_{-1} \) are polynomials, \( \nu>0 \) non-integer, and derivatives satisfy analogous expansions. Then there exists a constant \( C(d,\nu)>0 \) such that the eigenvalues \( \mu_k \) (in the spherical harmonics basis) satisfy:
+\begin{itemize}
+    \item For even \(k\) and \( c_1 \neq -c_{-1}\): \( \mu_k \sim (c_1+c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
+    \item For odd \(k\) and \( c_1 \neq c_{-1}\): \( \mu_k \sim (c_1-c_{-1})\,C(d,\nu)\,k^{-d-2\nu+1} \).
+\end{itemize}
+If \( |c_1|=|c_{-1}| \), then \( \mu_k = o\big(k^{-d-2\nu+1}\big) \) for one parity (or both if \(c_1=c_{-1}=0\)). If \( \kappa \) is \( C^\infty \) on \([{-}1,1]\) with no such \( \nu \), then \( \mu_k \) decays faster than any polynomial. See~\cite{bietti2021deepequalsshallowrelu}.
+\end{theorem}
+
+\begin{remark}
+Theorem~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Corollary~\ref{thm:no_rkhs_advantage}).
+\end{remark}
