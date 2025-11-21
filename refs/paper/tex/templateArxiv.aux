@@ -43,6 +43,8 @@
 \citation{hoffmann2022training}
 \citation{wei2022emergent}
 \citation{bietti2021deepequalsshallowrelu}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Architecture of a Multi-component Multi-layer Neural Network (RF-LR) with a low-rank intermediate layer. The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons. We only train the output weights $\bm  {A}^{(1)}$ and $\bm  {A}^{(2)}$.}}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:RF-LR_architecture}{{1}{3}{Architecture of a Multi-component Multi-layer Neural Network (RF-LR) with a low-rank intermediate layer. The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons. We only train the output weights $\bm {A}^{(1)}$ and $\bm {A}^{(2)}$}{figure.1}{}}
 \citation{bietti2021deepequalsshallowrelu}
 \citation{jacot2018neural}
 \citation{arora2019exact}
@@ -50,6 +52,7 @@
 \citation{yang2019scaling}
 \citation{terjek2022depth}
 \citation{rahimi2007random}
+\citation{rahimi2008weighted}
 \citation{bach2017breaking}
 \citation{rudi2017generalization}
 \citation{sriperumbudur2015optimal}
@@ -60,7 +63,6 @@
 \citation{xu2019training}
 \citation{basri2020frequency}
 \citation{tancik2020fourier}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Related work}{3}{subsection.1.1}\protected@file@percent }
 \citation{benarous2021online}
 \citation{damian2022neural}
 \citation{abbe2023sgd}
@@ -70,8 +72,6 @@
 \citation{papyan2017convolutional}
 \citation{sulam2020multi}
 \citation{cohen2021gradient}
-\citation{cohen2021gradient}
-\citation{kingma2014adam}
 \citation{wilson2017marginal}
 \citation{kaplan2020scaling}
 \citation{hoffmann2022training}
@@ -83,90 +83,51 @@
 \citation{li2018visualizing}
 \citation{fort2019large}
 \citation{chizat2020implicit}
-\@writefile{toc}{\contentsline {section}{\numberline {2}Model and NTK framework}{4}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}RF-LR architecture (simplified)}{4}{subsection.2.1}\protected@file@percent }
-\newlabel{eq:RF-LR}{{1}{4}{RF-LR architecture (simplified)}{equation.2.1}{}}
-\@writefile{toc}{\contentsline {paragraph}{Why this simplification?}{5}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Base NNGP and derivative kernels}{5}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}NTK recursion}{5}{subsection.2.3}\protected@file@percent }
-\newlabel{thm:ntk_recursion}{{1}{5}{Infinite-width NTK recursion}{theorem.1}{}}
-\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{6}{section*.4}\protected@file@percent }
-\newlabel{cor:general_L_layer_ntk}{{2.3}{6}{Interpretation}{section*.4}{}}
-\newlabel{eq:ntk_explicit_form}{{8}{6}{Interpretation}{equation.2.8}{}}
-\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{6}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Depth dependence and scaling.}{6}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Single-layer NNGP kernel (MMFN)}{6}{subsection.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}NTK recursion}{7}{subsection.2.5}\protected@file@percent }
-\newlabel{thm:ntk_recursion}{{3}{7}{Infinite-width NTK recursion}{theorem.3}{}}
-\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{7}{section*.7}\protected@file@percent }
-\newlabel{cor:general_L_layer_ntk}{{2.5}{7}{Interpretation}{section*.7}{}}
-\newlabel{eq:ntk_explicit_form}{{14}{7}{Interpretation}{equation.2.14}{}}
-\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{7}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Related work}{4}{subsection.1.1}\protected@file@percent }
+\citation{hayou2018selectioninitializationactivationfunction}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Network definition and EOC parameterization}{5}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}RF-LR architecture}{5}{subsection.2.1}\protected@file@percent }
+\newlabel{eq:RF-LR}{{1}{5}{RF-LR architecture}{equation.2.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Training parameters, biases, and initialization.}{5}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Why this simplification?}{5}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Activation homogeneity.}{5}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Parameterization, signal propagation, and kernels}{5}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}NTK recursion}{6}{subsection.2.3}\protected@file@percent }
+\newlabel{thm:ntk_recursion}{{1}{6}{Infinite-width NTK recursion}{theorem.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Interpretation.}{6}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}NTK recursion}{7}{subsection.2.4}\protected@file@percent }
+\newlabel{thm:ntk_recursion_scaled}{{2}{7}{NTK recursion with trainable biases and scaling}{theorem.2}{}}
+\newlabel{cor:two_layer_ntk}{{2.4}{7}{NTK recursion}{theorem.2}{}}
+\newlabel{cor:general_L_layer_ntk}{{2.4}{7}{NTK recursion}{theorem.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Homogeneous activation hypothesis and two-layer compact form.}{7}{section*.8}\protected@file@percent }
 \citation{bietti2021deepequalsshallowrelu}
-\@writefile{toc}{\contentsline {paragraph}{Depth dependence and scaling.}{8}{section*.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Lazy training regime and RKHS characterization}{8}{subsection.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}No RKHS disadvantage (deep equals shallow in NTK regime)}{8}{subsection.2.7}\protected@file@percent }
-\newlabel{thm:no_rkhs_disadvantage}{{4}{8}{No disadvantage in RKHS}{theorem.4}{}}
+\citation{bietti2021deepequalsshallowrelu}
+\@writefile{toc}{\contentsline {section}{\numberline {3}No RKHS advantage}{8}{section.3}\protected@file@percent }
+\newlabel{thm:no_rkhs_advantage}{{3}{8}{No advantage in RKHS}{theorem.3}{}}
 \newlabel{cor:spectral_decay_bietti}{{1}{8}{Spectral decay on \( \mathbb {S}^{d-1} \) via endpoint expansions}{corollary.1}{}}
-\citation{bietti2021deepequalsshallowrelu}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.8}Rank-driven concentration in RKHS (Gaussian norms product)}{9}{subsection.2.8}\protected@file@percent }
-\newlabel{thm:rkhs_rank_concentration}{{5}{9}{Exponential concentration in rank}{theorem.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{Proof intuition.}{9}{section*.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Spectral theory of low-rank NTK (two-layer focus)}{9}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}General setup and scaling}{9}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Rank-driven concentration in RKHS (Gaussian norms product)}{8}{subsection.3.1}\protected@file@percent }
+\newlabel{thm:rkhs_rank_concentration}{{4}{8}{Exponential concentration in rank}{theorem.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Proof intuition.}{8}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Spectral theory of low-rank NTK (two-layer focus)}{9}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}General setup and scaling}{9}{subsection.4.1}\protected@file@percent }
 \newlabel{assump:RMT}{{1}{9}{Random-matrix scaling}{assumption.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Microscopic distributions: Fisher–Kibble decoupling}{9}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Microscopic distributions: Fisher–Kibble decoupling}{9}{subsection.4.2}\protected@file@percent }
 \newlabel{lem:fisher-kibble}{{1}{9}{Fisher–Kibble decoupling}{lemma.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Signal–noise decomposition of the empirical NTK}{10}{subsection.3.3}\protected@file@percent }
-\newlabel{thm:signal-noise}{{6}{10}{Asymptotic signal–noise decomposition}{theorem.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Macroscopic spectrum: deformed Marchenko–Pastur law}{10}{subsection.3.4}\protected@file@percent }
-\newlabel{thm:spike-bulk}{{7}{10}{Spike + bulk spectral limit}{theorem.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Outlier stability (BBP transition) under additive noise}{10}{subsection.3.5}\protected@file@percent }
-\newlabel{thm:bbp}{{8}{10}{BBP-type transition}{theorem.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Two-layer case summary}{10}{subsection.3.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Asymptotic signal–noise (kernel CLT)}{10}{subsection.3.7}\protected@file@percent }
-\newlabel{thm:kernel_clt}{{9}{10}{Asymptotic Normality of the Low-Rank Kernel}{theorem.9}{}}
-\@writefile{toc}{\contentsline {paragraph}{Proof intuition.}{11}{section*.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Conclusion and Discussion}{11}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{No RKHS disadvantage and linear width scaling.}{11}{section*.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Improved concentration: \( O(1/r^2) \) vs.\ classical \( O(1/N) \).}{11}{section*.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Spectrum: bulk–outlier structure and early training.}{11}{section*.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Finite-width corrections and the \( 1/r \) expansion.}{11}{section*.15}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Practical implications and recommended regimes.}{11}{section*.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Partial training effect on NTK magnitude.}{12}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Comparisons to MLPs at matched budgets.}{12}{section*.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Open NTK questions from the notes.}{12}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Experimental roadmap (NTK only) from the notes.}{12}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Limitations and scope.}{12}{section*.21}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Outlook.}{12}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Appendix A: Asymptotic Signal-Noise Decomposition of the Kernel}{12}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 1: Joint asymptotic normality of inputs.}{12}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 2: Multivariate Delta method.}{13}{section*.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 3: Gradient calculation.}{13}{section*.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 4: Variance assembly and limit.}{13}{section*.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Proofs of main theorems}{13}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Proof of the NNGP kernel for a single-layer MMFN}{13}{subsection.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Proof of Theorem~\ref {thm:ntk_recursion} (Infinite-width NTK recursion)}{13}{subsection.6.2}\protected@file@percent }
-\newlabel{appendix:proof-ntk-recursion}{{6.2}{13}{Proof of Theorem~\ref {thm:ntk_recursion} (Infinite-width NTK recursion)}{subsection.6.2}{}}
-\@writefile{toc}{\contentsline {paragraph}{Term 3 (bias contribution).}{14}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Proof of Corollary (Two-layer NTK)}{14}{subsection.6.3}\protected@file@percent }
-\newlabel{appendix:proof-2layer}{{6.3}{14}{Proof of Corollary (Two-layer NTK)}{subsection.6.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Proof of Corollary (General L-layer NTK)}{14}{subsection.6.4}\protected@file@percent }
-\newlabel{appendix:proof-general-L}{{6.4}{14}{Proof of Corollary (General L-layer NTK)}{subsection.6.4}{}}
-\@writefile{toc}{\contentsline {paragraph}{Base case \( L=1 \):}{14}{section*.28}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Inductive step:}{15}{section*.29}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Depth scaling analysis.}{15}{section*.30}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Proof of Theorem~\ref {thm:rkhs_rank_concentration} (Rank-driven concentration)}{16}{subsection.6.5}\protected@file@percent }
-\newlabel{appendix:proof-rkhs-rank-concentration}{{6.5}{16}{Proof of Theorem~\ref {thm:rkhs_rank_concentration} (Rank-driven concentration)}{subsection.6.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{Setup.}{16}{section*.31}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 1: Gaussian concentration for norms.}{16}{section*.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 2: Algebraic control of the product.}{16}{section*.33}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Step 3: Union bound and constants.}{16}{section*.34}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Large deviations.}{16}{section*.35}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}Fisher and Kibble distributions}{16}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Homogeneity assumption enabling decoupling.}{9}{section*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Signal–noise decomposition of the empirical NTK}{9}{subsection.4.3}\protected@file@percent }
+\newlabel{thm:signal-noise}{{5}{9}{Asymptotic signal–noise decomposition}{theorem.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Macroscopic spectrum: deformed Marchenko–Pastur law}{9}{subsection.4.4}\protected@file@percent }
+\newlabel{thm:spike-bulk}{{6}{9}{Spike + bulk spectral limit}{theorem.6}{}}
+\citation{El_Karoui_2010}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Two-layer case summary}{10}{subsection.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Asymptotic signal–noise (kernel CLT)}{10}{subsection.4.6}\protected@file@percent }
+\newlabel{thm:kernel_clt}{{7}{10}{Asymptotic Normality of the Low-Rank Kernel}{theorem.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Proof intuition.}{10}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{10}{section.5}\protected@file@percent }
 \bibstyle{unsrt}
 \bibdata{references}
 \bibcite{bietti2021deepequalsshallowrelu}{1}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{11}{section.6}\protected@file@percent }
 \bibcite{jacot2018neural}{2}
 \bibcite{arora2019exact}{3}
 \bibcite{arora2019harnessing}{4}
@@ -177,11 +138,6 @@
 \bibcite{bach2017breaking}{9}
 \bibcite{rudi2017generalization}{10}
 \bibcite{sriperumbudur2015optimal}{11}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Proofs for spectral theory}{17}{section.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Proof of Lemma~\ref {lem:fisher-kibble} (Fisher–Kibble decoupling)}{17}{subsection.8.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Proof of Theorem~\ref {thm:signal-noise} (Signal–noise decomposition)}{17}{subsection.8.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Proof of Theorem~\ref {thm:spike-bulk} (Deformed MP with spike)}{17}{subsection.8.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Proof of Theorem~\ref {thm:bbp} (BBP-type transition)}{17}{subsection.8.4}\protected@file@percent }
 \bibcite{rahaman2019spectral}{12}
 \bibcite{xu2019training}{13}
 \bibcite{basri2020frequency}{14}
@@ -209,4 +165,52 @@
 \bibcite{li2018visualizing}{36}
 \bibcite{fort2019large}{37}
 \bibcite{chizat2020implicit}{38}
+\bibcite{El_Karoui_2010}{39}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Proofs of NTK Recursions}{13}{section.7}\protected@file@percent }
+\newlabel{appendix:ntk-recursions}{{7}{13}{Proofs of NTK Recursions}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Proof of Theorem~\ref {thm:ntk_recursion}: Infinite-width NTK recursion}{13}{subsection.7.1}\protected@file@percent }
+\newlabel{appendix:proof-ntk-recursion}{{7.1}{13}{Proof of Theorem~\ref {thm:ntk_recursion}: Infinite-width NTK recursion}{subsection.7.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Term 2 (layer-\(\ell \) output weights \(A^{(\ell )}\)).}{13}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Term 1 (previous layers).}{14}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Proof of Two-layer NTK Corollary}{14}{subsection.7.2}\protected@file@percent }
+\newlabel{appendix:proof-2layer}{{7.2}{14}{Proof of Two-layer NTK Corollary}{subsection.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Proof of General \(L\)-layer NTK Corollary}{14}{subsection.7.3}\protected@file@percent }
+\newlabel{appendix:proof-general-L}{{7.3}{14}{Proof of General \texorpdfstring {\(L\)}{L}-layer NTK Corollary}{subsection.7.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Base case \( L=1 \).}{14}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Inductive step.}{14}{section*.16}\protected@file@percent }
+\citation{bietti2021deepequalsshallowrelu}
+\citation{bietti2021deepequalsshallowrelu}
+\@writefile{toc}{\contentsline {section}{\numberline {8}RKHS Theory and Concentration}{15}{section.8}\protected@file@percent }
+\newlabel{appendix:rkhs-theory}{{8}{15}{RKHS Theory and Concentration}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}No RKHS Advantage}{15}{subsection.8.1}\protected@file@percent }
+\newlabel{appendix:no-rkhs-advantage}{{8.1}{15}{No RKHS Advantage}{subsection.8.1}{}}
+\newlabel{thm:appendix-no-rkhs-advantage}{{8}{15}{No advantage in RKHS}{theorem.8}{}}
+\newlabel{cor:appendix-spectral-decay}{{2}{15}{Spectral decay on \( \mathbb {S}^{d-1} \) via endpoint expansions}{corollary.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Proof of Theorem~\ref {thm:rkhs_rank_concentration}: Rank-driven concentration}{15}{subsection.8.2}\protected@file@percent }
+\newlabel{appendix:proof-rkhs-rank-concentration}{{8.2}{15}{Proof of Theorem~\ref {thm:rkhs_rank_concentration}: Rank-driven concentration}{subsection.8.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Spectral Theory}{16}{section.9}\protected@file@percent }
+\newlabel{appendix:spectral-theory}{{9}{16}{Spectral Theory}{section.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Asymptotic Signal-Noise Decomposition}{16}{subsection.9.1}\protected@file@percent }
+\newlabel{appendix:signal-noise-decomposition}{{9.1}{16}{Asymptotic Signal-Noise Decomposition}{subsection.9.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Fisher and Kibble Distributions}{16}{subsection.9.2}\protected@file@percent }
+\newlabel{appendix:fisher-kibble}{{9.2}{16}{Fisher and Kibble Distributions}{subsection.9.2}{}}
+\newlabel{lem:fisher-kibble}{{2}{16}{Fisher–Kibble decoupling}{lemma.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Angular part (Fisher distribution).}{16}{section*.17}\protected@file@percent }
+\citation{El_Karoui_2010}
+\citation{El_Karoui_2010}
+\citation{El_Karoui_2010}
+\@writefile{toc}{\contentsline {paragraph}{Radial part (Kibble distribution).}{17}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Independence of angular and radial parts.}{17}{section*.19}\protected@file@percent }
+\newlabel{thm:fisher-distribution}{{9}{17}{Fisher distribution of the sample correlation}{theorem.9}{}}
+\newlabel{thm:kibble-distribution}{{10}{17}{Kibble bivariate chi-square law}{theorem.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Proof of Theorem~\ref {thm:spike-bulk}: Deformed Marchenko–Pastur with Spike}{17}{subsection.9.3}\protected@file@percent }
+\newlabel{appendix:marchenko-pastur}{{9.3}{17}{Proof of Theorem~\ref {thm:spike-bulk}: Deformed Marchenko–Pastur with Spike}{subsection.9.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Setting.}{17}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 1: Equivalent Matrix Structure.}{18}{section*.21}\protected@file@percent }
+\newlabel{eq:alpha}{{8}{18}{Step 1: Equivalent Matrix Structure}{equation.9.8}{}}
+\newlabel{eq:beta}{{9}{18}{Step 1: Equivalent Matrix Structure}{equation.9.9}{}}
+\newlabel{eq:gamma}{{10}{18}{Step 1: Equivalent Matrix Structure}{equation.9.10}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 2: Calculation of Spectral Coefficients.}{18}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 3: Final Spectral Distribution.}{19}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Interpretation: Fisher–Kibble Decoupling in the Spectrum.}{19}{section*.24}\protected@file@percent }
 \gdef \@abspage@last{19}

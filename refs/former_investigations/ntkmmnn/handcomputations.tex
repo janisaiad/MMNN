@@ -433,7 +433,8 @@ where $x_1_i$ and $y_1_i$ are $\rho$-correlated gaussian variables.
 We ensure that the reader has understood that the correlation of x,y is independent of the squared norms of x,y !
 
 \subsubsection{Final result}
-We can then state the final result: For 2 entries x,y in $\mathbb{R}^d$ and a low rank r hidden layer, the NTK for a 2 hidden layer MMNN is:
+\noindent\textbf{Theorem (Two-layer MMNN NTK with low-rank bottleneck).}\label{thm:mmnn-2layer-final}
+For two inputs \(x,y\in\mathbb{R}^d\) and a low-rank \( r \) hidden layer, the NTK for a two-hidden-layer MMNN is:
 
 
 \begin{center}
@@ -452,6 +453,7 @@ where the random variables follow:
 \item $\rho_1 \sim \text{Fisher}(\rho, r)$ is independent of the norms
 \item $(\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \rho)$ are chi-squared variables with r degrees of freedom from correlated gaussian variables.
 \end{itemize}
+\noindent\textit{Proof sketch.} Combine the recursive NTK form and the exact ReLU derivative factor with conditioning on the random first-layer representation. Invoke Fisher’s law for \( \rho_1 \) and Kibble’s bivariate chi-square for the norms; angular–radial decoupling yields independence and the stated expression. High-dimensional concentration in \( r \) follows from Gaussian norm concentration. See Appendix (Fisher and Kibble distributions).
 
 \begin{center}
 

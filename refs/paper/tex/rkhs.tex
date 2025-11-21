@@ -1,18 +1,13 @@
-\subsection{Lazy training regime and RKHS characterization}
+\section{No RKHS advantage}
 In the NTK regime, training dynamics linearize: \( f_t(x) \approx f_0(x) + \langle \nabla_\theta f_0(x), \theta_t - \theta_0 \rangle \). The learned function stays in the RKHS induced by \( \Theta \), with norm:
 \[
 \|f\|_{\mathcal{H}_\Theta}^2 = \langle f, \Theta^{-1} f \rangle_{L^2}.
 \]
-For RF-LR with frozen random features, the RKHS is characterized by:
-\begin{itemize}
-    \item \textbf{Random feature expressivity:} Universal approximation holds due to full support of \( w^{(\ell)} \) (frozen Gaussian draws). Any function in the Barron space can be approximated with error \( O(1/\sqrt{n}) \).
-    \item \textbf{Low-rank bottleneck effect:} The rank-\( r \) layer acts as a spectral filter, removing directions with tiny eigenvalues and improving generalization by implicit regularization.
-    \item \textbf{Comparison with MLPs:} The RF-LR RKHS is \emph{nearly identical} to the MLP RKHS for large \( r \), confirming no expressivity loss, while parameter budget drops from \( O(n^2) \) to \( O(rn) \).
-\end{itemize}
+For RF-LR with frozen random features, the RKHS is characterized as follows. Universal approximation holds due to full support of \( w^{(\ell)} \) (frozen Gaussian draws), so any function in the Barron space can be approximated with error \( O(1/\sqrt{n}) \). The rank-\( r \) bottleneck acts as a spectral filter that removes directions with tiny eigenvalues and improves generalization by implicit regularization. Finally, for large \( r \), the RF-LR RKHS is \emph{nearly identical} to the MLP RKHS, implying no expressivity loss, while the parameter budget drops from \( O(n^2) \) to \( O(rn) \).
 
 \vspace{0.5em}
-\subsection{No RKHS disadvantage (deep equals shallow in NTK regime)}
-\begin{theorem}[No disadvantage in RKHS]\label{thm:no_rkhs_disadvantage}
+
+\begin{theorem}[No advantage in RKHS]\label{thm:no_rkhs_advantage}
 Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. We use this statement as provided by Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
 \end{theorem}
 \begin{corollary}[Spectral decay on \( \mathbb{S}^{d-1} \) via endpoint expansions]\label{cor:spectral_decay_bietti}
@@ -29,13 +24,16 @@ where \( p_1,p_{-1} \) are polynomials, \( \nu>0 \) non-integer, and derivatives
 If \( |c_1|=|c_{-1}| \), then \( \mu_k = o\big(k^{-d-2\nu+1}\big) \) for one parity (or both if \(c_1=c_{-1}=0\)). If \( \kappa \) is \( C^\infty \) on \([{-}1,1]\) with no such \( \nu \), then \( \mu_k \) decays faster than any polynomial. See~\cite{bietti2021deepequalsshallowrelu}.
 \end{corollary}
 \begin{remark}
-Corollary~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Theorem~\ref{thm:no_rkhs_disadvantage}).
+Corollary~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Theorem~\ref{thm:no_rkhs_advantage}).
 \end{remark}
 
 \vspace{0.5em}
 \subsection{Rank-driven concentration in RKHS (Gaussian norms product)}
+\begin{assumption}[Homogeneous activation]
+The activation function \( \sigma \) is positively homogeneous: \( \sigma(\alpha z) = \alpha \sigma(z) \) for all \( \alpha \ge 0 \) and \( z \in \mathbb{R} \). In particular, ReLU satisfies this property.
+\end{assumption}
 \begin{theorem}[Exponential concentration in rank]\label{thm:rkhs_rank_concentration}
-Let \( x_1, y_1 \in \mathbb{R}^r \) be the rank-\( r \) Gaussian projections of inputs \( x, y \), with arbitrary fixed correlation \( \rho \in [-1,1] \). Define
+Under Assumption~\ref{assump:homogeneous_activation}, let \( x_1, y_1 \in \mathbb{R}^r \) be the rank-\( r \) Gaussian projections of inputs \( x, y \), with arbitrary fixed correlation \( \rho \in [-1,1] \). Define
 \[
 W \;=\; \frac{\|x_1\|\,\|y_1\|}{r}.
 \]
@@ -54,3 +52,4 @@ Set \( U=\|x_1\|/\sqrt{r} \) and \( V=\|y_1\|/\sqrt{r} \). The Euclidean norm is
 \begin{remark}
 The result avoids direct manipulation of Kibble's bivariate chi-square density, relying instead on Gaussian isoperimetry for norms and a simple algebraic bound for products. Tighter constants are obtainable with refined quadratic control, but the stated \( e^{-r\epsilon^2} \) and \( e^{-r\epsilon} \) regimes capture the correct high-dimensional decay.
 \end{remark}
+

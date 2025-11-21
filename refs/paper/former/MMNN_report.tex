@@ -528,22 +528,107 @@ This scaling analysis through products of random matrices is precisely what we a
 \newpage
 \subsection{Personal contribution : Final Result}
 
-\begin{tcolorbox}[colback=personalcontribcolor!10,colframe=personalcontribcolor,title={\textbf{MAIN RESULT}},enhanced,drop shadow,breakable]
-For 2 inputs $x,y \in \mathbb{S}^{d-1}$ with cosine similarity $\textcolor{magenta}{\rho}$ and a low-rank hidden layer $r$, the \textcolor{red}{\textbf{NTK}} for a two hidden layer EOC initialized MMNN is:
+For two inputs $x,y \in \mathbb{S}^{d-1}$ with cosine similarity $\rho$ and a low-rank hidden layer $r$, the NTK for a two-hidden-layer EOC-initialized MMNN is:
 
 \begin{equation}
-\boxed{\textcolor{red}{\boldsymbol{\Theta}}^{(2)}(x,y) = \boldsymbol{\tilde{\Theta}}^{(2)}(\textcolor{magenta}{\rho}) = \textcolor{red}{\boldsymbol{\Theta}}^{(1)}(\textcolor{magenta}{\rho_1}) \cdot \left(1 - \frac{\arccos(\textcolor{magenta}{\rho_1})}{\pi}\right)\frac{2}{r} + \frac{2}{r}\textcolor{red}{\boldsymbol{\Sigma}}^{(1)}(\textcolor{magenta}{\rho_1})\|x_1\| \|y_1\| + 1}
+\label{eq:mmnn_two_layer_ntk_lr}
+\Theta^{(2)}(x,y) \;=\; \tilde{\Theta}^{(2)}(\rho) \;=\; \Theta^{(1)}(\rho_1)\,\left(1 - \frac{\arccos(\rho_1)}{\pi}\right)\frac{2}{r} \;+\; \frac{2}{r}\,\Sigma^{(1)}(\rho_1)\,\|x_1\|\,\|y_1\| \;+\; 1.
 \end{equation}
 
-with $\textcolor{red}{\boldsymbol{\Sigma}}^{(1)}(\textcolor{magenta}{\rho}) = \frac{1}{\pi}\left(\sqrt{1-\textcolor{magenta}{\rho}^2} + \textcolor{magenta}{\rho}(1-\arccos(\textcolor{magenta}{\rho}))\right)$
+with
+\begin{equation}
+\Sigma^{(1)}(\rho) \;=\; \frac{1}{\pi}\left(\sqrt{1-\rho^2} \;+\; \rho\,(1-\arccos(\rho))\right).
+\end{equation}
 
-where the random variables follow:
+In addition, the general two-layer NTK (recursion form) is:
+\begin{equation}
+\Theta^{(1)}(x,x') \;=\; \mathbb{E}_{\bm{w},b}\!\left[ \sigma(\bm{w}^\top x + \beta b)\, \sigma(\bm{w}^\top x' + \beta b) \right] \;+\; 1.
+\end{equation}
+\begin{align}
+\Theta^{(2)}(x,x') \;=&\; \Theta^{(1)}(x,x') \cdot \Big(\sigma_A^2\, \mathbb{E}_{\bm{w}, b}\!\left[
+\dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x) + \beta b)\, \dot{\sigma}(\bm{w}^\top \bm{h}^{(1)}(x') + \beta b)\, \bm{w}^\top\bm{w}
+\right]\Big) \nonumber\\
+&\;+\; \mathbb{E}_{\bm{w}, b}\!\left[ \sigma(\bm{w}^\top \bm{h}^{(1)}(x) + \beta b)\, \sigma(\bm{w}^\top \bm{h}^{(1)}(x') + \beta b) \right]
+\;+\; 1.
+\end{align}
+
+The random quantities satisfy:
 \begin{itemize}
-\item $\textcolor{magenta}{\rho_1} \sim \text{Fisher}(\textcolor{magenta}{\rho_1}, r)$ is independent of the norms ($\|x_1\|$, $\|y_1\|$)
-\item $(\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \textcolor{magenta}{\rho_1})$ are chi-squared variables from correlated normal variables with $r$ degrees of freedom (scalar product is a sum of independent Bessel variables)
+\item $\rho_1 \sim \text{Fisher}(\rho, r)$ and is independent of $\|x_1\|, \|y_1\|$,
+\item $(\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \rho)$ are chi-squared-type variables from correlated normal variables with $r$ degrees of freedom.
 \end{itemize}
-\end{tcolorbox} 
 We explain more about those Fisher and Kibble distributions in appendix.
+
+\paragraph{Homogeneous activation hypothesis.}
+Assume the activation is positively 1-homogeneous (e.g., ReLU), \( \sigma(\alpha z)=\alpha\,\sigma(z) \) for \( \alpha\ge0 \). Then the base kernels separate into radial and angular parts; in particular the two-layer low-rank NTK can be expressed via the empirical angular statistic \( \rho_1 \) and the normalized radial statistic \( w_r=\|x_1\|\|y_1\|/r \).
+
+\paragraph{Final compact form (Fisher–Kibble).}
+Define
+\[
+\Psi(u,w) \;=\; \frac{2}{r}\,\Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; \frac{2}{r}\,w\,\Sigma^{(1)}(u) \;+\; 1,
+\]
+so that \( \Theta^{(2)}(x,y) \equiv \Psi(\rho_1,w_r) \). By rotational invariance (Fisher–Kibble decoupling), \( \rho_1 \sim \text{Fisher}(\rho,r) \) and \( (\|x_1\|^2,\|y_1\|^2)\sim \text{Kibble}(r,\rho) \), with \( \rho_1 \) independent of \( (\|x_1\|,\|y_1\|) \) to leading order. This justifies the radial–angular separation implicit in \eqref{eq:mmnn_two_layer_ntk_lr}.
+\paragraph{Starting point (equation reference).}
+We will analyze the low-rank two-layer NTK using \eqref{eq:mmnn_two_layer_ntk_lr} as our baseline. Writing the kernel as a function of the empirical statistics
+\[
+\rho_1 \;=\; \cos\angle(x_1,y_1),\qquad w_r \;=\; \frac{\|x_1\|\,\|y_1\|}{r},
+\]
+we introduce the compact map
+\[
+\Psi(u,w) \;=\; \frac{2}{r}\,\Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; \frac{2}{r}\,w\,\Sigma^{(1)}(u) \;+\; 1,
+\]
+so that \( \Theta^{(2)}(x,y) \equiv \Psi(\rho_1,w_r) \).
+
+\paragraph{Random-matrix scaling.}
+We consider the regime \( r\to\infty \) with:
+\begin{itemize}
+    \item Low-rank bottleneck growing: \( r \) large and \( r \ll n \) at fixed layer width \( n \), or jointly \( r,n\to\infty \) with a fixed ratio;
+    \item Zonal form: dependence on inputs only through cosine similarity \( \rho=\langle x,y\rangle \) when inputs are normalized.
+\end{itemize}
+This places us in a concentration regime where fluctuations of empirical correlations and norms decay in \( r \).
+
+\paragraph{Homogeneous activation assumption.}
+Throughout, we assume a positively 1-homogeneous activation (e.g., ReLU), i.e., \( \sigma(\alpha z)=\alpha\,\sigma(z) \) for \( \alpha\ge 0 \). This implies a radial–angular factorization of the base kernels: for inputs of arbitrary norms,
+\[
+\Sigma^{(1)}(x,x') \;=\; \|x\|\,\|x'\|\,\Sigma^{(1)}(\rho),\qquad
+\dot{\Sigma}^{(1)}(x,x') \;=\; \|x\|\,\|x'\|\,\dot{\Sigma}^{(1)}(\rho),
+\]
+with \( \rho=\langle x,x'\rangle/(\|x\|\,\|x'\|) \). Consequently, in the low-rank two-layer setting the NTK separates into an angular (zonal) part depending on \( \rho_1 \) and a multiplicative radial factor carried by \( w_r=\|x_1\|\|y_1\|/r \), which is exactly the structure captured by \( \Psi(u,w) \) above.
+
+\paragraph{Fisher–Kibble decoupling (microscopic law).}
+By rotational invariance of Gaussian projections:
+\[
+\rho_1 \sim \text{Fisher}(\rho,r), \qquad (\|x_1\|^2,\|y_1\|^2) \sim \text{Kibble}(r,\rho),
+\]
+and the angular part \( \rho_1 \) is independent of the radial part \( (\|x_1\|,\|y_1\|) \).
+Consequently, \( w_r \) and \( \rho_1 \) are asymptotically independent to leading order.
+
+\paragraph{Beginning of asymptotic analysis.}
+Set \( \hat{\Theta}^{(2)}_r := \Psi(\rho_1,w_r) \). Using Fisher’s CLT for \( \rho_1 \) and a CLT for \( w_r \),
+\[
+\sqrt{r}\,\big(\rho_1-\rho\big) \xrightarrow{d} \mathcal{N}\!\big(0,(1-\rho^2)^2\big),\qquad
+\sqrt{r}\,\big(w_r-1\big) \xrightarrow{d} \mathcal{N}\!\big(0,1+\rho^2\big),
+\]
+with zero covariance. A first-order Delta expansion of \( \Psi \) at \( (\rho,1) \) therefore yields an \( r^{-1/2} \)-Gaussian fluctuation for \( \hat{\Theta}^{(2)}_r \) around its deterministic limit:
+\[
+\hat{\Theta}^{(2)}_r \;=\; K_\infty(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) \;+\; o_p(r^{-1/2}),
+\]
+where \( K_\infty(\rho) \) denotes the \( r\to\infty \) limit and the variance splits additively into angular and radial contributions. Full details are provided in the appendix.
+
+\paragraph{Delta-method remark (normalized product of norms).}
+Let \( U=\|x_1\|^2 \) and \( V=\|y_1\|^2 \). From Kibble’s law:
+\[
+\mathbb{E}[U]=\mathbb{E}[V]=r,\quad \mathrm{Var}(U)=\mathrm{Var}(V)=2r,\quad \mathrm{Cov}(U,V)=2r\,\rho^2.
+\]
+Consider \( w_r=\sqrt{UV}/r \). By the Delta method with \( g(U,V)=\sqrt{UV}/r \),
+\[
+\nabla g(r,r) \;=\; \Big(\tfrac{1}{2r},\,\tfrac{1}{2r}\Big),\quad
+\mathrm{Var}(w_r) \;\approx\; \nabla g^\top\,\Sigma\,\nabla g \;=\; \frac{1+\rho^2}{r},
+\]
+so \( \mathrm{std}(w_r)=\sqrt{(1+\rho^2)/r}=O(r^{-1/2}) \). The same scaling holds for the inverse \( r/(\|x_1\|\|y_1\|) \) by symmetry.
+
+\paragraph{On observing faster concentration (mechanical cancellation).}
+If empirically the kernel’s standard deviation scales as \( O(1/r) \) (i.e., variance \( O(1/r^2) \)), then the first-order Delta contributions from the angular term (via \( \rho_1 \)) and the radial term (via \( w_r \)) must cancel to leading order. This “mechanical” cancellation leaves only higher-order terms, explaining the accelerated \( 1/r^2 \) variance decay for the full kernel.
 
 
 \begin{tcolorbox}[colback=green!10,colframe=green,title={\textbf{High-Dimensional Behavior}},enhanced]

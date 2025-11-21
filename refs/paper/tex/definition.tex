@@ -1,23 +1,63 @@
-\section{Model and NTK framework}
+\section{Network definition and EOC parameterization}
 
 \vspace{1em}
-\subsection{RF-LR architecture (simplified)}
+\subsection{RF-LR architecture}
 Let \( \bm{h}^{(0)}(\bm{x})=\bm{x}\in\mathbb{R}^{d_0} \). For \( \ell=1,\dots,L \),
 \begin{equation}
 \label{eq:RF-LR}
 \bm{h}^{(\ell)}(\bm{x})
-= \frac{1}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}^{(\ell)}_j\,
-\ReLU\!\Big(\bm{w}^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(\bm{x})\Big).
+= \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}^{(\ell)}_j\,
+\ReLU\!\Big(\bm{w}^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(\bm{x}) + \beta\, b^{(\ell)}_j\Big) \;+\; \sigma_c\, c.
 \end{equation}
-\textbf{Training policy:} \( \bm{A}^{(\ell)} \) are trained; \( \bm{w}^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{n_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll n_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
+\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{n_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll n_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
 
-\textbf{Remark (NTK magnitude with partial training):} By training only output weights \( \bm{A}^{(\ell)} \) while freezing input weights \( \bm{w}^{(\ell)} \), the effective NTK magnitude is approximately \emph{half} of what it would be if all parameters were trained. This is because the NTK decomposes as a sum over trainable parameter contributions; freezing \( \bm{w}^{(\ell)} \) removes their gradient contribution. Consequently, in the kernel regression regime, the effective learning rate is doubled (or equivalently, the kernel eigenvalues are halved), which alters convergence speed but not the final solution in the RKHS. This factor-of-2 effect on kernel magnitude should be accounted for when comparing RF-LR training dynamics to standard fully-trainable networks. (TO BE FORMALIZED: explicit computation showing \( \Kop_{\text{RF-LR}} \approx \tfrac{1}{2} \Kop_{\text{full}} \) for comparable architectures.)
+\paragraph{Training parameters, biases, and initialization.}
+We use the biased activation and an output bias while keeping all symbols non-bold except the activation \( \ReLU \), which denotes a bold \( \boldsymbol{\sigma} \). The layer map with biases is
+\[
+h^{(\ell)}(x) \;=\; \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} A^{(\ell)}_j\;\ReLU\!\Big(w^{(\ell)\top}_j\,h^{(\ell-1)}(x) + \beta\, b^{(\ell)}_j\Big) \;+\; \sigma_c\, c, \quad \ell=1,\dots,L.
+\]
+Initialization is
+\[
+w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{d_{\ell-1}}/d_{\ell-1}\big),\quad
+b^{(\ell)}_j \sim \mathcal{N}(0, \beta_\ell^2),\quad
+A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, 1),\quad
+c \sim \mathcal{N}(0, 1),
+\]
+We use the edge-of-chaos scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{d_{\ell-1}}/d_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
+The low-rank constraint is enforced as \( \mathrm{rank}\!\big(A^{(\ell)}\big)\le r_\ell \ll n_\ell \).
+
+Remarkably, EOC do not involve any condition on \beta ! This is because it is absorded into the random features manifold.
 
 \paragraph{Why this simplification?}
-Removing bias scaling \( \beta \) and output scaling \( (\sigma_A, \sigma_c) \) yields cleaner expressions without loss of generality: (i) bias can be absorbed via data augmentation \( x \mapsto [x, 1] \), (ii) output scaling can be absorbed into learning rate, (iii) the mean-field and NTK structures remain qualitatively identical, and (iv) the Fourier-space interpretation and stepwise loss phenomenon depend on kernel geometry, not absolute scales.
+We include an activation bias \( b^{(\ell)} \) and a scalar output bias \( c \) for completeness, but we avoid introducing extra scaling parameters for them. Output scaling can be absorbed into the learning rate; the mean-field and NTK structures remain qualitatively identical, and the Fourier-space interpretation and stepwise loss phenomenon depend on kernel geometry, not absolute scales.
 
-\vspace{1em}
-\subsection{Base NNGP and derivative kernels}
+\paragraph{Activation homogeneity.}
+We only assume a positively 1-homogeneous nonlinearity \(\ReLU\) for Kibble/Fisher decoupling:
+\[
+\ReLU(\alpha u) \,=\, \alpha\,\ReLU(u) \quad \text{for } \alpha \ge 0,\; u \in \mathbb{R}.
+\]
+This yields the scaling relation \(\ReLU(\alpha\, w^\top h) = \alpha\,\ReLU(w^\top h)\) and, away from zero, \(\dot{\ReLU}(\alpha u)=\dot{\ReLU}(u)\).
+
+\subsection{Parameterization, signal propagation, and kernels}
+\[
+\text{NTK scaling: } s_\ell \,=\, \frac{1}{\sqrt{n_\ell}}, \qquad
+\text{Mean-field scaling: } s_\ell \,=\, \frac{1}{n_\ell}.
+\]
+
+Define the per-layer variance
+\[
+q^{(\ell)} \,=\, \frac{\mathbb{E}\big[\|\bm{h}^{(\ell)}\|^2\big]}{d_\ell}.
+\]
+For ReLU and centered parameters,
+\[
+q^{(\ell)} \,=\, \sigma_c^2 \, + \, \frac{\sigma_A^2}{2}\,\Big(q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w) \, + \, \beta^2\Big),
+\]
+with \(\Sigma_w = \mathrm{Cov}(w^{(\ell)}_j)\). The edge-of-chaos condition is
+\[
+\frac{\sigma_A^2}{2}\,\mathrm{Tr}(\Sigma_w) \,=\, 1.
+\]
+Under \(\Sigma_w = I_{d_{\ell-1}}/d_{\ell-1}\), we obtain \(\sigma_A = \sqrt{2}\) and we set \(\sigma_c^2 = 1\) at EOC.
+
 In the sequential infinite-width limit, the layer-\( \ell \) base kernel is
 \begin{equation}
 \Sigma^{(\ell)}(x,x')
@@ -59,57 +99,3 @@ where \( \mu \) is the data distribution and \( y \) is the target function.
 Proof: See Appendix A.1.
 
 \paragraph{Interpretation.} The additive term \( \Sigma^{(\ell)} \) encodes fresh basis contribution at layer \( \ell \), while the multiplicative coupling \( \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} \) transports geometry through layers via the derivative kernel.
-
-\medskip
-\noindent\textbf{Corollary (Two-layer NTK).}
-Consider \( L=2 \). Then
-\begin{align*}
-\Kop^{(1)}(x,x') \;&=\; \Sigma^{(1)}(x,x'),\\
-\Kop^{(2)}(x,x') \;&=\; \Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \Sigma^{(2)}(x,x'),
-\end{align*}
-where \( \Sigma^{(1)}(x,x')=\mathbb{E}_{\bm{w}}\big[\ReLU(\bm{w}^\top x)\ReLU(\bm{w}^\top x')\big] \) and
-\[
-\dot{\Sigma}^{(2)}(x,x')=\mathbb{E}_{\bm{w}}\Big[\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x)\big)\,\dot{\ReLU}\!\big(\bm{w}^\top \bm{h}^{(1)}(x')\big)\,\bm{w}^\top\bm{w}\Big],\quad
-\Sigma^{(2)}(x,x')=\mathbb{E}_{\bm{w}}\Big[\ReLU(\cdot)\ReLU(\cdot)\Big].
-\]
-Proof: See Appendix A.2.
-
-\medskip
-\noindent\textbf{Corollary (General L-layer NTK).}
-\label{cor:general_L_layer_ntk}
-For any depth \( L \geq 1 \), the NTK admits the explicit form:
-\begin{equation}
-\label{eq:ntk_explicit_form}
-\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
-\end{equation}
-where we use the convention that an empty product equals 1 (so the \( \ell=L \) term is just \( \Sigma^{(L)}(x,x') \)).
-
-Equivalently, expanding the recursion yields:
-\begin{align}
-\Kop^{(L)}(x,x') &= \Sigma^{(L)}(x,x') + \Sigma^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') \nonumber\\
-&\quad + \Sigma^{(L-2)}(x,x')\cdot\dot{\Sigma}^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') \nonumber\\
-&\quad + \cdots + \Sigma^{(1)}(x,x')\cdot\prod_{k=2}^{L}\dot{\Sigma}^{(k)}(x,x').
-\end{align}
-
-\paragraph{Interpretation.}
-Each term in the sum corresponds to a path through the network:
-\begin{itemize}
-    \item The term \( \Sigma^{(\ell)} \prod_{k=\ell+1}^L \dot{\Sigma}^{(k)} \) represents learning at layer \( \ell \) (fresh basis contribution \( \Sigma^{(\ell)} \)) propagated through layers \( \ell+1, \dots, L \) (derivative kernel transport \( \dot{\Sigma}^{(k)} \)).
-    \item The deepest term \( \Sigma^{(L)} \) is learning at the final layer without transport.
-    \item The shallowest term \( \Sigma^{(1)} \prod_{k=2}^L \dot{\Sigma}^{(k)} \) is learning at the first layer transported through all subsequent layers.
-\end{itemize}
-
-\paragraph{Depth dependence and scaling.}
-The NTK magnitude scales roughly as:
-\[
-\Kop^{(L)}(x,x') \sim L \cdot \bar{\Sigma} \cdot (\bar{\dot{\Sigma}})^{L-1},
-\]
-where \( \bar{\Sigma} \) and \( \bar{\dot{\Sigma}} \) are typical magnitudes of the base and derivative kernels. For ReLU networks with normalized inputs:
-\begin{itemize}
-    \item \( \bar{\Sigma} = O(1) \) (bounded by input norm).
-    \item \( \bar{\dot{\Sigma}} = O(1) \) but typically \( < 1 \), causing exponential decay with depth.
-    \item The factor \( L \) provides polynomial growth, but \( (\bar{\dot{\Sigma}})^{L-1} \) causes exponential decay.
-\end{itemize}
-This explains the vanishing gradient problem in deep untrained networks and motivates careful initialization schemes to maintain \( \bar{\dot{\Sigma}} \approx 1 \).
-
-Proof: See Appendix A.3.

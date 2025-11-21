@@ -1,4 +1,4 @@
-\section{Spectral theory of low-rank NTK (two-layer focus)}
+\section{Spectral theory of low-rank NTK for two-layer RF-LR}
 
 \subsection{General setup and scaling}
 \begin{definition}[RF-LR architecture and effective NTK]
@@ -20,8 +20,16 @@ Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random 
     \item \( (u,v) \) follow Kibble's (1941) bivariate Gamma (chi-square) law.
     \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
 \end{itemize}
-Proof: See Appendix C.1.
 \end{lemma}
+
+\paragraph{Homogeneity assumption enabling decoupling.}
+The independence of angular and radial components relies on the \emph{positive 1-homogeneity} of the ReLU activation: \( \ReLU(\alpha z) = \alpha \ReLU(z) \) for \( \alpha > 0 \). This property ensures that the base kernel factorizes as
+\[
+\Sigma^{(1)}(x,x') = \|x\|\,\|x'\| \cdot \tilde{\Sigma}^{(1)}(\rho),
+\]
+where \( \tilde{\Sigma}^{(1)}(\rho) \) depends only on the cosine similarity \( \rho = \langle x,x'\rangle/(\|x\|\|x'\|) \), enabling the separation of radial norms from angular correlations. For isotropic Gaussian projections, rotational invariance guarantees that the empirical correlation \( \rho_1 \) and the norms \( (\|x_1\|,\|y_1\|) \) are statistically independent, yielding the factorization stated in the lemma.
+
+Proof: See Appendix~\ref{appendix:fisher-kibble}.
 
 \subsection{Signal–noise decomposition of the empirical NTK}
 \begin{theorem}[Asymptotic signal–noise decomposition]\label{thm:signal-noise}
@@ -54,27 +62,17 @@ Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumption~\ref{assu
     \]
     where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel’s diagonal argument).
 \end{itemize}
-Proof: See Appendix C.3 (via El Karoui, 2010).
+Proof: See Appendix~\ref{appendix:marchenko-pastur} (via~\cite{El_Karoui_2010}).
 \end{theorem}
 
-\subsection{Outlier stability (BBP transition) under additive noise}
-\begin{theorem}[BBP-type transition]\label{thm:bbp}
-Perturb the kernel by an additive noise \( r^{\eta} g(\rho) \). Then:
-\begin{itemize}
-    \item If \( \eta < -\tfrac{1}{2} \): the noise is spectrally negligible; spike and bulk persist.
-    \item If \( \eta = -\tfrac{1}{2} \): the bulk undergoes free convolution with a Wigner law (critical blurring).
-    \item If \( \eta \ge \tfrac{1}{2} \): noise yields \(O(n)\) spectral scale and engulfs the spike (signal collapse).
-\end{itemize}
-Proof: See Appendix C.4.
-\end{theorem}
 
 \subsection{Two-layer case summary}
-Specializing to two layers with ReLU features:
-\begin{itemize}
-    \item \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\tfrac{\arccos(\rho)}{\pi}\big) + 2\,\Sigma^{(1)}(\rho)+1 \).
-    \item Spike scale: \( \lambda_{\mathrm{spike}} \approx n\,K_{\infty}(0) \).
-    \item Bulk support as in Theorem~\ref{thm:spike-bulk} with \(\beta=K_{\infty}'(0)\), \(\gamma\) the diagonal shift.
-\end{itemize}
+Specializing to two layers with ReLU features, the deterministic kernel limit is
+\( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + 2\,\Sigma^{(1)}(\rho) + 1 \).
+At the dataset level, the corresponding Gram matrix exhibits a rank-one “spike” of size
+\( \lambda_{\mathrm{spike}} \approx n\,K_{\infty}(0) \), superimposed on a deformed Marchenko–Pastur bulk.
+The bulk support is the interval given by Theorem~\ref{thm:spike-bulk}, with slope
+\( \beta = K'_{\infty}(0) \) and diagonal shift \( \gamma \) determined by the kernel’s on-diagonal value.
 
 \subsection{Asymptotic signal–noise (kernel CLT)}
 \begin{theorem}[Asymptotic Normality of the Low-Rank Kernel]\label{thm:kernel_clt}
