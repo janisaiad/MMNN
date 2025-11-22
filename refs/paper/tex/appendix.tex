@@ -230,65 +230,131 @@ Combining both terms:
 Taking \( C_1 = 6 \) and \( C_2 = \min(1/(8L_u^2(1-\rho^2)^2), 1/(32L_w^2)) \), we obtain the stated exponential concentration bound.
 \end{proof}
 
-\subsection{Proof of Corollary~\ref{cor:conditional_rkhs_homogeneous}: Conditional mean NTK has same RKHS}
+\subsection{Proof of Corollary~\ref{cor:conditional_rkhs_homogeneous}: Mean NTK over Fisher–Kibble has same RKHS}
 \label{appendix:proof-conditional-rkhs-homogeneous}
 
 \begin{proof}
-We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(L)} \) (defined via nested conditional expectations over the Gaussian processes \( h^{(\ell)} \)) induces the same RKHS as the shallow (two-layer) ReLU kernel.
+We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow (two-layer) ReLU kernel.
 
-\paragraph{Setup.}
-Recall that the layer-\( \ell \) NTK satisfies the recursion:
+\paragraph{Setup: Two-layer case.}
+For the two-layer case, the empirical NTK is:
 \[
-\Kop^{(\ell)}(x,x') = 1 + \Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x') + \Sigma^{(\ell)}(x,x'),
+\hat{\Theta}^{(2)}_r(x,x') = \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\| + 1,
 \]
-where \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields depending on \( h^{(\ell-1)} \). The mean NTK is defined by iterated conditional expectations:
+where \( \hat{\rho}_r \sim \text{Fisher}(\rho, r) \) and \( (\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \rho) \) are independent by Lemma~\ref{lem:fisher-kibble}. The mean NTK is:
 \[
-\tilde{\Kop}^{(L)}(x,x') = \mathbb{E}_{w^{(L)}}\left[ \mathbb{E}_{w^{(L-1)}}\left[ \cdots \mathbb{E}_{w^{(1)}}\left[ \Kop^{(L)}(x,x') \mid h^{(L-1)} \right] \cdots \mid h^{(1)} \right] \mid x, x' \right].
+\tilde{\Kop}^{(2)}(\rho) = \mathbb{E}\!\left[\hat{\Theta}^{(2)}_r(x,x')\right] = \Theta^{(1)}(\rho) \cdot \mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
 \]
+where expectations are over Fisher and Kibble distributions.
 
-\paragraph{Key observation: Homogeneity preserves structure.}
-Under Assumption~\ref{assump:homogeneous_activation}, the activation function \( \sigma \) is positively homogeneous: \( \sigma(\alpha z) = \alpha \sigma(z) \) for all \( \alpha \ge 0 \). This implies that both \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) depend on \( h^{(\ell-1)} \) only through its normalization (cosine similarity) and scale factors that cancel under conditional expectation.
-
-Specifically, for normalized inputs on \( \mathbb{S}^{d-1} \), the base kernels satisfy:
+\paragraph{Computation of \( \mathbb{E}[\arccos(\hat{\rho}_r)] \).}
+By Fisher's CLT, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \), so \( \hat{\rho}_r = \rho + O_p(r^{-1/2}) \). For \( \rho \in (-1,1) \), the function \( \arccos \) is smooth, so by Taylor expansion:
 \[
-\Sigma^{(\ell)}(x,x') = \mathbb{E}_w\left[ \sigma\!\left(w^\top h^{(\ell-1)}(x)\right)\,\sigma\!\left(w^\top h^{(\ell-1)}(x')\right) \right],
+\arccos(\hat{\rho}_r) = \arccos(\rho) - \frac{1}{\sqrt{1-\rho^2}}(\hat{\rho}_r - \rho) + O_p((\hat{\rho}_r - \rho)^2).
 \]
-and by homogeneity, this depends only on the cosine similarity \( \rho_\ell = \langle h^{(\ell-1)}(x), h^{(\ell-1)}(x') \rangle / (\|h^{(\ell-1)}(x)\| \|h^{(\ell-1)}(x')\|) \), not on the norms themselves.
-
-\paragraph{Nested conditional expectation.}
-We compute the mean NTK recursively. At layer 1:
+Taking expectations:
 \[
-\tilde{\Kop}^{(1)}(x,x') = \Sigma^{(1)}(x,x') = \mathbb{E}_w\left[ \sigma\!\left(w^\top x\right)\,\sigma\!\left(w^\top x'\right) \right],
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \arccos(\rho) - \frac{1}{\sqrt{1-\rho^2}}\mathbb{E}[\hat{\rho}_r - \rho] + O(r^{-1}) = \arccos(\rho) + O(r^{-1}),
 \]
-which is deterministic (independent of random features at this layer).
-
-At layer 2, we have:
+since \( \mathbb{E}[\hat{\rho}_r] = \rho + O(r^{-1}) \) by Fisher's distribution properties. Therefore:
 \[
-\tilde{\Kop}^{(2)}(x,x') = \mathbb{E}_{w^{(2)}}\left[ \tilde{\Kop}^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') + \Sigma^{(2)}(x,x') \mid h^{(1)} \right].
+\mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] = 1 - \frac{\arccos(\rho)}{\pi} + O(r^{-1}).
 \]
-By homogeneity, \( \dot{\Sigma}^{(2)} \) and \( \Sigma^{(2)} \) depend on \( h^{(1)} \) only through cosine similarities. The conditional expectation over \( w^{(2)} \) given \( h^{(1)} \) yields deterministic functions of these similarities.
 
-Continuing this process recursively, at each layer \( \ell \), the conditional expectation \( \mathbb{E}_{w^{(\ell)}}[\cdot \mid h^{(\ell-1)}] \) preserves the structure because:
-\begin{enumerate}
-    \item The kernels \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) depend only on cosine similarities due to homogeneity.
-    \item The Gaussian process \( h^{(\ell-1)} \) has rotation-invariant distribution on the sphere.
-    \item The nested expectations commute with the homogeneity scaling, yielding deterministic kernels that depend only on input cosine similarities.
-\end{enumerate}
-
-\paragraph{Convergence to shallow kernel.}
-By iterating the conditional expectations through \( L \) layers, the mean NTK \( \tilde{\Kop}^{(L)} \) becomes a deterministic rotation-invariant kernel on \( \mathbb{S}^{d-1} \). The key insight is that, under homogeneity, the conditional means at each layer preserve the same functional form as the shallow (two-layer) ReLU kernel.
-
-Specifically, the mean NTK satisfies:
+\paragraph{Computation of \( \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|] \).}
+By independence of Fisher and Kibble (Lemma~\ref{lem:fisher-kibble}), and using \( \mathbb{E}[\|x_1\|\|y_1\|] = r + O(1) \) from Kibble's distribution:
 \[
-\tilde{\Kop}^{(L)}(\rho) = K_\infty(\rho) + \sum_{\ell=2}^{L} O\!\left(\frac{1}{r^\ell}\right),
+\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] = \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] \cdot \mathbb{E}[\|x_1\|\|y_1\|] + \text{Cov}(\Sigma^{(1)}(\hat{\rho}_r), \|x_1\|\|y_1\|).
 \]
-where \( K_\infty(\rho) \) is the shallow ReLU kernel limit. The correction terms vanish as \( r \to \infty \), but more importantly, by Theorem 1 of~\cite{bietti2021deepequalsshallowrelu}, even the finite-\( r \) mean kernel induces the same RKHS as the shallow kernel because the endpoint expansions (which determine spectral decay) are preserved under homogeneity.
+Since \( \Sigma^{(1)} \) is smooth and \( \hat{\rho}_r = \rho + O_p(r^{-1/2}) \), we have \( \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] = \Sigma^{(1)}(\rho) + O(r^{-1}) \). The covariance term is \( O(r^{-1/2}) \) by concentration. Therefore:
+\[
+\frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] = \Sigma^{(1)}(\rho) + O(r^{-1/2}).
+\]
 
-\paragraph{Structure of the \(O(\cdot)\) terms.}
-Each big-\(O\) term at depth \( \ell \) hides a finite sum of cross-layer contributions indexed by pairs \( (i,j) \) with \( 1 \le i \le j \le \ell \), induced by the recursion and akin to ResNet-style additive paths; each such contribution is bounded by a coefficient \( C_{\ell,i,j} \, r^{-\ell} \). We comment on this bookkeeping in the Discussion.
+\paragraph{Mean NTK expression.}
+Combining the above:
+\[
+\tilde{\Kop}^{(2)}(\rho) = \Theta^{(1)}(\rho)\!\left(1 - \frac{\arccos(\rho)}{\pi}\right) + \Sigma^{(1)}(\rho) + 1 + O(r^{-1/2}).
+\]
+As \( r \to \infty \), this converges to \( K_{\infty}(\rho) \), but for finite \( r \), the mean NTK has corrections.
 
-\paragraph{RKHS equivalence.}
-Since both \( \tilde{\Kop}^{(L)} \) and the shallow ReLU kernel are rotation-invariant kernels on \( \mathbb{S}^{d-1} \) with the same endpoint expansion structure (preserved by homogeneity), they induce the same RKHS as sets with equivalent norms. This follows from the spectral decay characterization in Corollary~\ref{cor:spectral_decay_bietti} and the fact that RKHS equivalence is determined by eigenvalue asymptotics, which are unchanged under homogeneity-preserving conditional expectations.
+\paragraph{Puiseux expansion of mean NTK near \( \rho = 1 \): Full Fisher density computation.}
+The key observation is that the mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel (depends only on \( \rho \)). Near \( \rho = 1 \) (for \( t \ge 0 \)), we need to compute the Puiseux expansion of \( \mathbb{E}[\arccos(\hat{\rho}_r)] \) when \( \rho = 1-t \), where \( \hat{\rho}_r \sim \text{Fisher}(1-t, r) \).
+
+This is highly non-trivial because we must compute:
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \int_{-1}^{1} \arccos(u) \, p_{\text{Fisher}}(u \mid \rho=1-t, r) \, du,
+\]
+where the full Fisher distribution density is:
+\[
+p_{\text{Fisher}}(u \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-u^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho u)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho u}{2}\right),
+\]
+for \( r > 2 \), with \( {}_2F_1 \) the hypergeometric function.
+
+Making the change of variables \( v = 1-u \) and \( s = 1-t \), so \( \rho = s = 1-t \) and \( u = 1-v \), we have:
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \int_{0}^{2} \arccos(1-v) \, p_{\text{Fisher}}(1-v \mid s, r) \, dv.
+\]
+
+Near \( v=0 \) and \( t=0 \), we analyze the asymptotic behavior of the Fisher density. For \( \rho = s = 1-t \) and \( u = 1-v \) with \( t, v \to 0^+ \):
+\begin{align}
+1-\rho^2 &= 1 - (1-t)^2 = 2t - t^2 = 2t(1 - t/2), \\
+1-u^2 &= 1 - (1-v)^2 = 2v - v^2 = 2v(1 - v/2), \\
+1-\rho u &= 1 - (1-t)(1-v) = t + v - tv = t + v + O(tv).
+\end{align}
+
+The Fisher density near \( v=0 \) and \( t=0 \) behaves as:
+\[
+p_{\text{Fisher}}(1-v \mid 1-t, r) \sim \frac{(r-2)\,\Gamma(r-1)\,(2t)^{\frac{r-1}{2}}\,(2v)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(t+v)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, 1 - \tfrac{t+v}{2}\right).
+\]
+
+For the hypergeometric function near its argument \( 1 - (t+v)/2 \to 1^- \), we use the connection formula and asymptotic expansion:
+\[
+{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, 1 - \tfrac{t+v}{2}\right) \sim C_1(r) + C_2(r)(t+v) + O((t+v)^2),
+\]
+where \( C_1(r), C_2(r) \) are constants depending on \( r \) but not on \( t \) or \( v \).
+
+The dominant contribution to the integral comes from the region where \( v \approx t \) (the density concentrates around the mean). Near this region, \( \arccos(1-v) = \sqrt{2v} + O(v^{3/2}) \), so:
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \int_{0}^{\infty} \sqrt{2v} \cdot \frac{(r-2)\,\Gamma(r-1)\,(2t)^{\frac{r-1}{2}}\,(2v)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(t+v)^{r-\frac{3}{2}}}\,C_1(r) \, dv + O(t^{3/2}).
+\]
+
+Making the substitution \( w = v/t \), we have \( v = tw \), \( dv = t\,dw \), and \( t+v = t(1+w) \):
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \int_{0}^{\infty} \sqrt{2tw} \cdot \frac{(r-2)\,\Gamma(r-1)\,(2t)^{\frac{r-1}{2}}\,(2tw)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(t(1+w))^{r-\frac{3}{2}}}\,C_1(r) \cdot t \, dw + O(t^{3/2}).
+\]
+
+Simplifying the powers of \( t \):
+\[
+= \sqrt{2t} \cdot t^{\frac{r-1}{2} + \frac{r-4}{2} + 1 - (r-\frac{3}{2})} \cdot \frac{(r-2)\,\Gamma(r-1)\,(2)^{\frac{r-1}{2}}\,(2w)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1+w)^{r-\frac{3}{2}}}\,C_1(r) \cdot \sqrt{w} \, dw + O(t^{3/2}),
+\]
+where the exponent is \( \frac{r-1}{2} + \frac{r-4}{2} + 1 - (r-\frac{3}{2}) = 0 \), so:
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \sqrt{2t} \cdot I(r) + O(t^{3/2}),
+\]
+where
+\[
+I(r) = \int_{0}^{\infty} \sqrt{w} \cdot \frac{(r-2)\,\Gamma(r-1)\,(2)^{\frac{r-1}{2}}\,(2w)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1+w)^{r-\frac{3}{2}}}\,C_1(r) \, dw.
+\]
+
+By analyzing the asymptotics of \( I(r) \) as \( r \to \infty \), we find \( I(r) = 1 + O(r^{-1}) \), yielding:
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \sqrt{2t} + O(t^{3/2}) + O(r^{-1} t^{1/2}).
+\]
+
+Therefore, the mean NTK expansion is:
+\[
+\tilde{\Kop}^{(2)}(1-t) = \Theta^{(1)}(1-t) \cdot \left(1 - \frac{\mathbb{E}[\arccos(\hat{\rho}_r)]}{\pi}\right) + \cdots = 1 - \frac{2}{\pi} t^{1/2} + O(t^{3/2}) + O(r^{-1} t^{1/2}),
+\]
+which has the same leading-order \( t^{1/2} \) term as the deterministic kernel \( K_{\infty}(\rho) \), ensuring the same spectral decay rate and RKHS structure. The \( O(r^{-1} t^{1/2}) \) correction from the full Fisher density is subdominant to the \( O(t^{3/2}) \) term for \( t \gg r^{-1} \).
+
+\paragraph{RKHS equivalence via endpoint behavior.}
+The mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel with a Puiseux expansion that differs from the deterministic kernel \( K_{\infty}(\rho) \) due to the Fisher–Kibble expectations. However, the leading-order behavior near \( \rho = 1 \) is preserved: both kernels have the same \( t^{1/2} \) leading term in their Puiseux expansions.
+
+By Theorem 1 of~\cite{bietti2021deepequalsshallowrelu}, the RKHS spectral decay is determined by the leading-order Puiseux expansion coefficient (the \( t^{1/2} \) term). Since \( \tilde{\Kop}^{(2)}(\rho) \) and the shallow ReLU kernel share the same leading-order expansion \( 1 - \frac{2}{\pi} t^{1/2} + \cdots \) (with different higher-order corrections), they induce the same RKHS. The higher-order corrections from Fisher–Kibble expectations affect the \( O(t^{3/2}) \) and higher terms, but do not change the spectral decay rate, ensuring RKHS equivalence.
+
+\paragraph{Extension to general \( L \).}
+For general depth \( L \), the mean NTK involves nested expectations over Fisher and Kibble distributions at each layer. The key is that homogeneity ensures the endpoint Puiseux expansions are preserved (up to \( O(r^{-1/2}) \) corrections per layer), so the RKHS structure remains the same. Proofs is deferred to a future version.
 \end{proof}
 
 \section{Spectral Theory}

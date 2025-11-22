@@ -67,29 +67,33 @@ The extension of this concentration bound to general depth \( L \) layers under 
 \end{remark}
 
 \vspace{0.5em}
-\subsection{Conditional mean NTK}\label{subsec:conditional-mean-ntk}
-Having established concentration results, we now turn to the mean NTK conditional on the random features. The mean NTK is defined as nested conditional expectations through \( L \) layers:
+\subsection{Mean NTK over Fisher and Kibble distributions}\label{subsec:conditional-mean-ntk}
+Having established concentration results, we now turn to the mean NTK. The key observation is that the empirical NTK depends on random variables that follow Fisher and Kibble distributions. The mean NTK is obtained by taking expectations over these distributions.
 
+For the two-layer case, the empirical NTK is:
 \[
-\tilde{\Kop}^{(L)}(x,x') = \mathbb{E}_{w^{(L)}}\left[ \mathbb{E}_{w^{(L-1)}}\left[ \cdots \mathbb{E}_{w^{(1)}}\left[ \Kop^{(L)}(x,x') \mid h^{(L-1)} \right] \cdots \mid h^{(1)} \right] \mid x, x' \right].
+\hat{\Theta}^{(2)}_r(x,x') = \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\| + 1,
 \]
-
-This represents the kernel obtained by averaging over the Gaussian processes \( h^{(\ell)} \) at each layer sequentially.
-
-\begin{corollary}[Conditional mean NTK has same RKHS]\label{cor:conditional_rkhs_homogeneous}
-Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (defined via nested conditional expectations over the Gaussian processes \( h^{(\ell)} \)) induces the same RKHS as the shallow (two-layer) ReLU kernel. In particular, the conditional mean RKHS coincides with the unconditional RKHS as sets with equivalent norms.
-
-For the two-layer case (\( L=2 \)), the mean NTK has the explicit expression (as a function of cosine similarity \( \rho \)):
+where \( \hat{\rho}_r \) follows Fisher's distribution (centered at \( \rho \)) and \( \|x_1\|\|y_1\| \) follows Kibble's distribution. The mean NTK is therefore:
 \[
-\tilde{\Kop}^{(2)}(\rho) = K_{\infty}(\rho) = \Theta^{(1)}(\rho)\,\Big(1 - \frac{\arccos(\rho)}{\pi}\Big) + \Sigma^{(1)}(\rho) + 1,
+\tilde{\Kop}^{(2)}(\rho) = \mathbb{E}_{\text{Fisher}, \text{Kibble}}\left[\hat{\Theta}^{(2)}_r(x,x')\right] = \Theta^{(1)}(\rho) \cdot \mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
 \]
-where \( \Theta^{(1)}(\rho) \) and \( \Sigma^{(1)}(\rho) \) are the one-layer NTK and base kernel, respectively.
+where the expectations are taken over the Fisher distribution of \( \hat{\rho}_r \) and the Kibble distribution of \( (\|x_1\|^2, \|y_1\|^2) \).
+
+\begin{corollary}[Mean NTK over Fisher–Kibble has same RKHS]\label{cor:conditional_rkhs_homogeneous}
+Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions at each layer) is a zonal kernel on \( \mathbb{S}^{d-1} \) that induces the same RKHS as the shallow (two-layer) ReLU kernel. In particular, the mean NTK RKHS coincides with the unconditional RKHS as sets with equivalent norms.
+
+For the two-layer case (\( L=2 \)), the mean NTK is:
+\[
+\tilde{\Kop}^{(2)}(\rho) = \Theta^{(1)}(\rho) \cdot \mathbb{E}_{\hat{\rho}_r \sim \text{Fisher}(\rho,r)}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}_{\hat{\rho}_r, \|x_1\|, \|y_1\|}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
+\]
+where the expectations are over Fisher and Kibble distributions. This yields a zonal kernel with a Puiseux expansion that differs from the deterministic kernel \( K_{\infty}(\rho) \), but preserves the same endpoint behavior, ensuring RKHS equivalence.
 \end{corollary}
 
 Proof: See Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}.
 
 \begin{remark}
-This corollary shows that even when conditioning on the realized random features (the Gaussian processes \( h^{(\ell)} \)) at each layer, the resulting conditional mean NTK preserves the same RKHS structure. This relies crucially on the homogeneity property of the activation function.
+This corollary is highly non-trivial: we must compute expectations of \( \arccos(\hat{\rho}_r) \) where \( \hat{\rho}_r \sim \text{Fisher}(\rho,r) \), and expectations of products involving Kibble-distributed norm products. The resulting mean NTK has a different Puiseux expansion than the deterministic kernel, but the endpoint behavior (which determines spectral decay and RKHS structure) is preserved under homogeneity, ensuring RKHS equivalence.
 \end{remark}
 
 \vspace{0.5em}
