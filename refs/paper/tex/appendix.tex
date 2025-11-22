@@ -140,11 +140,6 @@ The first term \( 1 \) corresponds to \( \ell=L \) in the first sum (with empty 
 completing the induction. The total number of terms is \( L + L = 2L \), which grows linearly with depth. However, when considering finite-width corrections and interactions between terms, the complexity becomes quadratic.
 \end{proof}
 
-\section{RKHS Theory and Concentration}
-\label{appendix:rkhs-theory}
-
-\subsection{No RKHS Advantage}
-\label{appendix:no-rkhs-advantage}
 
 
 \subsection{Proof of Theorem~\ref{thm:rkhs_rank_concentration}: Rank-driven concentration}
@@ -187,7 +182,7 @@ Recall that the kernel function is defined as:
 \[
 \Psi(u,w) = \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) + w\,\Sigma^{(1)}(u) + 1,
 \]
-where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \). By Fisher's CLT, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \), and by Theorem~\ref{thm:rkhs_rank_concentration}, \( \hat{w}_r \) concentrates around 1 with sub-Gaussian tails.
+where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \). By Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \), and by Theorem~\ref{thm:rkhs_rank_concentration}, \( \hat{w}_r \) concentrates around 1 with sub-Gaussian tails.
 
 \paragraph{Lipschitz properties of \( \Psi \).}
 The function \( \Psi \) is differentiable in both arguments. For fixed \( \rho \in (-1,1) \), we have:
@@ -211,7 +206,7 @@ Therefore, for \( \epsilon \in (0,1) \):
 \]
 
 \paragraph{Angular concentration (Fisher).}
-By Fisher's CLT, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \). For large \( r \), using sub-Gaussian concentration:
+By Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \). For large \( r \), using sub-Gaussian concentration:
 \[
 \mathbb{P}\!\left(|\hat{\rho}_r - \rho| \ge \frac{\epsilon}{2L_u}\right) \le 2\exp\!\left(-\frac{r\epsilon^2}{8L_u^2(1-\rho^2)^2}\right).
 \]
@@ -230,53 +225,61 @@ Combining both terms:
 Taking \( C_1 = 6 \) and \( C_2 = \min(1/(8L_u^2(1-\rho^2)^2), 1/(32L_w^2)) \), we obtain the stated exponential concentration bound.
 \end{proof}
 
+
+
+
+\subsection{Fisher and Kibble Distributions}
+\label{appendix:fisher-kibble}
+
+\begin{lemma}[Fisher–Kibble decoupling]
+\label{lem:fisher-kibble}
+Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
+\begin{itemize}
+    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable} \cite{hotelling1953new}, centered at the true correlation \( \rho \).
+    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate Gamma (chi-square) law.
+    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
+\end{itemize}
+\end{lemma}
+
+\begin{proof}
+\label{proof:fisher_kibble}
+Let \(x, y \in \mathbb{R}^d\) be fixed input vectors with correlation \(\rho = \langle x, y\rangle/(\|x\|\|y\|)\). Consider a rank-\(r\) random projection matrix \(P \in \mathbb{R}^{r \times d}\) with entries \(P_{ij} \sim \mathcal{N}(0, 1/d)\) i.i.d., so that \(x_1 = Px\) and \(y_1 = Py\) are the projected vectors.
+
+Since \(P\) has i.i.d. Gaussian entries, the projected vectors \(x_1, y_1 \in \mathbb{R}^r\) form a \(\rho\)-correlated bivariate Gaussian pair. Specifically, for each component \(i = 1, \dots, r\), the pairs \((x_{1i}, y_{1i})\) are i.i.d. with joint distribution
+\[
+\begin{pmatrix} x_{1i} \\ y_{1i} \end{pmatrix} \sim \mathcal{N}\left(\mathbf{0}, \begin{pmatrix} \|x\|^2/d & \rho \|x\|\|y\|/d \\ \rho \|x\|\|y\|/d & \|y\|^2/d \end{pmatrix}\right).
+\]
+By rotational invariance of the Gaussian projection and the fact that the correlation \(\rho\) is preserved under orthogonal transformations, we can assume without loss of generality that the covariance structure factors into angular and radial components.
+
+\paragraph{Angular part (Fisher distribution).}
+The empirical correlation is defined as
+\[
+\rho_1 = \frac{\langle x_1, y_1 \rangle}{\|x_1\|\|y_1\|} = \frac{\sum_{i=1}^r x_{1i} y_{1i}}{\sqrt{\sum_{i=1}^r x_{1i}^2}\sqrt{\sum_{i=1}^r y_{1i}^2}}.
+\]
+This is the sample correlation coefficient of \(r\) pairs of correlated Gaussian random variables. Fisher~\cite{fisher1915probable,hotelling1953new} showed that the distribution of \(\rho_1\) depends only on the true correlation \(\rho\) and the sample size \(r\), with density given in Theorem~\ref{rmk:fisher-kibble-law}. The key observation is that \(\rho_1\) is a function purely of the angles between the projected vectors, independent of their magnitudes.
+
+\paragraph{Radial part (Kibble distribution).}
+The squared norms \(u = \|x_1\|^2 = \sum_{i=1}^r x_{1i}^2\) and \(v = \|y_1\|^2 = \sum_{i=1}^r y_{1i}^2\) are sums of correlated chi-square variables. Since \((x_{1i}, y_{1i})\) are \(\rho\)-correlated Gaussians, the bivariate distribution of \((u, v)\) follows Kibble's~\cite{kibble1941two} bivariate chi-square law. The joint density involves the modified Bessel function \(I_{\nu}(z)\), which appears because the dot product \(\langle x_1, y_1 \rangle = \sum_{i=1}^r x_{1i} y_{1i}\) can be expressed as a weighted sum of products of correlated normals, whose distribution relates to Bessel functions through the generating function of the bivariate chi-square distribution.
+
+Specifically, the joint characteristic function of \((u, v)\) is
+\[
+\phi(s, t) = \mathbb{E}[e^{i(su + tv)}] = \left(1 - 2i(1-\rho^2)(s+t) - 4\rho^2 st\right)^{-r/2},
+\]
+and the inverse Fourier transform yields Kibble's density, which contains the modified Bessel function \(I_{\frac{r}{2}-1}\) as shown in Theorem~\ref{thm:kibble-distribution}. The Bessel function arises from the integral representation of the bivariate chi-square density when the correlation \(\rho \neq 0\).
+
+\paragraph{Independence of angular and radial parts.}
+Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = \cos\angle(x_1, y_1)\) and the norms \((\|x_1\|, \|y_1\|)\) are independent, yielding the factorization \(p(\rho_1, u, v) = p_{\text{Fisher}}(\rho_1) \cdot p_{\text{Kibble}}(u, v)\). This is the classical independence of the sample correlation from sample variances in bivariate normal data.
+\end{proof}
+
+
+
+
+
 \subsection{Proof of Corollary~\ref{cor:conditional_rkhs_homogeneous}: Mean NTK over Fisher–Kibble has same RKHS}
 \label{appendix:proof-conditional-rkhs-homogeneous}
 
 \begin{proof}
 We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow (two-layer) ReLU kernel.
-
-\paragraph{Setup: Two-layer case.}
-For the two-layer case, the empirical NTK is:
-\[
-\hat{\Theta}^{(2)}_r(x,x') = \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\| + 1,
-\]
-where \( \hat{\rho}_r \sim \text{Fisher}(\rho, r) \) and \( (\|x_1\|^2, \|y_1\|^2) \sim \text{Kibble}(r, \rho) \) are independent by Lemma~\ref{lem:fisher-kibble}. The mean NTK is:
-\[
-\tilde{\Kop}^{(2)}(\rho) = \mathbb{E}\!\left[\hat{\Theta}^{(2)}_r(x,x')\right] = \Theta^{(1)}(\rho) \cdot \mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
-\]
-where expectations are over Fisher and Kibble distributions.
-
-\paragraph{Computation of \( \mathbb{E}[\arccos(\hat{\rho}_r)] \).}
-By Fisher's CLT, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \), so \( \hat{\rho}_r = \rho + O_p(r^{-1/2}) \). For \( \rho \in (-1,1) \), the function \( \arccos \) is smooth, so by Taylor expansion:
-\[
-\arccos(\hat{\rho}_r) = \arccos(\rho) - \frac{1}{\sqrt{1-\rho^2}}(\hat{\rho}_r - \rho) + O_p((\hat{\rho}_r - \rho)^2).
-\]
-Taking expectations:
-\[
-\mathbb{E}[\arccos(\hat{\rho}_r)] = \arccos(\rho) - \frac{1}{\sqrt{1-\rho^2}}\mathbb{E}[\hat{\rho}_r - \rho] + O(r^{-1}) = \arccos(\rho) + O(r^{-1}),
-\]
-since \( \mathbb{E}[\hat{\rho}_r] = \rho + O(r^{-1}) \) by Fisher's distribution properties. Therefore:
-\[
-\mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] = 1 - \frac{\arccos(\rho)}{\pi} + O(r^{-1}).
-\]
-
-\paragraph{Computation of \( \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|] \).}
-By independence of Fisher and Kibble (Lemma~\ref{lem:fisher-kibble}), and using \( \mathbb{E}[\|x_1\|\|y_1\|] = r + O(1) \) from Kibble's distribution:
-\[
-\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] = \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] \cdot \mathbb{E}[\|x_1\|\|y_1\|] + \text{Cov}(\Sigma^{(1)}(\hat{\rho}_r), \|x_1\|\|y_1\|).
-\]
-Since \( \Sigma^{(1)} \) is smooth and \( \hat{\rho}_r = \rho + O_p(r^{-1/2}) \), we have \( \mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] = \Sigma^{(1)}(\rho) + O(r^{-1}) \). The covariance term is \( O(r^{-1/2}) \) by concentration. Therefore:
-\[
-\frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] = \Sigma^{(1)}(\rho) + O(r^{-1/2}).
-\]
-
-\paragraph{Mean NTK expression.}
-Combining the above:
-\[
-\tilde{\Kop}^{(2)}(\rho) = \Theta^{(1)}(\rho)\!\left(1 - \frac{\arccos(\rho)}{\pi}\right) + \Sigma^{(1)}(\rho) + 1 + O(r^{-1/2}).
-\]
-As \( r \to \infty \), this converges to \( K_{\infty}(\rho) \), but for finite \( r \), the mean NTK has corrections.
 
 \paragraph{Puiseux expansion of mean NTK near \( \rho = 1 \): Full Fisher density computation.}
 The key observation is that the mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel (depends only on \( \rho \)). Near \( \rho = 1 \) (for \( t \ge 0 \)), we need to compute the Puiseux expansion of \( \mathbb{E}[\arccos(\hat{\rho}_r)] \) when \( \rho = 1-t \), where \( \hat{\rho}_r \sim \text{Fisher}(1-t, r) \).
@@ -308,7 +311,7 @@ The Fisher density near \( v=0 \) and \( t=0 \) behaves as:
 p_{\text{Fisher}}(1-v \mid 1-t, r) \sim \frac{(r-2)\,\Gamma(r-1)\,(2t)^{\frac{r-1}{2}}\,(2v)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(t+v)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, 1 - \tfrac{t+v}{2}\right).
 \]
 
-For the hypergeometric function near its argument \( 1 - (t+v)/2 \to 1^- \), we use the connection formula and asymptotic expansion:
+For the hypergeometric function near its argument \( 1 - (t+v)/2 \to 1^- \), we use the connection formula and asymptotic expansion from \cite{nist_dlmf} and \cite{abramowitz1964handbook}:
 \[
 {}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, 1 - \tfrac{t+v}{2}\right) \sim C_1(r) + C_2(r)(t+v) + O((t+v)^2),
 \]
@@ -337,16 +340,39 @@ where
 I(r) = \int_{0}^{\infty} \sqrt{w} \cdot \frac{(r-2)\,\Gamma(r-1)\,(2)^{\frac{r-1}{2}}\,(2w)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1+w)^{r-\frac{3}{2}}}\,C_1(r) \, dw.
 \]
 
-By analyzing the asymptotics of \( I(r) \) as \( r \to \infty \), we find \( I(r) = 1 + O(r^{-1}) \), yielding:
+Evaluating the integral yields the exact constant
 \[
-\mathbb{E}[\arccos(\hat{\rho}_r)] = \sqrt{2t} + O(t^{3/2}) + O(r^{-1} t^{1/2}).
+I(r) \;=\; \frac{(r-2)\,2^{\,r-\frac{5}{2}}\,\Gamma\!\left(\frac{r-1}{2}\right)\Gamma\!\left(\frac{r}{2}-1\right)}{\sqrt{2\pi}\,\Gamma(r-1)}\,C_1(r),
+\qquad
+C_1(r) \;=\; \frac{\Gamma\!\left(r-\tfrac{1}{2}\right)\Gamma\!\left(r-\tfrac{3}{2}\right)}{\Gamma(r-1)^2}.
+\]
+Therefore,
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] \;=\; \sqrt{2t}\,I(r) \;+\; O(t^{3/2}).
 \]
 
 Therefore, the mean NTK expansion is:
 \[
-\tilde{\Kop}^{(2)}(1-t) = \Theta^{(1)}(1-t) \cdot \left(1 - \frac{\mathbb{E}[\arccos(\hat{\rho}_r)]}{\pi}\right) + \cdots = 1 - \frac{2}{\pi} t^{1/2} + O(t^{3/2}) + O(r^{-1} t^{1/2}),
+\tilde{\Kop}^{(2)}(1-t)
+\;=\;
+K_\infty(1)
+\;-\;
+\Bigg[
+\frac{2}{\pi}
+\frac{\sqrt{2}}{\pi}\,\Theta^{(1)}(1)\,\frac{I(r)}{2}
+\Bigg]\,t^{1/2}
+\;+\; O(t^{3/2}),
 \]
-which has the same leading-order \( t^{1/2} \) term as the deterministic kernel \( K_{\infty}(\rho) \), ensuring the same spectral decay rate and RKHS structure. The \( O(r^{-1} t^{1/2}) \) correction from the full Fisher density is subdominant to the \( O(t^{3/2}) \) term for \( t \gg r^{-1} \).
+so, for ReLU with \( \Theta^{(1)}(1)=\tfrac{1}{2} \),
+\[
+\tilde{\Kop}^{(2)}(1-t)
+\;=\;
+K_\infty(1)
+\;-\;
+\left[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}\,I(r)\right]\,t^{1/2}
+\;+\; O(t^{3/2}).
+\]
+This exhibits the complete \( r \)-dependent constant multiplying \( t^{1/2} \).
 
 \paragraph{RKHS equivalence via endpoint behavior.}
 The mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel with a Puiseux expansion that differs from the deterministic kernel \( K_{\infty}(\rho) \) due to the Fisher–Kibble expectations. However, the leading-order behavior near \( \rho = 1 \) is preserved: both kernels have the same \( t^{1/2} \) leading term in their Puiseux expansions.
@@ -365,7 +391,7 @@ For general depth \( L \), the mean NTK involves nested expectations over Fisher
 
 \begin{proof}[Proof of Theorem~\ref{thm:kernel_clt}]
 \label{appendix:proof-kernel-clt}
-We establish the asymptotic distribution of the empirical kernel \( \hat{\Theta}^{(2)}_r = \Psi(\hat{\rho}_r,\hat{w}_r) \) via a joint CLT and the multivariate Delta method. Let \( \mathbf{Z}_r = (\hat{\rho}_r,\,\hat{w}_r)^\top \). For isotropic Gaussian projections in rank \( r \), Fisher's theory gives
+We establish the asymptotic distribution of the empirical kernel \( \hat{\Theta}^{(2)}_r = \Psi(\hat{\rho}_r,\hat{w}_r) \) via a joint CLT and the multivariate Delta method. Let \( \mathbf{Z}_r = (\hat{\rho}_r,\,\hat{w}_r)^\top \). For isotropic Gaussian projections in rank \( r \), Fisher's theory~\cite{fisher1915probable,hotelling1953new} gives
 \[
 \sqrt{r}\,(\hat{\rho}_r-\rho) \;\xrightarrow{d}\; \mathcal{N}\!\left(0,\,(1-\rho^2)^2\right).
 \]
@@ -399,50 +425,6 @@ Hence
 \]
 which proves the claim.
 \end{proof}
-
-\subsection{Fisher and Kibble Distributions}
-\label{appendix:fisher-kibble}
-
-\begin{lemma}[Fisher–Kibble decoupling]
-\label{lem:fisher-kibble}
-Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
-\begin{itemize}
-    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable}, centered at the true correlation \( \rho \).
-    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate Gamma (chi-square) law.
-    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
-\end{itemize}
-\end{lemma}
-
-\begin{proof}
-\label{proof:fisher_kibble}
-Let \(x, y \in \mathbb{R}^d\) be fixed input vectors with correlation \(\rho = \langle x, y\rangle/(\|x\|\|y\|)\). Consider a rank-\(r\) random projection matrix \(P \in \mathbb{R}^{r \times d}\) with entries \(P_{ij} \sim \mathcal{N}(0, 1/d)\) i.i.d., so that \(x_1 = Px\) and \(y_1 = Py\) are the projected vectors.
-
-Since \(P\) has i.i.d. Gaussian entries, the projected vectors \(x_1, y_1 \in \mathbb{R}^r\) form a \(\rho\)-correlated bivariate Gaussian pair. Specifically, for each component \(i = 1, \dots, r\), the pairs \((x_{1i}, y_{1i})\) are i.i.d. with joint distribution
-\[
-\begin{pmatrix} x_{1i} \\ y_{1i} \end{pmatrix} \sim \mathcal{N}\left(\mathbf{0}, \begin{pmatrix} \|x\|^2/d & \rho \|x\|\|y\|/d \\ \rho \|x\|\|y\|/d & \|y\|^2/d \end{pmatrix}\right).
-\]
-By rotational invariance of the Gaussian projection and the fact that the correlation \(\rho\) is preserved under orthogonal transformations, we can assume without loss of generality that the covariance structure factors into angular and radial components.
-
-\paragraph{Angular part (Fisher distribution).}
-The empirical correlation is defined as
-\[
-\rho_1 = \frac{\langle x_1, y_1 \rangle}{\|x_1\|\|y_1\|} = \frac{\sum_{i=1}^r x_{1i} y_{1i}}{\sqrt{\sum_{i=1}^r x_{1i}^2}\sqrt{\sum_{i=1}^r y_{1i}^2}}.
-\]
-This is the sample correlation coefficient of \(r\) pairs of correlated Gaussian random variables. Fisher~\cite{fisher1915probable} showed that the distribution of \(\rho_1\) depends only on the true correlation \(\rho\) and the sample size \(r\), with density given in Theorem~\ref{thm:fisher-distribution}. The key observation is that \(\rho_1\) is a function purely of the angles between the projected vectors, independent of their magnitudes.
-
-\paragraph{Radial part (Kibble distribution).}
-The squared norms \(u = \|x_1\|^2 = \sum_{i=1}^r x_{1i}^2\) and \(v = \|y_1\|^2 = \sum_{i=1}^r y_{1i}^2\) are sums of correlated chi-square variables. Since \((x_{1i}, y_{1i})\) are \(\rho\)-correlated Gaussians, the bivariate distribution of \((u, v)\) follows Kibble's~\cite{kibble1941two} bivariate chi-square law. The joint density involves the modified Bessel function \(I_{\nu}(z)\), which appears because the dot product \(\langle x_1, y_1 \rangle = \sum_{i=1}^r x_{1i} y_{1i}\) can be expressed as a weighted sum of products of correlated normals, whose distribution relates to Bessel functions through the generating function of the bivariate chi-square distribution.
-
-Specifically, the joint characteristic function of \((u, v)\) is
-\[
-\phi(s, t) = \mathbb{E}[e^{i(su + tv)}] = \left(1 - 2i(1-\rho^2)(s+t) - 4\rho^2 st\right)^{-r/2},
-\]
-and the inverse Fourier transform yields Kibble's density, which contains the modified Bessel function \(I_{\frac{r}{2}-1}\) as shown in Theorem~\ref{thm:kibble-distribution}. The Bessel function arises from the integral representation of the bivariate chi-square density when the correlation \(\rho \neq 0\).
-
-\paragraph{Independence of angular and radial parts.}
-Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = \cos\angle(x_1, y_1)\) and the norms \((\|x_1\|, \|y_1\|)\) are independent, yielding the factorization \(p(\rho_1, u, v) = p_{\text{Fisher}}(\rho_1) \cdot p_{\text{Kibble}}(u, v)\). This is the classical independence of the sample correlation from sample variances in bivariate normal data.
-\end{proof}
-
 
 \subsection{Proof of Theorem~\ref{thm:spike-bulk}: Deformed Marchenko–Pastur with Spike}
 \label{appendix:marchenko-pastur}

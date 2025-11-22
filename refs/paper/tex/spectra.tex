@@ -54,12 +54,12 @@ and the empirical kernel \( \hat{\Theta}^{(2)}_r \;=\; \Psi(\hat{\rho}_r, \hat{w
 \]
 where \( K_{\infty}(\rho)=\mathbb{E}[\Theta^{(2)}_{\mathrm{obs}}(\rho)] \) is the deterministic limit and \( \mathcal{G}(\rho) \sim \mathcal{N}\!\big(0,\sigma_{\mathrm{tot}}^2(\rho)\big) \) is a centered Gaussian field with variance
 \[
-\sigma_{\mathrm{tot}}^2(\rho) \;=\; \mathrm{Var}(\mathcal{G}(\rho)) \;=\; \underbrace{\big[\partial_\rho K_{\infty}(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)}} \;+\; \underbrace{\big[\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
+\sigma_{\mathrm{tot}}^2(\rho) \;=\; \mathrm{Var}(\mathcal{G}(\rho)) \;=\; \underbrace{\big[\partial_\rho K_{\infty}(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)~\cite{fisher1915probable,hotelling1953new}}} \;+\; \underbrace{\big[\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
 \]
 Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 \end{theorem}
 \paragraph{Proof intuition.}
-By Fisher–Kibble decoupling (Lemma~\ref{lem:fisher-kibble}), the angular \( \hat{\rho}_r \) and radial \( \hat{w}_r \) components are independent. A joint CLT gives \( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \xrightarrow{d} \mathcal{N}(\mathbf{0},\ \mathrm{diag}((1-\rho^2)^2,\ 1+\rho^2)) \). Applying the Delta method to \( \Psi \) at \( (\rho,1) \) with gradient \( (\partial_\rho K_{\infty}(\rho),\ \Sigma^{(1)}(\rho)) \) yields the stated variance (no cross term by independence). The limit is a deterministic kernel plus \( O_p(r^{-1/2}) \) Gaussian fluctuation.
+By Fisher–Kibble decoupling (Lemma~\ref{lem:fisher-kibble})~\cite{fisher1915probable,hotelling1953new}, the angular \( \hat{\rho}_r \) and radial \( \hat{w}_r \) components are independent. A joint CLT gives \( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \xrightarrow{d} \mathcal{N}(\mathbf{0},\ \mathrm{diag}((1-\rho^2)^2,\ 1+\rho^2)) \). Applying the Delta method to \( \Psi \) at \( (\rho,1) \) with gradient \( (\partial_\rho K_{\infty}(\rho),\ \Sigma^{(1)}(\rho)) \) yields the stated variance (no cross term by independence). The limit is a deterministic kernel plus \( O_p(r^{-1/2}) \) Gaussian fluctuation.
 
 Having established the entrywise asymptotic distribution, we now turn to the macroscopic spectral properties of the kernel matrix. The eigenvalue distribution follows a deformed Marchenko–Pastur law with a characteristic spike-bulk structure.
 
