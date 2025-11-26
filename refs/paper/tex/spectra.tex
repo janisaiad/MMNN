@@ -32,15 +32,7 @@ Following the framework of~\cite{El_Karoui_2010}, we impose the following condit
 
 With these scaling assumptions in place, we can now analyze the microscopic structure of the kernel. The key insight is that the randomness in the low-rank projections decomposes into independent angular and radial components.
 
-To apply \cite{El_Karoui_2010}, we need to confirm that the kernel function \( K_{\infty}(\rho) \) is \( C^1 \) in a neighborhood of \( \ell = \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d \) and \( C^3 \) in a neighborhood of \( 0 \).
-
-\begin{proposition}[Kernel regularity]\label{prop:kernel_regularity}
-The kernel function \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + \Sigma^{(1)}(\rho) + 1 \) is \( C^1 \) in a neighborhood of \( \ell = \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d \) and \( C^3 \) in a neighborhood of \( 0 \).
-\end{proposition}
-
-\begin{proof}
-Since we have explicit formulas for \( K_{\infty}(\rho) \), \( \Theta^{(1)}(\rho) \), and \( \Sigma^{(1)}(\rho) \), the regularity follows directly from the smoothness of the component functions. The function \( \arccos(\rho) \) is \( C^\infty \) on \( (-1,1) \), and the ReLU kernel \( \Sigma^{(1)}(\rho) \) is known to be \( C^1 \) except at \( \rho = 1 \) and \( C^3 \) in a neighborhood of \( 0 \). Since products and compositions of smooth functions preserve smoothness, \( K_{\infty}(\rho) \) inherits the required regularity properties.
-\end{proof}
+To apply \cite{El_Karoui_2010}, the kernel function \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + \Sigma^{(1)}(\rho) + 1 \) must be \( C^1 \) in a neighborhood of \( \ell = \lim_{d\to\infty} \mathrm{trace}(\Sigma_d)/d \) and \( C^3 \) in a neighborhood of \( 0 \). This holds trivially since \( \arccos(\rho) \) is \( C^\infty \) on \( (-1,1) \) and the ReLU kernels \( \Theta^{(1)}(\rho) \) and \( \Sigma^{(1)}(\rho) \) have the required smoothness properties.
 
 \subsection{Signal–noise decomposition of the empirical NTK}
 \begin{theorem}[Asymptotic normality of the low-rank kernel]\label{thm:kernel_clt}
@@ -56,10 +48,12 @@ where \( K_{\infty}(\rho)=\mathbb{E}[\Theta^{(2)}_{\mathrm{obs}}(\rho)] \) is th
 \[
 \sigma_{\mathrm{tot}}^2(\rho) \;=\; \mathrm{Var}(\mathcal{G}(\rho)) \;=\; \underbrace{\big[\partial_\rho K_{\infty}(\rho)\,(1-\rho^2)\big]^2}_{\text{Fisher (angle)~\cite{fisher1915probable,hotelling1953new}}} \;+\; \underbrace{\big[\Sigma^{(1)}(\rho)\,\sqrt{1+\rho^2}\big]^2}_{\text{Kibble (norms)}}.
 \]
-Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 \end{theorem}
+
 \paragraph{Proof intuition.}
 By Fisher–Kibble decoupling (Lemma~\ref{lem:fisher-kibble})~\cite{fisher1915probable,hotelling1953new}, the angular \( \hat{\rho}_r \) and radial \( \hat{w}_r \) components are independent. A joint CLT gives \( \sqrt{r}\,(\hat{\rho}_r-\rho,\ \hat{w}_r-1) \xrightarrow{d} \mathcal{N}(\mathbf{0},\ \mathrm{diag}((1-\rho^2)^2,\ 1+\rho^2)) \). Applying the Delta method to \( \Psi \) at \( (\rho,1) \) with gradient \( (\partial_\rho K_{\infty}(\rho),\ \Sigma^{(1)}(\rho)) \) yields the stated variance (no cross term by independence). The limit is a deterministic kernel plus \( O_p(r^{-1/2}) \) Gaussian fluctuation.
+
+Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 
 Having established the entrywise asymptotic distribution, we now turn to the macroscopic spectral properties of the kernel matrix. The eigenvalue distribution follows a deformed Marchenko–Pastur law with a characteristic spike-bulk structure.
 

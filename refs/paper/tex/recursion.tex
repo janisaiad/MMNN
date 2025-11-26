@@ -135,18 +135,18 @@ We can now characterize the statistical properties of the empirical correlation 
 \vspace{0.2cm}
 We now state the explicit forms of these distributions. The \textbf{Fisher distribution density}~\cite{fisher1915probable} is
 \[
-p(\rho_1 \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right),
+\boxed{p(\rho_1 \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right),}
 \]
 for \( r > 2 \). For large \( r \), the inverse Gudermann function applied to the complementary angle follows a normal distribution:
 \[
-\boxed{ \text{gd}^{-1}\!\left(\frac{\pi}{2} - \arccos(\rho_1)\right) \;\approx\; \mathcal{N}\!\left(\text{arctanh}(\rho),\; \frac{1}{r-3}\right) }
+\text{gd}^{-1}\!\left(\frac{\pi}{2} - \arccos(\rho_1)\right) \;\approx\; \mathcal{N}\!\left(\text{arctanh}(\rho),\; \frac{1}{r-3}\right)
 \]
 where \( \rho_1 = \cos(\theta_1) \) is the empirical correlation and \( \theta_1 \) is the angle between the projected vectors. In particular, this implies \( \text{Var}(\rho_1) = O(1/r) \).
 
 \vspace{0.2cm}
 Similarly, \textbf{Kibble's~\cite{kibble1941two} bivariate chi-square law} for \( (u,v) = (\|\bm{h}^{(1)}(x)\|^2, \|\bm{h}^{(1)}(x')\|^2) \) has density
 \[
-\!f(u,v) = \frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\, I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right),\qquad u,v \ge 0,
+\boxed{f(u,v) = \frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\, I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right),\qquad u,v \ge 0,}
 \]
 where \( I_\nu \) is the modified Bessel function of the first kind. Defining \( w_r = \sqrt{uv}/r \), concentration results (see Theorem~\ref{thm:rkhs_rank_concentration}) imply \( \mathbb{E}[w_r] \to 1 \) and \( \mathrm{Var}(w_r)=O(1/r) \).
 
