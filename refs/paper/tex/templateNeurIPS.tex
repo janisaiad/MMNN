@@ -199,9 +199,9 @@
 \title{Neural Tangent Kernel of Low-Rank Random Features Neural Networks}
 
 \author{%
-  Janis Aiad\thanks{Work done during a visit at UMD} \\
-  École Polytechnique \\
-  \texttt{janis.aiad@polytechnique.edu} \\
+  Janis Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript writing, was completed by J.H-A. during an internship at UMD.} \\
+  École Polytechnique, École Normale Supérieure Paris-Saclay \\
+  \texttt{janis.aiad@polytechnique.org} \\
   \And
   Haizhao Yang \\
   University of Maryland \\
@@ -219,7 +219,11 @@
 \maketitle
 
 \begin{abstract}
-This paper establishes the Neural Tangent Kernel (NTK) theory for low-rank random feature architectures (MMNN/RF-LR), demonstrating that these models provide a clean and advantageous route to the kernel regime with improved theoretical guarantees and practical efficiency. \textbf{Our main result establishes that low-rank random features achieve the same RKHS expressivity as dense networks while requiring only a linear parameter budget \( O(rN) \) instead of \( O(N^2) \), with exponential concentration \( O(1/r^2) \) faster than classical NTK theory predicts}. Our primary contribution shows that there is \emph{no RKHS disadvantage} for low-rank random features relative to standard fully-connected networks when the rank \( r \) is moderately large: the induced RKHS coincides in the relevant limits, so expressivity is preserved. More importantly, we prove that the kernel regime is accessible at a \emph{linear parameter budget} \( O(rn) \) rather than the quadratic \( O(n^2) \) of dense layers. Beyond expressivity equivalence, we establish improved concentration properties: in a doubly-random Gram matrix regime, NTK fluctuations decay as \( O(1/r^2) \), which is \emph{significantly faster} than the classical \( O(1/N) \) decay from standard NTK theory. The spectral analysis at initialization reveals an informative bulk--outlier structure with a single dominant outlier atop a bulk consistent with Marchenko--Pastur behavior. We develop a framework for finite-width corrections that organizes deviations from the infinite-width limit into a \( 1/r \) expansion, with explicit \( O(1/r) \) and \( O(1/r^2) \) effects. These results establish a solid theoretical foundation for understanding MMNNs in the lazy training regime and provide concrete guidance for practical deployment, suggesting \( r \in [5,50] \) as a regime that balances concentration, expressivity, and parameter efficiency.
+This paper develops a comprehensive Neural Tangent Kernel (NTK) theory for low-rank random feature neural networks, establishing these architectures as a principled route to the kernel regime with enhanced theoretical guarantees and computational advantages. Our main result demonstrates that low-rank random features preserve the same reproducing kernel Hilbert space expressivity as fully-connected networks while achieving kernel behavior at dramatically smaller parameter counts. This linear-width scaling fundamentally lowers the entry barrier to the NTK regime compared to dense architectures, enabling accurate kernel predictions with orders-of-magnitude fewer parameters.
+
+Beyond expressivity equivalence, we establish exceptional concentration properties: kernel fluctuations concentrate exponentially faster in rank than classical NTK theory predicts, making the deterministic kernel limit accessible at moderate model sizes. The spectral structure at initialization exhibits a clean bulk--outlier decomposition consistent with random matrix theory, where a single dominant eigenvalue governs early training dynamics while the bulk explains conditioning properties. Our analysis leverages Fisher--Kibble decoupling to avoid complex correlation diagram calculations, providing a streamlined theoretical framework that remains rigorous yet tractable.
+
+We develop a systematic finite-width corrections program that organizes deviations from the infinite-width limit through a layered expansion, enabling precise characterization of how depth and rank interact in kernel approximations. The architectural simplicity of training only output weights while freezing feature weights eliminates weight-particle coupling between layers, simplifying mean-field analysis while preserving universal approximation throughout training. These results provide a complete theoretical foundation for understanding low-rank random feature networks in the lazy training regime, with concrete practical guidance emerging naturally from the analysis.
 \end{abstract}
 
 \input{introduction}
