@@ -184,15 +184,17 @@
 \maketitle
 
 \begin{abstract}
-We develop a Neural Tangent Kernel (NTK) theory for low-rank random feature networks (RF‑LR) that provides an approximation principled and computationally efficient route to the kernel regime. 
-Our main expressivity result shows that RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; depth does not 
-enlarge the RKHS in the NTK regime. On the optimization side, we prove rank‑driven concentration: the empirical two‑layer NTK concentrates around its 
-deterministic limit with sub‑Gaussian tails in the rank \(r\), combining Fisher–Kibble decoupling with Hanson–Wright bounds, and we identify a mechanism 
-yielding first‑order \(1/r\) cancellation of fluctuations. At the spectral level, the NTK Gram matrix exhibits a spike–Marchenko–Pastur structure: a single 
-rank‑one outlier (spike) atop a bulk following a deformed Marchenko–Pastur law; the bulk location and width are governed by the kernel’s on‑diagonal value and
- its slope at orthogonality. Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how base and derivative kernels couple across
-  layers.
-Taken together, these results establish that RF‑LR preserves expressivity while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
+We develop a Neural Tangent Kernel (NTK) theory for low-rank and random feature networks (RF‑LR) that provides an approximation principled and computationally 
+efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that low-rank weight matrices
+do not loses expressivity. RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; 
+As a toy example, we prove rank‑driven concentration: the empirical three‑layer NTK concentrates around its 
+deterministic limit, combining angular and radial decoupling of gaussian processes outputs, we show mean NTK
+has the same Laplacian RKHS as the shallow ReLU kernel. At the spectral level for random matrices, under some assumptions to be relaxed, the NTK Gram matrix exhibits a 
+spiked and shifted Marchenko–Pastur similar to the 2-layer case : the bulk location is shifted out of 0 thanks to low-rank bottlenecks.
+Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how correlation kernels from random features couple across layers.
+Taken together, these results establish that RF‑LR preserves expressivity and gives optimization guarantees from smallest eigenvalues
+while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), 
+and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
 \end{abstract}
 
 % keywords can be removed
