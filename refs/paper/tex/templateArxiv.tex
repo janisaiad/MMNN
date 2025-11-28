@@ -174,7 +174,7 @@
 \title{Low-rank neural networks preserve the MLPs Neural Tangent Kernel}
 
 \author{
-  Janis Heran-Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript writing, was completed by J.H-A. during an internship at UMD.}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
+  Janis (Heran) Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript, was completed by J.H-A. during an undergraduateinternship at University of Maryland.}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
   $^{1}$ École Polytechnique, École Normale Supérieure Paris-Saclay  \\
   $^{2}$ University of Maryland, Department of Mathematics; Department of Computer Science \\
   $^{3}$ The Hong Kong Polytechnic University
@@ -184,15 +184,19 @@
 \maketitle
 
 \begin{abstract}
-This paper develops a comprehensive Neural Tangent Kernel (NTK) theory for low-rank random feature neural networks, establishing these architectures as a principled route to the kernel regime with enhanced theoretical guarantees and computational advantages. Our main result demonstrates that low-rank random features preserve the same reproducing kernel Hilbert space expressivity as fully-connected networks while achieving kernel behavior at dramatically smaller parameter counts. This linear-width scaling fundamentally lowers the entry barrier to the NTK regime compared to dense architectures, enabling accurate kernel predictions with orders-of-magnitude fewer parameters.
-
-Beyond expressivity equivalence, we establish exceptional concentration properties: kernel fluctuations concentrate exponentially faster in rank than classical NTK theory predicts, making the deterministic kernel limit accessible at moderate model sizes. The spectral structure at initialization exhibits a clean bulk--outlier decomposition consistent with random matrix theory, where a single dominant eigenvalue governs early training dynamics while the bulk explains conditioning properties. Our analysis leverages Fisher--Kibble decoupling to avoid complex correlation diagram calculations, providing a streamlined theoretical framework that remains rigorous yet tractable.
-
-We develop a systematic finite-width corrections program that organizes deviations from the infinite-width limit through a layered expansion, enabling precise characterization of how depth and rank interact in kernel approximations. The architectural simplicity of training only output weights while freezing feature weights eliminates weight-particle coupling between layers, simplifying mean-field analysis while preserving universal approximation throughout training. These results provide a complete theoretical foundation for understanding low-rank random feature networks in the lazy training regime, with concrete practical guidance emerging naturally from the analysis.
+We develop a Neural Tangent Kernel (NTK) theory for low-rank random feature networks (RF‑LR) that provides an approximation principled and computationally efficient route to the kernel regime. 
+Our main expressivity result shows that RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; depth does not 
+enlarge the RKHS in the NTK regime. On the optimization side, we prove rank‑driven concentration: the empirical two‑layer NTK concentrates around its 
+deterministic limit with sub‑Gaussian tails in the rank \(r\), combining Fisher–Kibble decoupling with Hanson–Wright bounds, and we identify a mechanism 
+yielding first‑order \(1/r\) cancellation of fluctuations. At the spectral level, the NTK Gram matrix exhibits a spike–Marchenko–Pastur structure: a single 
+rank‑one outlier (spike) atop a bulk following a deformed Marchenko–Pastur law; the bulk location and width are governed by the kernel’s on‑diagonal value and
+ its slope at orthogonality. Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how base and derivative kernels couple across
+  layers.
+Taken together, these results establish that RF‑LR preserves expressivity while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
 \end{abstract}
 
 % keywords can be removed
-\keywords{Neural Tangent Kernel \and Random Features \and Low Rank \and Scaling Laws \and Infinite Width}
+\keywords{Neural Tangent Kernel \and Random Features \and Low Rank \and Scaling Laws \and Infinite Width \and Marchenko–Pastur}
 
 \tableofcontents
 \vspace{2em}

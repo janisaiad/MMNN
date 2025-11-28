@@ -246,3 +246,6 @@ umd both math and amsc
 
 Efficient Paths to the NTK Regime: Low-Rank and Random
 Feature Models with Rigorous Kernel Analysis
+
+
+orcid

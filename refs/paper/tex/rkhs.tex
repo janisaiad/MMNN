@@ -44,11 +44,11 @@ The result avoids direct manipulation of Kibble's bivariate chi-square density, 
 \end{remark}
 
 \vspace{0.5em}
-\subsection{Two-layer NTK concentration}\label{subsec:two-layer-ntk-concentration}
-We can now apply this concentration result to obtain bounds for the two-layer NTK.
+\subsection{three-layer NTK concentration}\label{subsec:three-layer-ntk-concentration}
+We can now apply this concentration result to obtain bounds for the three-layer NTK.
 
-\begin{corollary}[Concentration bound for two-layer NTK]\label{cor:two_layer_ntk_concentration}
-Under Assumption~\ref{assump:homogeneous_activation}, let \( \hat{\Theta}^{(2)}_r(x,x') = \Psi(\hat{\rho}_r, \hat{w}_r) \) be the empirical two-layer NTK, where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \), with \( x_1, y_1 \in \mathbb{R}^r \) being the rank-\( r \) Gaussian projections of inputs \( x, y \) with population correlation \( \rho \in [-1,1] \). Let \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)(1 - \arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) be the deterministic kernel limit.
+\begin{corollary}[Concentration bound for three-layer NTK]\label{cor:two_layer_ntk_concentration}
+Under Assumption~\ref{assump:homogeneous_activation}, let \( \hat{\Theta}^{(2)}_r(x,x') = \Psi(\hat{\rho}_r, \hat{w}_r) \) be the empirical three-layer NTK, where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \), with \( x_1, y_1 \in \mathbb{R}^r \) being the rank-\( r \) Gaussian projections of inputs \( x, y \) with population correlation \( \rho \in [-1,1] \). Let \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)(1 - \arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) be the deterministic kernel limit.
 
 Then for any \( \epsilon \in (0,1) \), there exist constants \( C_1, C_2 > 0 \) depending on \( \rho \) and the kernel smoothness such that
 \[
@@ -56,7 +56,7 @@ Then for any \( \epsilon \in (0,1) \), there exist constants \( C_1, C_2 > 0 \) 
 \]
 \end{corollary}
 
-Proof: See Appendix~\ref{appendix:proof-two-layer-ntk-concentration}.
+Proof: See Appendix~\ref{appendix:proof-three-layer-ntk-concentration}.
 
 \begin{remark}[Critical cancellation of \( 1/r \) corrections]
 While the general concentration rate is \( O_p(1/\sqrt{r}) \) via Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, the randomness induced from the gaussian process low rank output remove the \( 1/r \) correction term in \( \Sigma^{(2)} \) that would normally appear through the radial component \( \hat{w}_r \). This cancellation is critical: it is precisely the path where finite-width corrections \( 1/N \) analysis~\cite{dyer2019asymptoticswidenetworksfeynman} and Feynman diagram decay come into play, proving that the fluctuation rate is \( 1/r \) rather than \( 1/\sqrt{r} \).
@@ -70,7 +70,7 @@ The extension of this concentration bound to general depth \( L \) layers under 
 \subsection{Mean NTK over Fisher and Kibble distributions}\label{subsec:conditional-mean-ntk}
 Having established concentration results, we now turn to the mean NTK. The key observation is that the empirical NTK depends on random variables that follow Fisher~\cite{fisher1915probable,hotelling1953new} and Kibble distributions. The mean NTK is obtained by taking expectations over these distributions.
 
-For the two-layer case, the empirical NTK is:
+For the three-layer case, the empirical NTK is:
 \[
 \hat{\Theta}^{(2)}_r(x,x') = \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\| + 1,
 \]
@@ -81,9 +81,9 @@ where \( \hat{\rho}_r \) follows Fisher's distribution~\cite{fisher1915probable,
 where the expectations are taken over the Fisher distribution of \( \hat{\rho}_r \) and the Kibble distribution of \( (\|x_1\|^2, \|y_1\|^2) \).
 
 \begin{corollary}[Mean NTK over Fisher–Kibble has same RKHS]\label{cor:conditional_rkhs_homogeneous}
-Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions at each layer) is a zonal kernel on \( \mathbb{S}^{d-1} \) that induces the same RKHS as the shallow (two-layer) ReLU kernel. In particular, the mean NTK RKHS coincides with the unconditional RKHS as sets with equivalent norms.
+Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions at each layer) is a zonal kernel on \( \mathbb{S}^{d-1} \) that induces the same RKHS as the shallow (three-layer) ReLU kernel. In particular, the mean NTK RKHS coincides with the unconditional RKHS as sets with equivalent norms.
 
-For the two-layer case (\( L=2 \)), the mean NTK is:
+For the three-layer case (\( L=2 \)), the mean NTK is:
 \[
 \tilde{\Kop}^{(2)}(\rho) = \Theta^{(1)}(\rho) \cdot \mathbb{E}_{\hat{\rho}_r \sim \text{Fisher}(\rho,r)}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}_{\hat{\rho}_r, \|x_1\|, \|y_1\|}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
 \]
@@ -108,18 +108,16 @@ The crucial insight is that while the mean NTK has a different Puiseux expansion
 \subsection{Spectral decay and Puiseux expansions}\label{subsec:spectral-decay-puiseux}
 We now apply the spectral decay theory of~\cite{bietti2021deepequalsshallowrelu} to characterize the RKHS of the RF-LR NTK via endpoint expansions. The base kernel \( \Sigma^{(1)} \) and derivative kernel \( \dot{\Sigma}^{(1)} \) are the fundamental building blocks for the NTK recursion.
 
-
-As a reminder, we have puiseux closed forms for classical MLPs NTK :
+From the proof, near \( \rho = 1 \) (for \( t \ge 0 \)), the mean two-layer NTK admits the Puiseux expansion (see Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}):
 \[
-\Sigma^{(1)}(1-t) = 1 - \frac{2}{\pi} t^{1/2} + O(t^{3/2}),\qquad
-\dot{\Sigma}^{(1)}(1-t) = \frac{d}{2} - \frac{d}{2\pi} t^{1/2} + O(t^{3/2}).
+\tilde{\Kop}^{(2)}(1-t)
+\;=\;
+K_\infty(1)
+\;-\;
+\Bigg[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\Bigg]\,t^{1/2}
+\;+\; O(t^{3/2}),
 \]
-
-From the proof, near \( \rho = 1 \) (for \( t \ge 0 \)), the mean two-layer NTK admits the Puiseux expansion:
-\[
-\tilde{\Kop}^{(2)}(1-t) = 1 - \frac{2}{\pi} t^{1/2} + O(t^{3/2}) + O(r^{-1} t^{1/2}),
-\]
-where the leading non-polynomial term has exponent \( \nu = 1/2 \) with coefficient \( c_1 = -2/\pi \). Similarly, near \( \rho = -1 \), by rotational symmetry and homogeneity of ReLU, the expansion has the same structure with \( c_{-1} = c_1 = -2/\pi \) (see~\cite{bietti2021deepequalsshallowrelu}).
+where the leading non-polynomial term has exponent \( \nu = 1/2 \) with coefficient \( c_1(r) = -\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \). Similarly, near \( \rho = -1 \), by rotational symmetry and homogeneity of ReLU, the expansion has the same structure with \( c_{-1}(r) = c_1(r) \) (see~\cite{bietti2021deepequalsshallowrelu}).
 
 We can now apply Theorem 1 of~\cite{bietti2021deepequalsshallowrelu} to obtain the spectral decay characterization:
 
@@ -150,7 +148,7 @@ Therefore, the dominant eigenvalue decay rate is \( k^{-d} \), determined by the
 \end{theorem}
 
 \begin{corollary}[No advantage in RKHS]\label{thm:no_rkhs_advantage}
-Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (two-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. This is a direct application of Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
+Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (three-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. This is a direct application of Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
 \end{corollary}
 
 \begin{remark}

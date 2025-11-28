@@ -45,7 +45,7 @@
 \title{The landscape of random features low rank neural networks}
 
 \author{
-  Janis Aiad\thanks{First author, work done during a visit at UMD}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
+  Janis Aiad\thanks{First author, work done during a visit at University of Maryland}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
   $^{1}$ École Polytechnique \\
   $^{2}$ University of Maryland, Department of Mathematics; Department of Computer Science \\
   $^{3}$ The Hong Kong Polytechnic University
@@ -194,6 +194,17 @@ The considered architecture is:
 
 \subsection*{Key Questions}
 This work is guided by four overarching questions. First, we ask how the band-by-band activation of Fourier modes in the time-varying kernel gradient flow accounts for the empirically observed stepwise loss curves with long plateaus followed by sharp drops. Second, we examine how a universal approximation property that holds at all finite times—enabled here by frozen random features maintaining full support—yields global convergence guarantees even in non-convex settings. Third, we investigate how a rank-\( r \) low-rank bottleneck influences NTK fluctuations, leading to \( O(1/r) \) (or \( O(1/r^2) \) in doubly-random Gram regimes) concentration and to scaling laws in the extensive-rank regime \( r \asymp d^\beta \). Finally, we clarify the relationship between depth and spectral capacity by quantifying how the maximal learned frequency scales with depth and why one empirically observes approximately \( 2n \) localized spikes with \( 2n \) layers.
+
+
+
+
+On the optimization side, gradient descent near sharp minima can be unstable~\cite{cohen2021gradient}, with edge-of-stability (EOS) phenomena causing loss oscillations
+ when eigenvalues exceed \( 2/\eta \). Different optimizers exhibit distinct implicit biases~\cite{wilson2017marginal}, and in sharp regimes switching to SGD can improve
+  stability. Neural scaling laws~\cite{kaplan2020scaling,hoffmann2022training} describe test loss as power laws in compute, data, and model size, while emergent 
+  capabilities~\cite{wei2022emergent} appear at critical scales. Universal approximation theorems~\cite{cybenko1989approximation,hornik1989multilayer} and random-feature
+   universality~\cite{rahimi2008weighted} ensure expressivity, and in three-layer frozen-feature settings, approximation power is maintained at \emph{all} training
+    times~\cite{nguyen2021proofglobalconvergencegradient}. Loss landscape geometry~\cite{li2018visualizing,fort2019large} significantly affects trainability; as training progresses, 
+    the landscape often convexifies~\cite{chizat2020implicit}, with Hessian spectrum evolution providing quantitative measures of this transition.
 
 \vspace{1em}
 \subsection{Related work and literature review}
