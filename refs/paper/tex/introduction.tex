@@ -1,12 +1,25 @@
 
 \section{Introduction}
 
-Multi-Component and Multi-Layer Neural Networks (MMNNs), also known as low-rank random feature models (RF-LR), represent a promising architecture that combines the expressive power of deep networks with remarkable computational efficiency~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. These architectures introduce low-rank bottlenecks at each layer, alternating between wide hidden layers of width \( N \) and narrow bottleneck layers of rank \( r \ll N \), where only the output weights \( A^{(\ell)} \) are trained while the input weights \( w^{(\ell)} \) remain frozen as random Gaussian draws. Recent empirical work by Zhang \textit{et al.}~\cite{zhang2025structuredbalancedmulticomponentmultilayer} has demonstrated that MMNNs achieve \textbf{global strong convergence} across a wide range of tasks, exhibiting striking phenomena including super convergence and stepwise loss dynamics with long plateaus followed by sharp drops.
+Multi-Component and Multi-Layer Neural Networks (MMNNs), also known as Random Feature and Low-Rank  models (RF-LR), represent a promising
+ architecture in scientific machine learning that combines the expressive power of deep networks, capability of fitting high-frequency functions without
+ a-priori, and having linear-in-width computational efficiency~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. 
+ These architectures introduce low-rank bottlenecks
+  at each layer, alternating between wide hidden layers of width \( N \) and narrow bottleneck layers of rank \( r \ll N \), 
+  where only the right part of the weights matrices low-rank factorization are trained 
+while the right part remain frozen as random ReLU + linear features and RKHS. Hence, we keep the low-rank structural advantage \cite{kamalakara2022exploringlowranktraining} without requiring Riemannian gradient descent.
+Recent empirical work by 
+ \textit{Zhang et al.}~\cite{zhang2025structuredbalancedmulticomponentmultilayer} has demonstrated that 
+ RF-LRs achieve \textbf{global strong-convergence} across a wide range of tasks, including neural-network based PDE solving with and without Physics-Informed losses~\cite{raissi2017physicsinformeddeeplearning}. 
+ Training exhibits \textbf{super convergence} in 1st order optimization and a distinctive \textbf{stepwise loss dynamics}, where long plateaus are punctuated by sharp drops.
+Despite these empirical successes, a fundamental theoretical understanding of how the loss landscape behaves in RF-LR remains incomplete. The remarkable convergence properties observed in practice—where training displays emergent staircase-like behavior and achieves global minima even when standard neural network training would fail—suggest that the landscape structure of RF-LR differs fundamentally from that of fully-trainable networks. Understanding these landscape properties requires developing a theoretical framework that can explain why RF-LR exhibit such favorable optimization behavior, what drives the stepwise dynamics, and how the low-rank structure shapes the loss surface geometry.
 
-Despite these empirical successes, a fundamental theoretical understanding of \textbf{how the loss landscape behaves} in MMNNs remains incomplete. The remarkable convergence properties observed in practice—where training displays emergent staircase-like behavior and achieves global minima even when standard neural network training would fail—suggest that the landscape structure of MMNNs differs fundamentally from that of fully-trainable networks. Understanding these landscape properties requires developing a theoretical framework that can explain why MMNNs exhibit such favorable optimization behavior, what drives the stepwise dynamics, and how the low-rank structure shapes the loss surface geometry.
+The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} provides the natural lens 
+for analyzing the early training stage. This perspective has been extended to finite width \cite{huang2019dynamicsdeepneuralnetworks,dyer2019asymptoticswidenetworksfeynman} and large-depth \cite{guillen2025finitewidthneuraltangentkernels,yang2023tensorprogramsvifeature,terjek2022depth}, 
+revealing how the Laplacian kernel structure governs the gradient descent (GD) training dynamics and generalization. 
+However, applying NTK theory to RF-LR raises new challenges: the low-rank parameterization creates a fundamentally different correlation structure with the same feature map.
 
-The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural,arora2019exact,arora2019harnessing,yang2019scaling,terjek2022depth} provides a natural lens for analyzing the lazy training regime, characterizing infinitely wide networks as kernel methods with a fixed data-dependent kernel. This perspective has been extended to finite width and depth, revealing how kernel structure governs training dynamics and generalization. However, applying NTK theory to MMNNs raises new challenges: the frozen random features create a fundamentally different correlation structure, the low-rank bottlenecks modify the parameterization, and the empirical success in achieving global convergence suggests that the landscape properties differ from classical NTK predictions.
-
+We prove that the feature map and RKHS remains the same as in the classical NTK, and hence NTK regimes certifying global convergence can be attained with linear-in-width parameter budget instead of quadratic $O(N^2)$.
 
 \subsection*{Low rank architecture }
 The considered architecture is a stacking of high then low width layers:
@@ -100,49 +113,119 @@ The considered architecture is a stacking of high then low width layers:
     \label{fig:RF-LR_architecture}
 \end{figure}
 
-Our work builds a theoretical framework to understand how the loss landscape behaves in MMNNs/LR-RF, focusing specifically on the NTK regime where analytical tractability is greatest and the advantages of the low-rank random feature structure are most clearly visible. By characterizing the NTK structure, spectral properties, and RKHS geometry, we provide a foundation for understanding the favorable optimization dynamics observed empirically. This theoretical foundation is essential for explaining why MMNNs/LR-RF achieve global convergence, understanding the mechanisms behind stepwise loss dynamics, and predicting when and how the low-rank structure confers advantages over fully-trainable architectures.
+
+
+
+The loss landscape of neural networks plays a crucial role in determining trainability and can assess generalization properties through flatness \cite{li2025seekingconsistentflatminima}. 
+Without RKHS advantage, the Laplace kernel's quick spectral decay prevents high-frequency 
+learning~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}, while sharp minima can lead to poor
+ generalization~\cite{li2018visualizing,fort2019large}. The stepwise loss behavior observed in
+  RF-LR~\cite{zhang2025structuredbalancedmulticomponentmultilayer}—where training exhibits long plateaus followed by 
+  sharp drops—suggests that the landscape undergoes significant transitions during optimization. By characterizing the NTK 
+  spectrum and its evolution, we provide a simpler framework to apply finite-width corrections for understanding these landscape 
+  transitions and explaining how the low-rank structure enables the global convergence observed empirically.
+
+
+
+  Our approach develops an NTK theory specialized to intra-layers random variables output arising after large-layer acting as gaussian processes, 
+
+
 
 \vspace{1em}
 
 \noindent
-\textbf{This work addresses the following fundamental questions:}
+\textbf{This work addresses the following fundamental questions :}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \noindent
 \begin{itemize}
-\item \emph{How can we develop a theoretically tractable NTK analysis for MMNNs/LR-RF that explains their landscape properties and guides principled finite-width corrections ?}
+\item \emph{How NTK analysis for RF-LR can explains their 1st order super-convergence properties ?}
 \end{itemize}
-\vspace{1em}
+\vspace{0.5em}
 
-Our approach develops an NTK theory specialized to low-rank random feature architectures, leveraging the decoupling properties of frozen random features to simplify the analysis. By exploiting Fisher–Kibble distributions~\cite{fisher1915probable,hotelling1953new} and the independence structure inherent in frozen weights, we \textbf{avoid computing correlation diagrams} that complicate classical NTK analysis, while maintaining rigor. This simplification enables us to derive explicit NTK recursions, characterize the spectral structure of the kernel matrix, and establish concentration bounds—all while providing insights into how the landscape geometry shapes optimization dynamics.
+This question is closely related to the open question of the curse of dimensionality in deep learning optimization \cite{na2025cursedimensionalityneuralnetwork}.
+In particular we show that the curse of dimensionality occuring in the NTK exponential-in-dim spectral decay is not mitigated by low-rank structure.
 
-The loss landscape of neural networks plays a crucial role in determining trainability and generalization. Without RKHS advantage, the Laplace kernel's quick spectral decay prevents high-frequency learning~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}, while sharp minima can lead to poor generalization~\cite{li2018visualizing,fort2019large}. The stepwise loss behavior observed in MMNNs~\cite{zhang2025structuredbalancedmulticomponentmultilayer}—where training exhibits long plateaus followed by sharp drops—suggests that the landscape undergoes significant transitions during optimization. By characterizing the NTK spectrum and its evolution, we provide a framework for understanding these landscape transitions and explaining how the low-rank structure enables the global convergence observed empirically.
+By exploiting particularities from Fisher and Kibble distributions~\cite{fisher1915probable,hotelling1953new} and manipulation
+of non-integer Puiseux polynomials series of correlation-kernels inside expectations, we are able to derive 
+the RKHS structure inherent in frozen weights using a characterization from \cite{bietti2021deepequalsshallowrelu}. We focus specifically on the NTK regime where analytical tractability is greatest and the advantages of the 
+low-rank random feature structure are most clearly visible.
 
+
+This work is seminal in further applying Feynman diagrams type computations to finite-width  NTK in the Neural Tangent Hierarchy \cite{dyer2019asymptoticswidenetworksfeynman}, 
+because random features allows to remove part of correlations tensors arising in full-rank MLPs 
+ , characterize the spectral structure of the kernel matrix, and establish concentration 
+ bounds—all while providing insights into how the landscape geometry shapes optimization dynamics.
+ Finite-width corrections principal bottleneck arising
+ in computating 4-th order neurons correlations in tensors for same layers \cite{guillen2025finitewidthneuraltangentkernels} are simplified
+  by non-interacting weights separated by random features.
+
+ 
+By characterizing the NTK structure, spectral properties for gram matrices coming from datasets, 
+and RKHS geometry, we provide the first step towards a theoretical foundation for understanding the favorable optimization dynamics observed empirically. 
+Other steps include in future work the mean-field convergence analysis following foundations from \cite{nguyen2023rigorousframeworkmeanfield} and loss-landscape analysis
+ with Central Flows \cite{cohen2025understandingoptimizationdeeplearning}. 
+
+ 
 
 \vspace{1em}
 \subsection{Related work}
 
 
-The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} characterizes infinitely wide neural networks trained by gradient descent as kernel methods with a fixed kernel. This framework has been extended to finite width~\cite{arora2019exact}, convolutional architectures~\cite{arora2019harnessing}, and depth~\cite{yang2019scaling,terjek2022depth}, establishing a comprehensive theoretical foundation for understanding wide network training. Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} characterizes the eigenvalue distribution of the NTK in the quadratic scaling regime (width \( N \sim n^2 \)) for single-layer networks, establishing deformed Marchenko–Pastur laws with spike-bulk structure. Their analysis requires careful tracking of correlation diagrams and moment calculations. We extend this spectral analysis to the two-layer case with random features, where the rank-\( r \) bottleneck and frozen feature weights fundamentally alter the kernel's spectral properties. A key technical advantage of our approach is that we \textbf{avoid computing correlation diagrams} by leveraging the decoupling properties of Fisher–Kibble distributions and the independence structure inherent in frozen random features, which simplifies the analysis while maintaining rigor. Parallel to this, random feature approximations~\cite{rahimi2007random,rahimi2008weighted} provide a practical route to kernel approximation by sampling features from suitable distributions, with rigorous guarantees for generalization~\cite{bach2017breaking,rudi2017generalization} and approximation~\cite{sriperumbudur2015optimal}. Notably, freezing random features ensures full support throughout training, so universal approximation persists at all finite times—a property stronger than classical kernel ridge assumptions.
+The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} characterizes infinitely wide neural networks trained by gradient descent as kernel methods 
+with a fixed kernel. This framework has been extended to finite width~\cite{arora2019exact}, convolutional architectures~\cite{arora2019harnessing}, and
+ depth~\cite{yang2019scaling,terjek2022depth}, establishing a comprehensive theoretical foundation for understanding wide network training. Recent work
+  by~\cite{benigni2025eigenvaluedistributionneuraltangent} characterizes the eigenvalue distribution of the NTK in the quadratic scaling regime (width \( N \sim d^2 \)) 
+  for single-layer networks, establishing deformed Marchenko–Pastur laws with spike-bulk structure. Their analysis requires careful tracking of correlation diagrams and
+   moment calculations. We extend this spectral analysis to the three-layer case with random features, where the rank-\( r \) bottleneck and frozen feature weights 
+   fundamentally alter the kernel's spectral properties. A key technical advantage of our approach is that we \textbf{avoid computing correlation diagrams} by
+    leveraging the decoupling properties of Fisher–Kibble distributions and the independence structure inherent in frozen random features, which simplifies the 
+    analysis while maintaining rigor. Parallel to this, random feature approximations~\cite{rahimi2007random,rahimi2008weighted} provide a practical route to kernel
+     approximation by sampling features from suitable distributions, with rigorous guarantees for generalization~\cite{bach2017breaking,rudi2017generalization} and
+      approximation~\cite{sriperumbudur2015optimal}. Notably, freezing random features ensures full support for the Barron-space limit in the mean-field regime throughout training, so universal approximation persists 
+      at all finite times—a property stronger than classical kernel ridge assumptions.
 
-Low-rank and factorized architectures~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization} substantially reduce parameter counts in neural networks. However, the training dynamics of factorized weights can differ from unfactorized gradient descent due to implicit regularization effects. When only output weights are trained while feature weights remain frozen, the architecture avoids Riemannian geometry complications while achieving linear parameter scaling \( O(rN) \), representing an extreme case of factorization that enables clean theoretical analysis.
+Low-rank and factorized architectures~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization} substantially reduce parameter counts in neural networks. 
+However, the training dynamics of factorized weights can differ from unfactorized gradient descent due to implicit regularization effects. When only output weights 
+are trained while feature weights remain frozen, the architecture avoids Riemannian geometry complications while achieving linear parameter scaling \( O(rN) \),
+ representing an extreme case of factorization that enables clean theoretical analysis.
 
-Neural networks exhibit a well-documented spectral bias toward low frequencies~\cite{rahaman2019spectral,xu2019training}, where low-frequency components are learned before high-frequency ones. This bias has been quantified via NTK analysis~\cite{basri2020frequency} and Fourier methods~\cite{tancik2020fourier}, revealing how kernel structure shapes learning dynamics. The "deep equals shallow" result for ReLU kernels in the NTK regime~\cite{bietti2021deepequalsshallowrelu} establishes that the RKHS induced by deep networks coincides with that of a shallow ReLU kernel, providing formal NTK spectrum decay rates. The same work characterizes the eigenvalue decay of rotation-invariant kernels on the sphere via endpoint expansions of the kernel \( \kappa(\rho) \) near \( \rho=\pm 1 \), relating the smoothness properties of the kernel at the endpoints to the decay rate of spherical-harmonic eigenvalues. This connection between kernel smoothness and spectral decay provides a principled framework for understanding how RKHS structure, kernel spectra, and training behavior interact.
+Neural networks exhibit a well-documented spectral bias toward low frequencies~\cite{rahaman2019spectral,xu2019training}, where low-frequency components are learned
+ before high-frequency ones. This bias has been quantified via NTK analysis~\cite{basri2020frequency} and Fourier methods~\cite{tancik2020fourier}, revealing how kernel 
+ structure shapes learning dynamics. The "deep equals shallow" result for ReLU kernels in the NTK regime~\cite{bietti2021deepequalsshallowrelu} establishes that the RKHS
+  induced by deep networks coincides with that of a shallow ReLU kernel, providing formal NTK spectrum decay rates. The same work characterizes the eigenvalue decay of 
+  rotation-invariant kernels on the sphere via endpoint expansions of the kernel \( \kappa(\rho) \) near \( \rho=\pm 1 \), relating the smoothness properties of the kernel at the endpoints to the decay rate of spherical-harmonic eigenvalues. This connection between kernel smoothness and spectral decay provides a principled framework for understanding how RKHS structure, kernel spectra, and training behavior interact.
 
-Multi-index approaches~\cite{benarous2021online,damian2022neural,abbe2023sgd} learn functions of the form \( f(x)=\sum_{j=1}^r g_j(\langle v_j,x\rangle) \) by discovering latent directions sequentially, with training displaying staircase dynamics featuring plateaus for inactive directions. In extensive-rank regimes \( r\asymp d^\beta \), these works derive scaling laws~\cite{damian2022neural} that connect rank, dimension, and sample complexity. Complementarily, dictionary learning~\cite{mairal2009online,elad2010sparse} and its neural analogues~\cite{papyan2017convolutional,sulam2020multi} interpret networks as selecting sparse combinations from overcomplete bases, suggesting that training effectively performs implicit dictionary selection.
+Multi-index approaches~\cite{benarous2021online,damian2022neural,abbe2023sgd} learn functions of the form \( f(x)=\sum_{j=1}^r g_j(\langle v_j,x\rangle) \) by 
+discovering latent directions sequentially, with training displaying staircase dynamics featuring plateaus for inactive directions. In extensive-rank regimes 
+\( r\asymp d^\beta \), these works derive scaling laws~\cite{damian2022neural} that connect rank, dimension, and sample complexity. three-layer RF-LR sees their mid layer
+acting as having \(r\) independent functions (approximated by the random features basis) forming a multi-index model in function space. Those functions only 
+interact through reconstructing output functions in next layers. This point of view is a novel way to understand low rank weight matrices provided
+that you do not train the random features to ensure approximation of dictionary - reconstruction - approxim .. etc ..
 
-On the optimization side, gradient descent near sharp minima can be unstable~\cite{cohen2021gradient}, with edge-of-stability (EOS) phenomena causing loss oscillations when eigenvalues exceed \( 2/\eta \). Different optimizers exhibit distinct implicit biases~\cite{wilson2017marginal}, and in sharp regimes switching to SGD can improve stability. Neural scaling laws~\cite{kaplan2020scaling,hoffmann2022training} describe test loss as power laws in compute, data, and model size, while emergent capabilities~\cite{wei2022emergent} appear at critical scales. Universal approximation theorems~\cite{cybenko1989approximation,hornik1989multilayer} and random-feature universality~\cite{rahimi2008weighted} ensure expressivity, and in three-layer frozen-feature settings, approximation power is maintained at \emph{all} training times~\cite{nguyen2021proof}. Loss landscape geometry~\cite{li2018visualizing,fort2019large} significantly affects trainability; as training progresses, the landscape often convexifies~\cite{chizat2020implicit}, with Hessian spectrum evolution providing quantitative measures of this transition.
 
-From a data-dependent scaling perspective, achieving and maintaining NTK behavior in fully-trainable deep networks can impose stringent width–data requirements, often quoted in the literature as polynomial \( O(N^p) \) in the width \( N \), with worst-case exponents \( p \) tied to depth and curvature~\cite{arora2019exact,yang2019scaling,terjek2022depth}. To ensure the NTK has a positive smallest eigenvalue—crucial for optimization convergence—at least one layer must scale with the number of data samples \( n \), while other layers can scale arbitrarily up to logarithmic factors~\cite{nguyen2021tight}. This polynomial scaling can become prohibitive for deep networks, motivating architectures that achieve NTK-like behavior with more favorable computational requirements.
+On the optimization side, gradient descent near sharp minima can be unstable~\cite{cohen2021gradient}, with edge-of-stability (EOS) phenomena causing loss oscillations
+ when eigenvalues exceed \( 2/\eta \). Different optimizers exhibit distinct implicit biases~\cite{wilson2017marginal}, and in sharp regimes switching to SGD can improve
+  stability. Neural scaling laws~\cite{kaplan2020scaling,hoffmann2022training} describe test loss as power laws in compute, data, and model size, while emergent 
+  capabilities~\cite{wei2022emergent} appear at critical scales. Universal approximation theorems~\cite{cybenko1989approximation,hornik1989multilayer} and random-feature
+   universality~\cite{rahimi2008weighted} ensure expressivity, and in three-layer frozen-feature settings, approximation power is maintained at \emph{all} training
+    times~\cite{nguyen2021proofglobalconvergencegradient}. Loss landscape geometry~\cite{li2018visualizing,fort2019large} significantly affects trainability; as training progresses, 
+    the landscape often convexifies~\cite{chizat2020implicit}, with Hessian spectrum evolution providing quantitative measures of this transition.
+
+From a data-dependent scaling perspective, achieving and maintaining NTK behavior in fully-trainable deep networks can impose stringent width–data 
+requirements, often quoted in the literature as polynomial \( O(N^p) \) in the width \( N \), with worst-case exponents \( p = 4\), and best-case exponents \( p = 1\) \cite{nguyen2022tightboundssmallesteigenvalue}
+for quadratic scaling. To ensure the NTK has a positive smallest eigenvalue—crucial for optimization 
+ convergence—at least one layer must scale with the number of data samples \( n \), while other layers can scale arbitrarily up to logarithmic
+ factors for deep networks, motivating architectures that achieve NTK-like behavior with tractable computational requirements for large scale applications.
 
 
 \subsection*{Our Contributions}
-Our contributions are: (i) an NTK recursion specialized to RF-LR together with finite-width corrections and concentration rates, (ii) a two-layer spectral theory yielding a signal–noise decomposition of the empirical kernel and a deformed MP law with a spike for the kernel matrix spectrum, and (iii) a principled argument—grounded in~\cite{bietti2021deepequalsshallowrelu}—that RF-LR suffers no RKHS disadvantage relative to deep fully-trainable networks. These theoretical results are complemented by numerical experiments (omitted here) that verify NTK spectral concentration, staircase loss dynamics, and the scaling benefits of RF-LR at moderate widths.
+Our contributions are: (i) an NTK recursion specialized to RF-LR together with finite-width corrections and concentration rates, (ii) a three-layer spectral theory yielding a signal–noise decomposition of the empirical kernel and a deformed MP law with a spike for the kernel matrix spectrum, and (iii) a principled argument—grounded in~\cite{bietti2021deepequalsshallowrelu}—that RF-LR suffers no RKHS disadvantage relative to deep fully-trainable networks. These theoretical results are complemented by numerical experiments (omitted here) that verify NTK spectral concentration, staircase loss dynamics, and the scaling benefits of RF-LR at moderate widths.
 
 More specifically:
 \begin{itemize}
-    \item \textbf{NTK recursion} We derive the new NTK recursion expansion for RF-LR without bias/output scaling (\( \sigma_A, \sigma_c, \beta = 1 \)), yielding clean expressions for two-layer and general \( L \)-layer networks.
-    \item \textbf{No RKHS advantage.} In the NTK regime \( f_t(x)\!\approx\! f_0(x)+\langle\nabla_\theta f_0(x),\,\theta_t-\theta_0\rangle \) and \( f_t\in\mathcal{H}_\Theta \) with \( \|f\|_{\mathcal{H}_\Theta}^2=\langle f,\Theta^{-1}f\rangle_{L^2} \). RF‑LR preserves universal approximation (frozen Gaussian \( w^{(\ell)} \)), the rank‑\(r\) bottleneck acts as a spectral filter, and its NTK‑RKHS has the same decay rate as an MLP's while using \(O(rN)\) rather than \(O(N^2)\) parameters.
-    \item \textbf{Spectral theory (two-layer case).} We state and analyze Fisher–Kibble decoupling~\cite{fisher1915probable,hotelling1953new}, a signal–noise decomposition of the empirical NTK, and a deformed Marchenko–Pastur law (with spike) for the kernel matrix spectrum under standard random matrix scaling.
+    \item \textbf{NTK recursion} We derive the new NTK recursion expansion for RF-LR (\( \sigma_A, \sigma_c, \beta = 1 \)), yielding clean expressions for three-layer and general \( L \)-layer networks.
+    \item \textbf{RKHS Preserved} In the NTK regime \( f_t(x)\!\approx\! f_0(x)+\langle\nabla_\theta f_0(x),\,\theta_t-\theta_0\rangle \) and \( f_t\in\mathcal{H}_\Theta \) with \( \|f\|_{\mathcal{H}_\Theta}^2=\langle f,\Theta^{-1}f\rangle_{L^2} \). RF‑LR preserves universal approximation (frozen Gaussian \( w^{(\ell)} \)), the rank‑\(r\) bottleneck acts as a spectral filter, and its NTK‑RKHS has the same decay rate as an MLP's while using \(O(rN)\) rather than \(O(N^2)\) parameters.
+    \item \textbf{Marcheko-Pastur like Gram spectrum (three-layer case).} We state and analyze Fisher–Kibble decoupling~\cite{fisher1915probable,hotelling1953new}, a signal–noise decomposition of the empirical NTK, and a deformed Marchenko–Pastur law (with spike) for the kernel matrix spectrum under standard random matrix scaling.
 \end{itemize}
