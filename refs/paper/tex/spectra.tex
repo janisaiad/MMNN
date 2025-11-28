@@ -1,4 +1,4 @@
-\section{RF-LR Gram Marchenko–Pastur spectrum for two-layer case}
+\section{RF-LR Gram Marchenko–Pastur spectrum for three-layer case}
 
 Now that we have established RKHS properties to clarify that random features hold frozen through training has same effect as letting them free to move,  in a more applicative way we give NTK gram matrix spectrum asymptotic behavior.
 We hold strong data assumptions but could release them in future work.
@@ -58,7 +58,7 @@ Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 Having established the entrywise asymptotic distribution, we now turn to the macroscopic spectral properties of the kernel matrix. The eigenvalue distribution follows a deformed Marchenko–Pastur law with a characteristic spike-bulk structure.
 
 \subsection{Macroscopic spectrum: deformed Marchenko–Pastur law}
-Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes the eigenvalue distribution of the NTK in the quadratic scaling regime (\( N \sim n^2 \)) for single-layer networks, showing convergence to a deformed Marchenko–Pastur law with a spike-bulk structure. We extend this analysis to the two-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
+Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes the eigenvalue distribution of the NTK in the quadratic scaling regime (\( N \sim n^2 \)) for single-layer networks, showing convergence to a deformed Marchenko–Pastur law with a spike-bulk structure. We extend this analysis to the three-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
 
 \begin{theorem}[Spike + bulk spectral limit]\label{thm:spike-bulk}
 Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{assump:RMT} and~\ref{assump:RMT-conditions}, as \( n\to\infty \), the empirical spectrum of \( \mathbf{M} \) converges to a deformed Marchenko–Pastur law with:
@@ -73,9 +73,9 @@ Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{ass
 Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). The extension to two layers with random features follows the framework of~\cite{benigni2025eigenvaluedistributionneuraltangent} but incorporates the additional randomness from rank-\( r \) projections and frozen feature weights.
 \end{theorem}
 
-We can summarize the two-layer results as follows.
+We can summarize the three-layer results as follows.
 
-\paragraph{Two-layer case summary.}
+\paragraph{three-layer case summary.}
 Specializing to two layers with ReLU features, the deterministic kernel limit is
 \( K_{\infty}(\rho) = \Theta^{(1)}(\rho)\big(1-\arccos(\rho)/\pi\big) + \Sigma^{(1)}(\rho) + 1 \).
 At the dataset level, the corresponding Gram matrix exhibits a rank-one ``spike'' of size

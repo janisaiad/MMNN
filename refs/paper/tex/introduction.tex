@@ -21,6 +21,12 @@ However, applying NTK theory to RF-LR raises new challenges: the low-rank parame
 
 We prove that the feature map and RKHS remains the same as in the classical NTK, and hence NTK regimes certifying global convergence can be attained with linear-in-width parameter budget instead of quadratic $O(N^2)$.
 
+By voluntarily putting ourselves in simplifying assumptions (homogeneous activation, isotropic random features, etc.), we are able to derive tractable results on spectrum convergence.
+Besides facilitating training, random features assumption keep the kernel structure consistent (Laplacian RKHS from relu feature map) by keeping proofs 
+simpler without having to handle more complex correlation structures to bound in the weights. NTK weights do not move during training \cite{jacot2018neural}, so
+we fix them and go further.
+
+
 \subsection*{Low rank architecture }
 The considered architecture is a stacking of high then low width layers:
 \begin{figure}[htbp]
@@ -140,7 +146,7 @@ learning~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}, while shar
 
 \noindent
 \begin{itemize}
-\item \emph{How NTK analysis for RF-LR can explains their 1st order super-convergence properties ?}
+\item \emph{How Low-Rank preserves MLPs expressivity and random features simplify NTK analysis ?}
 \end{itemize}
 \vspace{0.5em}
 
@@ -184,7 +190,8 @@ with a fixed kernel. This framework has been extended to finite width~\cite{aror
     analysis while maintaining rigor. Parallel to this, random feature approximations~\cite{rahimi2007random,rahimi2008weighted} provide a practical route to kernel
      approximation by sampling features from suitable distributions, with rigorous guarantees for generalization~\cite{bach2017breaking,rudi2017generalization} and
       approximation~\cite{sriperumbudur2015optimal}. Notably, freezing random features ensures full support for the Barron-space limit in the mean-field regime throughout training, so universal approximation persists 
-      at all finite times—a property stronger than classical kernel ridge assumptions.
+      at all finite times—a property stronger than classical kernel ridge assumptions. NTK spectrum dependence in depth has been derived in \ work on MLPs at the EOC \cite{terjék2025mlpseocspectrumntk}
+      where a linear-in-depth scaling law traduces enhanced training capabilities by stacking layers.
 
 Low-rank and factorized architectures~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization} substantially reduce parameter counts in neural networks. 
 However, the training dynamics of factorized weights can differ from unfactorized gradient descent due to implicit regularization effects. When only output weights 
@@ -203,15 +210,6 @@ discovering latent directions sequentially, with training displaying staircase d
 acting as having \(r\) independent functions (approximated by the random features basis) forming a multi-index model in function space. Those functions only 
 interact through reconstructing output functions in next layers. This point of view is a novel way to understand low rank weight matrices provided
 that you do not train the random features to ensure approximation of dictionary - reconstruction - approxim .. etc ..
-
-
-On the optimization side, gradient descent near sharp minima can be unstable~\cite{cohen2021gradient}, with edge-of-stability (EOS) phenomena causing loss oscillations
- when eigenvalues exceed \( 2/\eta \). Different optimizers exhibit distinct implicit biases~\cite{wilson2017marginal}, and in sharp regimes switching to SGD can improve
-  stability. Neural scaling laws~\cite{kaplan2020scaling,hoffmann2022training} describe test loss as power laws in compute, data, and model size, while emergent 
-  capabilities~\cite{wei2022emergent} appear at critical scales. Universal approximation theorems~\cite{cybenko1989approximation,hornik1989multilayer} and random-feature
-   universality~\cite{rahimi2008weighted} ensure expressivity, and in three-layer frozen-feature settings, approximation power is maintained at \emph{all} training
-    times~\cite{nguyen2021proofglobalconvergencegradient}. Loss landscape geometry~\cite{li2018visualizing,fort2019large} significantly affects trainability; as training progresses, 
-    the landscape often convexifies~\cite{chizat2020implicit}, with Hessian spectrum evolution providing quantitative measures of this transition.
 
 From a data-dependent scaling perspective, achieving and maintaining NTK behavior in fully-trainable deep networks can impose stringent width–data 
 requirements, often quoted in the literature as polynomial \( O(N^p) \) in the width \( N \), with worst-case exponents \( p = 4\), and best-case exponents \( p = 1\) \cite{nguyen2022tightboundssmallesteigenvalue}
