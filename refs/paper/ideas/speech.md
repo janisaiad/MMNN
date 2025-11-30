@@ -249,3 +249,51 @@ Feature Models with Rigorous Kernel Analysis
 
 
 orcid
+
+
+## random features ntk deviation analysis avoided
+its about fundamental ntk analysis, not mmnn, if u want to tackle low rank how should you do it, we tacjke mmnna and NN simlicifation at the same time 
+
+
+
+
+
+
+
+
+
+we should do the letter talking about the preprint in prepaartion 
+done everything alone beside my studies
+
+
+
+B.LI : 
+EAUF in sobolev space with sobolev norm, function in W2 and norm W1
+
+
+flops in plot
+
+
+FlopS / LIGHTER - FASTER §§
+
+NTK is preserved : 
+low rank in terms of what
+
+full picture .
+On Parameter Reduction through Low-Rank Neural Networks with NTK Preservation Guarantees
+
+new insights, contribution ;;; 1 short sentence to summarize to reframe every paper
+
+
+transcript, , we prove it
+timeline prove it in a short time
+significant, important, difficult : famous professor working on that , no results, to show i work on importnat and difficult problem
+
+
+
+ : 
+ - my transcript
+ - my cv
+ - paper list
+ - all the results i have besides the preprint
+ - slides containing all the other results
