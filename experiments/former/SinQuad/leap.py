@@ -177,12 +177,12 @@ listener_thread.start()
 
 
 configs = []
-for alpha in [8]:
+for alpha in [2,4,8,16]:
     for lr_init in [0.001]:
         for batch_size in [10,20,50,100,200,500,1000]:
-            for num_layers in [8]:
-                for hidden_width in [512]:
-                    for hidden_rank in [1,2,3,4,5,6,10,20,50]:
+            for num_layers in [0,1,2,3,4,5]:
+                for hidden_width in [64,256,512]:
+                    for hidden_rank in [1,3,5,8,15]:
                         seed = np.random.randint(0, 1000000)
                         
                         configs.append({
@@ -198,9 +198,9 @@ for alpha in [8]:
                             "use_resnet": False,
 
                             # training hyperparameters
-                            "num_epochs": 10000,
+                            "num_epochs": 5000,
                             "batch_size": batch_size,
-                            "num_training_samples": 1000,
+                            "num_training_samples": 600,
                             "num_test_samples": 1000,
 
                             # learning rate schedule
@@ -210,7 +210,7 @@ for alpha in [8]:
 
                             # problem setup
                             "interval": [-1, 1],
-                            "function": f"cos(2*np.pi*(x-0.5)**{alpha})",
+                            "function": f"cos(2*pi*x) + 2*cos(2*pi*alpha*x)+0.5*cos(4*pi*x)",
                             "alpha": alpha,
                             
                             'show_plot': False,
@@ -247,13 +247,11 @@ for alpha in [8]:
 
                             # problem setup
                             "interval": [-1, 1],
-                            "function": f"cos(2*np.pi*(x-0.5)**{alpha})",
+                            "function": f"cos(2*pi*x) + 2*cos(2*pi*alpha*x)+0.5*cos(4*pi*x)",
                             "alpha": alpha,
                             
                             'show_plot': False,
                         })
-                        
-                        
             temp = []
             random.shuffle(temp)
             configs+=temp
@@ -289,7 +287,7 @@ for config_idx, config in enumerate(configs):
                 f"ntr{config['num_training_samples']}")
 
     sub_folder_name = f"alpha{config['alpha']}"
-    base_dir = os.path.join("/Data/janis.aiad/", "wavelet_topologsin", sub_folder_name)
+    base_dir = os.path.join("/Data/janis.aiad/", "wavelet_leap", sub_folder_name)
     os.makedirs(base_dir, exist_ok=True)
 
     output_dir = os.path.join(base_dir, folder_name)
@@ -324,7 +322,7 @@ for config_idx, config in enumerate(configs):
                         device=device,
                         ResNet=config["use_resnet"])
         def func(x):
-            y = np.cos(2*np.pi*(x-0.5)**config["alpha"])
+            y = np.cos(2*np.pi*x) + 2*np.cos(2*np.pi*config["alpha"]*x)+0.5*np.cos(4*np.pi*x)
             return y
 
 
