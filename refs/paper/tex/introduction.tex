@@ -10,8 +10,8 @@ Multi-Component and Multi-Layer Neural Networks (MMNNs), also known as Random Fe
 while the right part remain frozen as random ReLU + linear features and RKHS. Hence, we keep the low-rank structural advantage \cite{kamalakara2022exploringlowranktraining} without requiring Riemannian gradient descent.
 Recent empirical work by 
  \textit{Zhang et al.}~\cite{zhang2025structuredbalancedmulticomponentmultilayer} has demonstrated that 
- RF-LRs achieve \textbf{global strong-convergence} across a wide range of tasks, including neural-network based PDE solving with and without Physics-Informed losses~\cite{raissi2017physicsinformeddeeplearning}. 
- Training exhibits \textbf{super convergence} in 1st order optimization and a distinctive \textbf{stepwise loss dynamics}, where long plateaus are punctuated by sharp drops.
+ RF-LRs achieve global strong-convergence across a wide range of tasks, including neural-network based PDE solving with and without Physics-Informed losses~\cite{raissi2017physicsinformeddeeplearning}. 
+ Training exhibits super convergence with 1st order optimization and a distinctive stepwise loss dynamics, where long plateaus are punctuated by sharp drops.
 Despite these empirical successes, a fundamental theoretical understanding of how the loss landscape behaves in RF-LR remains incomplete. The remarkable convergence properties observed in practice—where training displays emergent staircase-like behavior and achieves global minima even when standard neural network training would fail—suggest that the landscape structure of RF-LR differs fundamentally from that of fully-trainable networks. Understanding these landscape properties requires developing a theoretical framework that can explain why RF-LR exhibit such favorable optimization behavior, what drives the stepwise dynamics, and how the low-rank structure shapes the loss surface geometry.
 
 The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} provides the natural lens 
@@ -146,7 +146,7 @@ learning~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}, while shar
 
 \noindent
 \begin{itemize}
-\item \emph{How Low-Rank preserves MLPs expressivity and random features simplify NTK analysis ?}
+\item \emph{How Low-Rank preserves MLPs expressivity and how random features simplify NTK analysis ?}
 \end{itemize}
 \vspace{0.5em}
 
@@ -215,7 +215,7 @@ From a data-dependent scaling perspective, achieving and maintaining NTK behavio
 requirements, often quoted in the literature as polynomial \( O(N^p) \) in the width \( N \), with worst-case exponents \( p = 4\), and best-case exponents \( p = 1\) \cite{nguyen2022tightboundssmallesteigenvalue}
 for quadratic scaling. To ensure the NTK has a positive smallest eigenvalue—crucial for optimization 
  convergence—at least one layer must scale with the number of data samples \( n \), while other layers can scale arbitrarily up to logarithmic
- factors for deep networks, motivating architectures that achieve NTK-like behavior with tractable computational requirements for large scale applications.
+ factors for deep networks, motivating architectures that achieve NTK regime behavior with tractable computational requirements for large scale applications.
 
 
 \subsection*{Our Contributions}
