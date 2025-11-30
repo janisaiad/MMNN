@@ -1,0 +1,292 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Show section navigation
+\AtBeginSection[]
+{
+  \begin{frame}{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\title{Research Significance and Challenges}
+\subtitle{Low-Rank Random Feature Neural Networks for Scientific Machine Learning}
+\author{Research Overview}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Table of Contents}
+\tableofcontents[pausesections]
+\end{frame}
+
+\begin{frame}{Overview}
+\begin{itemize}
+\item \textbf{Total Papers Cited:} 82 papers directly referenced in this work
+\item \textbf{Total Literature Survey:} Approximately 246 papers (3$\times$ more) were studied to gain deep understanding of the theoretical landscape and identify research directions
+\item This comprehensive literature review enabled precise positioning of contributions within the broader theoretical framework
+\end{itemize}
+\end{frame}
+
+\section{Why This Research is Difficult}
+
+\begin{frame}{Theoretical Complexity}
+\begin{itemize}
+\item \textbf{Bridging Multiple Frameworks:} Requires synthesizing three distinct theoretical perspectives—Neural Tangent Kernel (NTK) theory for lazy training, mean-field theory for feature learning, and random matrix theory for spectral analysis—each with different scaling regimes and mathematical tools
+\item \textbf{Non-Convex Global Convergence:} Proving global convergence in the mean-field regime for three-layer networks without exploiting convexity requires establishing that universal approximation holds at all finite training times, not just at convergence—a fundamentally new theoretical approach
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Mathematical Challenges}
+\begin{itemize}
+\item \textbf{High-Dimensional Random Matrix Analysis:} Characterizing the spectrum of doubly-random kernel matrices (randomness from both data and low-rank projections) requires extending Marchenko-Pastur theory to handle Fisher-Kibble distributions and correlation structures that don't appear in standard NTK analysis
+\item \textbf{Central Flow Dynamics:} Understanding how optimization trajectories navigate narrow "channels" in parameter space to access high-frequency solutions requires analyzing saddle-to-saddle transitions and the geometry of sharp minima—connecting optimization dynamics to function space structure
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Practical and Theoretical Challenges}
+\begin{itemize}
+\item \textbf{Finite-Width Corrections at Moderate Scales:} Developing tractable finite-width corrections for the mean-field regime (widths 500-5000) requires disentangling multiple sources of randomness (rank $r$, width $n$, input dimension $d$) and their interactions, unlike the infinite-width limit where many effects vanish
+\item \textbf{Statistical Physics and Effective Field Theory:} The analysis requires tools from statistical physics (particle systems, interacting particle dynamics, glass theory for multiple minima) and effective field theory to understand how the particle distribution $\rho_t(\theta)$ evolves through training, connecting neural network dynamics to physical systems
+\end{itemize}
+\end{frame}
+
+\section{Why This Research is Significant}
+
+\begin{frame}{Fundamental Theoretical Breakthroughs}
+\begin{itemize}
+\item \textbf{Parameter Efficiency Breakthrough:} Demonstrates that low-rank random feature architectures achieve the same RKHS expressivity as fully-connected networks with a linear parameter budget $O(rn)$ instead of quadratic $O(n^2)$, fundamentally changing the width requirements to enter the kernel regime—making theoretical guarantees accessible at practical model sizes
+\item \textbf{Exponentially Improved Concentration:} Establishes that NTK randomness decays as $O(1/r^2)$ in the doubly-random Gram regime, exponentially faster than the classical $O(1/N)$ decay from standard NTK theory, meaning the deterministic kernel limit is reached with dramatically fewer parameters
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conceptual Advances}
+\begin{itemize}
+\item \textbf{Global Convergence Without Convexity:} Proves that mean-field dynamics converge to global optima even when the loss landscape is non-convex, by leveraging universal approximation properties that hold at all finite times—a conceptually new result that extends beyond two-layer convexity-based analyses
+\item \textbf{Dictionary Learning and High-Frequency Construction:} Empirically and theoretically demonstrates that MMNNs learn wavelet-like dictionary functions that are recursively combined to construct high-frequency solutions, providing a principled mechanism for overcoming spectral bias—the fundamental limitation preventing standard neural networks from learning high-frequency functions
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Unified Theoretical Framework}
+\begin{itemize}
+\item \textbf{Unified Framework for Lazy and Feature Learning:} Bridges the gap between NTK (lazy training) and mean-field (feature learning) regimes, showing how the same architecture transitions between these behaviors and providing a unified theoretical lens for understanding neural network training dynamics
+\end{itemize}
+\end{frame}
+
+\section{Why This Research is Important for Scientific ML}
+
+\subsection{PDE Solving Applications}
+
+\begin{frame}{Physics-Informed Neural Networks}
+\begin{itemize}
+\item \textbf{PINNs for High-Frequency Solutions:} High-frequency solutions are ubiquitous in scientific computing (wave equations, fluid dynamics, quantum mechanics, electromagnetic fields). Standard neural networks fail catastrophically due to spectral bias—they learn low frequencies first and struggle to capture high-frequency components, requiring expensive mesh-based finite element or spectral methods
+\item \textbf{MMNNs Overcome Spectral Bias:} MMNNs overcome this fundamental limitation by learning wavelet-like dictionary functions that are recursively combined to construct high-frequency solutions, enabling neural network-based PDE solvers that can handle oscillatory and multi-scale phenomena with $O(rn)$ parameters instead of $O(n^2)$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Computational Efficiency}
+\begin{itemize}
+\item \textbf{Efficiency for Large-Scale Simulations:} The linear parameter scaling $O(rn)$ vs quadratic $O(n^2)$ translates directly to reduced memory footprint and computational costs. For scientific simulations requiring thousands of function evaluations (parameter sweeps, uncertainty quantification, inverse problems), this efficiency gain makes neural network-based PDE solvers viable where they were previously prohibitive
+\item \textbf{Deployment on Resource-Constrained Systems:} The reduced parameter count also enables deployment on resource-constrained environments (edge devices, embedded systems) for real-time scientific computing applications
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Spectral Accuracy and Mesh-Free Methods}
+\begin{itemize}
+\item \textbf{Spectral Accuracy Without Mesh Refinement:} Traditional numerical methods (finite differences, finite elements, spectral methods) require mesh refinement to capture high frequencies, leading to exponential growth in computational cost with frequency. MMNNs learn high-frequency components through recursive dictionary construction across layers, achieving spectral accuracy without mesh-based discretization—a paradigm shift that eliminates the curse of mesh refinement
+\item \textbf{Crucial for Localized Features:} This is particularly crucial for problems with localized high-frequency features (shocks, boundary layers, singularities) where uniform mesh refinement is wasteful
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Operator Learning and Multi-Scale Problems}
+\begin{itemize}
+\item \textbf{Operator Learning for PDEs:} Beyond solving individual PDE instances, MMNNs enable learning solution operators that map initial conditions, boundary conditions, or parameters to solutions. The effective field theory perspective provides a systematic framework for understanding these operator mappings, which are fundamental for scientific ML applications like weather prediction, material design, and uncertainty quantification
+\item \textbf{Multi-Scale Physical Problems:} The stepwise learning dynamics (plateaus followed by sharp drops) naturally correspond to sequential learning of different frequency bands—exactly matching the structure of multi-scale physical problems where different phenomena occur at different scales (e.g., turbulence with large eddies and small-scale fluctuations, quantum systems with multiple energy scales)
+\end{itemize}
+\end{frame}
+
+\subsection{Neural Network Optimization Applications}
+
+\begin{frame}{Robust Optimization Strategies}
+\begin{itemize}
+\item \textbf{Optimization for Ill-Conditioned Landscapes:} Scientific problems often have ill-conditioned loss landscapes with poor conditioning numbers, making optimization challenging. The central flow dynamics—where optimization must navigate narrow "channels" through parameter space to access high-quality minima—provides a theoretical framework for understanding when and why certain optimizers (Adam vs SGD) succeed or fail
+\item \textbf{Principled Optimizer Selection:} This enables principled optimizer selection: Adam for early training in flat regions, SGD for late training in sharp regions, with automatic switching based on landscape geometry indicators ($\lambda_{\max}(H_t)$, condition numbers)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Edge-of-Stability and Training Dynamics}
+\begin{itemize}
+\item \textbf{Edge-of-Stability Phenomena:} The analysis of saddle-to-saddle transitions and central flow dynamics explains the edge-of-stability (EOS) phenomena observed in deep learning optimization, where training occurs at the boundary of stability. Understanding these dynamics enables principled learning rate schedules, batch size selection, and optimizer switching strategies that prevent training instability while maintaining fast convergence
+\item \textbf{Critical for Large-Scale Models:} This is critical for training large-scale scientific ML models where stability and convergence speed are both essential
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Global Convergence Guarantees}
+\begin{itemize}
+\item \textbf{Theoretical Guarantees:} Unlike standard neural networks where convergence to global minima is not guaranteed (especially in non-convex settings), MMNNs provide theoretical guarantees for global convergence in the mean-field regime. This is achieved through universal approximation properties that hold at all finite training times (not just at convergence)
+\item \textbf{Reliable Learning of Complex Structures:} This ensures that complex scientific problems with intricate solution structures can be learned reliably, even when training is stopped early or with limited computational budget
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Overcoming Fundamental Limitations}
+\begin{itemize}
+\item \textbf{Overcoming Spectral Bias in Optimization:} The spectral bias of neural networks—where low frequencies are learned first and high frequencies are learned last (or not at all)—is a fundamental optimization challenge. MMNNs address this through their dictionary learning mechanism, where high-frequency components are constructed recursively across layers
+\item \textbf{Principled Architecture Design:} This provides a principled approach to designing architectures and training procedures that can learn high-frequency functions efficiently, directly addressing one of the main limitations of neural networks for scientific applications
+\end{itemize}
+\end{frame}
+
+\begin{frame}{High-Dimensional and Scalable Applications}
+\begin{itemize}
+\item \textbf{Overcoming the Curse of Dimensionality:} The mean-field framework is dimension-agnostic, avoiding the high-dimensional statistical difficulties that plague NTK analysis (which requires width scaling polynomially with dimension). This makes MMNNs particularly suitable for high-dimensional PDEs (e.g., Fokker-Planck equations in $d \gg 10$, high-dimensional Hamilton-Jacobi equations, Schrödinger equations in many-body systems) where standard mesh-based methods fail exponentially
+\item \textbf{Scalable to Real-World Problems:} The moderate-width regime (500-5000 neurons) where mean-field theory applies is exactly the scale used in practice for scientific ML applications. This alignment between theory and practice means theoretical guarantees translate directly to real-world performance improvements, unlike infinite-width theories that require unrealistic model sizes
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Effective Field Theory and Neural Operators}
+\begin{itemize}
+\item \textbf{Effective Field Theory Framework:} The connection to effective field theory (as demonstrated in Fourier Neural Operators) provides a systematic framework for understanding how neural networks learn operator mappings—fundamental for scientific ML where we need to learn solution operators for PDEs rather than just individual solutions
+\item \textbf{Renormalization and Scale-Invariance:} The low-rank structure enables tractable analysis of these operator learning dynamics, connecting to renormalization group flows and scale-invariant behavior in physical systems. This theoretical framework guides hyperparameter selection and explains how nonlinearity enables feature learning in operator spaces
+\end{itemize}
+\end{frame}
+
+\section{List of Results}
+
+\subsection{Theoretical Results (Completed)}
+
+\begin{frame}{NTK Theory and Recursion}
+\begin{itemize}
+\item \textbf{NTK Recursion Theorem:} Sequential infinite-width NTK recursion for MMNNs with low-rank bottlenecks, providing explicit formulas for two-layer MMNN with $\beta=0$ (no bias)
+\item \textbf{Base NNGP and Derivative Kernels:} Complete characterization of $\Sigma^{(\ell)}$ and $\dot{\Sigma}^{(\ell)}$ kernels, enabling full analysis of two-layer MMNN NTK behavior
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Low-Rank Fluctuations and Concentration}
+\begin{itemize}
+\item \textbf{Exponentially Improved Concentration:} NTK randomness decays as $O(1/r^2)$ in doubly-random Gram regime, exponentially faster than classical $O(1/N)$ decay, making kernel regime easier to reach than MLPs
+\item \textbf{Low-Rank Bottlenecks:} Variance decay $\sim O(1/r)$ for low-rank structures, with concentration bounds holding for rank $r$ and input dimensions
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Finite-Width Corrections and RKHS}
+\begin{itemize}
+\item \textbf{Finite-Width NTK Theorem:} Finite-width corrections in $Nr$ due to Edge-of-Chaos (EOC) for MMNNs, with $1/r$ expansion in sum of $C_i/r^i$ for $L$ layers
+\item \textbf{RKHS Equivalence:} MMNNs induce same RKHS as standard fully-connected networks for large rank $r$, ensuring no expressivity loss while achieving linear parameter scaling $O(rn)$ instead of quadratic $O(n^2)$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Random Matrix Theory and Distributions}
+\begin{itemize}
+\item \textbf{Doubly-Random Gram Matrix Regime:} Spectrum analysis with randomness from both data and low-rank projections, extending Marchenko-Pastur theory to handle Fisher-Kibble distributions
+\item \textbf{Distributional Tools:} Complete characterization of Fisher distribution (sample correlation) and Kibble distribution (bivariate $\chi^2$), with $\rho$ propagation through layers
+\end{itemize}
+\end{frame}
+
+\begin{frame}{High-Dimensional Statistics and Spectral Bias}
+\begin{itemize}
+\item \textbf{Dimension-Agnostic Framework:} Mean-field framework avoids high-dimensional statistical difficulties, with extensive-rank regime analysis for $r \asymp d^\beta$ providing scaling laws
+\item \textbf{Spectral Bias Characterization:} NTK explains high frequencies not learned directly through RKHS (same as MLP), but with more low-to-high frequency bias, tunable via variance of weights at initialization
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Factor-of-2 NTK Reduction}
+\begin{itemize}
+\item \textbf{Partial Training Advantage:} By training only $A^{(\ell)}$ (output weights) and freezing $w^{(\ell)}$ (input weights), effective NTK magnitude is approximately half: $\Kop_{\text{MMNN}} \approx \frac{1}{2} \Kop_{\text{full}}$
+\item \textbf{Doubled Effective Learning Rate:} This halves kernel eigenvalues in kernel regression regime, doubling effective learning rate—a significant computational advantage
+\end{itemize}
+\end{frame}
+
+\subsection{Theoretical Results (In Progress)}
+
+\begin{frame}{Advanced NTK Analysis (In Progress)}
+\begin{itemize}
+\item \textbf{Non-Gaussian Process Propagation:} Analysis of how propagation differs from NTK trying to fit kernel Gaussian process, with explicit NTK bulk formula in normalized $\times r^2$ manner
+\item \textbf{Complete Concentration Bounds:} Explicit formula for $2 \times NTK_{MMNN} - NTK_{MLP}$ for large $r$, completing Theorem 3.2 and NTK outlier analysis (Ben Arous-style)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Finite-Width Extensions and RMT (In Progress)}
+\begin{itemize}
+\item \textbf{Full Analysis on 2 MMNN Layers:} Complete analysis with infinite layer NTK using $1/r$ exponential expansion, with finite-width corrections scaling ($Nr$ and $r/d$ scaling laws)
+\item \textbf{Advanced Random Matrix Theory:} Full spectrum of kernel random matrices analysis, NTK for DSRN (Deep Structured Random Networks), and Terjék-style analysis for depth
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Advanced Theoretical Frameworks (In Progress)}
+\begin{itemize}
+\item \textbf{NTK Derivation via Feynman Diagrams:} Systematic NTK computation rules using Feynman diagram techniques combined with tensor program formalism for $\mu$-parameterization
+\item \textbf{Mean Field Theory Extensions:} Mean-field ODE framework for particle distribution $\rho_t(\theta)$ evolution, three-layer global convergence, and EOC conditions in low-rank two-layer setting
+\end{itemize}
+\end{frame}
+
+\subsection{Experimental Results}
+
+\begin{frame}{Completed Experimental Results}
+\begin{itemize}
+\item \textbf{Model Architecture and Setup:} Complete low-rank random feature model definition with training $A, c$ and freezing $w, b$, with NTK scaling $\sigma_A/\sqrt{n}$ and architecture visualization
+\item \textbf{Training Regime Characterization:} Identified two regimes (mean field and $\mu$P or NTK), confirmed poor conditioning at initialization, and experimentally verified same RKHS as MLPs
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Key Experimental Observations}
+\begin{itemize}
+\item \textbf{NTK Near Diagonal:} Observation that NTK is near diagonal when concatenating layers, with spectrum divided by 2 due to factor-of-2 reduction from partial training
+\item \textbf{Training Dynamics:} Stepwise learning where each plateau corresponds to learning a term in additive model, with $2n$ spikes appearing for $2n$ layers
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Planned Experiments: NTK and Finite-Width}
+\begin{itemize}
+\item \textbf{NTK Training Validation:} Confirm NTK training behavior for practical tasks, validate $r \in [5,50]$ for good concentration bounds, and systematically vary width configurations to test finite-width NTK predictions
+\item \textbf{Finite-Width Corrections:} Comparison with/without finite width corrections, compare theoretical minimum vs practice, and two-layer width scheme investigation
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Planned Experiments: Landscape and Optimization}
+\begin{itemize}
+\item \textbf{NTK Spectrum Comparison:} Compare MMNN vs MLP eigenvalue distributions, verify $O(1/r^2)$ vs $O(1/N)$ concentration, analyze outlier structure and bulk spectrum (Marchenko-Pastur)
+\item \textbf{Stepwise Loss Dynamics:} Compare training loss curves on multi-index targets, verify MMNN shows clear staircase behavior with $O(r)$ drops, and analyze landscape geometry (Hessian spectrum evolution, sharpness)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Planned Experiments: Frequency and Dictionary Learning}
+\begin{itemize}
+\item \textbf{Frequency Analysis:} Disentangle frequency vs localization (spikes) in low-rank random features, visualize learned wavelet-like dictionary functions, and test high-frequency function learning (cosine regression)
+\item \textbf{Multi-Scale Dynamics:} Verify stepwise ("staircase") behavior with plateaus and sharp drops, analyze early-training lazy regime vs transition out of laziness, and validate scaling laws for extensive-rank $r \approx d^\beta$ regime
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Planned Experiments: Advanced Dynamics and Architectures}
+\begin{itemize}
+\item \textbf{Advanced Dynamics:} Test dynamical stability near global minima, confirm symmetry breaking during training, investigate central-flow dynamics ($\rho_t$ tracking), and quantify sharpness with central flows
+\item \textbf{Advanced Architectures:} Block structure analysis (anatomy of attention), transformers analysis ($n\log(n)$ attention), DSRN of MMNN NTK calculation, and wavelet/spectral analysis
+\end{itemize}
+\end{frame}
+
+\subsection{Key Insights and Future Directions}
+
+\begin{frame}{Key Observations from Investigations}
+\begin{itemize}
+\item \textbf{NTK Behavior:} Low rank makes NTK explode and grow more; when ranks grow, NTK is diminished (counter-intuitive). NTK is near diagonal when concatenating layers, with spectrum divided by 2 from partial training
+\item \textbf{Training Dynamics:} Need 2 opposite activations to create MMNN (2 opposite directions with appropriate bias). Landscape is sharp after passing low-pass filtering phase, with stepwise learning corresponding to multi-index structure
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Future Research Directions}
+\begin{itemize}
+\item \textbf{Tensor Programs Formalism:} Use TP and choose what to train (like Greg Yang or Abbott), with attention to $\mu$P parameterization for $\beta \cdot n$ scaling
+\item \textbf{Comprehensive Comparisons:} Compare different sizes of MMNNs vs MLPs for solid numerical table, invert training of $w$ and $A$ to compare regimes, and analyze transformers ($n\log(n)$ transformers) from NTK perspective
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Summary}
+\begin{itemize}
+\item \textbf{Comprehensive Theoretical Foundation:} This research provides a comprehensive theoretical foundation for understanding low-rank random feature neural networks, bridging multiple theoretical frameworks and providing practical guarantees for scientific machine learning applications
+\item \textbf{Broad Impact:} The work addresses fundamental challenges in both PDE solving and neural network optimization, with direct applications to physics-informed neural networks, operator learning, and high-dimensional scientific computing problems
+\end{itemize}
+\end{frame}
+
+\end{document}
+

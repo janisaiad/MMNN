@@ -1,0 +1,500 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\usepackage{tikz}
+\geometry{a4paper, margin=1in}
+
+\title{Theoretical Analysis of Integrals with Gaussian Measure and Softmax Function}
+\author{Janis AIAD}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Initial Problem Statement}
+
+The discussion began with the challenge of calculating integrals of the form:
+\[
+I = \int_{-\infty}^{\infty} \frac{e^{-ax^2 + bx + c} \cdot e^{f(x)}}{\sum_{i=1}^{N} e^{g_i(x)}} dx
+\]
+where the term $e^{-ax^2+bx+c}$ represents a Gaussian measure.
+
+It was established that there is generally no simple analytical solution for this general form. Several strategies were proposed.
+
+\subsection{Simplification and Special Cases}
+\begin{itemize}
+    \item Approximation by a dominant term in the denominator.
+    \item Use of integrand symmetries.
+    \item Changes of variable to simplify the expression.
+\end{itemize}
+
+\subsection{Laplace Approximation}
+This method is suitable when the Gaussian is sharply peaked. The integral is rewritten in the form $\int e^{-F(x)} dx$ by incorporating the denominator into the exponent via a logarithm:
+\[
+\int \exp\left(-ax^2 + bx + c + h(x) - \ln\left(\sum_i e^{g_i(x)}\right)\right) dx
+\]
+The approximation is then given by:
+\[
+I \approx e^{-F(x_0)} \sqrt{\frac{2\pi}{F''(x_0)}}
+\]
+where $x_0$ is the minimum of $F(x)$.
+
+\subsection{Numerical Methods}
+\begin{itemize}
+    \item \textbf{Gauss-Hermite Quadrature:} Specifically designed for integrals of the form $\int_{-\infty}^{\infty} e^{-x^2} g(x) dx$.
+    \item \textbf{Monte Carlo Methods:} Essential for high-dimensional integrals, particularly importance sampling.
+\end{itemize}
+
+\section{Connection with Hermite Polynomials}
+
+The conversation then shifted to calculating the Hermite coefficients of a complex function $f(x)$, given that the basis of Hermite polynomials is natural for a Gaussian measure.
+The expansion is:
+\[
+f(x) = \sum_{n=0}^{\infty} c_n H_n(x)
+\]
+with the coefficients:
+\[
+c_n = \frac{1}{\sqrt{\pi} 2^n n!} \int_{-\infty}^{\infty} f(x) H_n(x) e^{-x^2} dx
+\]
+The calculation of these coefficients $c_n$ proves to be as complex as the initial integral.
+
+\subsection{Taylor Expansion Approach}
+An alternative is to expand $f(x)$ as a Taylor series:
+\[
+f(x) = \sum_{k=0}^{\infty} \frac{f^{(k)}(0)}{k!} x^k
+\]
+The integral then becomes a sum over the moments of the Gaussian:
+\[
+\int_{-\infty}^{\infty} f(x) e^{-x^2} dx = \sum_{k=0}^{\infty} \frac{f^{(k)}(0)}{k!} \int_{-\infty}^{\infty} x^k e^{-x^2} dx
+\]
+This approach transforms an integration problem into a differentiation problem.
+
+\subsection{Generating Function Approach}
+Using the generating function for Hermite polynomials, $e^{2xt-t^2} = \sum_{n=0}^{\infty} \frac{H_n(x)}{n!} t^n$, we arrive at the relation:
+\[
+\int_{-\infty}^{\infty} f(x) e^{-(x-t)^2} dx = \sqrt{\pi} \sum_{n=0}^{\infty} (2t)^n c_n
+\]
+The calculation of $c_n$ is reduced to the Taylor series expansion of the parametric integral on the left.
+
+\section{Transition to the Multivariate Case}
+
+The problem is actually multivariate. The Taylor series approach then leads to the calculation of moments of a multivariate Gaussian, governed by \textbf{Wick's (or Isserlis') theorem}. This results in a combinatorial explosion.
+
+\subsection{Feynman Diagram Formalism}
+This approach allows for the visualization and organization of the combinatorics of Wick's theorem, transforming the problem into a topological task of summing over graphs.
+
+\subsection{Generating Functional Approach}
+A functional $Z[J]$ is introduced, depending on an external source field $J$:
+\[
+Z[J] = \int f(\mathbf{x}) \exp\left(-\frac{1}{2} \mathbf{x}^T \Sigma^{-1} \mathbf{x} + \mathbf{J}^T \mathbf{x}\right) d^d x
+\]
+The moments are obtained by functional differentiation with respect to $J$.
+
+\subsection{Monte Carlo in High Dimensions}
+Importance sampling remains the most robust numerical method, with its error decreasing as $1/\sqrt{N}$ regardless of the dimension.
+\[
+I = \int f(\mathbf{x}) p(\mathbf{x}) d^d x \approx \frac{1}{N} \sum_{i=1}^{N} f(\mathbf{x}_i), \quad \mathbf{x}_i \sim p(\mathbf{x})
+\]
+
+\section{Specific Problem: Moments of the Softmax Function}
+
+The concrete problem is to calculate the moments of the output of a softmax function applied row-wise to an $N \times P$ Gaussian matrix $X$ with a correlated covariance structure. The output $S$ is given by:
+\[
+S_{ik} = \frac{e^{X_{ik}}}{Z_i}, \quad \text{where } Z_i = \sum_{l=1}^{P} e^{X_{il}}
+\]
+The objective is to calculate $\mathbb{E}[P(S_{ik})]$ over the distribution of $X$.
+
+\subsection{Feasibility of Analytical Calculation}
+An exact analytical calculation is considered \textbf{\underline{intractable}}. The structure of the softmax is intrinsically linked to the logarithm of the partition function $Z_i$, because:
+\[
+S_{ik} = \frac{\partial \log(Z_i)}{\partial X_{ik}}
+\]
+Thus, $\mathbb{E}[P(S_{ik})]$ is the expectation of a polynomial of the derivatives of $\log Z_i$. The approaches are therefore necessarily controlled approximation schemes.
+
+\subsection{Approximation Strategies}
+
+\begin{description}
+    \item[Asymptotic Approach (Saddle-Point Method / Low Temperature)]
+    Introduce a parameter $\beta$ (inverse temperature): $S_{ik}(\beta) = e^{\beta X_{ik}} / \sum_l e^{\beta X_{il}}$. The limit $\beta \to \infty$ reduces the problem to extreme value statistics for correlated Gaussian variables, which serves as a starting point for a perturbative expansion.
+
+    \item[Perturbative Approach (Limited Expansion)]
+    A Taylor expansion of the integrand $(S_{ik})^k$ in the variables $X_{jl}$ around zero. This leads back to Wick's theorem, but the complexity of the derivatives of the denominator makes this approach quickly \underline{intractable}.
+
+    \item[Theoretical Physics Approach (Replica Method)]
+    This is the most advanced method for this type of problem. It allows for averaging over the "disorder" (the matrix $X$) by using the identity $\mathbb{E}[\log Z] = \lim_{n \to 0} \frac{\mathbb{E}[Z^n] - 1}{n}$. One calculates $\mathbb{E}[Z^n]$ for integer $n$ by introducing $n$ copies ("replicas") of the system. The expectation over $X$ can then be performed, and the resulting system is analyzed in the limit $n \to 0$. This is the most powerful way to obtain approximate analytical results in the large matrix limit.
+\end{description}
+
+\section{Generative Model for the Correlated Gaussian Matrix}
+
+A key part of the problem involves understanding the structure of the correlated Gaussian matrix $G$. Let's formalize its generation.
+
+\subsection{Target Covariance Structure}
+Let $G$ be an $n \times n$ matrix of Gaussian random variables. The entries of $G$ are correlated. We assume a separable covariance structure. If we vectorize the matrix by stacking its columns into an $n^2 \times 1$ vector $g = \text{vec}(G)$, its covariance matrix is given by the Kronecker product of a correlation matrix $\rho$ with itself:
+\[
+\text{Cov}(g) = \mathbb{E}[g g^T] = \rho \otimes \rho
+\]
+This implies that the covariance between two elements of the matrix, $G_{ik}$ and $G_{jl}$ (element in row $i$, column $k$ and row $j$, column $l$ respectively), is given by:
+\[
+\text{Cov}(G_{ik}, G_{jl}) = \rho_{ij} \rho_{kl}
+\]
+Here, $\rho_{ij}$ models the correlation between rows $i$ and $j$, while $\rho_{kl}$ models the correlation between columns $k$ and $l$.
+
+\subsection{Standard Construction via Cholesky Decomposition}
+A standard and correct method to generate a matrix $G$ with this exact covariance structure relies on the Cholesky decomposition of the correlation matrix $\rho$.
+Let $\rho = L L^T$ be the Cholesky decomposition, where $L$ is a lower triangular matrix. Let $Z$ be an $n \times n$ matrix of independent and identically distributed (i.i.d.) standard normal random variables, i.e., $Z_{ik} \sim \mathcal{N}(0,1)$.
+
+The matrix $G$ is generated as follows:
+\[
+G = L Z L^T
+\]
+This construction uses $n^2$ random variables from the matrix $Z$.
+
+\subsubsection*{Verification of the Covariance}
+We can verify that this construction yields the desired covariance. Using the properties of the vectorization operator and the Kronecker product:
+\[
+\text{vec}(G) = \text{vec}(L Z L^T) = (L \otimes L) \text{vec}(Z)
+\]
+The covariance of the vectorized matrix is:
+\begin{align*}
+\text{Cov}(\text{vec}(G)) &= \mathbb{E}\left[ ((L \otimes L) \text{vec}(Z)) ((L \otimes L) \text{vec}(Z))^T \right] \\
+&= (L \otimes L) \, \mathbb{E}[\text{vec}(Z) \text{vec}(Z)^T] \, (L \otimes L)^T \\
+&= (L \otimes L) \, I_{n^2} \, (L^T \otimes L^T) \\
+&= (L L^T) \otimes (L L^T) \\
+&= \rho \otimes \rho
+\end{align*}
+This confirms that the construction is correct.
+
+\subsection{Alternative Construction with a Global Correlation Source}
+An alternative construction was described, involving $n^2+1$ random variables. This model introduces a common source of randomness for all entries of the matrix.
+
+Let $Z_0$ be a single standard normal random variable ($Z_0 \sim \mathcal{N}(0,1)$). Let $Z'$ be an $n \times n$ matrix of i.i.d. standard normal random variables, independent of $Z_0$. Let $\rho$ be an $n \times n$ matrix of parameters, where $|\rho_{ij}| \le 1$ for all $i,j$.
+
+The matrix $G$ is constructed entry-wise as:
+\[
+G_{ij} = Z_0 \cdot \rho_{ij} + Z'_{ij} \sqrt{1 - \rho_{ij}^2}
+\]
+This is equivalent to the matrix form:
+\[
+G = Z_0 \rho + Z' \circ \sqrt{J - \rho \circ \rho}
+\]
+where $\circ$ denotes the Hadamard (element-wise) product, $J$ is the $n \times n$ matrix of all ones, and the square root is taken element-wise.
+
+\subsubsection*{Resulting Covariance}
+Let's compute the covariance structure resulting from this model. The variance of any element $G_{ij}$ is:
+\[
+\text{Var}(G_{ij}) = \mathbb{E}[(Z_0 \rho_{ij} + Z'_{ij} \sqrt{1-\rho_{ij}^2})^2] = \rho_{ij}^2 \mathbb{E}[Z_0^2] + (1-\rho_{ij}^2) \mathbb{E}[(Z'_{ij})^2] = \rho_{ij}^2 + (1-\rho_{ij}^2) = 1
+\]
+The covariance between two different elements $G_{ik}$ and $G_{jl}$ (where $(i,k) \neq (j,l)$) is:
+\begin{align*}
+\text{Cov}(G_{ik}, G_{jl}) &= \mathbb{E}\left[(Z_0 \rho_{ik} + Z'_{ik} \sqrt{1-\rho_{ik}^2})(Z_0 \rho_{jl} + Z'_{jl} \sqrt{1-\rho_{jl}^2})\right] \\
+&= \rho_{ik} \rho_{jl} \mathbb{E}[Z_0^2] + \mathbb{E}[Z'_{ik}Z'_{jl}] \sqrt{(1-\rho_{ik}^2)(1-\rho_{jl}^2)} \\
+&= \rho_{ik} \rho_{jl}
+\end{align*}
+since $\mathbb{E}[Z'_{ik}Z'_{jl}] = \delta_{ij}\delta_{kl}$ which is zero for different elements.
+
+The resulting covariance structure is $\text{Cov}(G_{ik}, G_{jl}) = \rho_{ik} \rho_{jl}$. This is a rank-one structure, which is generally different from the separable Kronecker product structure $\text{Cov}(G_{ik}, G_{jl}) = \rho_{ij} \rho_{kl}$. The former depends on all four indices in a non-separable way, while the latter separates row and column correlations. Therefore, while the second construction is a valid model for a correlated matrix, it does not produce the specific Kronecker product covariance structure.
+
+\section{Application to Transformer Models in NLP}
+
+The theoretical framework developed above is directly applicable to the analysis of Transformer models in Natural Language Processing (NLP). We can model the input to a Transformer layer as a Gaussian Process, which allows us to study the propagation of uncertainty and correlations through the network.
+
+\subsection{Formalism}
+Let the input sequence of word embeddings be represented by a matrix $X \in \mathbb{R}^{N \times D}$, where $N$ is the sequence length and $D$ is the embedding dimension. We model this input as being drawn from a matrix-variate Gaussian distribution. The attention mechanism of a Transformer computes a matrix of attention scores, which is then passed through a softmax function. Let's denote the pre-softmax attention scores for a single attention head as a matrix $A \in \mathbb{R}^{N \times N}$. The entries $A_{ij}$ represent the score between query token $i$ and key token $j$. This matrix $A$ is a function of the input $X$ and is therefore also a correlated Gaussian matrix.
+
+The output of the attention head is determined by the softmax function applied column-wise to $A$:
+\[
+S_{ij} = \frac{e^{A_{ij}}}{\sum_{k=1}^{N} e^{A_{kj}}}
+\]
+The problem of analyzing the Transformer's output thus reduces to computing moments and other properties of the matrix $S$, which is precisely the problem we have been addressing.
+
+\subsection{Interpretation of the Laplace Approximation}
+In this context, the Laplace approximation (or the saddle-point method) acquires a concrete interpretation. The method provides an accurate approximation when the integrand is sharply peaked. This corresponds to a scenario where, for a given column $j$, one attention score $A_{kj}$ is significantly larger than all others.
+
+This is the case of "peak attention," where one word (or token) in the sequence strongly attends to another. For example, if two words are highly correlated (e.g., a pronoun and its antecedent), the attention score between them will be large, creating a peak in the softmax denominator. The Laplace method is therefore a powerful tool for analytically studying the behavior of attention in the presence of strong, localized correlations.
+
+\subsection{Large-Scale Analysis and Random Matrix Theory}
+For modern NLP models, the sequence length $N$ can be very large. In this large-$N$ limit, direct computation is \underline{intractable}, but powerful approximations can be made by leveraging tools from Random Matrix Theory (RMT).
+
+A key insight is that the correlation matrix $\rho$ (describing correlations between token positions) is likely to be sparse. In natural language, a given word's meaning is typically determined by a small, local context, not by all other words in a long sequence. Therefore, $\rho_{ij}$ will be negligible for most pairs $(i,j)$ where $|i-j|$ is large.
+
+This sparsity is crucial. The spectral properties (i.e., the distribution of eigenvalues) of large, sparse random matrices are well-understood. Similarly, RMT provides precise results for the spectra of matrices that are low-rank perturbations of random matrices (like the rank-one structure from the alternative generative model). By assuming a sparse or low-rank structure for the correlation, we can approximate the behavior of the system and compute the desired moments in the large-$N$ limit, turning an \underline{intractable} problem into a solvable one.
+
+\section{Formulation of the Target Integral}
+
+We seek to formalize the calculation of the expectation of a specific polynomial. This polynomial depends on the outputs of the softmax function for two particular rows, denoted $a$ and $b$, of the input Gaussian matrix.
+
+\subsection{Definitions}
+Let $G$ be a correlated Gaussian matrix of size $N \times P$, generated as before by the global source model:
+\[
+G_{ij} = Z_0 \cdot \rho_{ij} + Z'_{ij} \sqrt{1 - \rho_{ij}^2}
+\]
+where $Z_0 \sim \mathcal{N}(0,1)$ is a scalar standard normal variable, and $Z' \in \mathbb{R}^{N \times P}$ is a matrix of i.i.d. standard normal variables, independent of $Z_0$.
+
+The output of the system is a matrix $S \in \mathbb{R}^{N \times P}$, obtained by applying a softmax function with temperature $T$ (or inverse $\beta = 1/T$) to each row of $G$:
+\[
+S_{ik} = \frac{e^{\beta G_{ik}}}{\sum_{l=1}^{P} e^{\beta G_{il}}}
+\]
+The objective is to compute the expectation of a polynomial $P$ which takes as arguments the entries of rows $a$ and $b$ of the matrix $S$. Let us denote the set of these entries by $S_{a, \cdot} = \{S_{a1}, S_{a2}, \dots, S_{aP}\}$ and $S_{b, \cdot} = \{S_{b1}, S_{b2}, \dots, S_{bP}\}$. The expectation is taken over all underlying random variables, i.e., $Z_0$ and the set of $\{Z'_{ij}\}$.
+
+\subsection{Full Integral Expression}
+The desired expectation, $\mathbb{E}[P(S_{a, \cdot}, S_{b, \cdot})]$, is written as a multidimensional integral over the probability measure of all independent Gaussian variables.
+
+Let $d\mu(z) = \frac{1}{\sqrt{2\pi}} e^{-z^2/2} dz$ be the standard Gaussian measure. The full integral is:
+\begin{align*}
+\mathbb{E}[P(S_{a, \cdot}, S_{b, \cdot})] = & \int_{\mathbb{R}} d\mu(z_0) \left( \prod_{i=1}^{N} \prod_{j=1}^{P} \int_{\mathbb{R}} d\mu(z'_{ij}) \right) \\
+& P\left( \left\{ \frac{e^{\beta G_{al}}}{\sum_{k=1}^{P} e^{\beta G_{ak}}} \right\}_{l=1 \dots P}, \left\{ \frac{e^{\beta G_{bl}}}{\sum_{k=1}^{P} e^{\beta G_{bk}}} \right\}_{l=1 \dots P} \right)
+\end{align*}
+where the $G_{ij}$ terms inside the polynomial are functions of the integration variables $z_0$ and $\{z'_{ij}\}$:
+\[
+G_{ij}(z_0, \{z'_{kl}\}) = z_0 \cdot \rho_{ij} + z'_{ij} \sqrt{1 - \rho_{ij}^2}
+\]
+This expression formally represents the quantity to be calculated. It is an integral over $NP+1$ variables, where the integrand is a highly non-linear and coupled function of these variables.
+
+\section{Final Formulation with Reduced Variable Set}
+
+We now refine the model to explicitly use a reduced set of random variables, as the polynomial of interest, $P$, only depends on rows $a$ and $b$. This is a crucial simplification for analytical \underline{tractability}.
+
+\subsection{Refined Generative Model}
+The core insight is that we only need to model the specific correlations within and between rows $a$ and $b$. We assume the entries of these two rows are generated from a smaller set of independent Gaussian sources.
+Let $Z_0 \sim \mathcal{N}(0,1)$ be a global random variable as before.
+Let $Z_a = (Z_{a1}, Z_{a2}, \dots, Z_{aP})$ be a vector of $P$ i.i.d. standard normal variables for row $a$.
+Let $Z_b = (Z_{b1}, Z_{b2}, \dots, Z_{bP})$ be a vector of $P$ i.i.d. standard normal variables for row $b$.
+The set $\{Z_0, Z_a, Z_b\}$ contains $2P+1$ independent Gaussian variables in total.
+
+The entries of the relevant rows of the matrix $G$ are now constructed as follows:
+For $j = 1, \dots, P$:
+\begin{align*}
+G_{aj} &= Z_0 \cdot \rho_{aj} + Z_{aj} \sqrt{1 - \rho_{aj}^2} \\
+G_{bj} &= Z_0 \cdot \rho_{bj} + Z_{bj} \sqrt{1 - \rho_{bj}^2}
+\end{align*}
+This construction maintains the desired covariance structure where $\text{Cov}(G_{ik}, G_{jl}) = \rho_{ik}\rho_{jl}$ for $i,j \in \{a,b\}$, but it only requires integrating over the variables that actually affect the quantity of interest.
+
+\subsection{Final Integral Expression}
+The expectation $\mathbb{E}[P(S_{a, \cdot}, S_{b, \cdot})]$ can now be expressed as an integral over these $2P+1$ variables. Let $d\mu(z)$ remain the standard Gaussian measure. The final, complete, and more \underline{tractable} integral is:
+
+\begin{align*}
+\mathbb{E}[P(S_{a, \cdot}, S_{b, \cdot})] = & \int_{\mathbb{R}} d\mu(z_0) \left( \prod_{j=1}^{P} \int_{\mathbb{R}} d\mu(z_{aj}) \right) \left( \prod_{j=1}^{P} \int_{\mathbb{R}} d\mu(z_{bj}) \right) \\
+& P\left( S_{a, \cdot}(z_0, \mathbf{z}_a), S_{b, \cdot}(z_0, \mathbf{z}_b) \right)
+\end{align*}
+where the arguments of the polynomial $P$ are the softmax outputs for rows $a$ and $b$. For any given column $l \in \{1, \dots, P\}$, these are:
+\[
+S_{al} = \frac{\exp\left(\beta \left[z_0 \rho_{al} + z_{al} \sqrt{1-\rho_{al}^2}\right]\right)}{\sum_{k=1}^{P} \exp\left(\beta \left[z_0 \rho_{ak} + z_{ak} \sqrt{1-\rho_{ak}^2}\right]\right)}
+\]
+\[
+S_{bl} = \frac{\exp\left(\beta \left[z_0 \rho_{bl} + z_{bl} \sqrt{1-\rho_{bl}^2}\right]\right)}{\sum_{k=1}^{P} \exp\left(\beta \left[z_0 \rho_{bk} + z_{bk} \sqrt{1-\rho_{bk}^2}\right]\right)}
+\]
+This is the final, complete expression for the quantity of interest. The calculation is now framed as an integral over $2P+1$ dimensions, which, while still challenging, is a significant reduction from the initial formulation.
+
+\section{Perturbative Expansion Strategy and Physical Interpretation}
+
+The analytical \underline{intractability} of the final integral calls for a perturbative approach, grounded in the physical behavior of the system. The choice of the expansion method is a strategic one, balancing analytical elegance with interpretability.
+
+\subsection{Dominant Logit Regime and Low-Temperature Expansion}
+The core assumption enabling a perturbative treatment is the existence of a \textbf{dominant logit} within each row. For a given row $a$, we assume there exists an index $k=\text{max}$ such that the logit $G_{a, \text{max}}$ is significantly larger than all other logits $G_{ak}$ for $k \neq \text{max}$.
+
+\subsubsection*{Logit Scaling and the Role of Temperature}
+In the context of Transformer models, the pre-softmax logits are intentionally scaled to have a variance of $\mathcal{O}(1)$. Consequently, for a set of $P$ such correlated Gaussian variables, results from \textbf{extreme value theory} suggest that the expected gap, $G_{a, \text{max}} - G_{ak}$, is relatively small, scaling as $\mathcal{O}(\sqrt{\log P})$.
+
+This small intrinsic gap implies that the validity of the expansion is not guaranteed by the logits alone. Instead, the expansion becomes a \textbf{low-temperature approximation}, controlled by the inverse temperature $\beta = 1/T$. By assuming a large $\beta$, we ensure that the perturbation parameter $\delta_k = \exp(-\beta(G_{a, \text{max}} - G_{ak}))$ is small, even for a modest logit gap. This regime is analogous to a \textbf{Random Energy Model (REM)} at low temperature, where the system freezes into its lowest energy state (the one corresponding to the maximum logit).
+\subsubsection*{Microscopic Justification from Embedding Geometry}
+The assumption of a dominant logit can be justified more fundamentally by considering the origin of the correlation parameters, $\rho_{ij}$, in the context of NLP. These parameters arise from scalar products of word embeddings, which exist in a high-dimensional space $\mathbb{R}^{d_{\text{embed}}}$.
+
+Let $v_i \in \mathbb{R}^{d_{\text{embed}}}$ be the normalized embedding for token $i$. Then, the correlation is $\rho_{ij} = v_i^T v_j$. For two randomly chosen, uncorrelated word embeddings, their scalar product will be small. Specifically, the components of the embedding vectors are often modeled as random variables, leading to a typical scaling of $\rho_{ij} \sim \mathcal{O}(1/\sqrt{d_{\text{embed}}})$.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1.5]
+    \draw[->] (-1.5,0) -- (1.5,0) node[right] {$x$};
+    \draw[->] (0,-1.5) -- (0,1.5) node[above] {$y$};
+    
+    % Vector v1 (reference vector)
+    \draw[thick,blue,->] (0,0) -- (1,0) node[right] {$v_1$};
+    
+    % Vector v2 (nearly collinear - high correlation)
+    \draw[thick,red,->] (0,0) -- (0.966,0.259) node[right] {$v_2$};
+    
+    % Vector v3 (nearly orthogonal - low correlation)
+    \draw[thick,green,->] (0,0) -- (0.259,0.966) node[above] {$v_3$};
+    
+    % Add arc to show angles
+    \draw[dashed] (0.3,0) arc (0:15:0.3);
+    \draw[dashed] (0.3,0) arc (0:75:0.3);
+\end{tikzpicture}
+\caption{Geometric interpretation of word embedding correlations. Vector $v_2$ is nearly collinear with $v_1$ (high correlation, $\rho_{12} \approx 0.97$), while $v_3$ is nearly orthogonal (low correlation, $\rho_{13} \approx 0.26$).}
+\end{figure}
+
+We can now posit a more realistic hypothesis for the dominant logit: the "bulk" of the logits are generated from pairs of words with this typical small correlation. However, certain pairs of words are semantically highly related (e.g., synonyms, or a pronoun and its referent). For these pairs, the embeddings are expected to be nearly collinear, resulting in an "outlier" correlation $\rho_{a, \text{max}}$ that is much larger than the typical value, i.e., $\rho_{a, \text{max}} \approx 1$.
+
+This large, outlier correlation coefficient provides a physical mechanism that creates the dominant logit, making the perturbative expansion not just a statistical assumption based on extreme value theory, but a direct consequence of the geometric structure of the embedding space. This hypothesis is, in principle, \textbf{numerically verifiable} by analyzing the distribution of scalar products between word embeddings in pre-trained models.
+
+\subsubsection{Remarque sur la concentration en grande dimension}
+
+Pour affiner l'argument précédent sur la géométrie des plongements, nous pouvons calculer explicitement la variance du produit scalaire de deux vecteurs aléatoires.
+
+En notant $X, Y$ deux vecteurs unitaires i.i.d. et uniformes sur la sphère $S^{d-1}$ et $Z = X \cdot Y = \cos\theta \in [-1, 1]$, on sait que $Z$ a pour densité de probabilité $f(z) \propto (1-z^2)^{(d-3)/2}$. Nous nous intéressons à la variance de $|Z|$.
+
+Deux faits sont utiles :
+\begin{itemize}
+    \item L'espérance de $Z$ est nulle par symétrie, donc $\mathbb{E}[Z^2] = \text{Var}(Z) = \frac{1}{d}$.
+    \item L'espérance de $|Z|$ s'obtient exactement par intégration :
+    \[
+    \mathbb{E}[|Z|] = \frac{\Gamma(\frac{d}{2})}{\sqrt{\pi} \Gamma(\frac{d-1}{2})}
+    \]
+\end{itemize}
+Comme $|Z|^2 = Z^2$, on a donc :
+\[
+\text{Var}(|Z|) = \mathbb{E}[Z^2] - (\mathbb{E}[|Z|])^2 = \mathbb{E}[Z^2] - (\mathbb{E}[|Z|])^2 = \frac{1}{d} - \left[ \frac{\Gamma(\frac{d}{2})}{\sqrt{\pi} \Gamma(\frac{d-1}{2})} \right]^2
+\]
+
+\paragraph{Comportement asymptotique en grande dimension.}
+En utilisant l'approximation de Stirling pour la fonction Gamma, qui implique $\Gamma(z+\frac{1}{2}) / \Gamma(z) \sim \sqrt{z}$ quand $z \to \infty$, on obtient les équivalents suivants :
+\[
+\mathbb{E}[|Z|] \sim \sqrt{\frac{2}{\pi d}}
+\]
+et par conséquent :
+\[
+\text{Var}(|Z|) \sim \left(1 - \frac{2}{\pi}\right) \frac{1}{d} \approx \frac{0.36338}{d}
+\]
+Ainsi, à cause de la \textit{malédiction de la dimension}, non seulement l'espérance du produit scalaire est nulle, mais la variance de sa valeur absolue $|X \cdot Y|$ décroît en $\Theta(1/d)$. Ceci justifie rigoureusement l'hypothèse que les produits scalaires entre des plongements aléatoires sont typiquement petits et concentrés autour de zéro.
+
+\subsection{Comparison of Taylor Expansion Strategies}
+Given the assumption of a dominant logit, we can factorize the partition function $Z_a$:
+\[
+Z_a = \sum_{k=1}^{P} e^{\beta G_{ak}} = e^{\beta G_{a, \text{max}}} \left( 1 + \sum_{k \neq \text{max}} e^{\beta (G_{ak} - G_{a, \text{max}})} \right) = e^{\beta G_{a, \text{max}}} \left( 1 + \sum_{k \neq \text{max}} \delta_k \right)
+\]
+Two main strategies for the Taylor expansion emerge:
+
+\subsubsection{Direct Analytical Expansion}
+This involves rewriting the softmax output $S_{al} = e^{\beta G_{al}} / Z_a$ as $e^{\beta G_{al}} \cdot (Z_a)^{-1}$. The denominator term is expanded using the geometric series for $(1+x)^{-1}$ where $x = \sum_{k \neq \text{max}} \delta_k$:
+\[
+(Z_a)^{-1} = e^{-\beta G_{a, \text{max}}} \left( \frac{1}{1 + \sum_{k \neq \text{max}} \delta_k} \right) \approx e^{-\beta G_{a, \text{max}}} \left( 1 - \sum_{k \neq \text{max}} \delta_k + \left(\sum_{k \neq \text{max}} \delta_k\right)^2 - \dots \right)
+\]
+This approach is direct and computationally straightforward, yielding an expansion for the denominator without involving logarithms.
+
+\subsubsection{Cumulant Expansion (via Logarithm)}
+This more physically-motivated approach involves expanding the term $\exp(-\log(Z_a))$. First, we expand the logarithm:
+\begin{align*}
+\log(Z_a) &= \log\left(e^{\beta G_{a, \text{max}}}\right) + \log\left( 1 + \sum_{k \neq \text{max}} \delta_k \right) \\
+&\approx \beta G_{a, \text{max}} + \left(\sum_{k \neq \text{max}} \delta_k\right) - \frac{1}{2}\left(\sum_{k \neq \text{max}} \delta_k\right)^2 + \dots
+\end{align*}
+The softmax outputs are then $S_{al} = \exp(\beta G_{al} - \log(Z_a))$. For the dominant output ($l=\text{max}$):
+\begin{align*}
+S_{a, \text{max}} &= \exp\left(\beta G_{a, \text{max}} - \log(Z_a)\right) \\
+&\approx \exp\left( - \sum_{k \neq \text{max}} \delta_k + \frac{1}{2}\left(\sum_{k \neq \text{max}} \delta_k\right)^2 - \dots \right) \\
+&\approx 1 - \sum_{k \neq \text{max}} \delta_k + \left(\sum_{k \neq \text{max}} \delta_k\right)^2 + \dots
+\end{align*}
+For a perturbative output ($l \neq \text{max}$):
+\[
+S_{al} = \exp(\beta G_{al} - \log(Z_a)) \approx \delta_l \left(1 - \sum_{k \neq \text{max}} \delta_k + \dots \right)
+\]
+
+\subsubsection*{Strategic Choice}
+The direct analytical expansion is often faster for obtaining the first few terms of the series. However, the cumulant expansion is generally considered more powerful and systematic. It naturally organizes the perturbative corrections in a way that often has a deeper physical or statistical interpretation (related to connected diagrams in field theory, for instance). While it may appear more complex due to the nested expansions, it provides a more robust framework for higher-order calculations and connects more directly to established methods in statistical physics, such as the replica trick, which is designed to handle expectations of logarithms of partition functions. The choice between them is a trade-off between immediate computational speed and theoretical elegance and extensibility.
+
+\section{Asymptotic Expansion for Large Embedding Dimension}
+
+The previous perturbative schemes are general. We can, however, introduce a more physically-grounded asymptotic expansion by positing a specific scaling of the correlation parameters $\rho$ with the embedding dimension, $d_{\text{embed}}$. This formalism distinguishes between the expansion around $\rho=0$ (for uncorrelated pairs) and the more singular, and more interesting, expansion around $\rho=1$ (for highly correlated pairs).
+
+\subsection{Scaling Hypothesis from Embedding Dimension}
+We refine the microscopic model with the following scaling hypotheses for large $d_{\text{embed}}$:
+\begin{itemize}
+    \item For the outlier correlation corresponding to the dominant logit, we model its proximity to 1 as: 
+    \[\rho_{a, \text{max}} = 1 - \frac{c}{\sqrt{d_{\text{embed}}}}\]
+    where $c$ is an $\mathcal{O}(1)$ constant.
+    \item For the typical, bulk correlations, their smallness is modeled as:
+    \[\rho_{ak} = \frac{C_{ak}}{\sqrt{d_{\text{embed}}}}\]
+    where $C_{ak}$ are $\mathcal{O}(1)$ constants.
+\end{itemize}
+
+\subsection{Contrasting Taylor and Puiseux Expansion Regimes}
+This scaling introduces two distinct mathematical regimes for the expansion of the term $\sqrt{1-\rho^2}$ which appears in the generative model for the logits:
+\begin{enumerate}
+    \item \textbf{Taylor Expansion around $\rho=0$:} For the bulk logits where $\rho_{ak} = \mathcal{O}(d_{\text{embed}}^{-1/2})$, the function $\sqrt{1-\rho_{ak}^2}$ is analytic at $\rho_{ak}=0$. We can use a standard Taylor series:
+    \[ \sqrt{1-\rho_{ak}^2} = 1 - \frac{1}{2}\rho_{ak}^2 - \frac{1}{8}\rho_{ak}^4 - \dots = 1 - \frac{C_{ak}^2}{2 d_{\text{embed}}} - \mathcal{O}(d_{\text{embed}}^{-2}) \]
+    This regime is useful for understanding the average behavior of non-attended tokens.
+
+    \item \textbf{Puiseux Expansion around $\rho=1$:} For the dominant logit, we have $\rho_{a, \text{max}} \to 1$ as $d_{\text{embed}} \to \infty$. The function $\sqrt{1-\rho^2}$ is not analytic at $\rho=1$. To capture this behavior, we must use a \textbf{Puiseux series}, which is an expansion in fractional powers of the parameter. Let $x = c/\sqrt{d_{\text{embed}}}$. Then $\rho_{a, \text{max}} = 1-x$, and the term becomes:
+    \[ \sqrt{1-\rho_{a, \text{max}}^2} = \sqrt{1-(1-x)^2} = \sqrt{2x - x^2} = \sqrt{2x}\sqrt{1 - x/2} \]
+    The expansion of this term in powers of $x$ (and thus in fractional powers of $1/d_{\text{embed}}$) is:
+    \begin{align*}
+    \sqrt{1-\rho_{a, \text{max}}^2} &= \sqrt{2x} \left(1 - \frac{x}{4} - \frac{x^2}{32} - \dots\right) \\
+    &= \sqrt{2c} \cdot d_{\text{embed}}^{-1/4} - \frac{c^{3/2}}{2\sqrt{2}} \cdot d_{\text{embed}}^{-3/4} - \dots
+    \end{align*}
+\end{enumerate}
+This Puiseux expansion is the correct formalism for analyzing the dominant logit. It reveals that the asymptotic behavior is governed by non-integer powers of the embedding dimension. As noted, this type of expansion is crucial in related literature (e.g., arXiv:2009.14397) for analyzing the properties of zonal kernel operators in the high-dimensional limit, particularly for deriving their Reproducing Kernel Hilbert Space (RKHS). By first performing the expansion around the point of interest ($\rho=1$) and then substituting the scaling with $d_{\text{embed}}$, we obtain a controlled and physically meaningful asymptotic series.
+
+\section{Explicit Perturbative Calculation Scheme}
+
+Following the strategy of a low-temperature expansion, we now outline the explicit steps for a Taylor series expansion with respect to the small correlation parameters. This formalizes the hand-calculation path.
+
+\subsection{Expansion of the Perturbation Parameter \(\delta_k\)}
+The central object of the expansion is the perturbation parameter $\delta_k = \exp(-\beta(G_{a, \text{max}} - G_{ak}))$. The exponent is given by:
+\[
+G_{a, \text{max}} - G_{ak} = z_0(\rho_{a, \text{max}} - \rho_{ak}) + z_{a,\text{max}}\sqrt{1-\rho_{a, \text{max}}^2} - z_{ak}\sqrt{1-\rho_{ak}^2}
+\]
+We proceed by expanding this expression based on the microscopic model where one correlation, $\rho_{a, \text{max}}$, is an outlier close to 1, while the others, $\rho_{ak}$ for $k \neq \text{max}$, are small. Let $\rho_{a, \text{max}} = 1 - \epsilon$ for some small $\epsilon > 0$.
+
+For the terms involving square roots, we use the Taylor expansion $\sqrt{1-x} \approx 1 - \frac{1}{2}x$.
+\begin{align*}
+\sqrt{1-\rho_{a, \text{max}}^2} &= \sqrt{1 - (1-\epsilon)^2} = \sqrt{2\epsilon - \epsilon^2} \approx \sqrt{2\epsilon} \\
+\sqrt{1-\rho_{ak}^2} &\approx 1 - \frac{1}{2}\rho_{ak}^2
+\end{align*}
+The user noted that keeping the expansion of the square root to first order in $\rho^2$ can lead to terms of order $\rho^3$ in the final result, once all multiplications and expansions are carried out.
+
+Substituting these into the exponent gives the full expression. However, a common approach in such physical problems is to first analyze the contribution from the global noise term $z_0$, which often drives the main behavior. Following this, we first expand the term involving only $z_0$:
+\begin{align*}
+\exp(-\beta z_0(\rho_{a, \text{max}} - \rho_{ak})) &= \exp(-\beta z_0(1 - \epsilon - \rho_{ak})) \\
+&= e^{-\beta z_0} e^{\beta z_0 \epsilon} e^{\beta z_0 \rho_{ak}}
+\end{align*}
+Expanding the last two exponentials for small $\epsilon$ and $\rho_{ak}$:
+\[
+\approx e^{-\beta z_0} (1 + \beta z_0 \epsilon + \mathcal{O}(\epsilon^2)) (1 + \beta z_0 \rho_{ak} + \frac{1}{2}(\beta z_0 \rho_{ak})^2 + \mathcal{O}(\rho_{ak}^3))
+\]
+\[
+\approx e^{-\beta z_0} \left[1 + \beta z_0(\epsilon + \rho_{ak}) + \frac{1}{2}\beta^2 z_0^2 \rho_{ak}^2 + \beta^2 z_0^2 \epsilon \rho_{ak} + \dots \right]
+\]
+This provides a systematic expansion of the dominant part of $\delta_k$. The full expansion would then involve multiplying this series by the expansion of the remaining terms, $\exp(-\beta[z_{a,\text{max}}\sqrt{2\epsilon} - z_{ak}(1 - \frac{1}{2}\rho_{ak}^2)])$.
+
+\subsection{Note on the Order of Taylor Expansions}
+When computing the full softmax output, one must expand a term of the form $(1 + \sum_{k \neq \text{max}} \delta_k)^{-1}$. A practical question arises regarding the order of operations.
+\begin{itemize}
+    \item \textbf{Path A (Expand parameters first):} First, derive the series for each $\delta_k$ in terms of the fundamental small parameters ($\epsilon, \rho_{ak}$), as done above. Then, substitute these series into the expression $(1 + \sum \delta_k)^{-1}$ and expand again.
+    \item \textbf{Path B (Expand structure first):} First, expand the structure of the expression in powers of the $\delta_k$ terms, e.g., $1 - (\sum \delta_k) + (\sum \delta_k)^2 - \dots$. Only then, substitute the full expression for each $\delta_k$ and expand the result.
+\end{itemize}
+Both paths are mathematically equivalent and must lead to the same final series. However, Path B is often algebraically cleaner and easier to organize for higher-order calculations. It is important to distinguish this operational choice from the strategic choice between the "Direct Analytical Expansion" and the "Cumulant Expansion" discussed previously, which represent two fundamentally different mathematical approaches.
+
+\section{Conclusion and Next Steps}
+
+This document has provided a comprehensive theoretical framework for analyzing the moments of a softmax function applied to a correlated Gaussian matrix. We have motivated the problem from the perspective of Transformer models in NLP, formalized the integral to be calculated, and established a physically-grounded perturbative strategy.
+
+The analysis has shown that while the full problem is analytically \underline{intractable}, a low-temperature expansion, justified by the geometry of the embedding space, provides a \underline{tractable} path forward. Two expansion methods, the direct analytical approach and the cumulant expansion, were detailed, providing a clear roadmap for the next phase of the calculation.
+
+The next steps in this research are clear:
+\begin{enumerate}
+    \item \textbf{Numerical Verification:} Empirically validate the core hypothesis by analyzing the distribution of correlation coefficients ($\rho_{ij}$) in pre-trained Transformer models to confirm the "outlier" logit mechanism.
+    \item \textbf{Perform the Perturbative Calculation:} Choose one of the expansion strategies (likely the cumulant expansion for its robustness) and explicitly compute the first few terms of the expectation $\mathbb{E}[P(S_{a, \cdot}, S_{b, \cdot})]$. This will involve calculating moments of exponential functions of correlated Gaussian variables.
+    \item \textbf{Analyze the Results:} Interpret the resulting analytical expressions to understand how the moments of the softmax output depend on the temperature ($\beta$) and the underlying correlation structure ($\rho$).
+\end{enumerate}
+
+\section{References}
+\begin{thebibliography}{9}
+    \bibitem{child2019}
+    Rewon Child, Scott Gray, Alec Radford, and Ilya Sutskever.
+    \textit{Generating Long Sequences with Sparse Transformers}.
+    arXiv preprint arXiv:1904.10509, 2019.
+
+    \bibitem{hron2020}
+    Jiri Hron, Yasaman Bahri, Jascha Sohl-Dickstein, and Roman Novak.
+    \textit{Infinite attention: NNGP and NTK for deep attention networks}.
+    arXiv preprint arXiv:2006.10540, 2020.
+\end{thebibliography}
+
+\appendix
+\section{Appendix}
+% This appendix is intentionally left blank.
+
+\end{document}

@@ -1,0 +1,276 @@
+\section{Introduction} 
+
+We study the problem of learning a two-layer neural network (NN) with quadratic activation on isotropic Gaussian data. The target function (or the ``teacher'' model) is defined as
+\begin{equation}\textstyle
+y = \frac{1}{\norm{\bs{\Lambda}}_\text{F}} \sum_{j=1}^{r}
+\lambda_j \sigma\left(\langle \boldsymbol{\theta}_j, \boldsymbol{x}\rangle\right)  ~~\text{with}~~  \boldsymbol{x} \sim \mathcal{N}(0,\boldsymbol{I}_d),   \label{eq:target}
+\end{equation}
+where $\sigma(z) = z^2 - 1$ is the 2nd Hermite polynomial, $\{ \boldsymbol{\theta}_j \}_{j=1}^{r} \subset \mathbb{R}^d$ are unknown signal directions (index features) which we assume to be orthonormal, $\lambda_1 > \lambda_2 > \dots > \lambda_{r} > 0$ are their respective contributions, and $\bs{\Lambda} = \text{diag}(\lambda_1, \cdots, \lambda_r)$ collects the second-layer coefficients. The normalization in front of the sum ensures that the output magnitude remains constant. 
+Our goal is to learn this target network using a ``student'' two-layer neural network with quadratic activation and $\rs$ neurons, trained via a gradient-based optimization algorithm. This setting encompasses several well-known problems:
+\begin{itemize}[leftmargin=*,itemsep=0.6mm,topsep=0.6mm]
+    \item \textit{Phase retrieval ($r =1$)}. The problem of learning one quadratic neuron (i.e., phase retrieval) has been studied extensively~\cite{fienup1982phase,chen2015solving,tan2019online}. The quadratic $\sigma$ has information exponent $k=2$ (defined as the index of the lowest non-zero Hermite coefficient~\cite{dudeja2018learning,benarous2021online}). This entails that randomly initialized parameters are close to a saddle point in high dimensions; hence the SGD dynamics exhibit a plateau (``search'' phase) of length $\log d$ before the loss decreases sharply (``descent'' phase). 
+    \item \textit{Multi-spike PCA ($r = \Theta_d(1)$)}. The target function \eqref{eq:target} is a subclass of Gaussian multi-index models, for which various algorithms have been proposed for the finite-rank case $\rs = \Theta_d(1)$ \cite{chen2020learning,damian2022neural,bietti2023learning}. The setting also closely relates to the multi-spike PCA problem, for which online SGD \cite{arous2024high} and other streaming algorithms has been studied \cite{oja1985stochastic,jain2016streaming,allen2017first}. 
+    
+    \item \textit{Linear-width quadratic NN $(r \asymp d)$.} 
+    The regime where the teacher width $\rs$ grows proportionally with dimensionality $d$ has also been studied, typically in the well-conditioned setting (e.g., identical $\lambda_j$'s). Recent works characterized the objective landscape \cite{soltanolkotabi2018theoretical,du2018power,venturi2019spurious,gamarnik2019stationary,ghorbani2019limitations}, optimization dynamics \cite{sarao2020optimization,martin2023impact}, and statistical efficiency \cite{maillard2024bayes,erba2025nuclear}.
+\end{itemize}
+
+In this work we focus on the ``extensive-rank'' regime where $r \asymp d^\beta$ for $\beta \in (0, 1)$ and $\rs \asymp d^{\gamma}$ for $\gamma \in [0,1)$, and place a power-law assumption on the second-layer coefficients: $\lambda_j\asymp j^{-\alpha}$ for $\alpha \geq 0$. Our setting is motivated by the following lines of research. 
+
+\begin{figure}[t]
+% \vspace{-2.mm}
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \scalebox{0.46}{
+\begin{tikzpicture}
+  %─── Left: 5‐row groupplot
+  \begin{groupplot}[
+    group style={
+      group name=taskgrid,
+      group size=1 by 5,
+      vertical sep=0.55cm
+    },
+    width=5cm,
+    height=3.2cm,
+    xmin=0, xmax=5,
+    ymin=0, ymax=1.05,
+    axis lines=left,
+    xtick=\empty,
+    ytick={0,0.5,1},
+    grid=both
+  ]
+    % Task 1
+    \nextgroupplot[
+      ylabel={\Large Task 1},
+      y label style={rotate=270, anchor=east, xshift=2pt}
+    ]
+      \addplot[line width=1.3pt,blue,domain=0:1]{1};
+      \addplot[line width=1.3pt,blue,domain=1:5]{0};
+      \addplot[line width=1.3pt,blue] coordinates{(1,1)(1,0)};
+      
+    % Task 2 (here we grab 'task2anchor')
+    \nextgroupplot[
+      ylabel={\Large Task 2},
+      y label style={rotate=270, anchor=east, xshift=2pt}
+    ]
+      \addplot[line width=1.3pt,blue,domain=0:2]{0.5};
+      \addplot[line width=1.3pt,blue,domain=2:5]{0};
+      \addplot[line width=1.3pt,blue] coordinates{(2,0.5)(2,0)};
+      \coordinate (task2anchor) at (rel axis cs:1.02,0.5);
+
+    % Task 3
+    \nextgroupplot[
+      ylabel={\Large Task 3},
+      y label style={rotate=270, anchor=east, xshift=2pt}
+    ]
+      \addplot[line width=1.3pt,blue,domain=0:3]{0.25};
+      \addplot[line width=1.3pt,blue,domain=3:5]{0};
+      \addplot[line width=1.3pt,blue] coordinates{(3,0.25)(3,0)};
+
+    % Dots
+    \nextgroupplot[hide axis]
+      \node at (rel axis cs:0.5,0.5){\Huge$\vdots$};
+
+    % Task 4
+    \nextgroupplot[
+    ylabel={\Large Task $r$},
+      y label style={rotate=270, anchor=east, xshift=2pt}, xlabel={\Large Time $t$}]
+      \addplot[line width=1.3pt,blue,domain=0:4.5]{0.1};
+      \addplot[line width=1.3pt,blue,domain=4.5:5]{0};
+      \addplot[line width=1.3pt,blue] coordinates{(4.5,0.1)(4.5,0)};
+  \end{groupplot}
+
+  %─── Put the arrow back, using that anchor:
+  \draw[very thick,->,>=latex]
+    ($(task2anchor)+(0.25cm,-2cm)$)
+    -- ($(task2anchor)+(1.75cm,-2cm)$)
+    node[midway,above,yshift=4pt,font=\Large]{Sum};
+
+  %─── Now measure & place the right‐hand plot:
+  \pgfextracty{\TopY}{\pgfpointanchor{taskgrid c1r1}{north east}}
+  \pgfextracty{\BotY}{\pgfpointanchor{taskgrid c1r5}{south east}}
+  \setlength{\TotalHeight}{\TopY}
+  \addtolength{\TotalHeight}{-\BotY}
+
+  \node[anchor=north west,inner sep=0pt]
+    at ($(taskgrid c1r1.north east)+(2cm,0)$)
+  {%
+    \adjustbox{height=1.05\TotalHeight}{\input{loglog.tex}}%
+  };
+\end{tikzpicture}
+        }
+    \caption{Additive model hypothesis for scaling laws.}
+    \label{fig:left}
+  \end{subfigure}
+   ~~~~~~\begin{subfigure}{0.42\textwidth}
+   \centering
+     \includegraphics[width=0.95\textwidth]{_figures/empirical_scaling_law_quad.png}
+     \caption{SGD risk curves for quadratic NN.}
+    \label{fig:right}
+    \end{subfigure}
+\caption{\small $(a)$ Illustration of the additive model hypothesis, i.e., sum of emergent learning curves at different timescales yields a power law in the cumulative loss. $(b)$ Population loss vs.~compute for two-layer quadratic NNs trained with online SGD with batch size $d$ on squared loss. We set $d=3200$, and for the teacher model $r=2400$, $\alpha=1$. }
+  \label{fig:intro}
+% \vspace{-3mm}
+\end{figure}
+
+\paragraph{Neural scaling laws \& emergence.} 
+Recent empirical studies on large language models (LLMs) reveal that increasing the model or training data size often results in a predictable, power-law decrease in the loss known as \textit{neural scaling laws} \cite{hestness2017deep,kaplan2020scaling,hoffmann2022training}. While such scaling of generalization error has been derived for sketched linear models \cite{maloney2022solvable,bordelon2024dynamical,paquette2024phases,lin2024scaling,defilippis2024dimension}, these analyses assume random projection with no \textit{feature learning}, and hence cannot capture the NN's ability to learn useful features~\cite{girshick2014rich,devlin2018bert} that adapt to the underlying data structure. We aim to investigate a setting where the training of a nonlinear NN beyond the ``lazy'' regime exhibits a nontrivial scaling law. 
+
+
+
+
+Feature learning in neural networks is often studied theoretically through the learning of \emph{multi-index models}, where the target function depends on a small number of latent directions (see \cite{bruna2025survey} and references therein). For these low-dimensional targets, it is known that the training dynamics typically exhibit \emph{emergent} (or staircase-like) behavior --- long plateaus followed by sharp drops in loss \cite{benarous2022high,abbe2023sgd}. 
+To reconcile this emergent loss curve with smooth power-law decay, recent works hypothesized that the pretraining objective can be decomposed into a sum of losses on individual tasks \cite{michaud2024quantization,nam2024exactly}, the learning of each exhibits a sharp transition, and the superposition of numerous emergent risk curves at different timescales yields a power-law scaling of the cumulative loss (see Figure~\ref{fig:intro}(a)). In this context, the two-layer network \eqref{eq:target} can be viewed as a sum of single-index phase retrieval tasks, where the length of each $\sim\log d$ plateau in the risk trajectory can be modulated by the second-layer coefficient $\lambda_j$. This motivates the following question:
+
+ 
+\begin{center}
+\textit{\textbf{Q1:} Does gradient-based training of a two-layer quadratic network yield power-law loss scaling, when the target function is an additive model with varying second-layer coefficients $\{\lambda_j\}_{j=1}^{r}$?}
+\end{center}
+In Figure~\ref{fig:intro}(b) we empirically observe the affirmative: when the target function has smoothly decaying second-layer weights, online SGD training yields a power-law risk curve that resembles the scaling laws in \cite{kaplan2020scaling,hoffmann2022training}. 
+The goal of this work is to rigorously establish such scaling laws. 
+
+
+ 
+\paragraph{Learning extensive-width neural networks.} Prior works on multi-index models have shown that when $r =\Theta_d(1)$, gradient-based training succeeds with polynomial sample complexity depending on properties of the link function \cite{abbe2022merged,damian2022neural,bietti2022learning}. 
+The ``extensive-rank'' regime where $r \asymp d^\beta$ for $\beta>0$ is relatively under-explored (except for the linear width regime $r \asymp d$ \cite{martin2023impact,maillard2024bayes}); this setting is arguably closer to the practical neural network training (compared to the narrow-width setting), and also bears connections to several observations in the LLM literature such as \textit{superposition} \cite{elhage2022toy} and \textit{skill localization} \cite{dai2021knowledge,wang2022finding,panigrahi2023task}, where the model simultaneously acquires a large number of ``skills'' during pretraining (see e.g., \cite{oko2024learning}). 
+
+The learning dynamics of \eqref{eq:target} with divergingly many neurons is challenging to analyze primarily due to the fact that the effective dynamics may not be captured by a finite set of \textit{summary statistics} \cite{benarous2022high} (as in the finite-$r$ case).  Recent works~\cite{oko2024learning,simsek2024learning} addressed this challenge by assuming that the activation $\sigma$ has information exponent $k \geq 3$, which allows the learning dynamics to decouple across feature directions. However, the case $k \le 2$, which includes the quadratic activation studied in this work, remained open: existing analyses either assumed ``isotropic'' feature contributions ($\lambda_1 = \lambda_{r}$) \cite{ren2024learning,simsek2024learning}, or established a computational complexity for SGD that scales with $d^{\Theta(\lambda_1 / \lambda_{r})}$ \cite{li2020learning}, which leads to pessimistic \textit{exponential} dimension dependency in the power-law setting we consider. We therefore ask the following question.
+\begin{center}
+    \textit{\textbf{Q2:} Can we establish optimization and sample complexity of learning an extensive-width \\ quadratic neural network \eqref{eq:target} with anisotropic, power-decaying feature contributions? } 
+\end{center}
+
+\vspace{-3.2mm}
+
+
+\subsection{Our Contributions}  
+
+%
+We analyze the risk trajectory of learning \eqref{eq:target} with both gradient flow on the mean squared error (MSE) loss and its online SGD discretization on Stiefel manifold, covering the extensive-width and power-law settings. We derive scaling laws for feature recovery and population risk as a function of teacher and student network widths $\rs,r$, the decay exponent $\alpha$, the optimization time, and the sample size (for the discretized dynamics). Our contributions are summarized as follow (see also Table \ref{tab:summary}). 
+
+\begin{enumerate}[leftmargin=*,topsep=0.75mm]
+    \item In Section \ref{sec:continuous}, we analyze the population gradient flow and tightly characterize the loss decay with respect to time and the student width $r_s$. We show that the signal directions are recovered sequentially, and the population MSE follows a smooth power law specified by the decay rate $\alpha>0$. 
+    \item  In Section \ref{sec:discrete}, we consider the online stochastic gradient descent (SGD) dynamics on the Stiefel manifold and derive scaling laws with respect to sample size. When specializing to the isotropic setting $\alpha=0$, our sample complexity improves upon \cite{ren2024learning} in the extensive-width setting and matches the information theoretic limit (in terms of $d,r$ dependence) up to polylogarithmic factors. 
+\end{enumerate}
+ 
+
+The following technical challenges in the extensive-width regime are central to our analysis:  
+\begin{itemize}[leftmargin=*,topsep=0.75mm]
+\item \textit{Coupled population dynamics.} As $r, r_s \to \infty$, we must track infinitely many overlapping student and teacher neurons. \cite{oko2024learning,simsek2024learning} assumed high information exponent $k > 2$, to decouple the dynamics into $r$ independent single-index models, but such property does not hold in our quadratic case ($k = 2$). We address this by leveraging the closed-form solution of the quadratic problem \cite{martin2023impact}, which satisfies a \textit{Matrix Riccati ODE}. A key ingredient in our analysis is its \textit{monotonicity with respect to its initialization}, illustrated in Figures~\ref{fig:nonmonotone}(a),  which enables sharp risk bounds via comparisons to decoupled models.
+\item \textit{Operator norm discretization error.} Prior works~\cite{benarous2021online, bietti2023learning, arous2024high} focused on finite-$r$ settings, where Frobenius norm control of the SGD noise was sufficient and natural: it allows bounding error direction-wise without incurring additional dimension dependence. However, in the extensive-width regime, such bounds become pessimistic and lead to suboptimal $r$-dependent rates. Hence we need to establish \emph{operator norm} concentration around the population dynamics.
+\item \textit{Matrix-monotone comparison framework.}  
+To control discretization error in operator norm, we extend the monotonicity-based argument from the first item to discrete time and introduce a novel comparison-based discretization technique. Our approach constructs matrix-valued reference sequences corresponding to decoupled dynamics that tightly bound the discrete evolution from above and below. This yields sharp operator norm control even when the true trajectories are non-monotone (see Figure~\ref{fig:nonmonotone}), as the analysis avoids relying on the trajectory itself by comparing against simpler bounding sequences.  
+% This framework may be of independent interest for future
+% analyses requiring operator norm control of discretization error.
+\end{itemize}
+
+
+\begin{table*}[t]  
+\vspace{-1mm} 
+\captionsetup{singlelinecheck=off}
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\scalebox{0.95}{
+ % \scalebox{0.95}{
+\begin{NiceTabular}{ccccc}[hlines]
+\bhline{1.5pt}
+Algorithm & Decay rate ($\lambda_j$) & Risk scaling law & Result \\
+\bhline{1.5pt}
+\Block{2-1}{Gradient flow} 
+& $\alpha>0.5$ & $\bar{t}^{- \frac{2 \alpha - 1}{\alpha}} +  \rs^{- (2 \alpha  - 1)}$  & \Block{2-1}{Theorem \ref{thm:gfresult}}  \\
+&  $\alpha<0.5$ &  $(1 - \bar{t}^{\frac{1 - 2\alpha}{\alpha}} )_+  + (1 - (\rs/r)^{1 - 2\alpha})_+$   & \\
+\bhline{1pt}                               
+\Block{2-1}{Online SGD (Stiefel)} 
+& $\alpha>0.5$ & $(\eta\bar{t})^{- \frac{2 \alpha - 1}{\alpha}} +  \rs^{- (2 \alpha  - 1)}$ & \Block{2-1}{Theorem \ref{thm:sgdresult}}  \\
+& $\alpha<0.5$ & $(1 - (\eta\bar{t})^{\frac{1 - 2\alpha}{\alpha}} )_+  + (1 - (\rs/r)^{1 - 2\alpha})_+$ & \\
+% & Finite $ r$ & TBD & TBD  \\
+\bhline{1pt}  
+\end{NiceTabular} 
+}
+\renewcommand{\arraystretch}{.1}
+
+% \vspace{2.5mm}
+ \vspace{-0.5mm}  
+\caption[]{\small Scaling laws for learning quadratic neural network \eqref{eq:target} using population gradient flow and its online SGD discretization. We omit constant factors in the risk scaling for ease of presentation. 
+\begin{itemize}[leftmargin=*]
+\item In $\alpha > 0.5$, for population gradient flow, $\bar{t}\sim t\cdot\log d$ is the rescaled time; for online SGD, $\bar{t}\sim t\cdot\log d$ where $t$ is the number of gradient steps, which is equal to the sample size, and $\eta\sim 1/(d \ \mathrm{poly log} (d))$ is the step size. 
+\item In $\alpha< 0.5$, for population gradient flow, $\bar{t}\sim t\cdot r \log d$ is the rescaled time; for online SGD, $\bar{t}\sim t \cdot r \log d$ where $t$ is the number of gradient steps    and $\eta\sim 1/(dr^\alpha \ \mathrm{poly log} (d))$ is the step size. 
+\end{itemize}
+}
+\label{tab:summary} 
+\end{center}
+%\vspace{-5mm}
+\vspace{-2mm}
+\end{table*} 
+
+\subsection{Additional Related Works}
+
+\paragraph{Learning multi-index models with SGD.} 
+When $r =1$, the target is a \textit{single-index model} with quadratic link function. The SGD learning of single-index models has been extensively studied in the feature learning literature \cite{benarous2021online,ba2022high,mousavi2022neural,ba2023learning,mousavi2023gradient,moniri2023theory,mahankali2024beyond,berthier2024learning,damian2024smoothing,glasgow2025propagation}; while this model has $d$ parameters to be estimated, the quadratic link (with information exponent $k=2$) incurs an additional $\log d$ factor in the complexity of online SGD. More generally, the setting where $r =\Theta_d(1)$ is covered by recent analyses of \textit{multi-index models} \cite{abbe2022merged,abbe2023sgd,bietti2023learning,dandi2023two,collins2023hitting,arous2024high,vural2024pruning,mousavi2024learning}; however, these
+learning guarantees for multi-index models typically yield superpolynomial complexity when the target function is rank-extensive. 
+The sample complexity of gradient-based learning is also connected to statistical query lower bounds \cite{damian2024computational,dandi2024benefits,lee2024neural,arnaboldi2024repetita}.  
+
+\paragraph{Quadratic NNs and additive models.} Prior theoretical works on learning two-layer neural network with quadratic activation function have studied the loss landscape \cite{soltanolkotabi2018theoretical,du2018power,venturi2019spurious,gamarnik2019stationary,ghorbani2019limitations} and the optimization dynamics 
+\cite{sarao2020optimization,arnaboldi2023escaping,martin2023impact,ren2024learning}. 
+While existing optimization and statistical guarantees may cover the extensive-width regime (see e.g., \cite{du2018power,martin2023impact,ren2024learning}), to our knowledge, precise scaling laws have not been established in our extensive-rank and power-law setting.
+\eqref{eq:target} is also an instance of the \textit{additive model} \cite{stone1985additive,hastie1987generalized,bach2017breaking} where the individual functions are given as (orthogonal) single-index models with \textit{unknown} index features. For this model, \cite{oko2024learning,simsek2024learning} established learning guarantees in the well-conditioned regime, under the assumption that the link function $\sigma$ has information exponent $k>2$. 
+
+\section{Background and Problem Setting}
+\label{sec:background}
+
+\subsection{Student-teacher Setting}
+ 
+\paragraph{Teacher Network.}  
+We consider the task of learning a teacher network with a quadratic (second-order Hermite) activation function written as
+\eq{
+y = \frac{1}{ \norm{\bs{\Lambda}}_\text{F}} \sum_{j = 1}^{r} \lambda_j  \big( \inner{\bs{\theta}_j}{\bs{x}}^2  -   1 \big) ~~ \text{with} ~~ \bs{x} \sim \cN(0, \bs{I}_d),  \label{eq:target2}
+}
+where $\bs{x} \in \R^d$ is the input, $r$ is the teacher network width, and $\{\bs{\theta}_j\}_{j=1}^{r} \subset \mathbb{R}^d$ is an orthonormal set of unknown signal vectors. We collect these as columns of the matrix $\bs{\Theta} \in \mathbb{R}^{d \times r}$. The contributions of these vectors are determined by the unknown second-layer coefficients $\lambda_1 > \lambda_2 > \dots > \lambda_{r} > 0$ with a power-law decay $\lambda_j  \asymp j^{-\alpha}$ for $\alpha\geq 0$, and $\bs{\Lambda}$ is a diagonal matrix whose $j$-th diagonal entry is $\lambda_j$. 
+The normalization in front of summation ensures $\E[y^2]$ is constant.
+We focus on the regime where $r \asymp d^\beta$ for $\beta \in (0,1)$.
+
+\begin{remark}
+The orthogonality of $\{\bs{\theta}_j\}_{j=1}^r$ can be assumed without loss of generality. Specifically, consider teacher models in the form of \eqref{eq:target2} with arbitrary first-layer weights $\bs{\Theta}$ and normalization $\E[y]=0$, the output can be written as $y\propto\mathrm{Tr}(\bs{x}\bs{x}^\top\bs{\Theta}\bs{\Lambda}\bs{\Theta}^\top) + cst$; hence we may redefine $(\lambda_j,\bs{\theta}_j)$ via the spectral decomposition. 
+\end{remark}
+
+
+\paragraph{Student Network.} We learn the target model with a quadratic student network defined as  
+\eq{
+\hat y(\bs{x}, \bs{W}) = \frac{1}{ \sqrt{\rs}} \sum_{j = 1}^{\rs}  \inner{\bs{w}_j}{\bs{x}}^2 - \norm{\bs{w}_j}_2^2,
+\label{eq:student}
+}
+where $\rs$ is the width of the student network, and $\{\bs{w}_j\}_{j=1}^{\rs} \subset \mathbb{R}^d$ denotes the set of trainable weights. We collect these weights as the columns of the matrix $\bs{W} \in \mathbb{R}^{d \times \rs}$, and omit the dependence on $\bs{x}$ in $\hat y(\bs{x}, \bs{W})$ when clear from the context. 
+Note that the norm subtraction ensures $\mathbb{E}_{\bs{x}}[\hat{y}(\bs{x}, \bs{W})] = 0$. 
+We may equivalently write the student network as $\hat y(\bs{x}, \bs{W}) = \frac{1}{ \sqrt{\rs}} \sum_{j = 1}^{\rs}  \norm{\bs{w}_j}_2^2 \cdot (\inner{\bar{\bs{w}}_j}{\bs{x}}^2 - 1)$ where $\bar{\bs{w}}_j$ is unit-norm;
+since our student does not have trainable second-layer, 
+the norm component $\norm{\bs{w}_j}_2^2$ allows the model to adapt to 
+the target second-layer $\lambda_j$; this homogeneous parameterization has been studied in prior works 
+\cite{chizat2020implicit,ge2021understanding}. 
+
+
+\subsection{Training Objective}
+Training constitutes to minimizing the squared loss; we define the instantaneous loss on $(\bs{x},y)$ as
+\eq{\textstyle
+\mathcal{L}(\bs{W}; (\bs{x}, y)) \coloneqq \frac{1}{16} \big(y - \hat y(\bs{x}, \bs{W}) \big)^2, 
+}
+where the prefactor is included for notational convenience in the gradient computation. 
+We omit the dependence on $(\bs{x}, y)$ when clear from context. The population risk can be written as
+\eq{\textstyle
+R(\bs{W}) \coloneqq \mathbb{E}_{(\bs{x}, y)}[ \mathcal{L}(\bs{W}) ] = \frac{1}{8} \big \lVert \frac{1}{\sqrt{\rs}} \bs{W} \bs{W}^\top - \frac{1}{\normL} \bs{\Theta} \bs{\Lambda} \bs{\Theta}^\top \big \rVert_\text{F}^2.
+\label{eq:poprisk}
+}
+
+\paragraph{Alignment.}
+Observe that the student network is invariant to right-multiplication of its weight matrix by an orthonormal matrix, i.e., $\hat y(\bs{x}, \bs{W}) = \hat y(\bs{x}, \bs{W} \bs{O})$ for any $\bs{O} \in \R^{\rs \times \rs}$ with $\bs{O}^\top \bs{O} = \bs{I}$. Consequently, any notion of alignment that depends on individual directions in $\bs{W}$ may not be informative. To capture directional learning in a way that respects this symmetry, we define alignment in terms of the subspace spanned by the student weights. We formalize this using the polar decomposition:
+\eq{
+\bs{W} \coloneqq \bs{U} \bs{Q}^{1/2}, \quad \text{where} \quad \bs{Q} \coloneqq \bs{W}^\top \bs{W} \quad \text{and} \quad \bs{U}^\top \bs{U} = \bs{I}_{\rs}. \label{def:polarcoord}
+}
+Here, $\bs{Q}$ denotes the radial component of the student weights, while $\bs{U}$ is an orthonormal matrix that encodes their directional component. We quantify the alignment between the student network and the $j$th teacher feature by the squared norm of the projection of $\bs{\theta}_j$ onto the column space of $\bs{W}$:
+\eq{
+\mathrm{Alignment}(\bs{W}, \bs{\theta}_j) \coloneqq \norm{ \bs{U}^\top \bs{\theta}_j }_2^2. \label{def:alignment}
+}
+$\mathrm{Alignment}(\bs{W}, \bs{\theta}_j)$ takes values in the interval $[0,1]$;
+it is 0 if $\bs{\theta}_j$ is orthogonal to $\bs{W}$ (no alignment),
+while it is 1 if $\bs{\theta}_j$ is in the column space of $\bs{W}$ (perfect alignment)\footnote{The definition in \eqref{def:alignment} may fail to converge to $1$ when $\alpha = 0$ and $\rs < r$, due to rotational symmetry in the teacher network. In this case, a more suitable notion of alignment can be defined using the principal angles between the subspaces spanned by $\bs{W}$ and $\bs{\Theta}$, which provides a rotation-invariant characterization of directional overlap. Specifically, for $\alpha = 0$, we define $\mathrm{Alignment}(\bs{W}, \bs{\theta}_j)$ as the $j$th largest eigenvalue of the matrix $\bs{\Theta}^\top \bs{U} \bs{U}^\top \bs{\Theta}$. \vspace{-3mm}}.  
+
+
