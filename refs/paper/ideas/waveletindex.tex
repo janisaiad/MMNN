@@ -1,0 +1,233 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{Wavelet Multi-Index Viewpoint and Experimental Plan}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\section{Theory of Multi-Index Learning in Wavelet Space}\label{sec:theory-wavelet-multiindex}
+
+\paragraph{Notation}
+Let $W \in \mathbb{R}^{d \times d}$ be an orthonormal discrete wavelet transform and $c=Wx$ the wavelet coefficients of $x \in \mathbb{R}^d$. Let $\mathcal{J}=\{0,\dots,J\}$ index scales and $\mathcal{B}_j$ the locations in scale $j$. Write $P_j$ for the orthogonal projector onto subband $j$ in coefficient space. For a kernel matrix $\Theta \in \mathbb{R}^{n\times n}$ define the scale energy
+\[
+\lambda_j \;:=\; \|P_j\,\Theta\,P_j\|_{\mathrm{op}}, \qquad \lambda_j^{-} \;:=\; \lambda_{\min}\!\big(P_j\,\Theta\,P_j\big), \quad \lambda_j^{+} \;:=\; \lambda_{\max}\!\big(P_j\,\Theta\,P_j\big).
+\]
+
+\begin{assumption}[Orthonormal wavelet transform]
+$W$ is orthonormal and fixed; inputs are preprocessed as $c=Wx$. 
+\end{assumption}
+
+\begin{assumption}[Wavelet multi-index target]\label{ass:multiindex}
+There exist $S \in \mathbb{N}$, vectors $u_s \in \mathbb{R}^d$ each supported on at most $s$ wavelet coordinates, and Lipschitz $g_s\colon\mathbb{R}\to\mathbb{R}$ with $\mathrm{Lip}(g_s) \le L$, such that
+\[
+f^\star(x) \;=\; \sum_{s=1}^{S} g_s\!\big(\langle u_s, Wx \rangle\big), 
+\qquad \|u_s\|_0 \le s, \quad \mathrm{supp}(u_s) \subset \bigcup_{j \in \mathcal{J}} \{(j,b): b \in \mathcal{B}_j\}.
+\]
+We write $s_\mathrm{tot} := \sum_{s=1}^S \|u_s\|_0$.
+\end{assumption}
+
+\begin{assumption}[Wavelet coefficient model]\label{ass:coeff}
+$c=Wx$ has subgaussian coordinates with per-scale normalization $\mathbb{E}\,c_{j,b}^2=1$, and cross-scale covariance is weak: for $j \neq j'$, $\|P_j \Sigma P_{j'}\|_{\mathrm{op}} \le \varepsilon$ with $\Sigma := \mathbb{E}[cc^\top]$ and small $\varepsilon \ge 0$.
+\end{assumption}
+
+\begin{assumption}[Lazy training and NTK]\label{ass:lazy}
+Training is in the lazy regime with empirical NTK $\Theta$ (two-layer low-rank random features, rank $r$). Step size ensures linearization validity over the optimization horizon.
+\end{assumption}
+
+\begin{proposition}[RKHS/NTK invariance under orthonormal transforms]\label{prop:rkhs-invariance}
+For architectures whose initialization is isotropic in input space and whose NTK depends on inner products, $k(x,y)=k\big(\langle x,y\rangle, \|x\|,\|y\|\big)$, we have $k(Wx,Wy)=k(x,y)$ for any orthonormal $W$. Consequently, the induced RKHS and NTK spectrum are preserved under the change of variables $x \mapsto Wx$.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+If the weight distribution is rotationally invariant, then for any orthonormal $W$, $\langle w,Wx\rangle \stackrel{d}{=} \langle W^\top w, x\rangle$, preserving the feature distribution and thus the kernel $k$. The NTK, being a functional of the feature distribution and activation, is unchanged by orthonormal input transforms.
+\end{proof}
+
+\subsection{Staircase dynamics via scale-wise NTK energies}
+
+\begin{assumption}[Weak cross-band coupling]\label{ass:weak-coupling}
+For the empirical NTK $\Theta$, we have $\|P_j \Theta P_{j'}\|_{\mathrm{op}} \le \varepsilon_\Theta$ for $j \ne j'$, with $\varepsilon_\Theta$ sufficiently small relative to $\min_j \lambda_j^{-}$.
+\end{assumption}
+
+\begin{theorem}[Timescale separation and staircase learning]\label{thm:staircase}
+Let $y \in \mathbb{R}^n$ be the training labels and $f_t$ the gradient-flow predictor in the NTK regime with kernel matrix $\Theta$ at initialization. Decompose the initial residual $r_0 := y-f_0$ into scale components $r_{0,j} := P_j r_0$. Under Assumptions \ref{ass:coeff} and \ref{ass:weak-coupling}, for all $t \ge 0$,
+\[
+\|P_j (y - f_t)\|_2 \;\le\; \|r_{0,j}\|_2\, e^{-\eta\, \lambda_j^{-}\, t} \;+\; O\!\left(\frac{\varepsilon_\Theta}{\lambda_j^{-}}\right),
+\]
+and the global training error satisfies
+\[
+\|y-f_t\|_2^2 \;=\; \sum_{j \in \mathcal{J}} \|r_{0,j}\|_2^2\, e^{-2\eta\, \lambda_j^{-}\, t} \;+\; O\!\Big(\varepsilon_\Theta\,\sum_{j} \frac{\|r_{0,j}\|_2^2}{\lambda_j^{-}}\Big).
+\]
+If the scale energies are ordered $\lambda_0^{-} \ge \lambda_1^{-} \ge \cdots \ge \lambda_J^{-}$, then the loss exhibits staircase drops at times $t_j \asymp 1/(\eta\,\lambda_j^{-})$ from coarse to fine scales.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+In the NTK linearization, $y-f_t = e^{-\eta t \Theta}(y-f_0)$. Approximate $\Theta$ by its block-diagonal part $\oplus_j P_j \Theta P_j$ and control off-diagonal leakage by $\varepsilon_\Theta$. Each block contracts independently at rate $\lambda_j^{-}$ up to an $O(\varepsilon_\Theta/\lambda_j^{-})$ error.
+\end{proof}
+
+\subsection{Generalization with wavelet sparsity}
+
+Define the wavelet multi-index RKHS norm proxy $B := L \sum_{s=1}^{S} \|u_s\|_2$. Consider kernel ridge regression with ridge $\gamma \ge 0$ in the NTK.
+
+\begin{theorem}[Sample complexity for wavelet multi-index targets]\label{thm:gen}
+Under Assumptions \ref{ass:multiindex}–\ref{ass:lazy}, suppose labels are $y_i = f^\star(x_i) + \xi_i$ with $\xi_i$ subgaussian noise of variance $\sigma^2$. Let $\hat f$ be the kernel regressor with the empirical NTK and ridge $\gamma \in [0,\bar\gamma]$. Then with probability at least $1-\delta$ over the sample and RF randomness,
+\[
+\mathbb{E}\big[(\hat f(x)-f^\star(x))^2\big] \;\le\; C_1\, \frac{B^2\, S\, s_\mathrm{tot}\,\log\!\big(e d / s_\mathrm{tot}\big) + \sigma^2 \log(1/\delta)}{n}
+\;+\; C_2\, \underbrace{\|\Theta - \mathbb{E}\Theta\|_{\mathrm{op}}}_{\text{finite-width deviation}}
+\;+\; \mathrm{AppErr},
+\]
+where $\mathrm{AppErr}$ is the approximation error of $f^\star$ in the NTK RKHS (zero if $f^\star$ lies in the closure). Constants depend on $\bar\gamma$ and subgaussian parameters.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Combine RKHS generalization bounds via effective dimension or localized Rademacher complexity with a sparsity-aware covering of the class $\{x \mapsto g(\langle u, Wx\rangle)\}$ using Lipschitz $g$ and $s$-sparse $u$, yielding the $S\,s_\mathrm{tot}\log(ed/s_\mathrm{tot})/n$ factor. Add a stability/perturbation term for replacing the population kernel by the empirical NTK.
+\end{proof}
+
+\subsection{Concentration and spiked-band outlier}
+
+\begin{theorem}[NTK concentration in wavelet space]\label{thm:concentration}
+In the doubly-random Gram regime of the low-rank RF model with rank $r$, for fixed inputs we have entrywise variance $\mathrm{Var}[\Theta_{ij}] = O(r^{-2})$ and
+\[
+\|\Theta - \mathbb{E}\Theta\|_{\mathrm{op}} \;=\; O_{\mathbb{P}}\!\left(\frac{\sqrt{n} + \sqrt{\log n}}{r}\right).
+\]
+These rates are invariant to orthonormal $W$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Each NTK entry is an average over $r$ rank-$1$ contributions with an additional $1/r$ normalization from the low-rank bottleneck, yielding $O(r^{-2})$ variance. A matrix Bernstein bound gives the operator-norm rate. Orthonormal $W$ leaves moments unchanged.
+\end{proof}
+
+\begin{assumption}[Spiked wavelet band]\label{ass:spike}
+There exists a scale $j^\star$ and direction $v^\star$ supported on subband $j^\star$ such that the population kernel restricted to $j^\star$ has a spike of strength $\beta>0$: $P_{j^\star} \mathbb{E}\Theta P_{j^\star}$ has top eigenvalue $\lambda_\mathrm{bulk} + \beta$ separated from the bulk edge $\lambda_\mathrm{bulk}$.
+\end{assumption}
+
+\begin{theorem}[Single outlier aligned with the active band]\label{thm:outlier}
+Under Assumptions \ref{ass:coeff}, \ref{ass:weak-coupling}, and \ref{ass:spike}, if $\beta$ exceeds the bulk edge by a constant margin and $n$ is large enough for the Marchenko--Pastur regime, then with high probability the empirical NTK spectrum exhibits a single outlier $\lambda_{\max}(\Theta)$ separated from the bulk, and its eigenvector correlates with $v^\star$ by a constant bounded away from zero. Consequently, the earliest staircase drop coincides with the activation of the spiked band $j^\star$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Treat $\Theta$ as a spiked deformation of a block-MP bulk. Standard spiked random matrix results imply outlier emergence and eigenvector alignment when the spike exceeds a threshold. Weak cross-band coupling preserves the identification with the spiked subband.
+\end{proof}
+
+\subsection{Partial training and NTK magnitude}
+
+\begin{proposition}[Factor-of-2 NTK under partial training]\label{prop:half}
+For the two-layer model with isotropic initialization and separable parameter blocks (input weights vs.\ output weights), the full NTK decomposes as $\Theta = \Theta_{\mathrm{in}} + \Theta_{\mathrm{out}}$ with $\mathbb{E}\Theta_{\mathrm{in}} = \mathbb{E}\Theta_{\mathrm{out}}$. Training only the output layer yields NTK $\Theta_{\mathrm{partial}} = \Theta_{\mathrm{out}}$, hence $\mathbb{E}\Theta_{\mathrm{partial}} = \tfrac{1}{2}\,\mathbb{E}\Theta$ and all kernel eigenvalues are halved in expectation.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Under isotropy and independence, input- and output-parameter contributions to the NTK are equal in distribution and uncorrelated at initialization; freezing one block removes its contribution.
+\end{proof}
+
+\begin{remark}[Practical implications]
+Theorems \ref{thm:staircase}--\ref{thm:outlier} predict (i) coarse-to-fine staircase with times $t_j \approx (\eta\,\lambda_j^{-})^{-1}$, (ii) reliable kernel regression at moderate rank via $O(r^{-2})$ concentration (Theorem~\ref{thm:concentration}), and (iii) a persistent single outlier aligned with the currently active wavelet band. Proposition~\ref{prop:half} explains doubled effective learning rate under partial training.
+\end{remark}
+
+\section{Wavelet-sparse Laplace decomposition and RKHS/NTK equivalence}\label{sec:laplace-wavelet}
+
+\subsection{The 1D Laplace kernel and its RKHS}
+Consider the Laplace kernel on $\mathbb{R}$, $k_\ell(t) = \exp(-|t|/\ell)$ with length-scale $\ell>0$. By Bochner's theorem, its spectral density is
+\[
+S_\ell(\omega) \;=\; \frac{2\ell}{1 + (\ell \omega)^2},
+\]
+so the RKHS norm is equivalent to
+\[
+\|f\|_{\mathcal{H}(k_\ell)}^2 \;\asymp\; \int_{\mathbb{R}} | \widehat f(\omega)|^2 \big(1 + (\ell \omega)^2\big)\, d\omega \;\asymp\; \|f\|_{L^2}^2 \;+\; \ell^2 \|f'\|_{L^2}^2,
+\]
+that is, the Sobolev $H^1(\mathbb{R})$ norm up to constants. For an orthonormal wavelet basis with regularity $>1$ (e.g., Meyer/Daubechies), the norm equivalence yields
+\[
+\|f\|_{\mathcal{H}(k_\ell)}^2 \;\asymp\; \sum_{j\ge 0} 2^{2j} \sum_{b} |c_{j,b}|^2 \;+\; \sum_b |c^{(\phi)}_{J,b}|^2,
+\]
+where $c_{j,b}$ are wavelet coefficients at scale $j$ and $c^{(\phi)}_{J,b}$ the coarse-scale scaling coefficients.
+
+\subsection{Laplace wave-packet dictionary and sparse model}
+Fix dyadic scales $j\ge 0$ and centers $x_{j,b}=b\,2^{-j}$ on $[0,1]$ (with suitable boundary handling). Let bandwidth $\tau_j = c_\tau\,2^{-j}$ and carrier frequency $\omega_j = c_\omega\,2^{j}$. Define localized trigonometric atoms
+\[
+\varphi^{\cos}_{j,b}(x) \;=\; e^{-|x - x_{j,b}|/\tau_j}\, \cos\big(\omega_j (x - x_{j,b})\big), 
+\qquad
+\varphi^{\sin}_{j,b}(x) \;=\; e^{-|x - x_{j,b}|/\tau_j}\, \sin\big(\omega_j (x - x_{j,b})\big).
+\]
+We call $\Phi := \{\varphi^{\cos}_{j,b}, \varphi^{\sin}_{j,b}\}_{j,b}$ the \emph{Laplace wave-packet dictionary}. For appropriate $c_\tau,c_\omega$ and overlap control, $\Phi$ forms a stable frame in $L^2([0,1])$.
+
+\begin{assumption}[Sparse exponential envelope]\label{ass:exp-sparse}
+There exist constants $A>0$, $\alpha>0$, and integers $s_j \ge 0$ such that the target admits the expansion
+\[
+f(x) \;=\; \sum_{j\ge 0} \sum_{b} \big(\alpha^{\cos}_{j,b}\, \varphi^{\cos}_{j,b}(x) + \alpha^{\sin}_{j,b}\, \varphi^{\sin}_{j,b}(x)\big),
+\]
+with at most $s_j$ nonzeros at scale $j$ and coefficient envelope
+$|\alpha^{\cos}_{j,b}| + |\alpha^{\sin}_{j,b}| \le A\, e^{-\alpha j}$.
+\end{assumption}
+
+\begin{lemma}[Frame-to-wavelet stability]\label{lem:frame-stability}
+Let $c_{j,b}$ be the wavelet coefficients of $f$. There exist constants $0<C_1\le C_2<\infty$ (independent of $j$) such that
+\[
+C_1 \sum_{j} \sum_b \big(|\alpha^{\cos}_{j,b}|^2 + |\alpha^{\sin}_{j,b}|^2\big)
+\;\le\; \sum_j \sum_b |c_{j,b}|^2 \;\le\;
+C_2 \sum_{j} \sum_b \big(|\alpha^{\cos}_{j,b}|^2 + |\alpha^{\sin}_{j,b}|^2\big).
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+Local trigonometric bases with exponential windows are known to generate frames equivalent to wavelet bases under mild regularity; the atoms have uniformly bounded overlap and frequency localization matched to scale $2^{j}$, yielding uniform frame bounds.
+\end{proof}
+
+\begin{theorem}[Sparse exponential decay implies Laplace RKHS membership]\label{thm:laplace-membership}
+Under Assumption~\ref{ass:exp-sparse} and Lemma~\ref{lem:frame-stability}, for any sequence $(s_j)_{j\ge 0}$ we have
+\[
+\|f\|_{\mathcal{H}(k_\ell)}^2 \;\lesssim\; \sum_{j\ge 0} 2^{2j}\, s_j\, A^2\, e^{-2\alpha j}.
+\]
+In particular, if $\sup_j s_j \le C_s < \infty$ and $\alpha > \ln 2$, then $f \in \mathcal{H}(k_\ell)$ with a finite norm bounded by a constant multiple of $A^2$. More generally, if $s_j \lesssim 2^{\beta j}$ for some $\beta \ge 0$, it suffices that $\alpha > \tfrac{1+\beta}{2}\,\ln 2$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+By the wavelet characterization of $H^1$ and the RKHS equivalence for $k_\ell$, 
+$\|f\|_{\mathcal{H}(k_\ell)}^2 \asymp \sum_j 2^{2j} \sum_b |c_{j,b}|^2$. Lemma~\ref{lem:frame-stability} upper-bounds $\sum_b |c_{j,b}|^2$ by a multiple of the coefficient energy at scale $j$, which is at most $s_j A^2 e^{-2\alpha j}$. Summing over $j$ yields the stated bound; the geometric series converges under the stated conditions.
+\end{proof}
+
+\subsection{NTK with Laplace-equivalent RKHS and landscape consequences}
+\begin{assumption}[Spectral equivalence to Laplace]\label{ass:spectral-equivalence}
+Let $k_\Theta$ be the NTK on $\mathbb{R}$ at initialization. Its spectral density $S_\Theta(\omega)$ satisfies, for some constants $0<c_1\le c_2<\infty$,
+\[
+c_1\, \frac{1}{1 + (\ell \omega)^2} \;\le\; S_\Theta(\omega) \;\le\; c_2\, \frac{1}{1 + (\ell \omega)^2}
+\qquad \text{for all } \omega \in \mathbb{R}.
+\]
+\end{assumption}
+
+\begin{proposition}[RKHS equivalence]\label{prop:rkhs-equiv-laplace}
+Under Assumption~\ref{ass:spectral-equivalence}, the NTK RKHS coincides with the Laplace RKHS with equivalent norms:
+\[
+C_1 \|f\|_{\mathcal{H}(k_\ell)}^2 \;\le\; \|f\|_{\mathcal{H}(k_\Theta)}^2 \;\le\; C_2 \|f\|_{\mathcal{H}(k_\ell)}^2.
+\]
+Consequently, Theorem~\ref{thm:laplace-membership} implies $f \in \mathcal{H}(k_\Theta)$ with the same exponential-sparsity sufficient conditions.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+The RKHS norm for stationary kernels is $\int |\widehat f(\omega)|^2 / S(\omega)\,d\omega$. Two spectral densities bounded within constant factors yield equivalent norms.
+\end{proof}
+
+\begin{corollary}[Coarse-to-fine dynamics for Laplace-equivalent NTK]\label{cor:landscape}
+Let $f$ satisfy Assumption~\ref{ass:exp-sparse}. Under Assumption~\ref{ass:spectral-equivalence}, gradient-flow in the NTK regime exhibits staircase learning across dyadic bands. Writing $\mathcal{W}_j = \{\omega: 2^{j}\!\lesssim\!|\omega|\!\lesssim\!2^{j+1}\}$, the per-band contraction rate satisfies
+\[
+\lambda_j \;\asymp\; \int_{\mathcal{W}_j} S_\Theta(\omega)\, d\omega \;\asymp\; 2^{-j},
+\]
+so characteristic drop times grow geometrically $t_j \asymp \lambda_j^{-1} \asymp 2^{j}$ while drop magnitudes shrink as the squared envelope $e^{-2\alpha j}$.
+\end{corollary}
+
+\begin{remark}[Practical kernel choices]
+The Laplace-equivalent NTK can be approached by random-feature NTKs whose spectral density is rational of order two, or by using random Fourier features with Cauchy-distributed frequencies to explicitly approximate $k_\ell$. The RKHS equivalence in Proposition~\ref{prop:rkhs-equiv-laplace} is the key requirement for theory-to-practice transfer.
+\end{remark}
+
+\end{document}
