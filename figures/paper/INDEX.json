@@ -1,0 +1,94 @@
+{
+  "title": "Low-Rank NTK Paper Figures Index",
+  "generated": "2025-01-31",
+  "script": "experiments/paper/plot_all_figures.py",
+  "data_source": "experiments/paper/largescale.py",
+  "output_directory": "figures/paper",
+  "figures": {
+    "plot1": {
+      "name": "Rank-Driven Concentration",
+      "files": ["fig_plot1_rank_concentration.pdf", "fig_plot1_rank_concentration.png"],
+      "theorem": "Theorem 3.2",
+      "description": "Exponential concentration: P(|W-1| >= epsilon) <= 4*exp(-r*epsilon^2/8)",
+      "key_result": "Exponential vs polynomial concentration",
+      "data_type": "Theoretical (no precomputed data required)",
+      "priority": "High (Must Have)"
+    },
+    "plot2": {
+      "name": "Three-Layer NTK Concentration",
+      "files": ["fig_plot2_ntk_concentration.pdf", "fig_plot2_ntk_concentration.png"],
+      "theorem": "Fisher-Kibble Decoupling",
+      "description": "Empirical NTK concentrates around deterministic limit with variance O(1/r)",
+      "key_result": "Rank-driven concentration via Fisher-Kibble",
+      "data_type": "Empirical (grid_*_ntk_rho.npz)",
+      "priority": "Medium (Should Have)"
+    },
+    "plot3": {
+      "name": "Spectral Decay (RKHS Equivalence)",
+      "files": ["fig_plot3_spectral_decay.pdf", "fig_plot3_spectral_decay.png"],
+      "theorem": "Corollary 3.5",
+      "description": "All depths show same k^{-d} eigenvalue decay",
+      "key_result": "Same RKHS despite depth",
+      "data_type": "Conceptual (synthetic eigenvalues)",
+      "priority": "High (Must Have)"
+    },
+    "plot4": {
+      "name": "Marchenko-Pastur Spectrum",
+      "files": ["fig_plot4_mp_spectrum.pdf", "fig_plot4_mp_spectrum.png"],
+      "theorem": "Theorem 4.2",
+      "description": "Spike-bulk structure: O(n) outlier + deformed MP bulk",
+      "key_result": "Random matrix spectrum validation",
+      "data_type": "Empirical (grid_*.npz)",
+      "priority": "High (Must Have)"
+    },
+    "plot5": {
+      "name": "Computational Efficiency",
+      "files": ["fig_plot5_efficiency.pdf", "fig_plot5_efficiency.png"],
+      "theorem": "Parameter Budget Advantage",
+      "description": "O(rN) vs O(N^2) parameter scaling",
+      "key_result": "Quadratic parameter savings",
+      "data_type": "Theoretical (no precomputed data required)",
+      "priority": "Medium (Should Have)"
+    },
+    "plot6": {
+      "name": "Fisher-Kibble Decoupling",
+      "files": ["fig_plot6_fisher_kibble.pdf", "fig_plot6_fisher_kibble.png"],
+      "theorem": "Lemma 2.1",
+      "description": "Independence of angular (Fisher) and radial (Kibble) components",
+      "key_result": "Fundamental statistical structure",
+      "data_type": "Empirical (synthetic samples from grid data)",
+      "priority": "Medium (Should Have)"
+    },
+    "plot7": {
+      "name": "Mean NTK vs Deterministic Limit",
+      "files": ["fig_plot7_puiseux.pdf", "fig_plot7_puiseux.png"],
+      "theorem": "Corollary 3.4",
+      "description": "Same t^{1/2} leading term near rho=1 boundary",
+      "key_result": "RKHS preservation via Puiseux expansion",
+      "data_type": "Empirical (grid_*_ntk_rho.npz)",
+      "priority": "Medium (Should Have)"
+    }
+  },
+  "style": {
+    "font_family": "STIXGeneral",
+    "font_size": 22,
+    "dpi": 300,
+    "color_scheme": "Dark2",
+    "formats": ["PDF (vector)", "PNG (raster)"],
+    "notation": "LaTeX mathematical typography"
+  },
+  "usage": {
+    "regenerate_all": "python experiments/paper/plot_all_figures.py",
+    "regenerate_single": "from experiments.paper.plot_all_figures import plot_rank_concentration; plot_rank_concentration()",
+    "latex_include": "\\includegraphics[width=0.8\\textwidth]{figures/paper/fig_plot1_rank_concentration.pdf}"
+  },
+  "statistics": {
+    "total_figures": 7,
+    "total_files": 14,
+    "theoretical_plots": 3,
+    "empirical_plots": 4,
+    "high_priority": 3,
+    "medium_priority": 4
+  }
+}
+
