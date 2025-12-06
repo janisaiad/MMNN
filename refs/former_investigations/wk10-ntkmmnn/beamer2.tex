@@ -1,0 +1,438 @@
+\documentclass{beamer}
+
+\usetheme{Antibes}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% New commands below
+%%%% math fonts
+\usepackage{etoolbox,xparse,dsfont,bm,amssymb}
+\newcommand{\myMFabc}[4]{\expandafter#1\csname#3#4\endcsname{{#2{#4}}}}
+%\forcsvlist{\myMF{\newcommand}{\bm}{bm}}{x,y}
+\newcommand{\myMFcmd}[4]{\expandafter#1\csname#3#4\endcsname{{#2{\csname#4\endcsname}}}}
+%\forcsvlist{\myMFcmd{\newcommand}{\bm}{bm}}{theta,phi}
+
+
+\newcommand{\MFabc}[3][\newcommand]{
+    \def\doOld##1##2{\forcsvlist{\myMFabc{#1}{##1}{##2}}{#3}}
+    \providecommand{\do}{do}
+    \RenewDocumentCommand \do { >{\SplitList{,}} m } { \doOld##1 }
+    \docsvlist{#2}
+}
+% \MFabc{ {\bm,bm}, {\mathcal,cal} }{A,B,C}
+\newcommand{\MFcmd}[3][\newcommand]{
+    \def\doOld##1##2{\forcsvlist{\myMFcmd{#1}{##1}{##2}}{#3}}
+    \providecommand{\do}{do}
+    \RenewDocumentCommand \do { >{\SplitList{,}} m } { \doOld##1 }
+    \docsvlist{#2}
+}
+
+%%% 0 and 1
+\newcommand{\bmzero}{{\bm{0}}}
+\newcommand{\bmone}{{\bm{1}}}
+\def\bbone{{\ensuremath{\mathds{1}}}}
+\let\one\bbone
+%  mathfrak, e.g., \frakT = \mathfrak{T}
+\MFabc{ {\mathfrak,frak}, }{T,u,U,o,O,E,m}
+%  mathbb, e.g., \R = \mathbb{R}
+\MFabc{ {\mathbb, }, }{A,N,Z,R,C,Q}
+
+%%% all capital letters
+% \mathcal, \mathscr, and \mathbb 
+% e.g., \calA=\mathcal{A}
+% \bm\mathcal, e.g., \calbmA = \bm{\mathcal{A}}
+\newcommand{\hatbm}[1]{\widehat{\bm{#1}}}
+\newcommand{\tildebm}[1]{\widetilde{\bm{#1}}}
+\newcommand{\bmcal}[1]{\bm{\mathcal{#1}}}
+\newcommand{\caltilde}[1]{\mathcal{\widetilde{#1}}}
+\newcommand{\calhat}[1]{\mathcal{\widehat{#1}}} 
+\newcommand{\scrtilde}[1]{\widetilde{\mathscr{#1}\mspace{1mu}\mspace{-1mu}}}% \mspace{1mu}\mspace{-1mu} to avoid spacing conflict \mathscr and \widetilde
+\newcommand{\scrhat}[1]{\mathscr{\widehat{#1}\mspace{1mu}\mspace{-1mu}}}
+\newcommand{\bmcalhat}[1]{\bm{\mathcal{\widehat{#1}}}}
+\newcommand{\bmcaltilde}[1]{\bm{\mathcal{\widetilde{#1}}}}
+%%%%%%
+\MFabc{ {\mathcal,cal}, {\mathscr,scr}, {\mathbb,bb}, {\bmcal,bmcal}, {\bmcal,calbm}, {\caltilde,caltilde}, {\caltilde,tildecal}, {\calhat,calhat}, {\calhat,hatcal}, {\scrtilde,scrtilde}, {\scrtilde,tildescr}, {\scrhat,scrhat}, {\scrhat,hatscr}, {\bmcalhat,bmcalhat}, {\bmcalhat,bmhatcal}, 
+{\bmcalhat,calbmhat}, {\bmcalhat,calhatbm}, {\bmcalhat,hatbmcal}, {\bmcalhat,hatcalbm}, {\bmcaltilde,bmcaltilde}, {\bmcaltilde,bmtildecal}, {\bmcaltilde,calbmtilde}, {\bmcaltilde,caltildebm}, {\bmcaltilde,tildebmcal}, {\bmcaltilde,tildecalbm}}{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}
+
+\renewcommand{\scrtildeA}{\widetilde{\mathscr{A}\mspace{2mu}}\mspace{-6.1mu}}% \mspace{2mu} and\mspace{-6.1mu} to avoid spacing conflict \mathscr and \widetilde
+\renewcommand{\scrhatA}{\mathscr{\widehat{A}\mspace{2mu}}\mspace{-6.1mu}}
+\let\tildescrA\scrtildeA
+\let\hatscrA\scrhatA
+
+%%% all letters
+% bm, \widehat， \widetilde, and
+% \mathsf shortcuts -- for random variables， 
+% e.g., \bmA=\bm{A}, \bmalpha=\bm{\alpha}
+%%%%%%%%%
+\MFabc{{\bm,bm}, {\mathsf,sf}, {\widehat,hat}, {\widetilde,tilde}, {\hatbm,hatbm}, {\hatbm,bmhat}, {\tildebm,tildebm}, {\tildebm,bmtilde}}{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}
+
+%%% all Greek alphabet, e.g., \bmalpha = \bm{\alpha}
+\let\eps\varepsilon
+\MFcmd{{\bm,bm}, {\widehat,hat}, {\widetilde,tilde}, {\tildebm, tildebm}, {\tildebm, bmtilde}, {\hatbm, hatbm}, {\hatbm, bmhat}}{alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota,kappa,lambda,mu,nu,xi,omicron,pi,rho,sigma,tau,upsilon,phi,chi,psi,omega,Alpha,Beta,Gamma,Delta,Epsilon,Zeta,Eta,Theta,Iota,Kappa,Lambda,Mu,Nu,Xi,Omicron,Pi,Rho,Sigma,Tau,Upsilon,Phi,Chi,Psi,Omega,varrho,varphi,vartheta,varepsilon,varsigma,ell,eps}
+
+
+
+%%%%%%%%%% activation functions
+%\newcommand{\actdef}[1]{\lowercase{\expandafter\def\csname#1\endcsname}{\texttt{#1}}}
+\newcommand{\actdef}[1]{\expandafter\def\csname#1\endcsname{{\ensuremath{\mathtt{#1}}}}}
+\forcsvlist{\actdef}{ReLU, LReLU, LeakyReLU, ELU, GELU, SiLU, Softplus, dGELU, dSiLU, dSoftplus, Tanh, Sigmoid, Arctan, Softsign, SRS, dSRS, Swish, dSwish, Mish, dMish, SELU, CELU, dSELU, Sin,SinLU, SinTU, PSinTU, sine, cosine, Sine, Cosine, EUAF}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{Neural Tangent Kernel Analysis of Multi-component and Multi-layer Neural Networks (MMNNs)}
+\author{Based on the provided report}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}{Introduction \& Goal}
+\begin{itemize}
+    \item \textbf{Objective:} To understand the local optimization landscape of MMNNs.
+    \item \textbf{Method:} Analyze the Neural Tangent Kernel (NTK) in the infinite-width limit.
+    \item \textbf{Core Hypothesis (S1):} Only the external linear layer parameters ($\tilde{\bm{A}}$) are trained. The internal parameters ($\tilde{\bm{W}}$) defining the basis functions are randomly initialized and fixed.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{MMNN Architecture: Single Layer}
+A single layer is a linear combination of random basis functions:
+\begin{equation*}
+    \bmh(\bm{x}) = \bm{A} \sigma(\bm{W}\bm{x} + \bm{b}) + \bm{c}
+\end{equation*}
+\vspace{1em}
+Using an augmented representation to absorb the biases:
+\begin{equation*}
+    \bmh(\bm{x}) = \tilde{\bm{A}}
+    \begin{bmatrix}
+        \sigma(\tilde{\bm{W}}\tilde{\bm{x}}) \\
+        1
+    \end{bmatrix}
+    \quad \text{where} \quad
+    \begin{cases}
+      \tilde{\bm{x}} = [\bm{x}^{\top}, 1]^{\top} \\
+      \tilde{\bm{W}} = [\bm{W}, \bm{b}] \\
+      \tilde{\bm{A}} = [\bm{A}, \bm{c}]
+    \end{cases}
+\end{equation*}
+\begin{itemize}
+    \item Each output $\bmh[i]$ is a \textit{component}.
+    \item The fixed $\sigma(\tilde{\bm{W}}\tilde{\bm{x}})$ acts as a basis.
+    \item The trainable $\tilde{\bm{A}}$ learns the coefficients for that basis.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Analysis Setup: Key Assumptions}
+\begin{block}{Activation Function}
+    We focus on \textbf{ReLU}, as its positive-homogeneity simplifies kernel computations.
+\end{block}
+
+\begin{block}{Initialization Strategy ($n \to \infty$)}
+\begin{itemize}
+    \item \textbf{Inner Weights $\tilde{\bm{W}}$:} Drawn from an order-one distribution. This is crucial for creating a stable partition of the input space.
+    \item \textbf{Outer Weights $\tilde{\bm{A}}$:} Scaled by $1/\sqrt{n}$. This is essential for the NTK theory, ensuring convergence to a well-behaved Gaussian Process.
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Single-Layer NTK: From Sum to Expectation}
+The kernel is the sum of gradient products over trainable parameters ($\{A_j\}, c$). For a single output MMNN:
+\begin{equation*}
+    h(\bm{x}) = \frac{1}{\sqrt{n}} \sum_{j=1}^n A_j \sigma(\bm{w}_j^\top \bm{x} + b_j) + c
+\end{equation*}
+In the infinite-width limit ($n \to \infty$), the Law of Large Numbers gives:
+\begin{equation}
+    \Theta^{(1)}(\bm{x}, \bm{x}') = \underbrace{\mathbb{E}_{\bm{w},b} \left[ \sigma(\bm{w}^\top \bm{x} + b)\sigma(\bm{w}^\top \bm{x}' + b) \right]}_{\Sigma^{(1)}(\bm{x}, \bm{x}') \text{ (NNGP Kernel)}} + \sigma_c^2
+\end{equation}
+\end{frame}
+
+\begin{frame}[fragile]{1-Layer Kernel: The Implemented Formula}
+For normalized random features, the NNGP kernel $\Sigma^{(1)}$ is a nested expectation over the random bias $b \sim \mathcal{N}(0,1)$ and features $(Q_1, Q_2)$.
+\begin{equation*}
+\Sigma^{(1)} = \mathbb{E}_{b} \left[ \underbrace{\mathbb{E}_{Q_1, Q_2} \left[ \sigma(Q_1 + \beta b) \sigma(Q_2 + \beta b) \right]}_{\text{Inner Expectation } \mathcal{I}(\beta b, \rho)} \right]
+\end{equation*}
+\begin{block}{Decomposition}
+The inner expectation, for a fixed mean $\mu=\beta b$ and correlation $\rho$, is:
+\begin{equation*}
+\mathcal{I}(\mu, \rho) = I_2(\mu, \rho) + 2\mu I_1(\mu, \rho) + \mu^2 I_0(\mu, \rho)
+\end{equation*}
+where $I_0, I_1, I_2$ are moments of a truncated bivariate normal distribution, expressed using special Gaussian functions ($\phi, \Phi, L$).
+\end{block}
+\begin{alertblock}{Final Integral Form}
+The total kernel is a 1D integral over the random bias, which is computed numerically:
+\begin{equation*}
+\Sigma^{(1)}(\rho, \beta) = \int_{-\infty}^{\infty} \mathcal{I}(\beta b, \rho) \, \phi(b) \, db
+\end{equation*}
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{The Final Result: Single-Layer Analytical NTK}
+\begin{theorem}[NNGP Kernel for a Single-Layer ReLU MMNN]
+The expectation $\Sigma^{(1)} = \mathbb{E}[\text{ReLU}(g_1)\text{ReLU}(g_2)]$ for jointly Gaussian pre-activations $(g_1, g_2)$ is:
+\begin{equation*}
+\resizebox{0.9\hsize}{!}{$\Sigma^{(1)} = \sigma_1\sigma_2 \cdot I_{12} + \mu_1\sigma_2 \cdot I_{01} + \mu_2\sigma_1 \cdot I_{10} + \mu_1\mu_2 \cdot I_{00}$}
+\end{equation*}
+The terms $I_{ij}$ are moments of standardized bivariate normal variables.
+\end{theorem}
+\begin{itemize}
+    \item This analytical form for $\Sigma^{(1)}$ serves as the base case for the multi-layer recursion.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From Single to Multi-Layer}
+\begin{alertblock}{New Focus: The Multi-Layer Case}
+We now extend the analysis to deep MMNNs, building a recursive understanding of the network kernels.
+\end{alertblock}
+\vspace{1em}
+\textbf{Multi-Layer Architecture:}
+\begin{equation*}
+\resizebox{\hsize}{!}{$
+\bm{h}^{(\ell)}(\bm{x}) = \bm{c}^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}_j^{(\ell)} \sigma\left(\bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)}(\bm{x}) + \beta b_j^{(\ell)}\right)
+$}
+\end{equation*}
+\begin{itemize}
+    \item \textbf{Trainable:} Output weights $\bm{A}_j^{(\ell)}$ and biases $\bm{c}^{(\ell)}$.
+    \item \textbf{Random \& Fixed:} Input weights $\bm{w}_j^{(\ell)}$ and biases $b_j^{(\ell)}$.
+    \item \textbf{Isotropic Random Weights:} The weights $\bm{w}_j^{(\ell)}$ are isotropic ($\sim\mathcal{N}(0, \mathbf{I})$). The network learns directional preferences through the preceding layers, which transform the input into a structured representation $\bm{h}^{(\ell-1)}$ before the random projection is applied.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Signal Propagation: The Edge of Chaos (EOC)}
+\begin{block}{How does signal magnitude evolve with depth?}
+We analyze the layer-to-layer variance propagation to ensure the signal does not vanish or explode.
+\end{block}
+For ReLU networks, the average variance $q^{(\ell)}$ follows the recurrence:
+\begin{equation*}
+    q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right)
+\end{equation*}
+\begin{alertblock}{Edge of Chaos Condition}
+To maintain stable signal propagation, the multiplicative factor must be 1. This gives the condition:
+\begin{equation*}
+    \sigma_A^2 \cdot \text{Tr}(\Sigma_w) = 2
+\end{equation*}
+This sets a critical trade-off between trainable and random parameter variances.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{NTK: A Guide to the Optimization Landscape}
+\begin{block}{Why do we care about the NTK?}
+It tells us how to optimize the network.
+\end{block}
+\begin{itemize}
+    \item The NTK governs the local optimization dynamics under gradient descent.
+    \item Its spectrum is a tractable proxy for the Hessian's spectrum.
+    \item This allows us to diagnose the landscape:
+    \begin{itemize}
+        \item \textbf{Ill-conditioned NTK?} $\implies$ Use 1st-order methods (Gradient Descent).
+        \item \textbf{Well-conditioned NTK?} $\implies$ 2nd-order methods can be much faster.
+    \end{itemize}
+    \item \textbf{Our Goal:} Find probabilistic laws for the (moving) MMNN kernel to get optimization guarantees and make this choice rigorously.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Asymptotic Limit: Emergence of Random Kernels}
+\begin{itemize}
+    \item We take sequential infinite-width limits: first $n_1 \to \infty$, then $n_2 \to \infty$, ..., up to $n_L \to \infty$.
+    \item By the Central Limit Theorem, the output of layer $\ell-1$, $\bm{h}^{(\ell-1)}$, converges in distribution to a \textbf{Gaussian Process (GP)}.
+    \item The covariance of this GP is the NNGP kernel from the previous layer, $\mathcal{K}_{\text{NNGP}}^{(\ell-1)}$.
+    \item \textbf{Key consequence:} For any layer $\ell > 1$, the kernels $\Sigma^{(\ell)}$ and $\Theta^{(\ell)}$ are defined as expectations over the random function $\bm{h}^{(\ell-1)}$. This makes them \textbf{random fields}, not deterministic functions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{NNGP Kernel Recursion}
+The NNGP kernel describes the covariance of the network's output function.
+\begin{block}{Base NNGP Kernel $\Sigma^{(\ell)}$}
+This is the expectation over the random parameters of the \textit{current} layer, for a given realization of the previous layer's output GP.
+\begin{equation*}
+\resizebox{\hsize}{!}{$
+\Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \right]
+$}
+\end{equation*}
+\end{block}
+\begin{block}{Full NNGP Kernel $\mathcal{K}_{\text{NNGP}}^{(\ell)}$}
+The total covariance of the layer's output includes the scaling factor and trainable bias.
+\begin{equation*}
+    \mathcal{K}_{\text{NNGP}}^{(\ell)}(x, x') = \sigma_A^2 \Sigma^{(\ell)}(x, x') + \sigma_c^2
+\end{equation*}
+\end{block}
+\end{frame}
+
+\begin{frame}{NTK Kernel Recursion}
+The NTK combines contributions from all previous layers with the current layer.
+\begin{theorem}[NTK Recurrence Relation]
+For $\ell \ge 1$, with $\Theta^{(0)}=0$:
+\begin{equation*}
+\resizebox{\hsize}{!}{$
+\Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2\dot{\Sigma}^{(\ell)}(x, x') +  \Sigma^{(\ell)}(x, x') + \sigma_c^2
+$}
+\end{equation*}
+\end{theorem}
+\begin{itemize}
+    \item $\Sigma^{(\ell)}$ is the NNGP kernel.
+    \item $\dot{\Sigma}^{(\ell)}$ is the derivative kernel.
+    \item The first term propagates the gradient information from previous layers, modulated by the current layer's geometry ($\dot{\Sigma}^{(\ell)}$).
+    \item The second and third terms are the contributions from the current layer's trainable weights and bias.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Derivative Kernel $\dot{\Sigma}^{(\ell)}$}
+This kernel arises from the chain rule and captures the geometry of the function space.
+\begin{block}{Definition}
+\begin{equation*}
+\resizebox{\hsize}{!}{$
+\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\dots_x\right) \dot{\sigma}\left(\dots_{x'}\right) \bm{w}^\top\bm{w} \right]
+$}
+\end{equation*}
+where $\dot{\sigma}$ is the derivative of the activation and $\dots_x = \bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b$.
+\end{block}
+\begin{alertblock}{Randomness}
+Like $\Sigma^{(\ell)}$, the derivative kernel $\dot{\Sigma}^{(\ell)}$ is a random field for $\ell > 1$ because its definition depends on the random function $\bm{h}^{(\ell-1)}$.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{The Critical Role of the $\bm{w}^\top\bm{w}$ Term}
+\begin{block}{Why is the derivative kernel's structure so important?}
+The recursive part of the NTK formula is $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + \dots$
+\end{block}
+\begin{itemize}
+    \item The term $\dot{\Sigma}^{(\ell)}$ contains an expectation over $\bm{w}^\top\bm{w}$, the squared norm of the random weight vectors.
+    \item For isotropic weights, $\mathbb{E}[\bm{w}^\top\bm{w}]$ is proportional to the input dimension of the layer.
+    \item \textbf{This term can cause a much faster growth of the NTK magnitude with depth, potentially leading to divergence.}
+    \item Understanding and controlling this term is therefore essential for deriving the true scaling laws of the NTK in deep networks. This will be a key focus of our future mathematical investigation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Summary of Recursive Formulas}
+\begin{block}{NNGP Kernel Recursion}
+\begin{itemize}
+    \item \textit{Base Kernel:} $\Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma(\dots_x) \sigma(\dots_{x'}) \right]$
+    \item \textit{Full Kernel:} $\mathcal{K}_{\text{NNGP}}^{(\ell)} = \sigma_A^2 \Sigma^{(\ell)} + \sigma_c^2$
+\end{itemize}
+\end{block}
+\begin{block}{NTK Kernel Recursion}
+\begin{itemize}
+    \item \textit{Base Derivative Kernel:} $\dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}(\dots_x) \dot{\sigma}(\dots_{x'}) \bm{w}^\top\bm{w} \right]$
+    \item \textit{Full Kernel:} $\Theta^{(\ell)} = \Theta^{(\ell-1)} \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)} + {\Sigma}^{(\ell)}+1$
+\end{itemize}
+\end{block}
+\end{frame}
+
+\section{Numerical Experiments}
+
+\begin{frame}{Experiment 1: Setup}
+We conduct numerical experiments to explore the kernel structures.
+\begin{itemize}
+    \item \textbf{Key Goal:} Analyze the NTK's evolution during training. Is it predictable?
+    \item Compare MMNN vs MLP for \textbf{Sine activation}: does the condition number similarity hold?
+    \item Find the dependency of the scaling coefficient $C_{\text{scaling}}$ on hyperparameters $\sigma_A$ and $\beta$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Experiment 2: Scaling Law \& Rank Effects}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Scaling of Remainder:}
+        \begin{itemize}
+            \item The error from the simple matrix structure follows a clear scaling law:
+        \end{itemize}
+        \begin{equation*}
+        \resizebox{0.9\hsize}{!}{$
+        \left\| \mathbb{E}[\Theta^{(2)}] - \text{approx} \right\|_2 \propto \frac{1}{\sqrt{\text{rank}_1}}
+        $}
+        \end{equation*}
+        \textbf{Rank-Magnitude Effect:}
+        \begin{itemize}
+            \item Counter-intuitively, as rank $\uparrow$, the NTK magnitude $\downarrow$.
+            \item Hypothesis: Gaussian concentration of measure.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+            \fbox{\parbox[c][3cm]{\textwidth}{\centering Placeholder: \\ Scaling of remainder norm}}
+        \end{figure}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Experiment 3: 1-Layer MMNN vs. 2-Layer MLP}
+
+\end{frame}
+
+\begin{frame}{Future Work: Numerical Investigations}
+\begin{itemize}
+    \item \textbf{Track NTK Dynamics:} Observe how the NTK evolves during the first few steps of training.
+    \item \textbf{MMNN vs. MLP (Sine):} Repeat the comparison with Sine activation. Does the condition number similarity hold?
+    \item \textbf{Solve Sine Puzzle:} Systematically vary $\beta$ to understand the "constant kernel" phenomenon.
+    \item \textbf{Check Robustness:} Test different initialization distributions and data configurations (higher dimension, more points).
+    \item \textbf{Confirm Limits:} Use larger ranks for integration to ensure results are stable.
+    \item \textbf{Integration Accuracy:} Increase the network width/rank used for numerical integration to confirm that the observed phenomena are stable as we better approach the infinite-width limit.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work: Mathematical Investigations}
+\begin{itemize}
+    \item \textbf{Analyze the Role of Bias $\beta$:} Explore the simplified case $\beta=0$ (common in MLP theory) vs. the full model, possibly via a Taylor expansion in $\beta$ to understand its perturbative effect.
+    \item \textbf{Spectrum via Puiseux Series:} Analyze kernel expansion near $\rho=\pm 1$ to get spectral scaling (Bietti \& Bach, '21).
+    \item \textbf{Spectrum via Zonal Operators:} Use power series & Gegenbauer polynomials to find eigenvalues (Murray et al., '23).
+    \item \textbf{Spectrum vs. Depth:} Adapt proofs (Terjék et al., '25) to analyze spectral scaling with depth $L$.
+    \item \textbf{Connect to Function Decomposition:} Investigate uniform weights for $\bm{w}$ to better align with theory.
+    \item \textbf{Derive Scaling Coefficient:} Find the analytical form for $C_{\text{scaling}}(\sigma_A, \beta)$ from the 2-layer experiment.
+    \item \textbf{Formalize Evolving NTK:} Develop a rigorous theory for the dynamics of the low-rank NTK.
+    \item \textbf{Trainable Activations (PSinTU):} Postpone the analysis of trainable activations like PSinTU, as their NTK is significantly harder to tackle.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Outlook I: A Key Application - PINNs}
+\begin{block}{Physics-Informed Neural Networks (PINNs)}
+PINNs solve PDEs by training a network to respect physical laws. This is fundamentally a function approximation problem.
+\end{block}
+\begin{itemize}
+    \item \textbf{MMNNs are a natural fit:} Our architecture is built from the ground up on the principle of function decomposition.
+    \item \textbf{Hypothesis:} This structured approach could be significantly more parameter-efficient and accurate for solving PDEs than using a standard, unstructured MLP.
+    \item \textbf{Future Step:} Develop a "DSRN of MMNN"—a twice-differentiable version—to rigorously apply approximation theorems for PDEs with second-order derivatives.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Outlook II: The Deeper Analogy - Learnable Wavelets}
+\begin{block}{MMNNs as High-Dimensional, Learnable Wavelets}
+\end{block}
+\begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Wavelet Transform}
+        \begin{itemize}
+            \item Decomposes functions on a \textit{fixed} basis.
+            \item Basis functions are localized.
+            \item Suffers from the \textbf{curse of dimensionality}.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \textbf{MMNN}
+        \begin{itemize}
+            \item Decomposes functions on an \textit{adaptive}, random basis.
+            \item Learns the right coefficients.
+            \item Tractable in high dimensions thanks to its low-rank structure.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\begin{alertblock}{The High-Dimensional Advantage: Funk-Hecke & Simple Kernels}
+In high dimensions, random inputs are nearly orthogonal ($\rho \to 0$). The Funk-Hecke theorem then implies the NTK becomes quasi-diagonal ($a\mathbf{I}+b\mathbf{J}$). The MMNN thus learns a directional domain decomposition, creating an exponential number of regions with only a linear number of parameters—a feat impossible for classical wavelets.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Summary \& Conclusion}
+\begin{itemize}
+    \item The single-layer NTK for an MMFN has an analytical solution that forms the base case of a recursive analysis.
+    \item For deep MMNNs, the NTK can be described by a set of recursive formulas.
+    \item \textbf{Key Insight:} In the multi-layer case ($\ell > 1$), the NNGP and NTK kernels become \textbf{random fields}, unlike in standard FCNNs where they are deterministic.
+    \item This framework provides the theoretical tools to analyze the training dynamics of deep and complex MMNNs.
+    \item \textbf{Final Takeaway:} MMNNs may enter an NTK-like regime with only linear parameters (vs. quadratic for MLPs). The trade-off is a random NTK, which we can analyze with probability tools (e.g., Bernstein bounds) to get robust optimization guarantees.
+\end{itemize}
+\end{frame}
+
+
+\end{document}

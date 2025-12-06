@@ -1,0 +1,222 @@
+\documentclass{article}
+
+\usepackage{PRIMEarxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{newtxtext}      % Times text font (standard for ML conferences)
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{fancyhdr}       % header
+\usepackage{graphicx}       % graphics
+\graphicspath{{media/}{figures/}}     % organize your images and other figures under media/ and figures/ folders
+
+% Math and theorem environments
+\usepackage{amsmath,amsthm,bm}
+\usepackage{newtxmath}      % Times math font with proper integrals (includes amssymb symbols)
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{thmtools}       % Beautiful theorem styling
+\usepackage{needspace}      % Better page breaking control
+\usepackage{mdframed}       % Frames for theorems
+\definecolor{personalcontribcolor}{RGB}{30,136,229}
+\definecolor{k3color}{RGB}{233,30,99}
+
+% Header
+\pagestyle{fancy}
+\thispagestyle{empty}
+\rhead{ \textit{} }
+
+% Update your Headers here
+
+
+% Macros
+\DeclareRobustCommand{\ReLU}{\mathrel{\boldsymbol{\sigma}}}
+
+
+
+\newcommand{\Kop}{\boldsymbol{\Theta}}
+
+% Beautiful theorem environments using amsthm with mdframed
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{assumption}{Assumption}[section]
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% Custom mdframed styles for beautiful theorem boxes (subtle white tones, breakable across pages)
+\mdfdefinestyle{theoremstyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{corollarystyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{definitionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{lemmastyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{propositionstyle}{%
+    linecolor=cyan!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=cyan!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{assumptionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+\mdfdefinestyle{remarkstyle}{%
+    linecolor=gray!30!white,
+    linewidth=0.8pt,
+    backgroundcolor=gray!1!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont
+}
+
+% Wrap theorem environments with beautiful boxes (breakable across pages)
+% mdframed automatically allows page breaks when boxes don't fit on one page
+% The needspace package helps prevent awkward breaks by checking available space
+\surroundwithmdframed[style=theoremstyle]{theorem}
+\surroundwithmdframed[style=corollarystyle]{corollary}
+\surroundwithmdframed[style=definitionstyle]{definition}
+\surroundwithmdframed[style=lemmastyle]{lemma}
+\surroundwithmdframed[style=propositionstyle]{proposition}
+\surroundwithmdframed[style=assumptionstyle]{assumption}
+\surroundwithmdframed[style=remarkstyle]{remark}
+
+% Configure mdframed to allow splitting with proper continuation styles
+\mdfsetup{skipabove=\topskip,skipbelow=\topskip}
+
+%% Title
+\title{Low-rank is enough for the MLPs Neural Tangent Kernel}
+
+\author{
+  Janis (Heran) Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript, was completed by J.H-A. during an undergraduateinternship at University of Maryland.}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
+  $^{1}$ École Polytechnique, École Normale Supérieure Paris-Saclay  \\
+  $^{2}$ University of Maryland, Department of Mathematics; Department of Computer Science \\
+  $^{3}$ The Hong Kong Polytechnic University
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We develop a Neural Tangent Kernel (NTK) theory for low-rank and random feature networks (RF‑LR) that provides an approximation principled and computationally 
+efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that low-rank weight matrices
+do not loses expressivity. RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; 
+As a toy example, we prove rank‑driven concentration: the empirical three‑layer NTK concentrates around its 
+deterministic limit, combining angular and radial decoupling of gaussian processes outputs, we show mean NTK
+has the same Laplacian RKHS as the shallow ReLU kernel. At the spectral level for random matrices, under some assumptions to be relaxed, the NTK Gram matrix exhibits a 
+spiked and shifted Marchenko–Pastur similar to the 2-layer case : the bulk location is shifted out of 0 thanks to low-rank bottlenecks.
+Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how correlation kernels from random features couple across layers.
+Taken together, these results establish that RF‑LR preserves expressivity and gives optimization guarantees from smallest eigenvalues
+while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), 
+and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
+\end{abstract}
+
+% keywords can be removed
+\keywords{Neural Tangent Kernel \and Random Features \and Low Rank \and Scaling Laws \and Infinite Width \and Marchenko–Pastur}
+
+\tableofcontents
+\vspace{2em}
+
+\newpage
+\input{introduction}
+\input{definition}
+\input{recursion}
+\input{rkhs}
+\input{spectra}
+\newpage
+\input{conclusion}
+
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+\newpage
+\input{appendix}
+
+
+\end{document}

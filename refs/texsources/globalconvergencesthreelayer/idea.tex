@@ -1,0 +1,161 @@
+% LaTeX article wrapper for the ideas note
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage{microtype}
+
+\title{Mean-Field Extensions: Random Features, Low-Rank Second Layer, and Frequency Building}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Goal}
+
+We prove two extensions using the mean-field framework developed in \texttt{iclr2021\_v4.tex}:
+
+\begin{enumerate}
+    \item \textbf{Random features:} Freeze the first layer, i.e., set $\xi_{1}(\cdot)\equiv 0$.
+    \item \textbf{Low-rank second layer:} Parameterize $w_{2}(t,c_{1},c_{2}) = \sum_{r=1}^{R} a_{r}(t,c_{1})\, b_{r}(c_{2})$, train $\{a_{r}\}$, and freeze $\{b_{r}\}$.
+\end{enumerate}
+
+\section{Theorem: Random Features (Frozen First Layer)}
+
+\paragraph{Assumptions.} Keep Assumptions Regularity, Regularity-init, and Assumption 4.1 (support and universal approximation) from \texttt{iclr2021\_v4.tex}. Set $\xi_{1}(\cdot)\equiv 0$. For the third layer, use either clause in Theorem 4.2 (untrained or trained).
+
+\paragraph{Claim.} The conclusions of Theorem 4.2 (global convergence for convex losses; zero risk in the realizable nonnegative-loss case) hold for the mean-field dynamics $W(t)$ with frozen $w_{1}$.
+
+\subsection*{Sketch of Proof}
+\begin{itemize}[leftmargin=1.5em]
+    \item With $\xi_{1} \equiv 0$, $w_{1}(t, \cdot) \equiv w_{1}(0, \cdot)$. Since ${\rm supp}(\rho^{1}) = \mathbb{R}^{d}$ and $\{\varphi_{1}(\langle u, \cdot\rangle): u \in \mathbb{R}^{d}\}$ is dense in $L^2(\mathcal{P}_{X})$, density holds at all finite times without the topology argument used in Lemma 4.3.
+    \item At any limit point $W(\infty)$, stationarity of $w_{2}$ gives
+    \[
+        \Delta_{2}(c_{1},c_{2};W(\infty)) = \mathbb{E}_{Z}\!\left[\Delta_{2}^{H}(Z,c_{2};W(\infty)) \,\varphi_{1}(\langle w_{1}(0,c_{1}), X\rangle)\right] = 0
+    \]
+    for $P$-a.e. $(c_{1},c_{2})$.
+    \item Density of the ridge family implies $\mathbb{E}\!\left[\Delta_{2}^{H}(Z, c_{2}; W(\infty)) \mid X = x\right] = 0$, so $\mathbb{E}\!\left[ \partial_{2}\mathcal{L}(Y, \hat{y}(X; W(\infty))) \mid X = x \right] = 0$.
+    \item Standard argument finishes: convexity yields global optimality; in the realizable nonnegative-loss case, this gives zero risk.
+\end{itemize}
+
+\paragraph{Remarks (Finite Width).}
+\begin{itemize}[leftmargin=1.5em]
+    \item The quantitative coupling bound (Theorem 3.1) and its corollaries remain valid. Freezing $w_{1}$ can simplify the Lipschitz interdependencies.
+    \item In practice, the approximation depends on the random feature width $n_{1}$; larger $n_{1}$ may be needed to match learned $w_{1}$ in the finite-width setting.
+\end{itemize}
+
+\section{Theorem: Low-Rank $w_2$, Train Left Factor Only}
+
+\paragraph{Parameterization.} Consider $w_{2}(t, c_{1}, c_{2}) = \sum_{r=1}^{R} a_{r}(t, c_{1}) b_{r}(c_{2})$, with fixed measurable functions $\{b_{r}\}_{r=1}^{R}$ and trainable $\{a_{r}\}_{r=1}^{R}$. Keep Assumptions Regularity, Regularity-init, and Assumption 4.1; maintain the same conditions on $\xi_3$ as in Theorem 4.2.
+
+\paragraph{Claims.}
+\begin{enumerate}[leftmargin=1.5em]
+    \item[(i)] If the closure of the span $\{b_{r}\}_{r=1}^{R}$ is dense in $L^2(P_{C_2})$ (\emph{e.g.} $R\to\infty$ with a universal dictionary), then the conclusions of Theorem 4.2 hold unchanged.
+    \item[(ii)] For finite $R$ without density, the mean-field dynamics converges to a global minimizer of $\mathscr{L}$ restricted to functions of the form $w_2 = \sum_{r=1}^{R} a_r(\cdot)\,b_r(\cdot)$; the asymptotic excess risk equals the $L^2(P_{C_2})$-projection error of the Bayes residual onto the closure of $\operatorname{span}\{b_r\}$.
+\end{enumerate}
+
+\subsection*{Sketch of Proof}
+\begin{itemize}[leftmargin=1.5em]
+    \item Stationarity with the low-rank structure yields, for each $r$,
+    \[
+        \mathbb{E}_{Z}\!\left[ \Delta_{2}^{H}(Z, \cdot; W(\infty))\, b_r(\cdot)\, \varphi_{1}(\langle w_1(\infty,c_1), X\rangle) \right]=0 \quad \text{for $P$-a.e. $c_1$}.
+    \]
+    \item If $\{b_r\}$ is dense in $L^2(P_{C_2})$, this implies $\mathbb{E}\!\left[ \Delta_2^H(Z, c_2; W(\infty)) \mid X = x \right] = 0$, and the original conclusion holds.
+    \item Otherwise, only the projection of $\Delta_2^H$ onto $\operatorname{span}\{b_r\}$ vanishes, yielding optimality within the restricted class and an irreducible approximation gap given by the orthogonal complement.
+\end{itemize}
+
+\paragraph{Remarks (conditioning and practice).}
+\begin{itemize}[leftmargin=1.5em]
+    \item Choose $\{b_r\}$ from a bounded universal dictionary over $\Omega_2$ (\emph{e.g.} orthogonal polynomials, Fourier, wavelets); increase $R$ until the approximation gap stabilizes.
+    \item Monitor the Gram matrix $G_{rs}(t,x) = \mathbb{E}_{C_2}\!\big[w_3(t,C_2)\varphi_2'(H_2)\,b_r(C_2) b_s(C_2)\big]$; add ridge regularization to $a_r$ if ill-conditioned.
+\end{itemize}
+
+\section{Interaction with Random Features}
+
+The previous two modifications compose: we may freeze $w_1$ and train only the left factor of low-rank $w_2$.
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Theory}: If $\{b_r\}$ is dense and the random-feature theorem holds, the original global convergence conclusions at the mean-field level still follow.
+    \item \textbf{Practice}: Finite-width errors now depend on both the random feature width $n_1$ and the rank $R$; both may need to increase to match the performance of fully trainable baselines.
+\end{itemize}
+
+\section{Frequency Building}
+
+\subsection{Setup for Stacked Low-Rank Modules (Frozen Right Dictionaries)}
+
+For layer $\ell=1,\ldots, L$, parameterize $w_2^{(\ell)}(t, c_1, c_2)=\sum_{r=1}^{R_\ell} a_r^{(\ell)}(t, c_1)\, b_r^{(\ell)}(c_2)$ with fixed measurable $\{b_r^{(\ell)}\}_{r=1}^{R_\ell}$. The first layer can use random features ($\xi_1\equiv 0$) or trainable $w_1$; both settings only assume boundedness and universal approximation of the $\varphi_1$-ridge family. Let $\mathsf{B}^{(\ell)} = \operatorname{span} \{b_r^{(\ell)}\}_{r=1}^{R_\ell} \subset L^2(P_{C_2})$.
+
+\subsection{Concentration at Initialization (Orthonormality of Right Bases)}
+
+\paragraph{Claim (Gram Near Identity).}
+Suppose that for each $\ell$, the dictionary $\{b_r^{(\ell)}\}_{r=1}^{R_\ell}$ is orthonormal in $L^2(P_{C_2})$ and bounded by $|b_r^{(\ell)}(c_2)| \leq B$. Let $\widehat{G}^{(\ell)} \in \mathbb{R}^{R_\ell \times R_\ell}$ be the empirical Gram matrix
+\[
+    \widehat{G}^{(\ell)}_{rs} = \frac{1}{n_2} \sum_{j_2=1}^{n_2} b_r^{(\ell)}(C_2(j_2))\,b_s^{(\ell)}(C_2(j_2)).
+\]
+Then, for any $\varepsilon \in (0,1)$, with probability at least $1 - 2\exp\{-c n_2 \varepsilon^2 + c' R_\ell \log R_\ell\}$,
+\[
+    \left\| \widehat{G}^{(\ell)} - I \right\|_{\mathrm{op}} \leq \varepsilon,
+\]
+for absolute constants $c, c'$ depending only on $B$.
+
+\paragraph{Sketch.} Each $X_{j_2} = b(C_2(j_2))\, b(C_2(j_2))^\top - I$ is zero-mean, $ \|X_{j_2}\|_{\mathrm{op}} \leq B^2 R_\ell$, with variance proxy $\sigma^2 \lesssim R_\ell B^4$. Matrix Bernstein's inequality yields the bound after a union/epsilon-net argument.
+
+\paragraph{Weighted Gram at Small Time.}
+Define the effective inner product
+\[
+    \langle f,g\rangle_t = \mathbb{E}_{C_2} \big[w_3(t,C_2)^2\, (\varphi_2'(H_2(t, C_2)))^2\, f(C_2) g(C_2)\big].
+\]
+If $w_3$ and $H_2$ are $K$-bounded (Assumption Regularity), then $\kappa^{-1}\|f\|_2^2 \leq \|f\|_t^2 \leq \kappa\|f\|_2^2$ for some $\kappa$ depending on $K$. The weighted Gram remains well-conditioned uniformly over time, and at initialization remains $\varepsilon$-close to diagonal in operator norm, up to factors depending on $\kappa$.
+
+\subsection{Frequency Multiplication by Nonlinearity}
+
+\paragraph{Notation.} For a bounded nonlinearity $\varphi_2$ with a nontrivial polynomial/Hermite expansion $\varphi_2(u) = \sum_{k\geq 0}\alpha_k H_k(u)$, consider
+\[
+    S^{(\ell)}(t, c_1, c_2) = \sum_{r=1}^{R_\ell} a_r^{(\ell)}(t, c_1)\, b_r^{(\ell)}(c_2), \qquad U^{(\ell)} = \varphi_2(S^{(\ell)}).
+\]
+
+\paragraph{Key Lemma (Spectral Expansion over $C_2$).}
+For each fixed $(t, c_1)$,
+\[
+    U^{(\ell)}(t, c_1, \cdot) = \sum_{k\geq 0} \alpha_k \sum_{r_1, \dots, r_k \in [R_\ell]} \left( \prod_{i=1}^k a_{r_i}^{(\ell)}(t, c_1) \right) \left( b_{r_1}^{(\ell)} \cdots b_{r_k}^{(\ell)} \right)(\cdot)
+\]
+with convergence in $L^2(P_{C_2})$ under boundedness of $a_r^{(\ell)}$ and $\sum_k \alpha_k^2 \mathbb{E}[ S^{(\ell)} ]^{2k } < \infty$. Thus $U^{(\ell)}$ lies in the degree-$\geq 1$ polynomial closure of $\mathsf{B}^{(\ell)}$.
+
+\paragraph{Consequence (Dictionary Growth Across Layers).}
+If the next layer's right dictionary contains or can approximate products of the previous layer's right dictionary (e.g., $b^{(\ell+1)}_r$ forms an orthonormalization of products of the $b^{(\ell)}_{r'}$ up to degree $K_\ell$), then depth-$L$ compositions expand the accessible right-span from $\mathsf{B}^{(1)}$ to the polynomial hull up to degree $\sum_{\ell=1}^L K_\ell$.
+
+\paragraph{Depth--Universality Corollary.}
+Suppose:
+\begin{itemize}[leftmargin=1.5em]
+    \item[(i)] For each $\ell$, $\{b_r^{(\ell)}\}$ is bounded and orthonormal in $L^2(P_{C_2})$.
+    \item[(ii)] The union of polynomial products $\bigcup_{\ell\leq L} \operatorname{poly}_{\leq K_\ell}(\mathsf{B}^{(\ell)})$ is dense in $L^2(P_{C_2})$ as $L \to \infty$.
+    \item[(iii)] $\varphi_2$ has nonzero Hermite coefficients $\alpha_k$ for infinitely many $k$.
+\end{itemize}
+Then, for any $\varepsilon>0$ and any $g\in L^2(P_{C_2})$, there exist $L$ and ranks $\{R_\ell\}$ such that the depth-$L$ stacked low-rank architecture (training only left factors) expresses a function $\tilde{g}$ with $\|g-\tilde{g}\|_2 \leq \varepsilon$.
+
+\paragraph{Remarks.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Fourier dictionaries:} Products of sine/cosine functions generate sum/difference frequencies, so $K_\ell$ controls the highest frequency accessible by layer $\ell$.
+    \item \textbf{Orthogonal polynomials:} Products expand polynomial degree; nonlinearities with a rich Hermite spectrum accelerate this growth.
+\end{itemize}
+
+\subsection{Training Dynamics with Stacked Low-Rank and Frozen Right Factors}
+
+\paragraph{Proposition (Projected Stationarity per Layer).}
+In the mean-field limit with the above parameterization and regularity assumptions, at any limit point $W(\infty)$, projected stationarity holds layer-wise:
+\[
+    \mathbb{E}_Z \left[ \Delta_{2}^{H,(\ell)}(Z, \cdot; W(\infty))\, b_r^{(\ell)}(\cdot)\, \varphi_1(\langle w_1(\infty, c_1), X\rangle) \right] = 0
+\]
+for all $r$ and almost every $c_1$. If the right-span at depth $L$ is dense in $L^2(P_{C_2})$ (by the frequency-building mechanism), then $\mathbb{E}\left[ \partial_2 \mathcal{L}(Y, \hat{y}(X; W(\infty))) \mid X\right] = 0$ and thus full global convergence as in Theorem 4.2.
+
+\paragraph{Quantitative Note (Finite Width).}
+Concentration of the (weighted) Gram and mean-field coupling argument (Theorem 3.1) give finite-width error scales like $e^{K_T} \big( \sqrt{\epsilon} + \min_\ell n_2^{(\ell)-1/2} \big)$ up to logarithmic factors. The rank-depth tradeoff appears in the approximation error via the polynomial truncation degree.
+
+\paragraph{Overall Message.}
+Even if the right factors are frozen and orthogonality is only guaranteed by initialization, stacking low-rank modules with nonlinearities that mix coefficients multiplies and redistributes frequency content across $C_2$. As depth increases, and with suitable right dictionaries, the accessible right-span grows to universality, and the mean-field stationarity argument delivers optimization to the best function in that span.
+
+\end{document}

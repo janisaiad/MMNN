@@ -1,0 +1,383 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[a4paper]{geometry}		
+%
+%% for example, change the margins to 2 inches all round
+%%\geometry{top=1.25cm, bottom=-.6cm, left=1.5cm, right=1.5cm}
+\geometry{top=2.540cm, bottom=2.540cm, left=2.540cm, right=2.540cm} 
+
+
+
+% \usepackage[section]{placeins}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+%%% 8-12pt
+%%%%%%%%%%%%%%%%%%%55
+\usepackage{amsmath,amsfonts,amssymb}
+% \usepackage{mathrsfs} % \mathscr
+\usepackage[scr=rsfs]{mathalpha} % \mathscr
+\usepackage{mathtools}
+\usepackage{dsfont} % \mathds{1}
+\usepackage{bm}
+
+%\usepackage[numbers,sort]{natbib} # author year
+\usepackage{xurl,xcolor,enumerate}
+% \usepackage[nocompress,sort]{cite} %for numbers
+
+%%%% table setting
+\usepackage{tabularx,multirow,array,booktabs}
+\usepackage{colortbl}%%% color in tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% figure setting
+\usepackage{graphicx}%% 
+\graphicspath{{figures/}}%
+% \graphicspath{{figures/}{figuresOld/}}%
+\usepackage{float}%% 
+\usepackage{subcaption} %% subfigure env
+% \captionsetup{subrefformat=parens} 
+\renewcommand\thesubfigure{(\alph{subfigure})}
+\captionsetup[subfigure]{labelformat=simple, labelsep=space, 
+% labelfont=bf
+}
+% \usepackage{subcaption} %% subfigure env
+% \captionsetup{subrefformat=parens} 
+\captionsetup[subfigure]{aboveskip=3pt}
+\usepackage{caption}
+\captionsetup[figure]{aboveskip=7pt}
+\captionsetup[figure]{belowskip=2pt}
+\captionsetup[table]{aboveskip=5pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\makeatletter\@addtoreset{equation}{section}\makeatother
+%%% \thequation resets when \thesection updates
+%\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%% set page properties
+% \setlength{\oddsidemargin}{0.5cm}
+% \setlength{\evensidemargin}{0.5cm}
+% \setlength{\textwidth}{15.8cm}
+% \setlength{\topmargin}{0.4cm}
+% \setlength{\headheight}{0.0cm}% 
+% \setlength{\headsep}{0.0cm}
+% \setlength{\textheight}{23.5cm}
+% Specify the dimensions of each page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Theorem environment below
+\usepackage{amsthm}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]%  
+\newtheorem{corollary}[theorem]{Corollary} %
+\newtheorem*{main}{Main Theorem}% 
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem*{lemma*}{Lemma}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem*{notation}{Notation}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem*{remark*}{Remark}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% New commands below
+%%%% math fonts
+\usepackage{etoolbox,xparse,dsfont,bm,amssymb}
+\newcommand{\myMFabc}[4]{\expandafter#1\csname#3#4\endcsname{{#2{#4}}}}
+%\forcsvlist{\myMF{\newcommand}{\bm}{bm}}{x,y}
+\newcommand{\myMFcmd}[4]{\expandafter#1\csname#3#4\endcsname{{#2{\csname#4\endcsname}}}}
+%\forcsvlist{\myMFcmd{\newcommand}{\bm}{bm}}{theta,phi}
+
+
+\newcommand{\MFabc}[3][\newcommand]{
+    \def\doOld##1##2{\forcsvlist{\myMFabc{#1}{##1}{##2}}{#3}}
+    \providecommand{\do}{do}
+    \RenewDocumentCommand \do { >{\SplitList{,}} m } { \doOld##1 }
+    \docsvlist{#2}
+}
+% \MFabc{ {\bm,bm}, {\mathcal,cal} }{A,B,C}
+\newcommand{\MFcmd}[3][\newcommand]{
+    \def\doOld##1##2{\forcsvlist{\myMFcmd{#1}{##1}{##2}}{#3}}
+    \providecommand{\do}{do}
+    \RenewDocumentCommand \do { >{\SplitList{,}} m } { \doOld##1 }
+    \docsvlist{#2}
+}
+
+%%% 0 and 1
+\newcommand{\bmzero}{{\bm{0}}}
+\newcommand{\bmone}{{\bm{1}}}
+\def\bbone{{\ensuremath{\mathds{1}}}}
+\let\one\bbone
+%  mathfrak, e.g., \frakT = \mathfrak{T}
+\MFabc{ {\mathfrak,frak}, }{T,u,U,o,O,E,m}
+%  mathbb, e.g., \R = \mathbb{R}
+\MFabc{ {\mathbb, }, }{A,N,Z,R,C,Q}
+
+%%% all capital letters
+% \mathcal, \mathscr, and \mathbb 
+% e.g., \calA=\mathcal{A}
+% \bm\mathcal, e.g., \calbmA = \bm{\mathcal{A}}
+\newcommand{\hatbm}[1]{\widehat{\bm{#1}}}
+\newcommand{\tildebm}[1]{\widetilde{\bm{#1}}}
+\newcommand{\bmcal}[1]{\bm{\mathcal{#1}}}
+\newcommand{\caltilde}[1]{\mathcal{\widetilde{#1}}}
+\newcommand{\calhat}[1]{\mathcal{\widehat{#1}}} 
+\newcommand{\scrtilde}[1]{\widetilde{\mathscr{#1}\mspace{1mu}\mspace{-1mu}}}% \mspace{1mu}\mspace{-1mu} to avoid spacing conflict \mathscr and \widetilde
+\newcommand{\scrhat}[1]{\mathscr{\widehat{#1}\mspace{1mu}\mspace{-1mu}}}
+\newcommand{\bmcalhat}[1]{\bm{\mathcal{\widehat{#1}}}}
+\newcommand{\bmcaltilde}[1]{\bm{\mathcal{\widetilde{#1}}}}
+%%%%%%
+\MFabc{ {\mathcal,cal}, {\mathscr,scr}, {\mathbb,bb}, {\bmcal,bmcal}, {\bmcal,calbm}, {\caltilde,caltilde}, {\caltilde,tildecal}, {\calhat,calhat}, {\calhat,hatcal}, {\scrtilde,scrtilde}, {\scrtilde,tildescr}, {\scrhat,scrhat}, {\scrhat,hatscr}, {\bmcalhat,bmcalhat}, {\bmcalhat,bmhatcal}, 
+{\bmcalhat,calbmhat}, {\bmcalhat,calhatbm}, {\bmcalhat,hatbmcal}, {\bmcalhat,hatcalbm}, {\bmcaltilde,bmcaltilde}, {\bmcaltilde,bmtildecal}, {\bmcaltilde,calbmtilde}, {\bmcaltilde,caltildebm}, {\bmcaltilde,tildebmcal}, {\bmcaltilde,tildecalbm}}{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}
+
+\renewcommand{\scrtildeA}{\widetilde{\mathscr{A}\mspace{2mu}}\mspace{-6.1mu}}% \mspace{2mu} and\mspace{-6.1mu} to avoid spacing conflict \mathscr and \widetilde
+\renewcommand{\scrhatA}{\mathscr{\widehat{A}\mspace{2mu}}\mspace{-6.1mu}}
+\let\tildescrA\scrtildeA
+\let\hatscrA\scrhatA
+
+%%% all letters
+% bm, \widehat， \widetilde, and
+% \mathsf shortcuts -- for random variables， 
+% e.g., \bmA=\bm{A}, \bmalpha=\bm{\alpha}
+%%%%%%%%%
+\MFabc{{\bm,bm}, {\mathsf,sf}, {\widehat,hat}, {\widetilde,tilde}, {\hatbm,hatbm}, {\hatbm,bmhat}, {\tildebm,tildebm}, {\tildebm,bmtilde}}{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}
+
+%%% all Greek alphabet, e.g., \bmalpha = \bm{\alpha}
+\let\eps\varepsilon
+\MFcmd{{\bm,bm}, {\widehat,hat}, {\widetilde,tilde}, {\tildebm, tildebm}, {\tildebm, bmtilde}, {\hatbm, hatbm}, {\hatbm, bmhat}}{alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota,kappa,lambda,mu,nu,xi,omicron,pi,rho,sigma,tau,upsilon,phi,chi,psi,omega,Alpha,Beta,Gamma,Delta,Epsilon,Zeta,Eta,Theta,Iota,Kappa,Lambda,Mu,Nu,Xi,Omicron,Pi,Rho,Sigma,Tau,Upsilon,Phi,Chi,Psi,Omega,varrho,varphi,vartheta,varepsilon,varsigma,ell,eps}
+
+
+
+%%%%%%%%%% activation functions
+%\newcommand{\actdef}[1]{\lowercase{\expandafter\def\csname#1\endcsname}{\texttt{#1}}}
+\newcommand{\actdef}[1]{\expandafter\def\csname#1\endcsname{{\ensuremath{\mathtt{#1}}}}}
+\forcsvlist{\actdef}{ReLU, LReLU, LeakyReLU, ELU, GELU, SiLU, Softplus, dGELU, dSiLU, dSoftplus, Tanh, Sigmoid, Arctan, Softsign, SRS, dSRS, Swish, dSwish, Mish, dMish, SELU, CELU, dSELU, Sin,SinLU, SinTU, PSinTU, sine, cosine, Sine, Cosine, EUAF}
+
+% \newcommand{\actdefs}[1]{\expandafter\def\csname#1s\endcsname{{\ensuremath{\mathtt{#1}}s}}}
+% \forcsvlist{\actdefs}{ELU, GELU, SiLU, dGELU, dSiLU, SRS, dSRS, dSwish}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\newcommand{\nn}{{\hspace{0.6pt}\mathcal{N}\hspace{-1.80pt}\mathcal{N}\hspace{-1.3pt}}}
+% \newcommand{\nn}[6][]{\ensuremath{
+% 		{\hspace{0.6pt}\mathcal{N}\hspace{-1.98pt}\mathcal{N}\hspace{-0.725pt}}_{\hspace{-0.75pt}#2\hspace{-0.02pt}}%  NN
+% 		#1\{#3,\hspace{1.987pt} #4;\hspace{3.0297pt} \R^{#5}\hspace{-1.0298pt}\to\hspace{-0.98pt}\R^{#6}#1\}
+% }}
+% \newcommand{\mmnn}{\ensuremath{	{\hspace{0.6pt}\mathcal{M}\hspace{-1.98pt}\mathcal{M}\hspace{-1.98pt}\mathcal{N}\hspace{-1.98pt}\mathcal{N}\hspace{-0.725pt}}
+% }}
+
+\newcommand{\mn}[7][]{\ensuremath{	{\hspace{0.6pt}\mathcal{M}\hspace{-0.0pt}\mathcal{N}\hspace{-0.8pt}}_{#2}%  NN
+		#1\{#3,\hspace{2.2pt} #4,\hspace{2.2pt} #5;\hspace{3.0297pt} {#6}\hspace{-1.0298pt}\to\hspace{-0.98pt}{#7}#1\}
+}}
+
+
+\let\mmnn\mn
+
+\newcommand{\nn}[6][]{\ensuremath{	{\hspace{0.6pt}\mathcal{N}\hspace{-1.28pt}\mathcal{N}\hspace{-0.725pt}}_{#2}%  NN
+		#1\{#3,\hspace{1.987pt} #4;\hspace{3.0297pt} {#5}\hspace{-1.0298pt}\to\hspace{-0.98pt}{#6}#1\}
+}}
+
+\renewcommand{\nn}[6][]{\ensuremath{	{\hspace{0.6pt}\mathcal{F}\hspace{-0.828pt}\mathcal{N}\hspace{-0.725pt}}_{#2}%  NN
+		#1\{#3,\hspace{1.987pt} #4;\hspace{3.0297pt} {#5}\hspace{-1.0298pt}\to\hspace{-0.98pt}{#6}#1\}
+}}
+% \let\nn\mn
+\let\fcnn\nn
+
+% \NewDocumentCommand{\nn}{o o m m m m}{\ensuremath{		{\hspace{0.6pt}\mathcal{N}\hspace{-1.98pt}\mathcal{N}\hspace{-0.725pt}}_{\hspace{-0.75pt}#2\hspace{-0.02pt}}%  NN
+%     		#1\{#3,\hspace{1.987pt} #4;\hspace{3.0297pt} \R^{#5}\hspace{-1.0298pt}\to\hspace{-0.98pt}\R^{#6}#1\}
+% }}
+
+% \NewDocumentCommand{\nnOneD}{o o m m m m}{\ensuremath{
+% {\hspace{0.6pt}\mathcal{N}\hspace{-1.98pt}\mathcal{N}\hspace{-0.725pt}}_{#2}%  NN
+% 		#1\{#3,\hspace{1.987pt} #4;\hspace{3.0297pt} {#5}\hspace{-1.0298pt}\to\hspace{-0.98pt}{#6}#1\}
+% }}
+
+
+%\newcommand{\tbinom}[2]{{\textstyle\binom{#1}{#2}}}
+% \newcommand{\ts}{{T}}
+\let\ts\intercal
+\def\ts{\tn{$\textsf{T}$}}
+\def\ts{\textsf{\textup{T}}}
+
+% \newcommand{\cpwl}{\tn{CPwL}}
+\def\cpwl{\textsf{\textup{CPwL}}}
+\let\cpl\cpwl
+\let\CPwL\cpwl
+\newcommand{\din}{{d_\tn{in}}}
+\newcommand{\dout}{{d_\tn{out}}}
+\newcommand{\dprime}{{\prime\prime}}
+\newcommand{\tprime}{{\prime\prime\prime}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+%%% see web http://phaseportrait.blogspot.com/2007/08/lineno-and-amsmath-compatibility.html
+%%%%line number below
+\usepackage[left,mathlines]{lineno}
+\usepackage{refcount}
+%\renewcommand\linenumberfont{\rmfamily\upshape\scriptsize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% %%%%% line numbers (cross-ref) properties setting
+\renewcommand\thelinenumber{{\rmfamily\upshape\normalsize\color{blue}\arabic{linenumber}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% line numbers properties setting
+\definecolor{mylinenumbercolor}{HTML}{BEBEBE}
+\renewcommand\LineNumber{{\rmfamily\upshape\footnotesize\color{mylinenumbercolor}\arabic{linenumber}}}
+\linenumbers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\mylinelabel}[1]{\phantomsection\label{#1zsj}\linelabel{#1}}
+%\newcommand{\mylineref}[1]{\hyperref[#1zsj]{\ref{#1}}}
+%%%%%%%%% modify line numbers
+\makeatletter
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+	\expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+	\expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+	\renewenvironment{#1}%
+	{\linenomath\csname old#1\endcsname}%
+	{\csname oldend#1\endcsname\endlinenomath}}% 
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+	\patchAmsMathEnvironmentForLineno{#1}%
+	\patchAmsMathEnvironmentForLineno{#1*}}%
+\patchBothAmsMathEnvironmentsForLineno{equation}%
+\patchBothAmsMathEnvironmentsForLineno{align}%
+\patchBothAmsMathEnvironmentsForLineno{flalign}%
+\patchBothAmsMathEnvironmentsForLineno{alignat}%
+\patchBothAmsMathEnvironmentsForLineno{gather}%
+\patchBothAmsMathEnvironmentsForLineno{multline}%
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\mailto}[2][]{\href{mailto:#2?cc=#1}{\color{black}#2}}
+
+
+
+% \usepackage{doi}\def\doitext{doi: }
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\let\tilde\widetilde
+\let\hat\widehat
+\let\epsilon\varepsilon
+\let\eps\varepsilon
+\let\subset\subseteq
+\let\tn\textnormal
+%%%% 
+% \let\mycdots\cdots
+% \def\cdots{\mathop{\mycdots}}
+\newcommand{\customcdots}{%
+	\mathinner{\mkern-0.1mu\cdotp\mkern-0.3mu\cdotp\mkern-0.3mu\cdotp\mkern-0.1mu}%
+}
+\let\cdots\customcdots
+\let\myforall\forall
+\def\forall{{\myforall\, }}
+\let\myexists\exists
+\def\exists{{\myexists\, }}
+\let\emptyset\varnothing
+%%%%
+\long\def\black#1{{\color{black}#1}}
+\long\def\red#1{{\color{red}#1}}
+\long\def\green#1{{\color{green}#1}}
+\long\def\blue#1{{\color{blue}#1}}
+\long\def\cyan#1{{\color{cyan}#1}}
+
+% define colors used in table
+\definecolor{mygray}{RGB}{230,230,230}
+\definecolor{myorange}{HTML}{ff7f0e}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\let\cite\citep
+%%%\clearpage
+% \bibliographystyle{siam}
+% \bibliographystyle{plainnat}
+% \bibliographystyle{plain}	
+% \bibliographystyle{plainnat}
+\usepackage{doi}
+\def\doitext{DOI: }
+% \def\url#1{\href{#1}{\nolinkurl{#1}}}
+% \urlstyle{sf}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% define title page, following JMLR template
+\makeatletter
+\long\def\@makefntext#1{\@setpar{\@@par\@tempdima \hsize 
+		\advance\@tempdima-15pt\parshape \@ne 15pt \@tempdima}\par
+	\parindent 2em\noindent \hbox to \z@{\hss{\textsuperscript{\@thefnmark}} \hfil}#1}
+%%%%%%%%%%%%%%%%%
+\newlength\aftertitskip     \newlength\beforetitskip
+\newlength\interauthorskip  \newlength\aftermaketitskip
+%% Changeable parameters.
+\setlength\aftertitskip{0.1in plus 0.2in minus 0.2in}
+\setlength\beforetitskip{0.05in plus 0.08in minus 0.08in}
+\setlength\interauthorskip{0.08in plus 0.1in minus 0.1in}
+\setlength\aftermaketitskip{0.3in plus 0.1in minus 0.1in}
+%%%%%%%%%%%%%%
+%% overall definition of maketitle, @maketitle does the real work
+\def\maketitle{\par
+	\begingroup
+	\def\thefootnote{\color{black}\fnsymbol{footnote}}
+	\def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}}
+	\@maketitle \@thanks
+	\endgroup
+	\setcounter{footnote}{0}
+	\let\maketitle\relax \let\@maketitle\relax
+	\gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\thanks\relax}
+
+\def\@startauthor{\noindent \normalsize\bf}
+\def\@endauthor{}
+\def\@starteditor{\noindent \small {\bf Editor:~}}
+\def\@endeditor{\normalsize}
+\def\@maketitle{\vbox{\hsize\textwidth
+		\linewidth\hsize \vskip \beforetitskip
+		{\begin{center} \Large\bf \@title \par \end{center}} \vskip \aftertitskip
+		{\def\and{\unskip\enspace{\rm and}\enspace}%
+			\def\addr{\small\it}%
+			\def\email{\hfill\small\sc}%
+            % \def\email{\hfill\small}%
+			\def\name{\normalsize\bf}%
+			\def\AND{\@endauthor\rm\hss \vskip \interauthorskip \@startauthor}
+			\@startauthor \@author \@endauthor}
+		\vskip \aftermaketitskip
+}}
+\makeatother
+% %%%%%%%%%%%%% title page setting
+\addtolength\aftertitskip{0.25in}
+\addtolength\aftermaketitskip{0.12in}
+\addtolength\interauthorskip{4pt}
+% %%%%%%%%%%%%%%%%%%%%
+
+
+
+
+% === Float Placement Settings ===
+\renewcommand{\topfraction}{0.95}       
+% Allows floats (figures/tables) to occupy up to 95% of the top portion of a page.
+% Default is usually 0.7. Increasing this makes it easier for large figures to appear at the top.
+
+\renewcommand{\bottomfraction}{0.9}
+
+\renewcommand{\textfraction}{0.05}      
+% Requires that at least 5% of a page must be non-float text.
+% Default is 0.2. Lowering this makes it easier to place large floats on the same page with minimal text.
+
+\renewcommand{\floatpagefraction}{0.95}  
+% A float-only page (i.e., a page with only figures or tables) must be at least 90% full.
+% Default is 0.5. Increasing this helps prevent small floats from occupying a whole page.
+
+\setcounter{topnumber}{5}     
+% Maximum number of floats allowed at the top of a page.
+% Default is usually 2.
+
+\setcounter{bottomnumber}{5}  
+% Maximum number of floats allowed at the bottom of a page.
+% Default is usually 1.
+
+\setcounter{totalnumber}{10}  
+% Maximum total number of floats allowed on a single page.
+% Default is usually 3.
+
+% These settings help encourage LaTeX to place figures and tables near their references,
+% and reduce the chance of floats getting pushed to separate pages.

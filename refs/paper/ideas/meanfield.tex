@@ -1,0 +1,223 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{bbm}
+\usepackage{microtype}
+
+\title{Mean-Field Dynamics with Channel Mixing via a Fixed Kernel L}
+\author{ }
+\date{}
+
+% math macros
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\1}{\mathbbm{1}}
+\newcommand{\ip}[2]{\left\langle #1,\,#2 \right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We study a two-layer mean-field (MF) model with $r$ channel indices and a fixed mixing kernel $L$ that couples channels into the second-layer pre-activations. We formalize the MF ODEs for the first- and second-layer weights, introduce $\psi_2$-type sub-Gaussian control to obtain a priori bounds, and establish well-posedness (existence and uniqueness) via a Picard iteration. We also discuss the interpretation of the dynamics and the role of the kernel $L$.
+\end{abstract}
+
+\section{Setup and mean-field equations}
+
+Let $Z=(X,Y)\sim\mathcal{P}$ denote the data distribution on $\mathcal{X}\times \mathcal{Y}$. The input $X\in\R^d$ and the label $Y\in\R$. Let $\Omega_1,\Omega_2$ be Polish spaces with probability measures $\rho^1,\rho^2$, and write $C_1\sim\rho^1$, $C_2\sim\rho^2$. Fix an integer $r\ge 1$ (the number of channels). We consider:
+- a feature map $f_1:\Omega_1\to\R^d$,
+- activations $\varphi_1,\varphi_2:\R\to\R$, with $\varphi_2'$ the derivative,
+- learning-rate schedules $\xi_1,\xi_2:\R_{\ge 0}\to\R_{\ge 0}$,
+- a measurable mixing kernel $L:\Omega_2\times\{1,\dots,r\}\to\R$, where we denote $L_{c_2,k}=L(c_2,k)$.
+
+The trainable MF parameters are
+\[
+w_1:\R_{\ge 0}\times \Omega_1\times\{1,\dots,r\}\to\R,\qquad
+w_2:\R_{\ge 0}\times \Omega_2\to\R.
+\]
+
+Define the second-layer pre-activation for $c_2\in\Omega_2$ by
+\begin{equation}\label{eq:H2-def}
+H_2(t,c_2;X,W)\;=\;\sum_{k=1}^r L_{c_2,k}\, m_k(t;X,W),\qquad
+m_k(t;X,W)\equiv \E_{C_1}\big[w_1(t,C_1,k)\,\varphi_1(\ip{f_1(C_1)}{X})\big].
+\end{equation}
+The model output is
+\begin{equation}\label{eq:yhat-def}
+\hat y(X;W(t)) \;=\; \E_{C_2}\big[w_2(t,C_2)\,\varphi_2\big(H_2(t,C_2;X,W(t))\big)\big].
+\end{equation}
+Let $\mathcal{L}:\mathcal{Y}\times\R\to\R_{\ge 0}$ be the loss, and write the output derivative as
+\begin{equation}\label{eq:dL-def}
+d_L(Z;W)\;\equiv\;\partial_2 \mathcal{L}\big(Y,\hat y(X;W)\big).
+\end{equation}
+
+The MF dynamics are given by the following ODEs (for $c_1\in\Omega_1$, $c_2\in\Omega_2$, $k\in\{1,\dots,r\}$):
+\begin{align}
+\partial_t w_1(t,c_1,k)
+&= -\,\xi_1(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1\!\left(\ip{f_1(c_1)}{X}\right)\,
+\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(t,C_2;X,W(t))\Big)\,w_2(t,C_2)\right]\right], \label{eq:ode-w1}\\
+\partial_t w_2(t,c_2)
+&= -\,\xi_2(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_2\!\Big(H_2(t,c_2;X,W(t))\Big)\right].\label{eq:ode-w2}
+\end{align}
+Initial conditions are $w_1(0,\cdot,\cdot)=w_1^0(\cdot,\cdot)$ and $w_2(0,\cdot)=w_2^0(\cdot)$.
+
+\begin{remark}[Backprop structure]
+Equation \eqref{eq:ode-w2} is the usual second-layer MF update. Equation \eqref{eq:ode-w1} shows that each channel $k$ receives a backpropagated signal
+\[
+b_k(t)\;=\;\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(t,C_2;X,W(t))\Big)\,w_2(t,C_2)\right],
+\]
+so that $\partial_t w_1(t,c_1,k)$ is proportional to $\E_Z[d_L(\cdot)\,\varphi_1(\ip{f_1(c_1)}{X})\,b_k(t)]$. The kernel $L$ mixes the $r$ channel summaries $m_k$ into each $H_2(\cdot)$.
+\end{remark}
+
+\section{Assumptions}
+
+\begin{assumption}[Learning-rate, regularity, inputs, mixing]\label{assump:regularity}
+There exists $K\ge 1$ such that:
+\begin{itemize}
+\item $\xi_1,\xi_2$ are bounded on compact intervals and piecewise continuous.
+\item $\varphi_1,\varphi_2,\varphi_2'$ are $K$-bounded and $K$-Lipschitz; moreover $\varphi_2'$ is non-vanishing.
+\item $\partial_2\mathcal{L}(y,\cdot)$ is $K$-bounded and $K$-Lipschitz for all $y$ in the support of $\mathcal{P}$.
+\item $X$ is $K$-sub-Gaussian and $\norm{f_1(c_1)}\le K$ for all $c_1$; hence $\ip{f_1(c_1)}{X}$ is $K$-sub-Gaussian.
+\item The mixing kernel satisfies $\sup_{c_2,k}|L_{c_2,k}|\le K$ and $k\mapsto L_{c_2,k}$ is measurable for each $c_2$.
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Sub-Gaussian initialization]\label{assump:init}
+There exists $K\ge 1$ such that
+\[
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_1}\!\left[|w_1^0(C_1,k)|^m\right]^{1/m}\le K,\qquad
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_2}\!\left[|w_2^0(C_2)|^m\right]^{1/m}\le K.
+\]
+\end{assumption}
+
+\section{Norms and $\psi_2$ control}
+
+For $t\ge 0$, define the $L^{50}$-type sup-in-time norms
+\begin{align*}
+\|w_1\|_t &\equiv \max_{1\le k\le r}\,\E_{C_1}\Big[\sup_{s\le t}|w_1(s,C_1,k)|^{50}\Big]^{1/50},\\
+\|w_2\|_t &\equiv \E_{C_2}\Big[\sup_{s\le t}|w_2(s,C_2)|^{50}\Big]^{1/50},\qquad \|W\|_t \equiv \max\big(\|w_1\|_t,\|w_2\|_t\big).
+\end{align*}
+We also define $\psi_2$-type sub-Gaussian seminorms (calibrated at $m=50$):
+\begin{align*}
+\llbracket w_1\rrbracket_{\psi,t} &\equiv \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\,\E_{C_1}\Big[\sup_{s\le t}|w_1(s,C_1,k)|^{m}\Big]^{1/m},\\
+\llbracket w_2\rrbracket_{\psi,t} &\equiv \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,\E_{C_2}\Big[\sup_{s\le t}|w_2(s,C_2)|^{m}\Big]^{1/m},\qquad
+\llbracket W\rrbracket_{\psi,t} \equiv \max\big(\llbracket w_1\rrbracket_{\psi,t},\llbracket w_2\rrbracket_{\psi,t}\big).
+\end{align*}
+By choosing $m=50$, we have $\llbracket W\rrbracket_{\psi,t}\ge \|W\|_t$.
+
+\section{Well-posedness (existence and uniqueness)}
+
+Define the solution operator $F$ for any $W'=(w_1',w_2')$:
+\begin{align*}
+F_1(W')(t,c_1,k) &= w_1^0(c_1,k)\;-\;\int_0^t \xi_1(s)\,\E_{Z}\!\left[d_L\big(Z;W'(s)\big)\,\varphi_1\!\left(\ip{f_1(c_1)}{X}\right)\,B_k\big(s;X,W'(s)\big)\right]\,ds,\\
+F_2(W')(t,c_2) &= w_2^0(c_2)\;-\;\int_0^t \xi_2(s)\,\E_{Z}\!\left[d_L\big(Z;W'(s)\big)\,\varphi_2\!\Big(H_2\big(s,c_2;X,W'(s)\big)\Big)\right]\,ds,
+\end{align*}
+where
+\[
+B_k(s;X,W') \equiv \E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(s,C_2;X,W')\Big)\,w_2'(s,C_2)\right].
+\]
+We look for fixed points $W=F(W)$.
+
+\begin{theorem}[Global well-posedness]\label{thm:wellposed}
+Under Assumptions~\ref{assump:regularity}--\ref{assump:init}, for any initialization $W(0)=(w_1^0,w_2^0)$ with $\llbracket W\rrbracket_{\psi,0}<\infty$, the MF ODEs \eqref{eq:ode-w1}--\eqref{eq:ode-w2} admit a unique global solution $W(t)$ on $[0,\infty)$ with $\llbracket W\rrbracket_{\psi,t}<\infty$ for each $t$.
+\end{theorem}
+
+\paragraph{Proof sketch.}
+One proves a priori bounds of the form $\|W\|_t\le K_0(t)$ and $\llbracket W\rrbracket_{\psi,t}\le K_0(t)$ with $K_0(t)$ polynomial in $t$ and $\llbracket W\rrbracket_{\psi,0}$, using the bounded/Lipschitz properties and sub-Gaussianity. Then one shows that $F$ maps the ball $\{W':\llbracket W'\rrbracket_{\psi,T}\le K_0(T)\}$ into itself, and establishes a difference inequality
+\[
+\|F(W')-F(W'')\|_t \;\le\; C\!\int_0^t \Big( (1+B)\,\|W'-W''\|_s \;+\; e^{-cB^2}\Big)\,ds
+\]
+for arbitrary $B\ge 0$ (good/bad event decomposition from sub-Gaussian tails). Iterating and choosing $B=\sqrt{m}$ yields convergence of the Picard iterates $F^{(m)}(W')$ in $\|\cdot\|_T$, and uniqueness follows by the same estimate. Details follow the standard MF ODE strategy with $\psi_2$ control.
+
+\section{Technical roadmap: key lemmas and intuition (2-layer case)}
+
+This section condenses the existence/uniqueness strategy (as in the multilayer analysis) into the essential steps needed for the two-layer system \eqref{eq:ode-w1}--\eqref{eq:ode-w2}. Each lemma below states what to prove and why it is true; the proofs mirror the multilayer case but simplify because only the top layer backpropagates.
+
+\paragraph{Notation map (from multilayer to this paper).}
+- $W=(w_1,w_2)$ here corresponds to the parameter collection across layers. \\
+- $H_2$ here plays the role of the top-layer pre-activation; $H_i$ for $i<2$ is not needed explicitly. \\
+- Differences of drifts noted as $\Delta^{(2)}$ and $\Delta^{(1)}$ here correspond to the gradient integrands for $w_2$ and $w_1$ in the ODEs \eqref{eq:ode-w2} and \eqref{eq:ode-w1}, respectively. \\
+- The $\psi_2$ control $\llbracket\cdot\rrbracket_{\psi,t}$ is defined to dominate the $L^{50}$ sup-in-time norms $\|\cdot\|_t$.
+
+\paragraph{Lemma A (A priori $\psi_2$ and $L^{50}$ bounds).}
+There is a nondecreasing function $K_0(t)$, polynomial in $t$ and $\llbracket W\rrbracket_{\psi,0}$, such that for all $t\ge 0$,
+\[
+\|W\|_t \;\le\; K_0(t),\qquad \llbracket W\rrbracket_{\psi,t} \;\le\; K_0(t),
+\]
+and, moreover, for any $B\ge 0$,
+\[
+\Pp\!\left(\max\Big\{\sup_{s\le t}\sup_{c_2}|w_2(s,c_2)|,\;\sup_{s\le t}\sup_{c_1,k}|w_1(s,c_1,k)|\Big\}\ge K_0(t)\,B\right) \;\le\; C\,e^{-c B^2}.
+\]
+\emph{Intuition.} For layer 2, the drift is $-\xi_2\E[d_L\,\varphi_2(H_2)]$; boundedness/Lipschitz of $\partial_2\mathcal{L}$ and $\varphi_2$ yields linear-in-time growth in moments. For layer 1, the drift is $-\xi_1\E[d_L\,\varphi_1(\ip{f_1}{X})\,B_k]$, where $B_k=\E_{C_2}[L_{C_2,k}\varphi_2'(H_2)w_2]$ is bounded in moments by the layer-2 controls and $\psi_2$ stability under Lipschitz maps. Using Hölder/Cauchy–Schwarz and Grönwall-type arguments gives polynomial $K_0(t)$. Sub-Gaussian tails follow from the $\psi_2$ bounds and a union bound on the sup in time.
+
+\paragraph{Lemma B (Invariance: $F$ maps the $\psi_2$-ball into itself).}
+For any $T>0$, define the set
+\[
+\mathcal{W}_T^0 \equiv \Big\{W': \llbracket W'\rrbracket_{\psi,T}\le K_0(T),\;\; \Pp\big(\max_{s\le T}\max\{|w_1'(s)|,|w_2'(s)|\}\ge K_0(T)B\big)\le C e^{-cB^2},\;\; W'(0)=W(0)\Big\}.
+\]
+Then $F(\mathcal{W}_T^0)\subseteq \mathcal{W}_T^0$.
+\emph{Intuition.} The integral form defining $F$ applies bounded/Lipschitz drifts to $W'$, so the same moment and tail bounds propagate with constants controlled by $K_0(T)$.
+
+\paragraph{Lemma C (Forward Lipschitz).}
+For $t\le T$ and any $W',W''\in \mathcal{W}_T$, we have
+\[
+\E\!\left[\sup_{s\le t}\sup_{c_2}\big|H_2(s,c_2;X,W')-H_2(s,c_2;X, W'')\big|^2\right]^{\!\!1/2}\;\le\; C\,K_0(T)\,\|W'-W''\|_t,
+\]
+and
+\[
+\sup_{s\le t}\,\underset{X}{\mathrm{ess\text{-}sup}}\;\big|\hat y(X;W'(s))-\hat y(X;W''(s))\big| \;\le\; C\,K_0(T)\,\|W'-W''\|_t.
+\]
+\emph{Intuition.} $H_2$ is linear in $w_1$ via $m_k$ and $L$, and $\hat y$ is linear in $w_2$ and Lipschitz in $H_2$; bounded $L$, $\varphi_1$, $\varphi_2$ transfer differences in $(w_1,w_2)$ linearly.
+
+\paragraph{Lemma D (Backward Lipschitz under a good event).}
+Fix $B\ge 0$ and suppose both $W',W''$ satisfy
+\[
+\Pp\!\left(\max_{s\le T}\max\{|w_1'|,|w_2'|\}\ge K_0(T)B\right),\;\Pp\!\left(\max_{s\le T}\max\{|w_1''|,|w_2''|\}\ge K_0(T)B\right) \;\le\; C e^{-cB^2}.
+\]
+Then, for $t\le T$,
+\[
+\E\!\left[\sup_{s\le t}\sup_{c_2}\big|\Delta^{(2)}(s,c_2;W')-\Delta^{(2)}(s,c_2;W'')\big|^2\right]^{\!\!1/2} \;\le\; C\,K_0(T)^2\Big((1+B)\|W'-W''\|_t + e^{-cB^2}\Big),
+\]
+and similarly for the first-layer drift difference $\Delta^{(1)}$.
+\emph{Intuition.} On the good event $\{\max|w|\le K_0(T)B\}$, the derivatives of the loss and activations keep the drift Lipschitz in $W$, with a $(1+B)$ factor. The bad event contributes an exponentially small remainder thanks to sub-Gaussian tails.
+
+\paragraph{Lemma E (Difference inequality for the solution operator).}
+Combining Lemmas C–D and integrating in time yields, for $t\le T$,
+\[
+\|F(W')-F(W'')\|_t \;\le\; C\,K_0(T)^2 \int_0^t \Big((1+B)\,\|W'-W''\|_s + e^{-cB^2}\Big)\,ds.
+\]
+\emph{Intuition.} The drift differences control the integral differences (by Minkowski), leading to a Grönwall-like inequality with a tunable parameter $B$ that trades Lipschitz strength for a small exponentially decaying error.
+
+\paragraph{Proposition (Picard iteration and uniqueness).}
+Iterate Lemma E: for $m\ge 1$,
+\[
+\big\|F^{(m)}(W')-F^{(m)}(W'')\big\|_T \;\le\; \frac{(C T (1+B))^{m}}{m!}\,\|W'-W''\|_T \;+\; C\,e^{C T (1+B)}\,e^{-cB^2}.
+\]
+Choosing $B=\sqrt{m}$ makes the remainder $e^{-c m}$ dominate the combinatorial growth, forcing convergence of $F^{(m)}(W')$ to a fixed point in $\|\cdot\|_T$. Uniqueness follows by letting $m\to\infty$ in the same bound with $W''=F(W')$.
+
+\paragraph{Two-layer simplifications (vs.\ multilayer).}
+- No deep backward induction: the base case is the top layer ($w_2$), and the first layer only depends on that base case. Constants are $K^{O(1)}$ rather than $K^{O(L)}$.
+- Forward Lipschitz: $H_2$ depends linearly on $w_1$ through bounded $L$ and $\varphi_1$, and $\hat y$ depends linearly on $w_2$; this eliminates layer-wise products.
+- Backward Lipschitz: only the pair $(\Delta^{(2)},\Delta^{(1)})$ matters. Good-event control uses the same $\psi_2$ tails; there is no accumulation over depth.
+
+\section{Discussion and interpretation}
+
+- \textbf{Channel mixing via $L$.} The kernel $L$ mixes the $r$ channel summaries $m_k$ into each $H_2(\cdot)$, creating a low-rank structure at the level of pre-activations. The first-layer dynamics for channel $k$ are driven by the backprop signal $B_k$ formed by $L_{\cdot,k}$, $\varphi_2'$, and $w_2$.
+
+- \textbf{Consistency of gradients.} The factor $d_L(Z;W)$ is the global error signal (derivative of loss w.r.t.\ output). The second-layer update \eqref{eq:ode-w2} is standard; the first-layer update \eqref{eq:ode-w1} inserts the Jacobian chain $L\,\varphi_2'(\cdot)\,w_2$, averaged over $C_2$.
+
+- \textbf{Identifiability and scaling.} If columns $k\mapsto L_{\cdot,k}$ are nearly collinear, the $m_k$ may not be individually identifiable; the dynamics can still progress but may converge to equivalent representations. Normalizing $L$ (e.g., $\sup_{c_2}\sum_k L_{c_2,k}^2\le 1$) helps constants.
+
+- \textbf{Why $\psi_2$?} Sub-Gaussian control is stable under Lipschitz maps and expectations, enabling uniform-in-time bounds and a good/bad event decomposition that closes the Picard iteration globally in time.
+
+- \textbf{Extensions.} Biases, noise (diffusion), and finite-width couplings can be added with analogous definitions. Convergence to stationary points requires additional structural assumptions (e.g., strict convexity in an appropriate representation).
+
+\end{document}
