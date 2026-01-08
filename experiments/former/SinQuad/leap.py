@@ -177,10 +177,10 @@ listener_thread.start()
 
 
 configs = []
-for alpha in [2,4,8,16]:
+for alpha in [16,32,64,128]:
     for lr_init in [0.001]:
-        for batch_size in [10,20,50,100,200,500,1000]:
-            for num_layers in [0,1,2,3,4,5]:
+        for batch_size in [100]:
+            for num_layers in [0,1,2,3,4,5,8,10,12,15]:
                 for hidden_width in [64,256,512]:
                     for hidden_rank in [1,3,5,8,15]:
                         seed = np.random.randint(0, 1000000)
