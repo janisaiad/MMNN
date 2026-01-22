@@ -1,8 +1,10 @@
 import argparse
 import hashlib
+import io
 import json
 import os
 import re
+import tempfile
 import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -110,17 +112,30 @@ def load_arch_from_config_json(folder: str) -> Optional[ArchConfig]:
     config_path = os.path.join(folder, "config.json")  # we set config path
     if not os.path.exists(config_path):
         return None  # we return none if missing
-    with open(config_path, "r") as f:
-        cfg = json.load(f)  # we load config json
-    return ArchConfig(
-        num_layers=int(cfg.get("num_layers", cfg.get("L", 0))),
-        hidden_width=int(cfg.get("hidden_width", cfg.get("W", 0))),
-        hidden_rank=int(cfg.get("hidden_rank", cfg.get("R", 0))),
-        input_rank=int(cfg.get("input_rank", 1)),
-        output_rank=int(cfg.get("output_rank", 1)),
-        use_resnet=bool(cfg.get("use_resnet", cfg.get("ResNet", False))),
-        normalize_output=bool(cfg.get("normalize_output", True)),
-    )
+    last_error: Optional[Exception] = None  # we keep the last error for debugging
+    for attempt in range(3):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)  # we load config json
+            num_layers = int(cfg.get("num_layers", cfg.get("L", 0)))  # we parse number of layers
+            hidden_width = int(cfg.get("hidden_width", cfg.get("W", 0)))  # we parse hidden width
+            hidden_rank = int(cfg.get("hidden_rank", cfg.get("R", 0)))  # we parse hidden rank
+            if num_layers <= 0 or hidden_width <= 0 or hidden_rank <= 0:
+                return None  # we fall back to folder parsing if config is incomplete
+            return ArchConfig(
+                num_layers=num_layers,
+                hidden_width=hidden_width,
+                hidden_rank=hidden_rank,
+                input_rank=int(cfg.get("input_rank", 1)),
+                output_rank=int(cfg.get("output_rank", 1)),
+                use_resnet=bool(cfg.get("use_resnet", cfg.get("ResNet", False))),
+                normalize_output=bool(cfg.get("normalize_output", True)),
+            )
+        except (OSError, json.JSONDecodeError) as e:
+            last_error = e  # we store error
+            time.sleep(0.2 * (2**attempt))  # we backoff for flaky mounts like drvfs google drive
+    print(f"warning: could not read config.json at {config_path}: {last_error}")  # we warn and fall back
+    return None  # we fall back to folder parsing
 
 
 def build_mmnn_from_arch(arch: ArchConfig) -> MMNN:
@@ -178,6 +193,50 @@ def iter_checkpoints(root_dir: str, filename: str = "model_parameters.pth") -> I
             yield os.path.join(root, filename)  # we yield checkpoint path
 
 
+def load_torch_checkpoint_with_retries(ckpt_path: str, map_location: str = "cpu") -> Dict[str, object]:
+    last_error: Optional[Exception] = None  # we store last error for logging
+    for attempt in range(6):
+        try:
+            state = torch.load(ckpt_path, map_location=map_location)  # we load state dict on cpu
+            if isinstance(state, dict):
+                return state  # we return loaded dict
+            raise TypeError(f"unexpected checkpoint type: {type(state)}")  # we enforce dict checkpoints
+        except (OSError, EOFError, RuntimeError, TypeError) as e:
+            last_error = e  # we store error
+            time.sleep(0.25 * (2**attempt))  # we backoff for flaky mounts like drvfs google drive
+    raise OSError(f"failed to read checkpoint after retries: {ckpt_path} | last_error={last_error}")  # we raise
+
+
+def load_torch_checkpoint_resilient(ckpt_path: str, map_location: str = "cpu") -> Dict[str, object]:
+    try:
+        return load_torch_checkpoint_with_retries(ckpt_path, map_location=map_location)  # we try direct load
+    except OSError as e:
+        if not str(ckpt_path).startswith("/mnt/"):
+            raise  # we rethrow for non-mounted paths
+        tmp_path = ""  # we initialize temp path
+        try:
+            with tempfile.NamedTemporaryFile(prefix="mmnn_ckpt_", suffix=".pth", delete=False) as f:
+                tmp_path = f.name  # we keep temp file path
+            for attempt in range(6):
+                try:
+                    with open(ckpt_path, "rb") as src:
+                        data = src.read()  # we read bytes (single checkpoint only)
+                    with open(tmp_path, "wb") as dst:
+                        dst.write(data)  # we write bytes to local tmp
+                    break  # we stop retry loop after success
+                except OSError:
+                    time.sleep(0.25 * (2**attempt))  # we backoff
+            return load_torch_checkpoint_with_retries(tmp_path, map_location=map_location)  # we load from local tmp
+        except Exception:
+            raise OSError(f"failed to read checkpoint via tmp copy: {ckpt_path} | first_error={e}")  # we raise
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)  # we cleanup temp file
+                except OSError:
+                    pass  # we ignore cleanup errors
+
+
 def process_checkpoint(
     ckpt_path: str,
     device: torch.device,
@@ -208,11 +267,11 @@ def process_checkpoint(
         raise ValueError(f"invalid out_mode={out_mode}")  # we validate output mode
 
     model = build_mmnn_from_arch(arch).to(device)  # we build the model on device
-    state = torch.load(ckpt_path, map_location="cpu")  # we load state dict on cpu
-    if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
+    state = load_torch_checkpoint_resilient(ckpt_path, map_location="cpu")  # we load checkpoint resiliently
+    if "state_dict" in state and isinstance(state["state_dict"], dict):
         state = state["state_dict"]  # we unwrap state dict if wrapped
     if not isinstance(state, dict):
-        raise TypeError(f"unexpected checkpoint type: {type(state)}")  # we raise on unexpected type
+        raise TypeError(f"unexpected checkpoint type: {type(state)}")  # we validate checkpoint dict
     missing, unexpected = model.load_state_dict(state, strict=False)  # we load parameters
 
     index_base: Dict[str, object] = {
@@ -296,17 +355,23 @@ def main() -> None:
         paths = sorted(paths)  # we sort for deterministic order
         if int(args.max_models) > 0:
             paths = paths[: int(args.max_models)]  # we cap
+        failures = 0  # we count failures
         for p in paths:
-            process_checkpoint(
-                p,
-                device=device,
-                bins=int(args.bins),
-                layers_mode=str(args.layers_mode),
-                out_mode=str(args.out_mode),
-                out_dir=str(args.out_dir),
-                out_subdir=str(args.out_subdir),
-            )  # we process each
-        print(f"processed_models: {len(paths)}")  # we print count
+            try:
+                process_checkpoint(
+                    p,
+                    device=device,
+                    bins=int(args.bins),
+                    layers_mode=str(args.layers_mode),
+                    out_mode=str(args.out_mode),
+                    out_dir=str(args.out_dir),
+                    out_subdir=str(args.out_subdir),
+                )  # we process each
+            except Exception as e:
+                failures += 1  # we count failure
+                print(f"warning: failed checkpoint {p}: {e}")  # we warn and continue
+        print(f"processed_models: {len(paths) - failures}")  # we print count
+        print(f"failed_models: {failures}")  # we print failure count
         return
 
     ckpt_path = resolve_checkpoint_path(str(args.checkpoint))  # we resolve checkpoint path
