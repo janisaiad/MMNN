@@ -475,7 +475,7 @@ def run_experiment(output_dir):
     # we set up parameters
     n1, n2 = 1000, 1000  # we use width 1000
     r = 2  # we use 2 channels
-    t_span = (0, 100)  # we solve for 100 time units
+    t_span = (0, 1000)  # we solve for 1000 time units
     dt = 0.1
     
     print(f"\nNetwork Architecture:")
@@ -645,7 +645,7 @@ def run_experiment(output_dir):
     
     # we create a new figure for weight distributions through time
     print("\nCreating Weight Distribution Plots...")
-    time_points_for_dist = [0, 20, 40, 60, 80, 100]  # we plot distributions at these times
+    time_points_for_dist = [0, 200, 400, 600, 800, 1000]  # we plot distributions at these times
     time_indices_dist = [int(t / dt) for t in time_points_for_dist if t <= t_span[1]]
     
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
