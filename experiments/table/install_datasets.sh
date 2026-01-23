@@ -18,4 +18,10 @@ if [ ! -d "poseidon" ]; then
     cd poseidon && pip install -e . || uv pip install -e . && cd ..
 fi
 
-echo "datasets installed! note: PINNacle may need manual setup - check their repository"
+# we install PINNacle
+if [ ! -d "PINNacle" ]; then
+    git clone https://github.com/i207M/PINNacle.git --depth 1
+    cd PINNacle && pip install -r requirements.txt || uv pip install -r requirements.txt && cd ..
+fi
+
+echo "datasets installed! all PDE benchmark datasets are ready to use"
