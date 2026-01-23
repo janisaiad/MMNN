@@ -64,7 +64,7 @@ def generate_configs():
         "input_rank": 1,
         "output_rank": 1,
         "use_resnet": False,
-        "num_epochs": 30000,
+        "num_epochs": 13000,
         "lr_init": 0.001,
         "lr_gamma": 0.9,
         "lr_step_size": 100,
@@ -351,7 +351,7 @@ def main():
     print(f"  ranks: {sorted(set(c['hidden_rank'] for c in configs))}")
     print(f"  fixWb: True, False")
     print(f"  batch sizes: {sorted(set(c['batch_size'] for c in configs))}")
-    print(f"  epochs: 30,000")
+    print(f"  epochs: 13,000")
     print(f"  loss thresholds: 1e-1, 5e-2, 2e-2, 1e-2, 5e-3, 2e-3, 1e-3, ..., 1e-9 (all 1, 2, 5 for each order)")
     
     # we create output directory
@@ -380,8 +380,8 @@ def main():
         if checkpoint_file.exists():
             ckpt = torch.load(checkpoint_file, map_location='cpu')
             epoch = ckpt.get('epoch', 0)
-            if epoch >= 30000:
-                print(f"✓ Already completed (epoch {epoch}/30000), skipping...")
+            if epoch >= 13000:
+                print(f"✓ Already completed (epoch {epoch}/13000), skipping...")
                 continue
         
         # we create output directory

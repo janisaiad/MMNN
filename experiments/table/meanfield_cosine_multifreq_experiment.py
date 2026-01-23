@@ -267,33 +267,53 @@ def run_experiment():
     print(f"Target function: cos(12πx) + cos(24πx + 0.5) + cos(36πx) + cos(72πx + 0.5)")
     
     # we set up mean-field solver (2-layer version with config parameters)
+    # note: config has 8 layers, but we use 2-layer mean-field approximation
     n1, n2 = hidden_width, hidden_width
     r = hidden_rank
     t_span = (0, 1000)  # we solve for 1000 time units
     dt = 1.0
     
-    print(f"\nMean-Field Architecture:")
-    print(f"  Layer 1: n1={n1} neurons")
-    print(f"  Layer 2: n2={n2} neurons")
-    print(f"  Rank: r={r} channels")
+    print(f"\nMean-Field Architecture (2-layer approximation of {num_layers}-layer network):")
+    print(f"  Config: {num_layers} layers, width={hidden_width}, rank={hidden_rank}")
+    print(f"  Mean-field: Layer 1: n1={n1} neurons, Layer 2: n2={n2} neurons")
+    print(f"  Rank: r={r} channels (low-rank bottleneck)")
     print(f"  Time span: {t_span}")
+    print(f"  Training samples: {num_training_samples}")
     
     # we solve mean-field ODEs
     print("\n" + "="*80)
-    print("Solving Mean-Field ODEs...")
+    print("Solving Mean-Field ODEs (this will evolve weights during training)...")
     print("="*80)
     mf_solver = MeanFieldODESolver(n1=n1, n2=n2, r=r, d=1, device=device)
+    
+    # we check initial weights (before solving)
+    w1_init = mf_solver.w1_0.clone()
+    w2_init = mf_solver.w2_0.clone()
+    print(f"Initial weights: w1 shape={w1_init.shape}, w2 shape={w2_init.shape}")
+    print(f"  w1 mean={torch.mean(w1_init).item():.6f}, std={torch.std(w1_init).item():.6f}")
+    print(f"  w2 mean={torch.mean(w2_init).item():.6f}, std={torch.std(w2_init).item():.6f}")
+    
     sol = mf_solver.solve(x_train, y_train, t_span=t_span, dt=dt)
     
     print(f"Mean-field ODE solved. Trajectory shape: {mf_solver.trajectory.shape}")
+    
+    # we check final weights to verify they evolved
+    w1_final, w2_final = mf_solver.get_weights_at_time(-1)
+    print(f"Final weights: w1 mean={torch.mean(w1_final).item():.6f}, std={torch.std(w1_final).item():.6f}")
+    print(f"  w2 mean={torch.mean(w2_final).item():.6f}, std={torch.std(w2_final).item():.6f}")
+    print(f"  Weight change: w1 diff={torch.mean(torch.abs(w1_final - w1_init)).item():.6f}")
+    print(f"  Weight change: w2 diff={torch.mean(torch.abs(w2_final - w2_init)).item():.6f}")
     
     # we compute log ratios at x=0 only
     print("\n" + "="*80)
     print("Computing Log Ratios at x=0...")
     print("="*80)
     
-    x_analyze = 0.0
+    # we use x=0, but note that ReLU(0)=0, so we use a small epsilon to avoid exact zero
+    # mathematically, at x=0, f1 @ 0 = 0, so we use x ≈ 0 for numerical stability
+    x_analyze = 1e-6  # we use small epsilon near 0
     x_tensor = torch.tensor([[x_analyze]], dtype=torch.float32, device=device)
+    print(f"Note: Using x={x_analyze} (small epsilon near 0) because ReLU(0)=0 makes partial functions zero at exact x=0")
     
     spec_metrics = ChannelSpecializationMetrics()
     
@@ -304,6 +324,11 @@ def run_experiment():
     for t_idx in time_indices:
         t = mf_solver.times[t_idx]
         w1_t, w2_t = mf_solver.get_weights_at_time(t_idx)
+        
+        # we check weight statistics
+        w1_mean = torch.mean(torch.abs(w1_t)).item()
+        w2_mean = torch.mean(torch.abs(w2_t)).item()
+        
         f_k = mf_solver.compute_partial_functions(w1_t, x_tensor)  # [r, 1]
         log_ratios = spec_metrics.compute_log_ratios(f_k)  # [r, r, 1]
         
@@ -315,7 +340,11 @@ def run_experiment():
         # we compute statistics
         triu_indices = np.triu_indices_from(log_ratios.squeeze(2).detach().cpu().numpy(), k=1)
         all_log_ratios = log_ratios.squeeze(2).detach().cpu().numpy()[triu_indices]
+        f_k_vals = f_k.squeeze(1).detach().cpu().numpy()
+        
         print(f"\nTime t={t:.1f}:")
+        print(f"  Weight stats: |w1|_mean={w1_mean:.6f}, |w2|_mean={w2_mean:.6f}")
+        print(f"  Partial functions f_k: min={np.min(f_k_vals):.6f}, max={np.max(f_k_vals):.6f}, mean={np.mean(f_k_vals):.6f}, std={np.std(f_k_vals):.6f}")
         print(f"  Mean log-ratio: {np.mean(all_log_ratios):.6f}")
         print(f"  Max log-ratio: {np.max(all_log_ratios):.6f}")
         print(f"  Min log-ratio: {np.min(all_log_ratios):.6f}")
@@ -336,10 +365,18 @@ def run_experiment():
     ax = fig.add_subplot(gs[0, :])
     final_time_key = list(results.keys())[-1]
     log_ratios_final = results[final_time_key]['log_ratios']
-    im = ax.imshow(log_ratios_final, cmap='RdBu_r', aspect='auto', vmin=-10, vmax=10)
+    final_time = results[final_time_key]['time']
+    
+    # we compute dynamic range for colorbar
+    vmax = max(10, np.max(np.abs(log_ratios_final)))
+    vmin = -vmax
+    
+    im = ax.imshow(log_ratios_final, cmap='RdBu_r', aspect='auto', vmin=vmin, vmax=vmax)
     ax.set_xlabel('Channel $j$', fontsize=24)
     ax.set_ylabel('Channel $i$', fontsize=24)
-    ax.set_title(f'Log-Ratio Matrix $R_{{i,j}} = \\log(|f_i|) - \\log(|f_j|)$ at $x=0$ (Final Time)', fontsize=26)
+    title = (f'Log-Ratio Matrix $R_{{i,j}} = \\log(|f_i|) - \\log(|f_j|)$ at $x=0$ (Time $t={final_time:.1f}$)\n'
+             f'Architecture: 2-layer mean-field, width $n={n1}$, rank $r={r}$ channels')
+    ax.set_title(title, fontsize=24)
     cbar = plt.colorbar(im, ax=ax, label='$R_{i,j}$', fraction=0.046, pad=0.04)
     cbar.ax.tick_params(labelsize=20)
     ax.tick_params(labelsize=18)
@@ -364,7 +401,10 @@ def run_experiment():
     ax.axhline(0, color='k', linestyle='--', alpha=0.5, linewidth=2)
     ax.set_xlabel('Time $t$', fontsize=24)
     ax.set_ylabel('Log-Ratio $R_{i,j}$', fontsize=24)
-    ax.set_title('Log-Ratio Statistics Over Time\n(at $x=0$, all channel pairs)', fontsize=22)
+    n_pairs = r * (r - 1) // 2
+    title = (f'Log-Ratio Statistics Over Time (at $x \\approx 0$, all ${n_pairs}$ channel pairs)\n'
+             f'Architecture: width $n={n1}$, rank $r={r}$ channels')
+    ax.set_title(title, fontsize=22)
     ax.legend(fontsize=18)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
@@ -375,7 +415,10 @@ def run_experiment():
     ax.hist(log_ratios_final_flat, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5)
     ax.set_xlabel('Log-Ratio $R_{i,j}$', fontsize=24)
     ax.set_ylabel('Count', fontsize=24)
-    ax.set_title('Log-Ratio Distribution\n(Final Time, all pairs)', fontsize=22)
+    n_pairs = r * (r - 1) // 2
+    title = (f'Log-Ratio Distribution (Final Time, all ${n_pairs}$ pairs)\n'
+             f'Rank $r={r}$ channels')
+    ax.set_title(title, fontsize=22)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
     
@@ -393,7 +436,9 @@ def run_experiment():
     ax.hist(all_weights, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5, density=True)
     ax.set_xlabel('Weight Value $w$', fontsize=24)
     ax.set_ylabel('Density', fontsize=24)
-    ax.set_title('Weight Density (Normal Scale)', fontsize=22)
+    title = (f'Weight Density (Normal Scale)\n'
+             f'Total weights: ${n1*r + n2}$ ($w_1$: ${n1*r}$, $w_2$: ${n2}$)')
+    ax.set_title(title, fontsize=22)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
     
@@ -410,11 +455,17 @@ def run_experiment():
     ax.set_yscale('log')
     ax.set_xlabel('$|w|$ (absolute weight)', fontsize=24)
     ax.set_ylabel('Count', fontsize=24)
-    ax.set_title('Weight Density (Log-Log Scale)', fontsize=22)
+    title = (f'Weight Density (Log-Log Scale)\n'
+             f'Architecture: width $n={n1}$, rank $r={r}$')
+    ax.set_title(title, fontsize=22)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
     
-    plt.suptitle('Mean-Field Analysis: Multi-Frequency Cosine Function', fontsize=28, y=0.995)
+    title = (f'Mean-Field Analysis: Multi-Frequency Cosine Function\n'
+             f'Target: $\\cos(12\\pi x) + \\cos(24\\pi x + 0.5) + \\cos(36\\pi x) + \\cos(72\\pi x + 0.5)$\n'
+             f'Architecture: 2-layer mean-field (approximating {num_layers}-layer), width $n={n1}$, rank $r={r}$, '
+             f'training samples $N={num_training_samples}$')
+    plt.suptitle(title, fontsize=20, y=0.995)
     plt.savefig(output_dir / 'meanfield_log_ratios_x0.png', dpi=300, bbox_inches='tight')
     print(f"Saved figure to {output_dir / 'meanfield_log_ratios_x0.png'}")
     plt.close()
