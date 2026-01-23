@@ -232,6 +232,13 @@ class ChannelSpecializationMetrics:
     def __init__(self, epsilon=1e-8):
         self.epsilon = epsilon
     
+    def compute_channel_shares(self, f_k):
+        """we compute channel shares s_k = |f_k| / (sum_j |f_j| + epsilon)"""
+        abs_f = torch.abs(f_k)  # [r, batch_size]
+        sum_abs = torch.sum(abs_f, dim=0, keepdim=True)  # [1, batch_size]
+        shares = abs_f / (sum_abs + self.epsilon)  # [r, batch_size]
+        return shares  # [r, batch_size]
+    
     def compute_log_ratios(self, f_k):
         """we compute log ratios R_{k,ell} = log(|f_k| + epsilon) - log(|f_ell| + epsilon)"""
         r = f_k.shape[0]
@@ -351,79 +358,16 @@ def run_experiment():
     
     # we create visualizations
     print("\n" + "="*80)
-    print("Creating Visualizations...")
+    print("Creating Visualizations (separate plots)...")
     print("="*80)
     
     output_dir = Path(__file__).parent / "meanfield_cosine_multifreq_results"
     output_dir.mkdir(exist_ok=True)
     
-    # we create big figure for log ratios at x=0
-    fig = plt.figure(figsize=(20, 16))
-    gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
-    
-    # we plot 1: log ratio heatmap at final time
-    ax = fig.add_subplot(gs[0, :])
+    # we prepare common data
     final_time_key = list(results.keys())[-1]
     log_ratios_final = results[final_time_key]['log_ratios']
     final_time = results[final_time_key]['time']
-    
-    # we compute dynamic range for colorbar
-    vmax = max(10, np.max(np.abs(log_ratios_final)))
-    vmin = -vmax
-    
-    im = ax.imshow(log_ratios_final, cmap='RdBu_r', aspect='auto', vmin=vmin, vmax=vmax)
-    ax.set_xlabel('Channel $j$', fontsize=24)
-    ax.set_ylabel('Channel $i$', fontsize=24)
-    title = (f'Log-Ratio Matrix $R_{{i,j}} = \\log(|f_i|) - \\log(|f_j|)$ at $x=0$ (Time $t={final_time:.1f}$)\n'
-             f'Architecture: 2-layer mean-field, width $n={n1}$, rank $r={r}$ channels')
-    ax.set_title(title, fontsize=24)
-    cbar = plt.colorbar(im, ax=ax, label='$R_{i,j}$', fraction=0.046, pad=0.04)
-    cbar.ax.tick_params(labelsize=20)
-    ax.tick_params(labelsize=18)
-    
-    # we plot 2: log ratio statistics over time
-    ax = fig.add_subplot(gs[1, 0])
-    times = [results[k]['time'] for k in results.keys()]
-    mean_log_ratios = []
-    max_log_ratios = []
-    min_log_ratios = []
-    for key in results.keys():
-        log_ratios = results[key]['log_ratios']
-        triu_indices = np.triu_indices_from(log_ratios, k=1)
-        all_log_ratios = log_ratios[triu_indices]
-        mean_log_ratios.append(np.mean(all_log_ratios))
-        max_log_ratios.append(np.max(all_log_ratios))
-        min_log_ratios.append(np.min(all_log_ratios))
-    
-    ax.plot(times, mean_log_ratios, 'b-o', label='Mean $R_{i,j}$', linewidth=3, markersize=10)
-    ax.plot(times, max_log_ratios, 'r-s', label='Max $R_{i,j}$', linewidth=3, markersize=10)
-    ax.plot(times, min_log_ratios, 'g-^', label='Min $R_{i,j}$', linewidth=3, markersize=10)
-    ax.axhline(0, color='k', linestyle='--', alpha=0.5, linewidth=2)
-    ax.set_xlabel('Time $t$', fontsize=24)
-    ax.set_ylabel('Log-Ratio $R_{i,j}$', fontsize=24)
-    n_pairs = r * (r - 1) // 2
-    title = (f'Log-Ratio Statistics Over Time (at $x \\approx 0$, all ${n_pairs}$ channel pairs)\n'
-             f'Architecture: width $n={n1}$, rank $r={r}$ channels')
-    ax.set_title(title, fontsize=22)
-    ax.legend(fontsize=18)
-    ax.grid(True, alpha=0.3)
-    ax.tick_params(labelsize=18)
-    
-    # we plot 3: log ratio distribution at final time
-    ax = fig.add_subplot(gs[1, 1])
-    log_ratios_final_flat = log_ratios_final[np.triu_indices_from(log_ratios_final, k=1)]
-    ax.hist(log_ratios_final_flat, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5)
-    ax.set_xlabel('Log-Ratio $R_{i,j}$', fontsize=24)
-    ax.set_ylabel('Count', fontsize=24)
-    n_pairs = r * (r - 1) // 2
-    title = (f'Log-Ratio Distribution (Final Time, all ${n_pairs}$ pairs)\n'
-             f'Rank $r={r}$ channels')
-    ax.set_title(title, fontsize=22)
-    ax.grid(True, alpha=0.3)
-    ax.tick_params(labelsize=18)
-    
-    # we plot 4-5: weight density plots (normal and log-log)
-    # we get weights at final time
     w1_final, w2_final = mf_solver.get_weights_at_time(-1)
     w1_flat = w1_final.detach().cpu().numpy().flatten()
     w2_flat = w2_final.detach().cpu().numpy().flatten()
@@ -431,43 +375,181 @@ def run_experiment():
     abs_weights = np.abs(all_weights)
     abs_weights = abs_weights[abs_weights > 0]  # we remove zeros for log plot
     
-    # we plot 4: normal density
-    ax = fig.add_subplot(gs[2, 0])
+    # we create common info text (moved to bottom to avoid collapsing)
+    common_info_text = (f'Mean-Field Analysis: Multi-Frequency Cosine Function. '
+                       f'Target: $\\cos(12\\pi x) + \\cos(24\\pi x + 0.5) + \\cos(36\\pi x) + \\cos(72\\pi x + 0.5)$. '
+                       f'Architecture: 2-layer mean-field (approximating {num_layers}-layer), width $n={n1}$, rank $r={r}$, '
+                       f'training samples $N={num_training_samples}$. '
+                       f'Note: Using $x=10^{{-6}}$ because $\\mathrm{{ReLU}}(0)=0$ makes $f_k=0$ at exact $x=0$.')
+    
+    # we plot 1: log ratio heatmap at final time (separate figure)
+    fig = plt.figure(figsize=(14, 10))
+    ax = fig.add_subplot(111)
+    vmax = max(10, np.max(np.abs(log_ratios_final)))
+    vmin = -vmax
+    im = ax.imshow(log_ratios_final, cmap='RdBu_r', aspect='auto', vmin=vmin, vmax=vmax)
+    ax.set_xlabel('Channel $j$', fontsize=24)
+    ax.set_ylabel('Channel $i$', fontsize=24)
+    ax.set_title(f'Log-Ratio Matrix $R_{{i,j}} = \\log(|f_i|) - \\log(|f_j|)$ at $x \\approx 0$ (Time $t={final_time:.1f}$)', fontsize=22)
+    cbar = plt.colorbar(im, ax=ax, label='$R_{i,j}$', fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=18)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_log_ratio_heatmap.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_log_ratio_heatmap.png'}")
+    plt.close()
+    
+    # we plot 2: log ratio statistics over time (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    times = [results[k]['time'] for k in results.keys()]
+    mean_log_ratios = []
+    max_log_ratios = []
+    min_log_ratios = []
+    std_log_ratios = []
+    for key in results.keys():
+        log_ratios = results[key]['log_ratios']
+        triu_indices = np.triu_indices_from(log_ratios, k=1)
+        all_log_ratios = log_ratios[triu_indices]
+        mean_log_ratios.append(np.mean(all_log_ratios))
+        max_log_ratios.append(np.max(all_log_ratios))
+        min_log_ratios.append(np.min(all_log_ratios))
+        std_log_ratios.append(np.std(all_log_ratios))
+    
+    ax.plot(times, mean_log_ratios, 'b-o', label='Mean $R_{i,j}$', linewidth=3, markersize=10)
+    ax.plot(times, max_log_ratios, 'r-s', label='Max $R_{i,j}$', linewidth=3, markersize=10)
+    ax.plot(times, min_log_ratios, 'g-^', label='Min $R_{i,j}$', linewidth=3, markersize=10)
+    ax.fill_between(times,
+                   np.array(mean_log_ratios) - np.array(std_log_ratios),
+                   np.array(mean_log_ratios) + np.array(std_log_ratios),
+                   alpha=0.2, label='±1 std', color='blue')
+    ax.axhline(0, color='k', linestyle='--', alpha=0.5, linewidth=2)
+    ax.set_xlabel('Time $t$', fontsize=24)
+    ax.set_ylabel('Log-Ratio $R_{i,j}$', fontsize=24)
+    n_pairs = r * (r - 1) // 2
+    ax.set_title(f'Log-Ratio Statistics Over Time (at $x \\approx 0$, all ${n_pairs}$ channel pairs)', fontsize=22)
+    ax.legend(fontsize=18)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_log_ratio_statistics_time.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_log_ratio_statistics_time.png'}")
+    plt.close()
+    
+    # we plot 3: log ratio distribution at final time (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    log_ratios_final_flat = log_ratios_final[np.triu_indices_from(log_ratios_final, k=1)]
+    ax.hist(log_ratios_final_flat, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5)
+    ax.set_xlabel('Log-Ratio $R_{i,j}$', fontsize=24)
+    ax.set_ylabel('Count', fontsize=24)
+    n_pairs = r * (r - 1) // 2
+    ax.set_title(f'Log-Ratio Distribution (Final Time $t={final_time:.1f}$, all ${n_pairs}$ pairs, rank $r={r}$)', fontsize=22)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_log_ratio_distribution.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_log_ratio_distribution.png'}")
+    plt.close()
+    
+    # we plot 3b: log ratio distributions across different time points (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    for key in results.keys():
+        t = results[key]['time']
+        log_ratios = results[key]['log_ratios']
+        triu_indices = np.triu_indices_from(log_ratios, k=1)
+        all_log_ratios = log_ratios[triu_indices]
+        ax.hist(all_log_ratios, bins=30, alpha=0.5, label=f'$t={t:.1f}$', density=True)
+    ax.set_xlabel('Log-Ratio $R_{i,j}$', fontsize=24)
+    ax.set_ylabel('Density', fontsize=24)
+    ax.set_title(f'Log-Ratio Distribution Evolution Over Time (at $x \\approx 0$, rank $r={r}$)', fontsize=22)
+    ax.legend(fontsize=16)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_log_ratio_distribution_time_evolution.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_log_ratio_distribution_time_evolution.png'}")
+    plt.close()
+    
+    # we plot 3c: channel shares at final time (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    f_k_final = mf_solver.compute_partial_functions(w1_final, x_tensor)
+    shares = spec_metrics.compute_channel_shares(f_k_final).squeeze(1).detach().cpu().numpy()
+    channel_indices = np.arange(1, r + 1)
+    ax.bar(channel_indices, shares, alpha=0.7, edgecolor='black', linewidth=1.5)
+    ax.set_xlabel('Channel $k$', fontsize=24)
+    ax.set_ylabel('Channel Share $s_k = |f_k| / \\sum_j |f_j|$', fontsize=24)
+    ax.set_title(f'Channel Shares at Final Time $t={final_time:.1f}$ (at $x \\approx 0$, rank $r={r}$)', fontsize=22)
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_channel_shares.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_channel_shares.png'}")
+    plt.close()
+    
+    # we plot 4: weight density normal scale (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
     ax.hist(all_weights, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5, density=True)
     ax.set_xlabel('Weight Value $w$', fontsize=24)
     ax.set_ylabel('Density', fontsize=24)
-    title = (f'Weight Density (Normal Scale)\n'
-             f'Total weights: ${n1*r + n2}$ ($w_1$: ${n1*r}$, $w_2$: ${n2}$)')
-    ax.set_title(title, fontsize=22)
+    ax.set_title(f'Weight Density (Normal Scale, Final Time $t={final_time:.1f}$)', fontsize=22)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, f'{common_info_text} Total weights: ${n1*r + n2}$ ($w_1$: ${n1*r}$, $w_2$: ${n2}$).', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_weight_density_normal.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_weight_density_normal.png'}")
+    plt.close()
     
-    # we plot 5: log-log density
-    ax = fig.add_subplot(gs[2, 1])
-    # we create log-spaced bins
+    # we plot 5: weight density log-log scale (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
     log_bins = np.logspace(np.log10(abs_weights.min()), np.log10(abs_weights.max()), 50)
     hist, bins = np.histogram(abs_weights, bins=log_bins)
     bin_centers = np.sqrt(bins[:-1] * bins[1:])  # geometric mean for log scale
-    # we filter out zero counts
     non_zero = hist > 0
     ax.plot(bin_centers[non_zero], hist[non_zero], 'b-o', linewidth=2, markersize=6)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel('$|w|$ (absolute weight)', fontsize=24)
     ax.set_ylabel('Count', fontsize=24)
-    title = (f'Weight Density (Log-Log Scale)\n'
-             f'Architecture: width $n={n1}$, rank $r={r}$')
-    ax.set_title(title, fontsize=22)
+    ax.set_title(f'Weight Density (Log-Log Scale, Final Time $t={final_time:.1f}$)', fontsize=22)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, f'{common_info_text} Total weights: ${n1*r + n2}$.', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_weight_density_loglog.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_weight_density_loglog.png'}")
+    plt.close()
     
-    title = (f'Mean-Field Analysis: Multi-Frequency Cosine Function\n'
-             f'Target: $\\cos(12\\pi x) + \\cos(24\\pi x + 0.5) + \\cos(36\\pi x) + \\cos(72\\pi x + 0.5)$\n'
-             f'Architecture: 2-layer mean-field (approximating {num_layers}-layer), width $n={n1}$, rank $r={r}$, '
-             f'training samples $N={num_training_samples}$')
-    plt.suptitle(title, fontsize=20, y=0.995)
-    plt.savefig(output_dir / 'meanfield_log_ratios_x0.png', dpi=300, bbox_inches='tight')
-    print(f"Saved figure to {output_dir / 'meanfield_log_ratios_x0.png'}")
+    # we plot 5b: weight density evolution across time points (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    for t_idx in time_indices:
+        t = mf_solver.times[t_idx]
+        w1_t, w2_t = mf_solver.get_weights_at_time(t_idx)
+        w1_flat_t = w1_t.detach().cpu().numpy().flatten()
+        w2_flat_t = w2_t.detach().cpu().numpy().flatten()
+        all_weights_t = np.concatenate([w1_flat_t, w2_flat_t])
+        ax.hist(all_weights_t, bins=30, alpha=0.5, label=f'$t={t:.1f}$', density=True)
+    ax.set_xlabel('Weight Value $w$', fontsize=24)
+    ax.set_ylabel('Density', fontsize=24)
+    ax.set_title(f'Weight Density Evolution Over Time (width $n={n1}$, rank $r={r}$)', fontsize=22)
+    ax.legend(fontsize=16)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_weight_density_time_evolution.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_weight_density_time_evolution.png'}")
     plt.close()
     
     # we save results
