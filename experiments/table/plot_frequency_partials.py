@@ -161,16 +161,23 @@ def main():
     model_dirs = [d for d in config_dirs if (d / "model_parameters.pth").exists() or (d / "checkpoint.pth").exists()]
 
     print(f"found {len(model_dirs)} configs with saved models in {results_dir}")
+    print(f"processing {len(model_dirs)} configs...\n")
 
-    for d in model_dirs:
+    success_count = 0
+    for idx, d in enumerate(model_dirs, 1):
+        print(f"[{idx}/{len(model_dirs)}] processing {d.name}...", end=" ", flush=True)
         try:
-            plot_partials_for_config(d, device, out_subdir="partials")
+            if plot_partials_for_config(d, device, out_subdir="partials"):
+                success_count += 1
+                print("✓")
+            else:
+                print("✗ (skipped)")
         except Exception as e:
-            print(f"error processing {d.name}: {e}")
+            print(f"✗ error: {e}")
             import traceback
             traceback.print_exc()
 
-    print("done.")
+    print(f"\ndone. successfully processed {success_count}/{len(model_dirs)} configs")
 
 
 if __name__ == "__main__":
