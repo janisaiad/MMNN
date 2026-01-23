@@ -249,10 +249,7 @@ def train_one_config(config, output_dir):
             torch.save(checkpoint, checkpoint_path)
             print(f"checkpoint saved at epoch {epoch}")
         
-        # we early stop if loss is very low
-        if epoch > 300 and avg_loss < 5e-4:
-            print(f"early stopping at epoch {epoch} (loss < 5e-4)")
-            break
+        # we removed early stopping - all runs go to num_epochs (10k)
     
     training_time = time.time() - start_time
     
