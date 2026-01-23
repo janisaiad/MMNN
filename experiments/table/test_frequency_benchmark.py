@@ -35,8 +35,8 @@ def generate_frequency_configs():
         (144, 48),  # 4x frequency (scaled from 12/24/48 pattern)
     ]
     
-    # we define ranks to test
-    ranks = [10, 15, 20, 25, 50]
+    # we use FULL RANK (rank = width = 777) - this is a standard MLP, not low-rank
+    ranks = [777]  # we set rank equal to width for full MLP
     
     # we define fixWb options
     fixWb_options = [False, True]
@@ -103,8 +103,13 @@ def train_one_config(config, output_dir):
     device = torch.device(config["device"])
     mydtype = torch.get_default_dtype()
     
+    # we add FULL_RANK label when rank equals width
+    if config['hidden_rank'] == config['hidden_width']:
+        arch_label = "FULL_RANK (rank=width=777)"
+    else:
+        arch_label = f"rank={config['hidden_rank']}"
     print(f"\n{'='*80}")
-    print(f"Training: freq=({config['freq1']},{config['freq2']}), rank={config['hidden_rank']}, fixWb={config['fixWb']}")
+    print(f"Training: freq=({config['freq1']},{config['freq2']}), {arch_label}, fixWb={config['fixWb']}")
     print(f"Output: {output_dir}")
     print(f"{'='*80}")
     
@@ -302,7 +307,12 @@ def train_one_config(config, output_dir):
     plt.plot(x_plot, y_plot_nn, 'r--', label='Learned network', linewidth=2)
     plt.xlabel('x')
     plt.ylabel('y')
-    config_str = f"freq=({config['freq1']},{config['freq2']}), rank={config['hidden_rank']}, fixWb={config['fixWb']}"
+    # we add FULL_RANK label when rank equals width
+    if config['hidden_rank'] == config['hidden_width']:
+        arch_label = "FULL_RANK (rank=width=777)"
+    else:
+        arch_label = f"rank={config['hidden_rank']}"
+    config_str = f"freq=({config['freq1']},{config['freq2']}), {arch_label}, fixWb={config['fixWb']}"
     plt.title(f'Final Prediction\n{config_str}')
     plt.grid(True, alpha=0.3)
     plt.legend()
@@ -315,7 +325,13 @@ def train_one_config(config, output_dir):
     plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)
     plt.xlabel('Epoch')
     plt.ylabel('Loss (log scale)')
-    plt.title(f'Training Loss Evolution\n{config_str}')
+    # we ensure FULL_RANK label in loss plot
+    if config['hidden_rank'] == config['hidden_width']:
+        arch_label = "FULL_RANK (rank=width=777)"
+    else:
+        arch_label = f"rank={config['hidden_rank']}"
+    loss_config_str = f"freq=({config['freq1']},{config['freq2']}), {arch_label}, fixWb={config['fixWb']}"
+    plt.title(f'Training Loss Evolution\n{loss_config_str}')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_dir / 'loss_evolution.png', dpi=100)
@@ -329,7 +345,13 @@ def train_one_config(config, output_dir):
         plt.plot(epochs_logged, np.log10(errors_test), label="log10 test error", linewidth=2)
         plt.xlabel('Epoch')
         plt.ylabel('log10(error)')
-        plt.title(f'Error Evolution\n{config_str}')
+        # we ensure FULL_RANK label in error plot
+        if config['hidden_rank'] == config['hidden_width']:
+            arch_label = "FULL_RANK (rank=width=777)"
+        else:
+            arch_label = f"rank={config['hidden_rank']}"
+        error_config_str = f"freq=({config['freq1']},{config['freq2']}), {arch_label}, fixWb={config['fixWb']}"
+        plt.title(f'Error Evolution\n{error_config_str}')
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
@@ -343,17 +365,18 @@ def train_one_config(config, output_dir):
 def main():
     """we run frequency benchmark"""
     print("="*80)
-    print("Frequency Benchmark: Testing MMNN with different frequencies")
+    print("Frequency Benchmark: Testing MMNN with FULL RANK (rank=width=777)")
+    print("NOT using low-rank structure - this is a standard fully-connected MLP")
     print("="*80)
     
     configs = generate_frequency_configs()
     print(f"\ngenerated {len(configs)} configurations")
     print(f"  frequency pairs: (36,12), (72,24), (144,48)")
-    print(f"  ranks: {[10, 15, 20, 25, 50]}")
+    print(f"  architecture: FULL RANK (rank=777, width=777) - standard MLP")
     print(f"  fixWb: False, True")
     
     # we create output directory
-    base_output_dir = Path("experiments/table/results_frequency_benchmark")
+    base_output_dir = Path("experiments/table/results_frequency_benchmark_full_rank")
     base_output_dir.mkdir(parents=True, exist_ok=True)
     
     # we setup logging
@@ -387,8 +410,13 @@ def main():
         
         for idx, config in enumerate(configs):
             # we create output directory for this config
+            # we use FULL_RANK in folder name when rank equals width
+            if config['hidden_rank'] == config['hidden_width']:
+                rank_label = "FULL_RANK_rank777"
+            else:
+                rank_label = f"rank{config['hidden_rank']}"
             config_name = (f"freq{config['freq1']}_{config['freq2']}_"
-                          f"rank{config['hidden_rank']}_"
+                          f"{rank_label}_"
                           f"fixWb{config['fixWb']}_run{idx}")
             output_dir = base_output_dir / config_name
             output_dir.mkdir(parents=True, exist_ok=True)
