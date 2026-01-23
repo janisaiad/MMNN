@@ -1,0 +1,96 @@
+\subsection{Experimental Setup}
+
+We conduct experiments on synthetic and real-world datasets to validate our hierarchical construction hypothesis. We compare three regimes:
+\begin{itemize}
+    \item \textbf{Low-rank:} $r = 10$ (fixed, independent of $d$)
+    \item \textbf{Extensive-rank:} $r = \lfloor d^{0.5} \rfloor$ (scales as $d^\beta$ with $\beta = 0.5$)
+    \item \textbf{High-rank:} $r = d$ (full-rank, linear scaling)
+\end{itemize}
+
+\subsection{Synthetic 1D Functions}
+
+We first test on synthetic 1D functions with known frequency structure:
+
+\paragraph{Target functions:}
+\begin{itemize}
+    \item \textbf{Low-frequency:} $f^*(x) = \cos(2\pi x)$ on $[0, 1]$
+    \item \textbf{Mixed-frequency:} $f^*(x) = \cos(2\pi x) + 0.5\cos(10\pi x) + 0.25\cos(20\pi x)$
+    \item \textbf{High-frequency:} $f^*(x) = \cos(20\pi x)$
+\end{itemize}
+
+\paragraph{Results:}
+\begin{enumerate}
+    \item \textbf{Extensive-rank exhibits stepwise loss:} Training loss shows clear stepwise (staircase) behavior, with each step corresponding to activation of a new frequency band (Figure~\ref{fig:stepwise-loss}).
+    \item \textbf{Frequency spectrum analysis:} Fourier transform of learned function shows sequential activation: low frequencies first, then progressively higher frequencies (Figure~\ref{fig:frequency-spectrum}).
+    \item \textbf{High-rank fails:} High-rank networks learn all frequencies simultaneously, with smooth (exponential) loss decay and no hierarchical structure.
+    \item \textbf{Low-rank insufficient:} Low-rank networks lack capacity to learn high frequencies, getting stuck at low-frequency solutions.
+\end{enumerate}
+
+\subsection{2D Synthetic Functions}
+
+We test on 2D functions to validate multi-index learning:
+
+\paragraph{Target:} $f^*(x_1, x_2) = g_1(x_1) + g_2(x_2)$ where $g_1, g_2$ are ridge functions.
+
+\paragraph{Results:}
+\begin{enumerate}
+    \item \textbf{Sequential direction learning:} Extensive-rank networks learn directions $v_1, v_2$ sequentially, with stepwise loss corresponding to each direction activation.
+    \item \textbf{High-rank simultaneous:} High-rank networks learn both directions simultaneously, with no sequential structure.
+\end{enumerate}
+
+\subsection{Real-World Datasets}
+
+We test on real-world regression tasks:
+
+\paragraph{Datasets:}
+\begin{itemize}
+    \item \textbf{UCI datasets:} Boston Housing, Energy Efficiency
+    \item \textbf{Image regression:} Super-resolution, denoising
+\end{itemize}
+
+\paragraph{Results:}
+\begin{enumerate}
+    \item \textbf{Hierarchical features:} Extensive-rank networks develop hierarchical feature representations (visualized via activation patterns).
+    \item \textbf{Better generalization:} Extensive-rank networks generalize better than high-rank, despite having fewer parameters.
+    \item \textbf{Interpretability:} Hierarchical structure enables better interpretability: features at different levels correspond to different abstraction levels.
+\end{enumerate}
+
+\subsection{Instability Analysis}
+
+We analyze the instability-reinforcement mechanism:
+
+\paragraph{Hessian eigenvalue tracking:}
+\begin{enumerate}
+    \item \textbf{Synchronized spikes:} $\lambda_{\max}(H)$ spikes coincide with stepwise loss drops (Figure~\ref{fig:hessian-spikes}).
+    \item \textbf{EOS regime:} Training occurs at edge-of-stability, with $\lambda_{\max}(H) \approx \frac{2}{\eta}$ during transitions.
+    \item \textbf{Frequency band activation:} Each instability event corresponds to activation of a new frequency band.
+\end{enumerate}
+
+\paragraph{Optimizer comparison:}
+\begin{enumerate}
+    \item \textbf{Adam:} Exhibits wobbling near EOS, helps escape plateaus but may cause instability.
+    \item \textbf{SGD:} More stable, better for fine-tuning after hierarchical structure is established.
+    \item \textbf{Switching:} Adam early $\to$ SGD late achieves best results.
+\end{enumerate}
+
+\subsection{Ablation Studies}
+
+We conduct ablations to validate our hypotheses:
+
+\paragraph{Rank scaling:}
+\begin{enumerate}
+    \item Vary $\beta$ in $r = d^\beta$: $\beta \in \{0.3, 0.5, 0.7, 1.0\}$
+    \item Results: Hierarchical construction occurs only for $\beta \in (0, 1)$ (extensive-rank), not for $\beta = 1$ (high-rank).
+\end{enumerate}
+
+\paragraph{Architecture depth:}
+\begin{enumerate}
+    \item Vary number of layers $L \in \{2, 4, 6, 8\}$
+    \item Results: Deeper networks enable more hierarchical levels, with $L$ layers corresponding to approximately $L$ frequency bands.
+\end{enumerate}
+
+\paragraph{Initialization:}
+\begin{enumerate}
+    \item Compare different initialization schemes
+    \item Results: Hierarchical construction is robust to initialization, but initialization affects which bands are learned first.
+\end{enumerate}

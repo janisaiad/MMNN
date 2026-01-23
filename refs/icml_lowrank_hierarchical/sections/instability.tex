@@ -1,0 +1,58 @@
+\subsection{Instability Near Sharp Minima}
+
+A critical observation from our experiments is that \emph{instability near sharp minima acts as a reinforcement mechanism} that drives hierarchical feature construction. When the network approaches a sharp minimum (characterized by large Hessian eigenvalues $\lambda_{\max}(H) \gg 1$), the resulting instability forces the network to reorganize its feature representation.
+
+\begin{definition}[Sharp Minimum]
+A minimum $\theta^*$ is \emph{sharp} if the largest Hessian eigenvalue satisfies $\lambda_{\max}(\nabla^2 \mathcal{L}(\theta^*)) > \frac{2}{\eta}$, where $\eta$ is the learning rate. This corresponds to the \emph{edge-of-stability} (EOS) regime~\cite{cohen2021gradient}.
+\end{definition}
+
+\subsection{Instability-Reinforcement Cycle}
+
+We propose the following mechanism:
+
+\begin{theorem}[Instability as Reinforcement]
+\label{thm:instability-reinforcement}
+In the extensive-rank regime, instability near sharp minima acts as a reinforcement mechanism:
+\begin{enumerate}
+    \item \textbf{Plateau phase:} The network is stuck in a low-frequency solution with $\lambda_{\max}(H) < \frac{2}{\eta}$ (stable).
+    \item \textbf{Approach to sharp minimum:} As the network approaches a sharp minimum (high-frequency features), $\lambda_{\max}(H)$ increases.
+    \item \textbf{Instability threshold:} When $\lambda_{\max}(H) > \frac{2}{\eta}$, the dynamics become unstable (EOS regime).
+    \item \textbf{Reinforcement:} The instability forces the network to escape the current plateau and activate a new frequency band, breaking hierarchical construction forward.
+    \item \textbf{Stabilization:} After activating the new band, the network stabilizes in a new (higher-frequency) solution.
+\end{enumerate}
+This cycle repeats, driving hierarchical construction through sequential band activation.
+\end{theorem}
+
+\subsection{Empirical Evidence}
+
+Our experiments confirm this mechanism:
+
+\begin{enumerate}
+    \item \textbf{Synchronized transitions:} Stepwise loss drops coincide with spikes in $\lambda_{\max}(H)$, indicating instability-driven transitions.
+    \item \textbf{Frequency band activation:} Each instability event corresponds to activation of a new frequency band in the learned function.
+    \item \textbf{Absence in high-rank:} High-rank networks do not exhibit this instability-reinforcement cycle; they remain stable throughout training but fail to develop hierarchical structure.
+\end{enumerate}
+
+\subsection{Connection to Edge-of-Stability}
+
+This connects to the edge-of-stability (EOS) phenomenon~\cite{cohen2021gradient}, where training occurs at the boundary of stability. In our setting, EOS is not a bug but a feature: it enables hierarchical construction by forcing the network to break out of low-frequency plateaus.
+
+\subsection{Optimizer Dependence}
+
+The instability-reinforcement mechanism is optimizer-dependent:
+\begin{itemize}
+    \item \textbf{Adam:} Exhibits wobbling near EOS, which can help escape plateaus but may also cause instability.
+    \item \textbf{SGD:} More stable near EOS, better suited for fine-tuning after hierarchical structure is established.
+    \item \textbf{Switching strategy:} Adam early (navigate plateaus) $\to$ SGD late (stabilize high-frequency features) is optimal.
+\end{itemize}
+
+\subsection{Theoretical Analysis}
+
+The instability-reinforcement mechanism can be analyzed via Lyapunov stability:
+
+\begin{proposition}[Instability-Driven Escape]
+\label{prop:instability-escape}
+Near a sharp minimum with $\lambda_{\max}(H) > \frac{2}{\eta}$, the gradient dynamics become unstable, causing the network to escape the current basin. This escape is not random but directed: the instability preferentially activates frequency bands that are orthogonal to the current solution, driving hierarchical construction.
+\end{proposition}
+
+This proposition formalizes the intuition that instability is not noise but a structured mechanism that enforces hierarchical construction.

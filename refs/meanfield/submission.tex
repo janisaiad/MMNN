@@ -1,0 +1,62 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2026_conference,times}
+
+\usepackage{hyperref}
+\usepackage{url}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{bbm}
+\usepackage{stmaryrd}
+\usepackage{microtype}
+\usepackage{graphicx}
+
+% optional notation file; restore standard \eqref after it overrides it
+\let\amsEqref\eqref
+\input{math_commands.tex}
+\let\eqref\amsEqref
+
+% status flags (green = proved, red = open/speculative)  % we will remove toc + flags for final submission
+\newcommand{\provedflag}{\textcolor{green}{\textbf{[proved]}}}
+\newcommand{\openflag}{\textcolor{red}{\textbf{[open / conjectural]}}}
+\newcommand{\proofinapp}[1]{\textit{Proof deferred to Appendix~\ref{app:proofs}.}}
+
+% local macros used by meanfield_lowrank.tex
+\renewcommand{\1}{\mathbbm{1}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\ip}[2]{\left\langle #1,\,#2 \right\rangle}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+\title{Low-rank Neural Networks Learn High-frequency Features: A Mean-field Perspective}
+
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+\author{Anonymous authors}
+
+% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{abstract.tex}
+\end{abstract}
+
+\noindent\textit{\openflag\ Table of contents and status flags are for internal drafting and will be removed for the final submission.}
+\tableofcontents
+
+\input{meanfield_lowrank.tex}
+
+\bibliographystyle{iclr2026_conference}
+\bibliography{iclr2026_conference}
+
+\appendix
+\section{Supplementary material: proofs}
+\label{app:proofs}
+\input{supplementary_proofs.tex}
+
+\end{document}
