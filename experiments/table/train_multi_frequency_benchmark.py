@@ -56,7 +56,7 @@ def generate_configs():
     # we test different ranks, fixWb options, and batch sizes
     ranks = [10, 15, 20, 25, 50, 100]
     fixWb_options = [False, True]
-    batch_sizes = [50, 100, 200]  # we test 0.5x, 1x, and 2x batch sizes
+    batch_sizes = [100, 250, 500]  # we test different batch sizes
     
     base_config = {
         "num_layers": 8,
@@ -73,8 +73,8 @@ def generate_configs():
         "device": "cuda:0" if torch.cuda.is_available() else "cpu",
         "dtype": "torch.float32",
         "function": "cos(12*pi*x) + cos(24*pi*x + 0.5) + cos(36*pi*x) + cos(72*pi*x + 0.5)",
-        "num_training_samples": 5000,  # we use more samples for multi-frequency
-        "num_test_samples": 6000,
+        "num_training_samples": 1000,  # we use 1000 training samples
+        "num_test_samples": 1234,  # we use 1234 test samples (matching previous benchmarks)
     }
     
     for rank in ranks:
