@@ -291,8 +291,10 @@ def train_one_config(config: AblationConfig, output_dir: Path) -> Dict:
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(config.seed)  # we set cuda seed
         
+        # we add FULL MLP label if rank equals width
+        arch_label = "FULL_MLP (rank=width)" if config.rank == config.hidden_width else f"rank={config.rank}"
         print(f"\n{'='*80}")  # we print separator
-        print(f"Training: {config.benchmark_name} | fixWb={config.fixWb} | rank={config.rank}")  # we print config
+        print(f"Training: {config.benchmark_name} | fixWb={config.fixWb} | {arch_label}")  # we print config
         print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")  # we print start time
         print(f"{'='*80}")  # we print separator
         
@@ -552,7 +554,9 @@ def train_one_config(config: AblationConfig, output_dir: Path) -> Dict:
                         ax.plot(x_plot, y_pred, 'r--', label='predicted', linewidth=2)  # we plot pred
                         ax.set_xlabel('x')  # we set xlabel
                         ax.set_ylabel('y')  # we set ylabel
-                        ax.set_title(f'{config.benchmark_name} | fixWb={config.fixWb} | rank={config.rank} | epoch {epoch}')  # we set title
+                        # we add FULL MLP label if rank equals width
+                        arch_label = "FULL_MLP" if config.rank == config.hidden_width else f"rank={config.rank}"
+                        ax.set_title(f'{config.benchmark_name} | fixWb={config.fixWb} | {arch_label} | epoch {epoch}')  # we set title
                         ax.legend()  # we add legend
                         ax.grid(True, alpha=0.3)  # we add grid
                         plt.tight_layout()  # we adjust layout
@@ -782,7 +786,9 @@ def train_one_config(config: AblationConfig, output_dir: Path) -> Dict:
             plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1)  # we plot losses
             plt.xlabel('Epoch')  # we set xlabel
             plt.ylabel('Loss (log scale)')  # we set ylabel
-            plt.title(f'Training Loss Evolution\n{config.benchmark_name} | fixWb={config.fixWb} | rank={config.rank}')  # we set title
+            # we add FULL MLP label if rank equals width
+            arch_label = "FULL_MLP" if config.rank == config.hidden_width else f"rank={config.rank}"
+            plt.title(f'Training Loss Evolution\n{config.benchmark_name} | fixWb={config.fixWb} | {arch_label}')  # we set title
             plt.grid(True, alpha=0.3)  # we add grid
             plt.tight_layout()  # we adjust layout
             plt.savefig(output_dir / 'loss_evolution.png', dpi=100)  # we save plot
@@ -797,7 +803,9 @@ def train_one_config(config: AblationConfig, output_dir: Path) -> Dict:
             plt.plot(np.linspace(1, n_test, n_test)*config.log_every, np.log10(errors_test), label="log10 test error", linewidth=2)  # we plot test
             plt.xlabel('Epoch')  # we set xlabel
             plt.ylabel('log10(error)')  # we set ylabel
-            plt.title(f'Error Evolution\n{config.benchmark_name} | fixWb={config.fixWb} | rank={config.rank}')  # we set title
+            # we add FULL MLP label if rank equals width
+            arch_label = "FULL_MLP" if config.rank == config.hidden_width else f"rank={config.rank}"
+            plt.title(f'Error Evolution\n{config.benchmark_name} | fixWb={config.fixWb} | {arch_label}')  # we set title
             plt.grid(True, alpha=0.3)  # we add grid
             plt.legend()  # we add legend
             plt.tight_layout()  # we adjust layout
