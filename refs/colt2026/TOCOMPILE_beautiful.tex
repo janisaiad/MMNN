@@ -1,0 +1,245 @@
+\documentclass[letterpaper, 10pt, dvipsnames]{article}
+
+
+
+%--Fonts--%
+%\usepackage{lmodern}
+\usepackage{type1ec}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}    
+%\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage[normalem]{ulem}
+\usepackage{dsfont, bm, pifont, mathrsfs}
+\usepackage{stmaryrd}
+%\usepackage{comment}
+\usepackage{bbm}
+\usepackage{enumitem}
+\usepackage{bold-extra}
+\setcounter{tocdepth}{1}
+%--Images--%
+\usepackage{float, graphicx, wrapfig, tikz}
+\usetikzlibrary{positioning, fit}
+\usepackage[margin=0.8in]{subcaption}
+\usepackage[font=small, margin=0.6in]{caption}
+%\captionsetup{singlelinecheck=yes}
+%\usetikzlibrary{shapes.misc}
+
+%--Math--%	
+\usepackage{amsthm, amsmath, amsfonts, amssymb, mathrsfs, mathtools}
+\usepackage[alphabetic]{amsrefs}
+%removed alphabetic option July 11
+
+%--Editing--%
+\usepackage{hyperref, xcolor, titlesec} 
+\hypersetup{colorlinks = true, urlcolor = RoyalBlue!70!Black,linkcolor=BrickRed, citecolor=ForestGreen, bookmarksopen = true}
+\usepackage[nomarginpar]{geometry}
+\geometry{verbose, lmargin=0.8in, rmargin=0.8in,bmargin=1.25in}
+\numberwithin{equation}{section}
+%\usepackage[inline]{showlabels}
+\usepackage[boxsize = .3em]{ytableau}
+%---References---%
+\usepackage{cleveref}
+%---Stylistic Conventions---%
+\renewcommand{\ge}{\geqslant}
+\renewcommand{\le}{\leqslant}
+
+%---New Commands---%
+\DeclareMathOperator{\Id}{Id}
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\Var}{Var}
+\renewcommand{\Im}{\operatorname{Im}}
+\renewcommand{\Re}{\operatorname{Re}}
+\DeclareMathOperator{\Tr}{Tr}
+\newcommand{\tr}{\Tr}
+\DeclareMathOperator{\per}{per}
+\DeclareMathOperator{\GOE}{GOE}
+\DeclareMathOperator{\GUE}{GUE}
+\DeclareMathOperator{\Ai}{Ai}
+
+\newcommand{\cob}[1]{\textcolor{RoyalBlue}{#1}}
+\newcommand{\cor}[1]{\textcolor{BrickRed}{#1}}
+\newcommand{\cog}[1]{\textcolor{ForestGreen}{#1}}
+%---Basic Sets and Numbers---%
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Rbb}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\bH}{\mathbb{H}}
+\newcommand{\one}{\mathbbm{1}}
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\I}{\mathrm{i}}
+\let\d\relax
+\newcommand{\d}{\mathrm{d}}
+\newcommand{\dif}{\operatorname{d}}
+
+%---Calligraphic Letters---%
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\Au}{\underline{\mathcal{A}}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\Q}{\mathcal{Q}}
+\newcommand{\R}{\mathcal{R}}
+\renewcommand{\S}{\mathcal{S}}
+\newcommand{\T}{\mathcal{T}}
+\newcommand{\U}{\mathcal{U}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\cE}{\mathcal{E}}
+
+%---Bold Vectors---%
+\newcommand{\ebf}{\mathbf{e}}
+\renewcommand{\q}{\mathbf{q}}
+\renewcommand{\u}{\mathbf{u}}
+\renewcommand{\v}{\mathbf{v}}
+\newcommand{\w}{\mathbf{w}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\bl}{\mathbf{\lambda}}
+
+%---Greek and Special Letters---%
+\newcommand{\uu}{\mathfrak{u}}
+\newcommand{\fa}{\mathfrak{a}}
+\newcommand{\fb}{\mathfrak{b}}
+\renewcommand{\epsilon}{\varepsilon}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\hat}{\widehat}
+\renewcommand{\tilde}{\widetilde}
+\newcommand{\wt}{\widetilde}
+
+%---Matrix/Operator Related---%
+\renewcommand{\L}{\mathrm{L}}
+\newcommand{\trans}{\intercal}
+\newcommand{\norm}[1]{\left\Vert #1\right\Vert}
+\newcommand{\scp}[2]{\langle #1,#2\rangle}
+\let\O\relax
+\newcommand{\O}[1]{\mathcal{O}\left(#1\right)}
+\newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+
+%---Probability---%
+\renewcommand{\P}{\mathds{P}}
+\newcommand{\E}{\mathds{E}}
+%\newcommand{\E}[1]{\mathds{E}\left[#1\right]}
+\newcommand{\Eb}{\mathbf{E}}
+\newcommand{\EL}[1]{\mathds{E}\left[#1\middle\vert\bm{\lambda}\right]}
+\newcommand{\ELH}[1]{\mathds{E}\left[#1\middle\vert \bm{H_0},\bm{\lambda}\right]}
+
+%---Environment Shortcuts---%
+\newcommand{\bma}{\begin{bmatrix}}
+\newcommand{\ema}{\end{bmatrix}}
+\def\bet{\begin{thm}}
+\def\eet{\end{thm}}
+\def\bel{\begin{lem}}
+\def\eel{\end{lem}}
+\def\bas{\begin{ass}}
+\def\eas{\end{ass}}
+%\def\bec{\begin{cor}}
+%\def\eec{\end{cor}}
+\def\bed{\begin{defn}}
+\def\eed{\end{defn}}
+\def\bep{\begin{prop}}
+\def\eep{\end{prop}}
+\def\beq{\begin{equation}}
+\def\eeq{\end{equation}}
+\def\bea{\begin{equation*}}
+\def\eea{\end{equation*}}
+\def\bex{\begin{ex}}
+\def\eex{\end{ex}}
+\def\bp{\begin{proof}}
+\def\ep{\end{proof}}
+\def\benr{\begin{enumerate}[label=(\roman*)]}
+\def\eenr{\end{enumerate}}
+
+%---Formatting and Colors---%
+\renewcommand{\ni}{\noindent}
+\newcommand{\cb}{\color{blue}}
+\newcommand{\cp}{\color{magenta}}
+\newcommand{\ber}{\color{red}}
+\newcommand{\eer}{\normalcolor}
+\newcommand{\cored}[1]{\textcolor{BrickRed}{#1}}
+\newcommand{\specialcell}[2][c]{\begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+\newcommand\Tstrut{\rule{0pt}{2.6ex}}
+\newcommand\Bstrut{\rule[-0.9ex]{0pt}{0pt}}
+\newcommand{\nt}{\tilde{n}}
+%---Special Definitions---%
+\newcommand{\ximax}{\widetilde{\bm{\xi}}}
+\newcommand{\scc}{c_{\mathrm{sc}}}
+\newcommand{\unn}[2]{[\![#1,#2]\!]}
+\newcommand{\mom}[4]{\scp{\q_{\alpha_1}}{\u_{#1}}\scp{\q_{\beta_1}}{\u_{#2}}\scp{\q_{\alpha_2}}{\u_{#3}}\scp{\q_{\beta_2}}{\u_{#4}}}
+\newcommand{\mding}[1]{\text{\ding{#1}}}
+
+
+%---Theorem Environments---%
+\newtheorem{ccounter}{ccounter}[section]
+\newtheorem{thm}[ccounter]{Theorem}
+\newtheorem{lem}[ccounter]{Lemma}
+\newtheorem{corollary}[ccounter]{Corollary}
+\newtheorem{defn}[ccounter]{Definition}
+\newtheorem{prop}[ccounter]{Proposition}
+\newtheorem{ass}[ccounter]{Assumption}
+\newtheorem{ex}[ccounter]{Example}
+\theoremstyle{definition}
+\newtheorem{rmk}[ccounter]{Remark}
+
+\titleformat{\section}[block]{\normalfont\filcenter}{\Large\thesection .}{.7em}{\Large\scshape}
+\titleformat{\subsection}[runin]{\normalfont}{\large \bf \thesubsection .}{.5em}{\large\bf}[.]
+\titleformat{\subsubsection}[runin]{\normalfont}{\bf \thesubsubsection .}{.5em}{\bf}[.]
+\titleformat*{\paragraph}{\itshape\mdseries}
+
+
+\begin{document}
+\tikzset{every node/.style={circle, minimum size=.1cm, inner sep = 2pt, scale=1}}
+
+
+
+\title{Low-rank neural networks preserve the MLPs Neural Tangent Kernel}
+
+\author{
+  Janis (Heran) Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript, was completed by J.H-A. during an undergraduateinternship at University of Maryland.}$^{1}$ \and Haizhao Yang$^{2}$ \and Shijun Zhang$^{3}$ \\
+  $^{1}$ École Polytechnique, École Normale Supérieure Paris-Saclay  \\
+  $^{2}$ University of Maryland, Department of Mathematics; Department of Computer Science \\
+  $^{3}$ The Hong Kong Polytechnic University
+}
+
+
+\maketitle
+
+\begin{abstract}
+We develop a Neural Tangent Kernel (NTK) theory for low-rank and random feature networks (RF‑LR) that provides an approximation principled and computationally 
+efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that low-rank weight matrices
+do not loses expressivity. RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; 
+As a toy example, we prove rank‑driven concentration: the empirical three‑layer NTK concentrates around its 
+deterministic limit, combining angular and radial decoupling of gaussian processes outputs, we show mean NTK
+has the same Laplacian RKHS as the shallow ReLU kernel. At the spectral level for random matrices, under some assumptions to be relaxed, the NTK Gram matrix exhibits a 
+spiked and shifted Marchenko–Pastur similar to the 2-layer case : the bulk location is shifted out of 0 thanks to low-rank bottlenecks.
+Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how correlation kernels from random features couple across layers.
+Taken together, these results establish that RF‑LR preserves expressivity and gives optimization guarantees from smallest eigenvalues
+while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), 
+and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
+\end{abstract}
+
+% keywords can be removed
+\keywords{Neural Tangent Kernel \and Random Features \and Low Rank \and Scaling Laws \and Infinite Width \and Marchenko–Pastur}
+
+\tableofcontents
+\vspace{2em}
+
+\newpage
+\input{introduction}
+\input{definition}
+\input{recursion}
+\input{rkhs}
+\input{spectra}
+\newpage
+\input{conclusion}
+
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+\newpage
+\input{appendix}
+
+
+\end{document}

@@ -1,0 +1,56 @@
+\subsection{Hierarchical Construction in Extensive-Rank Regime}
+
+Our main theoretical result connects the extensive-rank regime to hierarchical feature construction via sequential frequency band activation.
+
+\begin{theorem}[Hierarchical Construction in Extensive-Rank Regime]
+\label{thm:hierarchical-construction}
+Consider a low-rank neural network in the extensive-rank regime ($r \asymp d^\beta$ for $\beta \in (0,1)$) trained on a target function $f^*$ with Fourier transform $\hat{f}^*(\omega)$. Under mean-field dynamics, the training loss exhibits stepwise (staircase) behavior:
+\begin{enumerate}
+    \item \textbf{Initial phase} ($t \lesssim t_1$): Low frequencies $|\omega| \lesssim \omega_1$ are learned rapidly, with loss decaying as $\mathcal{L}(t) \sim e^{-\kappa_1 t}$ for some $\kappa_1 > 0$.
+    \item \textbf{Plateau phase} ($t \approx t_1$): Loss plateaus as residual energy concentrates in frequency band $\omega_1 < |\omega| < \omega_2$ where the kernel $\kappa_t(\omega) \approx 0$.
+    \item \textbf{Activation phase} ($t \gtrsim t_1$): Mean-field transport increases $\kappa_t(\omega)$ on the new band, causing a sharp drop in loss.
+    \item \textbf{Repetition:} This process repeats across $O(r)$ frequency bands, each corresponding to a latent direction in the multi-index model.
+\end{enumerate}
+The number of steps scales as $O(r)$, consistent with the rank bottleneck limiting the number of simultaneously active features.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+The proof follows from mean-field analysis of the extensive-rank regime. The key steps are:
+\begin{enumerate}
+    \item In the extensive-rank regime, the kernel $\kappa_t(\omega)$ (Fourier symbol of the time-varying NTK) has support that grows sequentially.
+    \item Low frequencies are learned first because $\kappa_0(\omega)$ is large for small $|\omega|$ (spectral bias).
+    \item The rank bottleneck $r$ limits how many frequency bands can be simultaneously active, creating plateaus.
+    \item Mean-field transport of weights $A^{(\ell)}$ increases $\kappa_t(\omega)$ on new bands, breaking plateaus.
+    \item The number of bands scales as $O(r)$ because the rank limits the number of accessible latent directions.
+\end{enumerate}
+Full proof in Appendix~\ref{app:proofs}.
+\end{proof}
+
+\subsection{Contrast with High-Rank Regime}
+
+The following result shows that high-rank networks fail to develop hierarchical structure:
+
+\begin{proposition}[Flat Learning in High-Rank Regime]
+\label{prop:high-rank-flat}
+In the high-rank regime ($r \asymp d$ or full-rank), the network has sufficient capacity to learn all frequency bands simultaneously. The training loss decays smoothly (exponentially) without stepwise plateaus, and the learned features are \emph{flat} (non-hierarchical): all frequency bands are activated from the start, with no sequential structure.
+\end{proposition}
+
+This proposition explains why high-rank networks fail to build hierarchical features: without the bottleneck constraint, there is no mechanism to enforce sequential activation, and the network learns a flat representation where all features are learned simultaneously.
+
+\subsection{Multi-Index Model Interpretation}
+
+The hierarchical construction can be interpreted through the lens of multi-index models:
+
+\begin{definition}[Multi-Index Model]
+A multi-index model has the form:
+\[
+f^*(x) = \sum_{j=1}^r g_j(\langle v_j, x \rangle),
+\]
+where $v_j \in \mathbb{R}^d$ are latent directions and $g_j : \mathbb{R} \to \mathbb{R}$ are ridge functions.
+\end{definition}
+
+In the extensive-rank regime, the network learns the directions $v_j$ sequentially, with each stepwise loss drop corresponding to the activation of a new direction. The rank $r$ limits how many directions can be simultaneously active, creating the hierarchical bottleneck.
+
+\subsection{Connection to Mean-Field Dynamics}
+
+The hierarchical construction emerges naturally from mean-field dynamics in the extensive-rank regime. The particle distribution $\rho_t$ evolves to activate frequency bands sequentially, with the rank bottleneck enforcing the sequential structure. In contrast, high-rank dynamics allow simultaneous activation of all bands, eliminating hierarchy.

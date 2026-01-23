@@ -1,0 +1,38 @@
+\makeatletter
+\def\infigenv#1{\ifthenelse{\equal{\@currenvir}{figure}}{#1}{}}
+\def\intabenv#1{\ifthenelse{\equal{\@currenvir}{table}}{#1}{}}
+\makeatother
+
+
+\let\mycaption\caption
+\def\caption#1{
+	\infigenv{\vskip -6.6pt} % skip before cap
+	\mycaption{#1}
+	\intabenv{\vskip  5pt} % skip after cap
+	}
+
+% \usepackage{caption}
+\captionsetup[subfigure]{aboveskip=2.1pt}
+% \captionsetup[figure]{aboveskip=-1pt}
+% \setlength\abovecaptionskip{1pt}
+% \setlength{\abovecaptionskip}{1pt}
+
+%% do something for each figure env
+% \let\myfigure\figure
+% \def\figure{do 1\myfigure do 2}
+% \let\myendfigure\endfigure
+% \def\endfigure{do 3\myendfigure do 4}
+
+\let\myfigure\figure
+\def\figure{\vskip -1pt\myfigure}
+\let\myendfigure\endfigure
+\def\endfigure{\myendfigure \vskip -1pt}
+
+\let\mytable\table
+\def\table{\vskip -2pt\mytable}
+\let\myendtable\endtable
+\def\endtable{\myendtable \vskip 4pt}
+
+% \usepackage[tableposition=top,figureposition=bottom]{caption}
+% \captionsetup[table]{position=above}
+% \captionsetup[table]{position=top}

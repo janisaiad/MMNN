@@ -1,0 +1,19 @@
+We have provided experimental evidence that low-rank neural networks construct features hierarchically through sequential activation of frequency bands, while networks without low-rank constraints (or with rank too high) fail to build meaningful hierarchical structure. Our key findings are:
+
+\begin{enumerate}
+    \item \textbf{Hierarchical construction:} In the extensive-rank regime ($r \asymp d^\beta$ for $\beta \in (0,1)$), networks exhibit stepwise loss curves corresponding to sequential frequency band activation, enabling hierarchical feature learning.
+    \item \textbf{High-rank failure:} When rank is too high ($r \asymp d$ or full-rank), networks learn all features simultaneously with no hierarchical structure, resulting in flat representations.
+    \item \textbf{Instability-reinforcement:} Instability near sharp minima acts as a reinforcement mechanism that drives hierarchical construction by forcing the network to escape low-frequency plateaus and activate new frequency bands.
+\end{enumerate}
+
+These results demonstrate that low-rank is not merely a parameter-efficient approximation, but a fundamental architectural choice that enables hierarchical feature learning. The rank bottleneck creates a natural constraint that enforces sequential feature activation, leading to better generalization and interpretability.
+
+Future work should focus on:
+\begin{itemize}
+    \item Rigorous theoretical proofs of hierarchical construction
+    \item Extension to larger-scale datasets and architectures
+    \item Deeper analysis of the instability-reinforcement mechanism
+    \item Design of optimizers that leverage hierarchical construction
+\end{itemize}
+
+Our work opens new directions for understanding how architectural constraints enable effective learning, with implications for parameter-efficient deep learning, interpretability, and generalization.

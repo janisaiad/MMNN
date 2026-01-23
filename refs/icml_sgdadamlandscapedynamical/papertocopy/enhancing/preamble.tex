@@ -1,0 +1,271 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{mathrsfs,amsmath,amsfonts,amssymb,comment}
+\usepackage{mathtools,xcolor,enumerate}
+\usepackage{dsfont}
+\usepackage{bm}
+\usepackage{ifthen}
+% \usepackage{xurl}
+%\usepackage{MnSymbol}
+%\usepackage{indentfirst}
+%\setlength{\parindent}{2em}% indent
+%\usepackage{natbib} % references
+%\usepackage[numbers,sort]{natbib}
+%\usepackage[nocompress,sort]{cite}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% table setting
+\usepackage{tabularx,multirow,array,booktabs}
+\usepackage{colortbl}%%% color in tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% figure setting
+\usepackage[pdftex]{graphicx}%% 
+\graphicspath{{figures/}}%
+\usepackage{float}%% 
+%\usepackage{subcaption,cleveref} %% subfigure env
+%%%5\usepackage{subfigure}%% 
+%%\usepackage{caption}
+\usepackage{subcaption} 
+%% \begin{subfigure}[b]{0.95\textwidth}pic\end{subfigure}
+\captionsetup{subrefformat=parens} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Theorem environment below
+%\usepackage{amsthm}
+%\theoremstyle{plain}
+%\newtheorem{theorem}{Theorem}[section]%  
+%\newtheorem{corollary}[theorem]{Corollary} %
+%\newtheorem*{main}{Main Theorem}% 
+%\newtheorem{lemma}[theorem]{Lemma}
+%\newtheorem*{lemma*}{Lemma}
+%\newtheorem{claim}[theorem]{Claim}
+%\newtheorem{proposition}[theorem]{Proposition}
+%\theoremstyle{definition}
+%\newtheorem{definition}[theorem]{Definition}
+%\theoremstyle{remark}
+%\newtheorem*{notation}{Notation}
+%\newtheorem{remark}[theorem]{Remark}
+%\newtheorem*{remark*}{Remark}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% New commands below
+%% Real nature integer rational
+\newcommand{\R}{\ifmmode\mathbb{R}\else$\mathbb{R}$\fi}
+\newcommand{\N}{\ifmmode\mathbb{N}\else$\mathbb{N}$\fi}
+\newcommand{\Z}{\ifmmode\mathbb{Z}\else$\mathbb{Z}$\fi}
+\newcommand{\Q}{\ifmmode\mathbb{Q}\else$\mathbb{Q}$\fi}
+\newcommand{\A}{\ifmmode\mathbb{A}\else$\mathbb{A}$\fi}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%% tn ( textnormal )
+
+% \newcommand{\tnd}{{\tn{d}}}
+
+% \usepackage{etoolbox}
+% \newcommand{\define}[4]{\expandafter#1\csname#3#4\endcsname{{#2{#4}}}}
+% \forcsvlist{\define{\newcommand}{\bm}{bm}}{x,W}
+
+%%%%%%%%%%%% bm 
+\newcommand{\bmx}{{\bm{x}}}
+\newcommand{\bmz}{{\bm{z}}}
+\newcommand{\bmW}{{\bm{W}}}
+\newcommand{\bmw}{{\bm{w}}}
+\newcommand{\bme}{{\bm{e}}}
+\newcommand{\bma}{{\bm{a}}}
+\newcommand{\bmt}{{\bm{t}}}
+\newcommand{\bmh}{{\bm{h}}}
+\newcommand{\bmb}{{\bm{b}}}
+\newcommand{\bmxi}{{\bm{\xi}}}
+\newcommand{\bmpsi}{{\bm{\psi}}}
+\newcommand{\bmPsi}{{\bm{\Psi}}}
+\newcommand{\bmeta}{{\bm{\eta}}}
+\newcommand{\bmbeta}{{\bm{\beta}}}
+\newcommand{\bmu}{{\bm{u}}}
+\newcommand{\bmv}{{\bm{v}}}
+\newcommand{\bmy}{{\bm{y}}}
+\newcommand{\bmg}{{\bm{g}}}
+\newcommand{\bmG}{{\bm{G}}}
+\newcommand{\bmf}{{\bm{f}}}
+\newcommand{\bmF}{{\bm{F}}}
+\newcommand{\bmtheta}{{\bm{\theta}}}
+\newcommand{\bmTheta}{{\bm{\Theta}}}
+\newcommand{\bmalpha}{{\bm{\alpha}}}
+\newcommand{\bmA}{\bm{A}}
+\newcommand{\bmphi}{{\bm{\phi}}}
+\newcommand{\bmk}{{\bm{k}}}
+\newcommand{\bmPhi}{{\bm{\Phi}}}
+\newcommand{\bmzero}{{\bm{0}}}
+\newcommand{\bmvarrho}{{\bm{\varrho}}}
+%%%%%%%%%%%%%%%% cal
+\newcommand{\calO}{{\mathcal{O}}}
+\newcommand{\calC}{{\mathcal{C}}}
+\newcommand{\calN}{{\mathcal{N}}}
+\newcommand{\calD}{{\mathcal{D}}}
+\newcommand{\calS}{{\mathcal{S}}}
+\newcommand{\calH}{{\mathcal{H}}}
+\newcommand{\calG}{{\mathcal{G}}}
+\newcommand{\calM}{{\mathcal{M}}}
+\newcommand{\calE}{{\mathcal{E}}}
+\newcommand{\calB}{{\mathcal{B}}}
+\newcommand{\calA}{{\mathcal{A}}}
+\newcommand{\calI}{{\mathcal{I}}}
+\newcommand{\calL}{{\mathcal{L}}}
+\newcommand{\calT}{{\mathcal{T}}}
+\newcommand{\calX}{{\mathcal{X}}}
+
+%%%%%%%%%%%%%%%% scr
+\newcommand{\scrS}{{\mathscr{S}}}
+\newcommand{\scrI}{{\mathscr{I}}}
+\newcommand{\scrE}{{\mathscr{E}}}
+\newcommand{\scrT}{{\mathscr{T}}}
+\newcommand{\scrF}{{\mathscr{F}}}
+\newcommand{\scrB}{{\mathscr{B}}}
+\newcommand{\scrH}{{\mathscr{H}}}
+\newcommand{\scrC}{{\mathscr{C}}}
+\newcommand{\scrL}{{\mathscr{L}}}
+
+%%%%%%%%%%%%%%%%%%%%%%% hat
+\newcommand{\hatN}{{\widehat{N}}}
+\newcommand{\hatL}{{\widehat{L}}}
+\newcommand{\hatxi}{{\widehat{\xi}}}
+\newcommand{\hatn}{{\widehat{n}}}
+\newcommand{\hata}{{\widehat{a}}}
+\newcommand{\hatd}{{\widehat{d}}}
+\newcommand{\hath}{{\widehat{h}}}
+\newcommand{\hatdelta}{{\widehat{\delta}}}
+
+%%%%%%%%%%%%%%%% tilde
+\newcommand{\tildephi}{{\widetilde{\phi}}}
+\newcommand{\tildeg}{{\widetilde{g}}}
+\newcommand{\tilded}{{\widetilde{d}}}
+\newcommand{\tildeh}{{\widetilde{h}}}
+\newcommand{\tildew}{{\widetilde{w}}}
+\newcommand{\tildeb}{{\widetilde{b}}}
+\newcommand{\tildex}{{\widetilde{x}}}
+\newcommand{\tildey}{{\widetilde{y}}}
+\newcommand{\tildeL}{{\widetilde{L}}}
+\newcommand{\tildeN}{{\widetilde{N}}}
+\newcommand{\tilden}{{\widetilde{n}}}
+\newcommand{\tildeE}{{\widetilde{E}}}
+\newcommand{\tildeA}{{\widetilde{A}}}
+\newcommand{\tildef}{{\widetilde{f}}}
+\newcommand{\tildeM}{{\widetilde{M}}}
+\newcommand{\tildeI}{{\widetilde{I}}}
+\newcommand{\tildexi}{{\widetilde{\xi}}}
+\newcommand{\tildevarrho}{{\widetilde{\varrho}}}
+\newcommand{\tildepsi}{{\widetilde{\psi}}}
+\newcommand{\tildechi}{{\widetilde{\chi}}}
+\newcommand{\tildesigma}{{\widetilde{\sigma}}}
+\newcommand{\tildedelta}{{\widetilde{\delta}}}
+
+%%%%%%%%%%%%% mixing
+\newcommand{\bmhatxi}{{\bm{\widehat{\xi}}}}
+\newcommand{\bmtildexi}{{\bm{\widetilde{\xi}}}}
+\newcommand{\caltildeI}{{\mathcal{\widetilde{I}}}}
+\newcommand{\caltildeC}{{\mathcal{\widetilde{C}}}}
+\newcommand{\bmtildeh}{{\bm{\widetilde{h}}}}
+% G
+\newcommand{\bmtildeg}{{\bm{\widetilde{g}}}}
+\newcommand{\bmhatg}{{\bm{\widehat{g}}}}
+\newcommand{\bmcalG}{{\bm{\mathcal{G}}}}
+\newcommand{\bmhatG}{{\bm{\widehat{G}}}}
+% L
+\newcommand{\caltildeL}{{\mathcal{\widetilde{L}}}}
+\let\tildecalL\caltildeL
+\newcommand{\hatcalL}{{\mathcal{\widehat{L}}}}
+\newcommand{\bmcalL}{{\bm{\mathcal{L}}}}
+\newcommand{\bmtildecalL}{{\bm{\mathcal{\widetilde{L}}}}}
+% \newcommand{\bmhatcalL}{{\widehat{\bm{\mathcal{L}}}}}
+\newcommand{\bmhatcalL}{{\bm{\mathcal{\widehat{L}}}}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \newcommand{\barcalL}{{\bar{\mathcal{L}}}}
+% \newcommand{\bmbarcalL}{{\overline{\bm{\mathcal{L}}}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\one{{\ensuremath{\mathds{1}}}}
+\newcommand{\middleValue}{{\tn{mid}}}
+%\newcommand{\nn}{{\hspace{0.6pt}\mathcal{N}\hspace{-1.80pt}\mathcal{N}\hspace{-1.3pt}}}
+%\newcommand{\nestnet}{{\mathcal{H}}}
+% \newcommand{\nestnet}{{\hspace{0.6pt}\mathcal{N}\hspace{-1.9pt}\mathcal{N}\hspace{-1.25pt}}}
+
+\newcommand{\nn}[5][]{\ensuremath{	{\hspace{0.6pt}\mathcal{N}\hspace{-1.9pt}\mathcal{N}\hspace{-0.725pt}}%  NN
+	#1\{#2,\hspace{1.7pt} #3;\hspace{2.97pt} \R^{#4}\hspace{-1.0298pt}\to\hspace{-0.98pt}\R^{#5}#1\}
+}}
+
+\newcommand{\nnOneD}[5][]{\ensuremath{
+		{\hspace{0.6pt}\mathcal{N}\hspace{-1.9pt}\mathcal{N}\hspace{-0.725pt}}%  NN
+		#1\{#2,\hspace{1.7pt} #3;\hspace{2.97pt} {#4}\hspace{-1.0298pt}\to\hspace{-0.98pt}{#5}#1\}
+}}
+
+% \let\neunet\nn
+
+
+\newcommand{\bin}{\tn{bin}\hspace{1.5pt}}
+% \newcommand{\cpl}{\tn{CPwL}}
+% \let\cpwl\cpl
+% \providecommand*{\sgn}{}
+% \renewcommand{\sgn}{\tn{sgn}}
+\newcommand{\mystep}[2]{\par \vspace{0.25cm}\noindent\textbf{\hspace{8pt}Step }$#1\colon$ #2 \vspace{0.18cm} \par }
+
+\newcommand{\mycase}[2]{\par \vspace{0.25cm}\noindent\textbf{\hspace{8pt}Case }$#1\colon$ #2\par \vspace{0.18cm} \par}
+
+% \newcommand{\myto}[2][1]{\mathop{\raisebox{-0pt}{\scalebox{#2}[#1]{$\longrightarrow$}}}}
+\usepackage{tikz}
+\newcommand{\myto}[2][1]{\mathop{
+		\vcenter{\hbox{\scalebox{1}[#1]{\tikz{\draw[->,line width=0.72pt] (0,0.5) to (0.69*#2,0.5);}}}}
+}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+% \newcommand{\dataset}{{\cal D}}
+% \usepackage{makecell}
+% \usepackage{amsopn}
+% \DeclareMathOperator{\diag}{diag}
+% \newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+% \usepackage{url}
+% % \newcommand*{\email}[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+% \newcommand{\subjclass}[2][1991]{%
+%   \let\@oldtitle\@title%
+%   \gdef\@title{\@oldtitle\footnotetext{#1 \emph{Mathematics subject classification.} #2}}%
+% }
+
+
+
+% \usepackage{breakurl}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\let\tilde\widetilde
+\let\hat\widehat
+\let\epsilon\varepsilon
+\let\eps\varepsilon
+\let\subset\subseteq
+\let\tn\textnormal
+\let\mrm\mathrm
+%%%% 
+% \let\mycdots\cdots
+% \def\cdots{\mathop{\mycdots}\mathop{}}
+% \let\cdots\customcdots
+\newcommand{\customcdots}{%
+\mathinner{\mkern-0.1mu\cdotp\mkern-0.3mu\cdotp\mkern-0.3mu\cdotp\mkern-0.1mu}%
+}
+\let\cdots\customcdots
+\let\dotsc\cdots
+\let\myforall\forall
+\def\forall{{\myforall\ }}
+\let\myexists\exists
+\def\exists{{\myexists\ }}
+%%%%
+\long\def\black#1{{\color{black}#1}}
+\long\def\red#1{{\color{red}#1}}
+\long\def\blue#1{{\color{blue}#1}}
+\long\def\cyan#1{{\color{cyan}#1}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{mygray}{RGB}{230,230,230}
+
+\newcommand\jl[1]{\textcolor{blue}{\textsf{[JL: #1]}}}
+\long\def\sz#1{{\color{cyan}{[SZ: #1]}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
