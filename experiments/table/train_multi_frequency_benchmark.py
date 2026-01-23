@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 we train MMNN on multi-frequency function: cos(12πx) + cos(24πx + 0.5) + cos(36πx) + cos(72πx + 0.5)
-we save model parameters every time loss goes below thresholds: 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, etc.
+we save model parameters every time loss goes below thresholds: 1e-1, 5e-2, 2e-2, 1e-2, 5e-3, 2e-3, 1e-3, etc. (all 1, 2, 5 for each order)
 """
 import torch
 import torch.nn as nn
@@ -151,8 +151,18 @@ def train_one_config(config, output_dir):
     errors_test = []
     errors_test_max = []
     
-    # we track which loss thresholds have been reached
-    loss_thresholds = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9]
+    # we track which loss thresholds have been reached (sorted descending: largest to smallest)
+    # we include 1, 2, and 5 for each order of magnitude
+    loss_thresholds = [
+        1e-1, 5e-2, 2e-2, 1e-2,
+        5e-3, 2e-3, 1e-3,
+        5e-4, 2e-4, 1e-4,
+        5e-5, 2e-5, 1e-5,
+        5e-6, 2e-6, 1e-6,
+        5e-7, 2e-7, 1e-7,
+        5e-8, 2e-8, 1e-8,
+        5e-9, 2e-9, 1e-9
+    ]
     thresholds_reached = set()  # we track which thresholds we've already saved
     
     if checkpoint_path.exists():
@@ -339,7 +349,7 @@ def main():
     print(f"  ranks: {sorted(set(c['hidden_rank'] for c in configs))}")
     print(f"  fixWb: True, False")
     print(f"  epochs: 30,000")
-    print(f"  loss thresholds: 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9")
+    print(f"  loss thresholds: 1e-1, 5e-2, 2e-2, 1e-2, 5e-3, 2e-3, 1e-3, ..., 1e-9 (all 1, 2, 5 for each order)")
     
     # we create output directory
     base_output_dir = Path("experiments/table/results_multi_frequency_benchmark")
