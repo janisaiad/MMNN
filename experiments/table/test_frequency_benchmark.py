@@ -48,7 +48,7 @@ def generate_frequency_configs():
         "input_rank": 1,
         "output_rank": 1,
         "use_resnet": False,
-        "num_epochs": 3000,
+        "num_epochs": 10000,
         "batch_size": 100,
         "lr_init": 0.001,
         "lr_gamma": 0.9,
@@ -154,14 +154,53 @@ def train_one_config(config, output_dir):
     scheduler = StepLR(optimizer, step_size=config["lr_step_size"], gamma=config["lr_gamma"])
     criterion = nn.MSELoss()
     
-    # we train
+    # we check for existing checkpoint
+    checkpoint_path = output_dir / "checkpoint.pth"
+    start_epoch = 1
     all_losses = []
     errors_train = []
     errors_test = []
     errors_test_max = []
+    
+    # we check for existing checkpoint or model
+    model_path = output_dir / "model_parameters.pth"
+    if checkpoint_path.exists():
+        print(f"loading checkpoint from {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        start_epoch = checkpoint["epoch"] + 1
+        all_losses = checkpoint.get("all_losses", [])
+        errors_train = checkpoint.get("errors_train", [])
+        errors_test = checkpoint.get("errors_test", [])
+        errors_test_max = checkpoint.get("errors_test_max", [])
+        print(f"resuming from epoch {start_epoch}")
+    elif model_path.exists():
+        # we load existing model and continue from where it left off (assuming 3000 epochs completed)
+        print(f"loading existing model from {model_path}")
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        # we load existing results to get training history
+        results_path = output_dir / "results.json"
+        if results_path.exists():
+            with open(results_path) as f:
+                existing_results = json.load(f)
+            all_losses = existing_results.get("all_losses", [])
+            errors_train = existing_results.get("errors_train", [])
+            errors_test = existing_results.get("errors_test", [])
+            errors_test_max = existing_results.get("errors_test_max", [])
+            epochs_run = existing_results.get("epochs_run", 3000)
+            start_epoch = epochs_run + 1
+            print(f"resuming from epoch {start_epoch} (previous training completed {epochs_run} epochs)")
+        else:
+            start_epoch = 3001  # we assume previous training was 3000 epochs
+            print(f"resuming from epoch {start_epoch} (assuming previous training was 3000 epochs)")
+    else:
+        print("starting fresh training")
+    
     start_time = time.time()
     
-    for epoch in range(1, config["num_epochs"] + 1):
+    for epoch in range(start_epoch, config["num_epochs"] + 1):
         epoch_losses = []
         for inputs, targets in train_loader:
             optimizer.zero_grad()
@@ -190,12 +229,40 @@ def train_one_config(config, output_dir):
                 print(f"Epoch {epoch}/{config['num_epochs']}: "
                       f"train={avg_loss:.4e}, test={test_error:.4e}, test_max={test_error_max:.4e}")
         
+        # we save checkpoint every 500 epochs
+        if epoch % 500 == 0:
+            checkpoint = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+                "all_losses": all_losses,
+                "errors_train": errors_train,
+                "errors_test": errors_test,
+                "errors_test_max": errors_test_max,
+            }
+            torch.save(checkpoint, checkpoint_path)
+            print(f"checkpoint saved at epoch {epoch}")
+        
         # we early stop if loss is very low
         if epoch > 300 and avg_loss < 5e-4:
             print(f"early stopping at epoch {epoch} (loss < 5e-4)")
             break
     
     training_time = time.time() - start_time
+    
+    # we save final checkpoint
+    checkpoint = {
+        "epoch": config["num_epochs"],
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict(),
+        "all_losses": all_losses,
+        "errors_train": errors_train,
+        "errors_test": errors_test,
+        "errors_test_max": errors_test_max,
+    }
+    torch.save(checkpoint, checkpoint_path)
     
     # we save results
     results = {
@@ -219,6 +286,9 @@ def train_one_config(config, output_dir):
     # we save config
     with open(output_dir / "config.json", "w") as f:
         json.dump(config, f, indent=4)
+    
+    # we save final model
+    torch.save(model.state_dict(), output_dir / "model_parameters.pth")
     
     # we plot final prediction
     x_plot = np.linspace(*config["interval"], 1000)
