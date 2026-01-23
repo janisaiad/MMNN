@@ -53,9 +53,10 @@ def generate_configs():
     """we generate configurations to test"""
     configs = []
     
-    # we test different ranks and fixWb options
+    # we test different ranks, fixWb options, and batch sizes
     ranks = [10, 15, 20, 25, 50, 100]
     fixWb_options = [False, True]
+    batch_sizes = [50, 100, 200]  # we test 0.5x, 1x, and 2x batch sizes
     
     base_config = {
         "num_layers": 8,
@@ -64,7 +65,6 @@ def generate_configs():
         "output_rank": 1,
         "use_resnet": False,
         "num_epochs": 30000,
-        "batch_size": 100,
         "lr_init": 0.001,
         "lr_gamma": 0.9,
         "lr_step_size": 100,
@@ -79,12 +79,14 @@ def generate_configs():
     
     for rank in ranks:
         for fixWb in fixWb_options:
-            config = base_config.copy()
-            config.update({
-                "hidden_rank": rank,
-                "fixWb": fixWb,
-            })
-            configs.append(config)
+            for batch_size in batch_sizes:
+                config = base_config.copy()
+                config.update({
+                    "hidden_rank": rank,
+                    "fixWb": fixWb,
+                    "batch_size": batch_size,
+                })
+                configs.append(config)
     
     return configs
 
@@ -348,6 +350,7 @@ def main():
     print(f"\ngenerated {len(configs)} configurations")
     print(f"  ranks: {sorted(set(c['hidden_rank'] for c in configs))}")
     print(f"  fixWb: True, False")
+    print(f"  batch sizes: {sorted(set(c['batch_size'] for c in configs))}")
     print(f"  epochs: 30,000")
     print(f"  loss thresholds: 1e-1, 5e-2, 2e-2, 1e-2, 5e-3, 2e-3, 1e-3, ..., 1e-9 (all 1, 2, 5 for each order)")
     
@@ -362,12 +365,13 @@ def main():
     for i, config in enumerate(configs, 1):
         rank = config['hidden_rank']
         fixWb = config['fixWb']
-        output_dir_name = f"rank{rank}_fixWb{fixWb}"
+        batch_size = config['batch_size']
+        output_dir_name = f"rank{rank}_fixWb{fixWb}_batch{batch_size}"
         output_dir = base_output_dir / output_dir_name
         
         print(f"\n{'='*80}")
         print(f"Configuration {i}/{len(configs)}")
-        print(f"Rank: {rank}, fixWb: {fixWb}")
+        print(f"Rank: {rank}, fixWb: {fixWb}, batch_size: {batch_size}")
         print(f"Output: {output_dir}")
         print(f"{'='*80}")
         
