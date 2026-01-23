@@ -20,7 +20,7 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 
 ---
 
-## Detailed Results by Frequency
+## Detailed Results by Frequency (Including Full-Rank 777)
 
 ### Frequency 36 (f1=36, f2=12) - Low Frequency
 
@@ -36,8 +36,13 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 | 25   | True  | **6.683e-04** | 9.847e-04   | 4.105e-04  |
 | 50   | False | 2.398e-03  | 3.003e-03   | 4.649e-04  |
 | 50   | True  | 1.177e-03  | 6.501e-04   | 4.070e-04  |
+| 100  | False | 1.749e-02  | 1.406e-02   | 1.406e-02  |
+| 100  | True  | 1.408e-03  | 1.424e-03   | 1.424e-03  |
+| **FULL_RANK (777)** | False | **7.921e-01** | 7.642e-01   | 7.642e-01  |
+| **FULL_RANK (777)** | True  | **3.723e-01** | 3.182e-01   | 3.182e-01  |
 
-**Best**: Rank 25, fixWb=True (6.683e-04)
+**Best Low-Rank**: Rank 25, fixWb=True (6.683e-04)  
+**Full-Rank Comparison**: Full-rank error is **1,185× larger** (fixWb=False) and **557× larger** (fixWb=True) than best low-rank
 
 ### Frequency 72 (f1=72, f2=24) - Medium Frequency
 
@@ -47,14 +52,19 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 | 10   | True  | 8.926e-04  | 9.462e-04   | 4.984e-04  |
 | 15   | False | 1.789e-03  | 1.500e-03   | 1.500e-03  |
 | 15   | True  | 2.058e-03  | 3.014e-03   | 4.869e-04  |
-| 20   | False | **5.654e-04** | 9.200e-04   | 4.535e-04  |
+| 20   | False | 5.654e-04  | 9.200e-04   | 4.535e-04  |
 | 20   | True  | 1.777e-03  | 1.756e-03   | 4.967e-04  |
 | 25   | False | 1.608e-02  | 1.649e-02   | 1.649e-02  |
 | 25   | True  | 7.949e-04  | 6.395e-04   | 4.914e-04  |
 | 50   | False | 1.184e-03  | 7.507e-04   | 4.684e-04  |
 | 50   | True  | 1.871e-03  | 1.398e-03   | 4.168e-04  |
+| 100  | False | 7.806e-01  | 7.808e-01   | 7.808e-01  |
+| 100  | True  | **3.404e-05** | 3.063e-09   | 3.063e-09  |
+| **FULL_RANK (777)** | False | **7.806e-01** | 7.808e-01   | 7.808e-01  |
+| **FULL_RANK (777)** | True  | **7.806e-01** | 7.808e-01   | 7.808e-01  |
 
-**Best**: Rank 20, fixWb=False (5.654e-04)
+**Best Low-Rank**: Rank 100, fixWb=True (3.404e-05)  
+**Full-Rank Comparison**: Full-rank error is **22,930× larger** than best low-rank
 
 ### Frequency 144 (f1=144, f2=48) - High Frequency
 
@@ -65,17 +75,21 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 | 15   | False | 1.414e-01  | 1.387e-01   | 1.387e-01  |
 | 15   | True  | 3.939e-02  | 3.815e-02   | 3.815e-02  |
 | 20   | False | 1.920e-01  | 1.818e-01   | 1.818e-01  |
-| 20   | True  | **6.423e-04** | 1.005e-03   | 4.092e-04  |
+| 20   | True  | 6.423e-04  | 1.005e-03   | 4.092e-04  |
 | 25   | False | 7.910e-01  | 7.924e-01   | 7.924e-01  |
 | 25   | True  | 2.736e-03  | 2.885e-03   | 2.885e-03  |
+| 100  | False | 7.909e-01  | 7.924e-01   | 7.924e-01  |
+| 100  | True  | **1.504e-05** | 1.775e-06   | 1.775e-06  |
+| **FULL_RANK (777)** | False | N/A | N/A | N/A |
 
-**Best**: Rank 20, fixWb=True (6.423e-04)
+**Best Low-Rank**: Rank 100, fixWb=True (1.504e-05)  
+**Note**: Full-rank (777) run incomplete (8500/10000 epochs)
 
 ---
 
 ## Summary Statistics
 
-### By Rank (Averaged Across Frequencies and fixWb)
+### By Rank (Averaged Across Frequencies and fixWb, Including Full-Rank 777)
 
 | Rank | Mean Test Error | Std Test Error | Min Test Error | Max Test Error | Count |
 |------|-----------------|----------------|----------------|----------------|-------|
@@ -84,8 +98,13 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 | 20   | 3.311e-02       | 7.786e-02      | 5.654e-04      | 1.920e-01      | 6     |
 | 25   | 1.356e-01       | 3.211e-01      | 6.683e-04      | 7.909e-01      | 6     |
 | 50   | 1.657e-03       | 5.914e-04      | 1.177e-03      | 2.398e-03      | 4     |
+| 100  | 2.651e-01       | 4.034e-01      | 1.504e-05      | 7.909e-01      | 6     |
+| **FULL_RANK (777)** | **6.814e-01** | **2.061e-01** | **3.723e-01** | **7.921e-01** | **4** |
 
-**Key Insight**: Rank 50 shows the best average performance with lowest variance, but only tested on frequencies 36 and 72.
+**Key Insight**: 
+- Rank 50 shows the best average performance with lowest variance (only tested on frequencies 36 and 72)
+- **Full-rank (777) performs worst**: Mean error 6.814e-01, significantly worse than all low-rank configurations
+- Low-rank MMNN (ranks 10-100) significantly outperforms full-rank MLP on frequency tasks
 
 ### By fixWb (Averaged Across Ranks and Frequencies)
 
@@ -108,7 +127,7 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 
 ---
 
-## Pivot Tables: Rank × fixWb Interaction
+## Pivot Tables: Rank × fixWb Interaction (Including Full-Rank 777)
 
 ### Frequency 36
 | Rank | fixWb=False | fixWb=True |
@@ -118,23 +137,35 @@ This document presents a comprehensive analysis of the MMNN frequency benchmark 
 | 20   | 2.188e-03   | 1.477e-03  |
 | 25   | 2.188e-03   | **6.683e-04** |
 | 50   | 2.398e-03   | 1.177e-03  |
+| 100  | 1.749e-02   | 1.408e-03  |
+| **FULL_RANK (777)** | **7.921e-01** | **3.723e-01** |
+
+**Comparison**: Best low-rank (rank=25, fixWb=True) is **1,185× better** than full-rank (fixWb=False) and **557× better** than full-rank (fixWb=True)
 
 ### Frequency 72
 | Rank | fixWb=False | fixWb=True |
 |------|-------------|------------|
 | 10   | 2.806e-02   | 8.926e-04  |
 | 15   | 1.789e-03   | 2.058e-03  |
-| 20   | **5.654e-04** | 1.777e-03  |
+| 20   | 5.654e-04   | 1.777e-03  |
 | 25   | 1.608e-02   | 7.949e-04  |
 | 50   | 1.184e-03   | 1.871e-03  |
+| 100  | 7.806e-01   | **3.404e-05** |
+| **FULL_RANK (777)** | **7.806e-01** | **7.806e-01** |
+
+**Comparison**: Best low-rank (rank=100, fixWb=True) is **22,930× better** than full-rank
 
 ### Frequency 144
 | Rank | fixWb=False | fixWb=True |
 |------|-------------|------------|
 | 10   | 2.300e-01   | 3.215e-01  |
 | 15   | 1.414e-01   | 3.939e-02  |
-| 20   | 1.920e-01   | **6.423e-04** |
+| 20   | 1.920e-01   | 6.423e-04  |
 | 25   | 7.910e-01   | 2.736e-03  |
+| 100  | 7.909e-01   | **1.504e-05** |
+| **FULL_RANK (777)** | N/A | N/A |
+
+**Comparison**: Best low-rank (rank=100, fixWb=True) achieves **1.504e-05** error. Full-rank (777) run incomplete (8500/10000 epochs)
 
 ---
 

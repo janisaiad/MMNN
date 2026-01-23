@@ -2,6 +2,7 @@
 """
 we plot partial layer functions for all saved model_parameters in the frequency benchmark
 same style as experiments/former/SinQuad/leap.py (layer-wise component plots)
+we plot only components 1 and 2 with LaTeX formatting
 """
 import json
 import re
@@ -10,6 +11,7 @@ from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -19,9 +21,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from experiments.table.mmnn_vs import MMNN
 
+# we configure matplotlib for LaTeX formatting
+plt.rcParams['figure.figsize'] = [6, 6]
+plt.rcParams['font.size'] = 18
+plt.rcParams['font.weight'] = 'normal'
+mpl.rcParams['mathtext.fontset'] = 'cm'
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['savefig.dpi'] = 300
+mpl.rcParams['font.size'] = 22
+mpl.rcParams['axes.formatter.limits'] = (-6, 6)
+mpl.rcParams['axes.formatter.use_mathtext'] = True
+mpl.rcParams['font.family'] = 'STIXGeneral'
+mpl.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+mpl.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+mpl.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
+mpl.rcParams['xtick.minor.visible'] = True
+mpl.rcParams['ytick.minor.visible'] = True
+plt.rcParams['ytick.right'] = True
+plt.rcParams['xtick.top'] = True
 
-# we limit components per layer for readable plots (as in leap.py)
-MAX_COMPONENTS = 36
+# we plot only components 1 and 2
+COMPONENTS_TO_PLOT = [0, 1]  # indices 0 and 1 (components 1 and 2)
 
 
 def load_model_state(dirpath: Path, device: torch.device):
@@ -100,37 +120,49 @@ def plot_partials_for_config(config_dir: Path, device: torch.device, out_subdir:
         if out.ndim == 1:
             out = out.reshape(-1, 1)
         n_components = out.shape[1]
-        n_plot = min(n_components, MAX_COMPONENTS)
-
-        n_rows = int(np.ceil(np.sqrt(n_plot)))
-        n_cols = int(np.ceil(n_plot / n_rows))
-
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows))
-        if n_rows == 1 and n_cols == 1:
-            axes = np.array([[axes]])
-        elif n_rows == 1 or n_cols == 1:
-            axes = np.array(axes).reshape(n_rows, n_cols)
-
+        
+        # we plot only components 1 and 2 (indices 0 and 1)
+        components_to_plot = [idx for idx in COMPONENTS_TO_PLOT if idx < n_components]
+        if len(components_to_plot) == 0:
+            continue
+        
+        # we create a 1x2 subplot for components 1 and 2
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        if not isinstance(axes, np.ndarray):
+            axes = np.array([axes])
+        
+        # we set title
         fig.suptitle(
-            f"Partial functions – Layer {layer_idx} ({n_plot} components)\n{config_str}",
-            fontsize=14,
+            f"Partial functions – Layer {layer_idx}\n{config_str}",
+            fontsize=22,
         )
 
-        for idx in range(n_plot):
-            i, j = idx // n_cols, idx % n_cols
-            axes[i, j].plot(x, out[:, idx], "b-", linewidth=1)
-            axes[i, j].set_title(f"Component {idx + 1}")
-            axes[i, j].grid(True, alpha=0.3)
-            axes[i, j].set_xticks([interval[0], 0, interval[1]])
+        # we plot component 1
+        if 0 in components_to_plot:
+            axes[0].plot(x, out[:, 0], "b-", linewidth=2)
+            axes[0].set_title(f"Component 1", fontsize=20)
+            axes[0].set_xlabel("$x$", fontsize=20)
+            axes[0].set_ylabel("$h_1(x)$", fontsize=20)
+            axes[0].grid(True, alpha=0.3, which='both')
+            axes[0].set_xticks([interval[0], 0, interval[1]])
+            axes[0].tick_params(labelsize=18)
+        
+        # we plot component 2
+        if 1 in components_to_plot and len(components_to_plot) > 1:
+            axes[1].plot(x, out[:, 1], "r-", linewidth=2)
+            axes[1].set_title(f"Component 2", fontsize=20)
+            axes[1].set_xlabel("$x$", fontsize=20)
+            axes[1].set_ylabel("$h_2(x)$", fontsize=20)
+            axes[1].grid(True, alpha=0.3, which='both')
+            axes[1].set_xticks([interval[0], 0, interval[1]])
+            axes[1].tick_params(labelsize=18)
+        elif len(components_to_plot) == 1:
+            # we hide second subplot if only one component
+            axes[1].set_visible(False)
 
-        # we hide unused subplots
-        for idx in range(n_plot, n_rows * n_cols):
-            i, j = idx // n_cols, idx % n_cols
-            axes[i, j].set_visible(False)
-
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
         out_file = partials_dir / f"layer_{layer_idx}_components.png"
-        plt.savefig(out_file, dpi=100)
+        plt.savefig(out_file, dpi=300, bbox_inches='tight')
         plt.close()
 
     print(f"plotted partials: {config_dir.name} -> {partials_dir}")
