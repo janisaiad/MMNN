@@ -9,7 +9,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 - Width: $n = 777$ neurons per layer
 - Rank: $r = 15$ low-rank channels
 - Training samples: $N = 5000$ points on $[-1, 1]$
-- Time span: $t \in [0, 1000]$ (mean-field ODE evolution)
+- Time span: $t \in [0, 5000]$ (mean-field ODE evolution, extended for better convergence)
 
 **Analysis Location:** $x \approx 0$ (using $x = 10^{-6}$ because $\mathrm{ReLU}(0) = 0$ makes partial functions zero at exact $x = 0$)
 
@@ -20,7 +20,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 ## Plot Descriptions
 
 ### 1. `meanfield_log_ratio_heatmap.png`
-**What it shows:** Log-ratio matrix $R_{i,j}$ at final time $t = 1000$ for all channel pairs $(i, j)$.
+**What it shows:** Log-ratio matrix $R_{i,j}$ at final time $t = 5000$ for all channel pairs $(i, j)$.
 
 **Interpretation:**
 - Each entry $(i, j)$ shows $\log(|f_i|) - \log(|f_j|)$ at $x \approx 0$
@@ -48,7 +48,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 ---
 
 ### 3. `meanfield_log_ratio_distribution.png`
-**What it shows:** Histogram of all log-ratio values $R_{i,j}$ (for $i \neq j$) at final time $t = 1000$.
+**What it shows:** Histogram of all log-ratio values $R_{i,j}$ (for $i \neq j$) at final time $t = 5000$.
 
 **Interpretation:**
 - Distribution centered near zero: channels are balanced
@@ -61,7 +61,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 ---
 
 ### 4. `meanfield_log_ratio_distribution_time_evolution.png`
-**What it shows:** Overlaid histograms of log-ratio distributions at different time points ($t = 0, 250, 500, 1000$).
+**What it shows:** Overlaid histograms of log-ratio distributions at different time points ($t = 0, 1250, 2500, 5000$).
 
 **Interpretation:**
 - Compare distributions across time to see how specialization evolves
@@ -115,7 +115,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 ---
 
 ### 8. `meanfield_weight_density_time_evolution.png`
-**What it shows:** Overlaid histograms of weight distributions at different time points ($t = 0, 250, 500, 1000$).
+**What it shows:** Overlaid histograms of weight distributions at different time points ($t = 0, 1250, 2500, 5000$).
 
 **Interpretation:**
 - Compare weight distributions across time to see evolution
@@ -127,6 +127,49 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 
 ---
 
+### 9. `meanfield_weight_variation_distribution.png`
+**What it shows:** Histogram of weight changes $\Delta w = w_{\text{final}} - w_{\text{initial}}$ (signed changes) from $t=0$ to $t=5000$.
+
+**Interpretation:**
+- Distribution centered at zero: balanced weight updates (some increase, some decrease)
+- Distribution shifted: systematic weight changes (e.g., overall increase or decrease)
+- Wide distribution: large weight variations during training
+- Narrow distribution: small, controlled weight updates
+- Symmetric distribution: balanced positive and negative changes
+- Skewed distribution: asymmetric updates (more increases than decreases, or vice versa)
+
+**Key insight:** This directly shows how much each weight changed during training. The distribution reveals whether updates are balanced, systematic, or heterogeneous. Large variations indicate active learning, while small variations suggest convergence or stability.
+
+---
+
+### 10. `meanfield_weight_variation_loglog.png`
+**What it shows:** Absolute weight changes $|\Delta w|$ in log-log scale, showing the power-law behavior of weight updates.
+
+**Interpretation:**
+- Linear relationship in log-log: power-law distribution $P(|\Delta w|) \propto |\Delta w|^{-\alpha}$
+- Slope indicates the exponent $\alpha$
+- Deviations from linearity: deviations from pure power-law (e.g., cutoffs, exponential tails)
+- Reference line $y = 10^5 \times x$: passes through points $(10^{-4}, 10^1)$ and $(10^{-2}, 10^3)$
+- Comparison with reference: reveals whether weight updates follow a specific power-law scaling
+
+**Key insight:** Power-law distributions of weight updates are a signature of scale-invariant learning dynamics. The reference line helps assess whether the updates follow a specific scaling relationship. If the data follows the reference line, it indicates that weight updates scale linearly with magnitude, which is characteristic of certain mean-field dynamics.
+
+---
+
+### 11. `meanfield_weight_density_loglog.png` (Updated with Reference Line)
+**What it shows:** Weight density in log-log scale, showing the power-law behavior of absolute weights $|w|$ at final time, with a reference line.
+
+**Interpretation:**
+- Linear relationship in log-log: power-law distribution $P(|w|) \propto |w|^{-\alpha}$
+- Slope indicates the exponent $\alpha$
+- Deviations from linearity: deviations from pure power-law (e.g., cutoffs, exponential tails)
+- Reference line $y = 10^4 \times x$: passes through points $(10^{-3}, 10^1)$ and $(10^{-1}, 10^3)$
+- Comparison with reference: reveals whether final weights follow a specific power-law scaling
+
+**Key insight:** Power-law weight distributions are a signature of criticality and scale-invariance in neural networks. The reference line helps assess whether the weights follow a specific scaling relationship. If the data follows the reference line, it indicates that weight magnitudes scale linearly, which is characteristic of certain mean-field dynamics and critical behavior.
+
+---
+
 ## Summary of Key Findings
 
 1. **Channel Specialization:** The log-ratio plots (heatmap, statistics, distributions) show that channels do specialize during mean-field training, with non-zero log-ratios indicating differentiation between channels.
@@ -135,9 +178,13 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 
 3. **Heterogeneous Specialization:** The distribution plots show that specialization is heterogeneous - not all channels specialize equally, with some becoming dominant and others remaining weak.
 
-4. **Weight Statistics:** The weight density plots show how the weight distribution evolves, potentially revealing power-law behavior or other statistical signatures of the mean-field dynamics.
+4. **Weight Statistics:** The weight density plots show how the weight distribution evolves, potentially revealing power-law behavior or other statistical signatures of the mean-field dynamics. The reference lines in log-log plots help assess specific scaling relationships.
 
-5. **Location-Specific Analysis:** All analysis is performed at $x \approx 0$, revealing how channels specialize at this specific location. Different locations may show different specialization patterns.
+5. **Weight Variation:** The weight variation plots reveal how much each weight changed during training. The distribution and power-law analysis show whether updates are balanced, systematic, or follow scale-invariant dynamics.
+
+6. **Convergence:** Extended training to $t=5000$ shows that the system converges well, with log-ratios stabilizing around $t=2500$ and remaining stable until $t=5000$.
+
+7. **Location-Specific Analysis:** All analysis is performed at $x \approx 0$, revealing how channels specialize at this specific location. Different locations may show different specialization patterns.
 
 ---
 
@@ -147,7 +194,7 @@ $$f(x) = \cos(12\pi x) + \cos(24\pi x + 0.5) + \cos(36\pi x) + \cos(72\pi x + 0.
 
 2. **Main Results:** Use the statistics over time and distribution evolution to show how specialization develops during training.
 
-3. **Theoretical Analysis:** Use the weight density plots to connect with theoretical predictions about weight statistics in mean-field dynamics.
+3. **Theoretical Analysis:** Use the weight density plots and weight variation plots to connect with theoretical predictions about weight statistics in mean-field dynamics. The reference lines help assess specific scaling relationships predicted by theory.
 
 4. **Comparison with Theory:** Compare the observed log-ratio distributions and weight statistics with theoretical predictions from mean-field theory.
 

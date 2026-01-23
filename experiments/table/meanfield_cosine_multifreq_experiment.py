@@ -277,7 +277,7 @@ def run_experiment():
     # note: config has 8 layers, but we use 2-layer mean-field approximation
     n1, n2 = hidden_width, hidden_width
     r = hidden_rank
-    t_span = (0, 1000)  # we solve for 1000 time units
+    t_span = (0, 5000)  # we solve for 5000 time units (extended for better convergence)
     dt = 1.0
     
     print(f"\nMean-Field Architecture (2-layer approximation of {num_layers}-layer network):")
@@ -517,11 +517,22 @@ def run_experiment():
     bin_centers = np.sqrt(bins[:-1] * bins[1:])  # geometric mean for log scale
     non_zero = hist > 0
     ax.plot(bin_centers[non_zero], hist[non_zero], 'b-o', linewidth=2, markersize=6)
+    
+    # we add reference line y = b * x passing through two points:
+    # Point 1: (1e-3, 1e1) = (0.001, 10)
+    # Point 2: (1e-1, 1e3) = (0.1, 1000)
+    # b = y/x, so b = 1e1 / 1e-3 = 1e4 = 10000
+    b = 1e4  # we use b = 10000 to pass through the specified points
+    x_ref = np.logspace(-3, -1, 100)  # x from 10^-3 to 10^-1
+    y_ref = b * x_ref
+    ax.plot(x_ref, y_ref, 'r--', linewidth=2, label='$y = 10^4 \\times x$', alpha=0.7)
+    
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel('$|w|$ (absolute weight)', fontsize=24)
     ax.set_ylabel('Count', fontsize=24)
     ax.set_title(f'Weight Density (Log-Log Scale, Final Time $t={final_time:.1f}$)', fontsize=22)
+    ax.legend(fontsize=16)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
     fig.text(0.5, 0.02, f'{common_info_text} Total weights: ${n1*r + n2}$.', ha='center', fontsize=12, wrap=True)
@@ -551,6 +562,65 @@ def run_experiment():
     plt.savefig(output_dir / 'meanfield_weight_density_time_evolution.png', dpi=300, bbox_inches='tight')
     print(f"Saved figure to {output_dir / 'meanfield_weight_density_time_evolution.png'}")
     plt.close()
+    
+    # we plot 5c: weight variation distribution (final - initial) (separate figure)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    
+    # we compute weight changes
+    w1_change = (w1_final - w1_init).detach().cpu().numpy().flatten()
+    w2_change = (w2_final - w2_init).detach().cpu().numpy().flatten()
+    all_weight_changes = np.concatenate([w1_change, w2_change])
+    abs_weight_changes = np.abs(all_weight_changes)
+    
+    # we plot both signed and absolute changes
+    ax.hist(all_weight_changes, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5, density=True, label='Signed change $\\Delta w$')
+    ax.set_xlabel('Weight Change $\\Delta w = w_{\\mathrm{final}} - w_{\\mathrm{initial}}$', fontsize=24)
+    ax.set_ylabel('Density', fontsize=24)
+    ax.set_title(f'Weight Variation Distribution (from $t=0$ to $t={final_time:.1f}$)', fontsize=22)
+    ax.legend(fontsize=18)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, f'{common_info_text} Mean absolute change: ${np.mean(abs_weight_changes):.6f}$, std: ${np.std(all_weight_changes):.6f}$.', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_weight_variation_distribution.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_weight_variation_distribution.png'}")
+    plt.close()
+    
+    # we plot 5d: absolute weight variation distribution (log-log scale)
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    abs_weight_changes_positive = abs_weight_changes[abs_weight_changes > 0]  # we remove zeros for log plot
+    if len(abs_weight_changes_positive) > 0:
+        log_bins = np.logspace(np.log10(abs_weight_changes_positive.min()), np.log10(abs_weight_changes_positive.max()), 50)
+        hist, bins = np.histogram(abs_weight_changes_positive, bins=log_bins)
+        bin_centers = np.sqrt(bins[:-1] * bins[1:])  # geometric mean for log scale
+        non_zero = hist > 0
+        ax.plot(bin_centers[non_zero], hist[non_zero], 'b-o', linewidth=2, markersize=6)
+        
+        # we add reference line y = b * x passing through two points:
+        # Point 1: (1e-4, 1e1) = (0.0001, 10)
+        # Point 2: (1e-2, 1e3) = (0.01, 1000)
+        # b = y/x, so b = 1e1 / 1e-4 = 1e5 = 100000
+        b = 1e5  # we use b = 100000 to pass through the specified points
+        x_ref = np.logspace(-4, -2, 100)  # x from 10^-4 to 10^-2
+        y_ref = b * x_ref
+        ax.plot(x_ref, y_ref, 'r--', linewidth=2, label='$y = 10^5 \\times x$', alpha=0.7)
+        
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        # we keep auto-scaling (no fixed limits)
+        ax.set_xlabel('$|\\Delta w|$ (absolute weight change)', fontsize=24)
+        ax.set_ylabel('Count', fontsize=24)
+        ax.set_title(f'Absolute Weight Variation Distribution (Log-Log Scale, $t=0$ to $t={final_time:.1f}$)', fontsize=22)
+        ax.legend(fontsize=16)
+        ax.grid(True, alpha=0.3)
+        ax.tick_params(labelsize=18)
+        fig.text(0.5, 0.02, f'{common_info_text} Total weights: ${n1*r + n2}$.', ha='center', fontsize=12, wrap=True)
+        plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+        plt.savefig(output_dir / 'meanfield_weight_variation_loglog.png', dpi=300, bbox_inches='tight')
+        print(f"Saved figure to {output_dir / 'meanfield_weight_variation_loglog.png'}")
+        plt.close()
     
     # we save results
     def convert_to_serializable(obj):
