@@ -139,33 +139,39 @@ def plot_partials_for_config(config_dir: Path, device: torch.device, out_subdir:
 
 def main():
     base = Path(__file__).parent
-    # we search in both possible result locations
+    # we search in all possible result locations (including comprehensive benchmark)
     candidates = [
+        base / "experiments" / "table" / "results_frequency_benchmark_comprehensive",
         base / "experiments" / "table" / "results_frequency_benchmark",
+        base / "results_frequency_benchmark_comprehensive",
         base / "results_frequency_benchmark",
     ]
-    results_dir = None
-    for d in candidates:
-        if d.is_dir():
-            results_dir = d
-            break
-    if results_dir is None:
+    results_dirs = [d for d in candidates if d.is_dir()]
+    if not results_dirs:
         print("no results_frequency_benchmark directory found")
         return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # we collect all config dirs that have config.json
-    config_dirs = sorted([p for p in results_dir.iterdir() if p.is_dir() and (p / "config.json").exists()])
-    # we only process dirs that have a saved model
-    model_dirs = [d for d in config_dirs if (d / "model_parameters.pth").exists() or (d / "checkpoint.pth").exists()]
+    # we collect all config dirs from all result directories
+    all_model_dirs = []
+    for results_dir in results_dirs:
+        # we collect all config dirs that have config.json
+        config_dirs = sorted([p for p in results_dir.iterdir() if p.is_dir() and (p / "config.json").exists()])
+        # we only process dirs that have a saved model
+        model_dirs = [d for d in config_dirs if (d / "model_parameters.pth").exists() or (d / "checkpoint.pth").exists()]
+        all_model_dirs.extend(model_dirs)
+        print(f"found {len(model_dirs)} configs with saved models in {results_dir}")
 
-    print(f"found {len(model_dirs)} configs with saved models in {results_dir}")
-    print(f"processing {len(model_dirs)} configs...\n")
+    # we remove duplicates (in case of nested paths)
+    all_model_dirs = sorted(list(set(all_model_dirs)), key=lambda x: str(x))
+    
+    print(f"\ntotal: {len(all_model_dirs)} configs to process across {len(results_dirs)} directories")
+    print(f"processing {len(all_model_dirs)} configs...\n")
 
     success_count = 0
-    for idx, d in enumerate(model_dirs, 1):
-        print(f"[{idx}/{len(model_dirs)}] processing {d.name}...", end=" ", flush=True)
+    for idx, d in enumerate(all_model_dirs, 1):
+        print(f"[{idx}/{len(all_model_dirs)}] processing {d.name}...", end=" ", flush=True)
         try:
             if plot_partials_for_config(d, device, out_subdir="partials"):
                 success_count += 1
@@ -177,7 +183,7 @@ def main():
             import traceback
             traceback.print_exc()
 
-    print(f"\ndone. successfully processed {success_count}/{len(model_dirs)} configs")
+    print(f"\ndone. successfully processed {success_count}/{len(all_model_dirs)} configs")
 
 
 if __name__ == "__main__":
