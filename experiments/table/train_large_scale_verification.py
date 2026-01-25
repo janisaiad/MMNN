@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 import math
+from tqdm import tqdm
 
 # we add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -191,7 +192,10 @@ def train_one_config(config, output_dir, target_func):
     
     start_time = time.time()
     
-    for epoch in range(start_epoch, num_epochs):
+    # we use tqdm for progress bar
+    pbar = tqdm(range(start_epoch, num_epochs), desc=f"Training", unit="epoch")
+    
+    for epoch in pbar:
         model.train()
         indices = torch.randperm(n_train, device=device)
         epoch_loss = 0.0
@@ -212,6 +216,9 @@ def train_one_config(config, output_dir, target_func):
         epoch_loss /= (n_train // batch_size + 1)
         all_losses.append(epoch_loss)
         
+        # we update tqdm with current loss
+        pbar.set_postfix({'loss': f'{epoch_loss:.6e}'})
+        
         # we evaluate every 50 epochs
         if epoch % 50 == 0 or epoch == num_epochs - 1:
             model.eval()
@@ -227,8 +234,8 @@ def train_one_config(config, output_dir, target_func):
                 errors_test.append(error_test)
                 errors_test_max.append(error_test_max)
         
-        # we save checkpoint every 500 epochs
-        if epoch % 500 == 0 and epoch > 0:
+        # we save checkpoint and plot every 1000 epochs
+        if epoch % 1000 == 0 and epoch > 0:
             checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -240,6 +247,21 @@ def train_one_config(config, output_dir, target_func):
                 "errors_test_max": errors_test_max,
             }
             torch.save(checkpoint, checkpoint_path)
+            
+            # we reconstruct loss plot every 1000 epochs
+            fig = plt.figure(figsize=(10, 6))
+            plt.semilogy(range(1, len(all_losses)+1), all_losses, 'b-', linewidth=1.5)
+            plt.xlabel('Epoch', fontsize=22)
+            plt.ylabel('Loss (log scale)', fontsize=22)
+            config_str = f"freq×{config['freq_multiplier']:.2f}, rank={config['hidden_rank']}, L={config['num_layers']}, L/freq={config['L_over_freq']:.2f}"
+            plt.title(f'Training Loss Evolution\n{config_str}', fontsize=20)
+            plt.grid(True, alpha=0.3, which='both')
+            plt.tick_params(labelsize=18)
+            plt.tight_layout()
+            plt.savefig(output_dir / 'loss_evolution.png', dpi=300, bbox_inches='tight')
+            plt.close()
+    
+    pbar.close()
     
     training_time = time.time() - start_time
     
@@ -326,6 +348,7 @@ def main():
     
     target_function_lambda = target_function
     
+    # we run experiments sequentially (not in parallel)
     for i, config in enumerate(configs, 1):
         freq_mult = config['freq_multiplier']
         rank = config['hidden_rank']
@@ -339,6 +362,7 @@ def main():
         print(f"Configuration {i}/{len(configs)}")
         print(f"Freq: {freq_mult:.2f}, Rank: {rank}, Layers: {num_layers}, L/freq: {L_over_freq:.2f}")
         print(f"Epochs: {config['num_epochs']}")
+        print(f"Output: {output_dir.name}")
         print(f"{'='*80}")
         
         # we check if already completed
