@@ -385,8 +385,9 @@ def run_experiment():
     # we plot 1: log ratio heatmap at final time (separate figure)
     fig = plt.figure(figsize=(14, 10))
     ax = fig.add_subplot(111)
-    vmax = max(10, np.max(np.abs(log_ratios_final)))
-    vmin = -vmax
+    # we use actual min and max of the data for colorbar scaling
+    vmax = np.max(log_ratios_final)
+    vmin = np.min(log_ratios_final)
     im = ax.imshow(log_ratios_final, cmap='RdBu_r', aspect='auto', vmin=vmin, vmax=vmax)
     ax.set_xlabel('Channel $j$', fontsize=24)
     ax.set_ylabel('Channel $i$', fontsize=24)
@@ -394,10 +395,11 @@ def run_experiment():
     cbar = plt.colorbar(im, ax=ax, label='$R_{i,j}$', fraction=0.046, pad=0.04)
     cbar.ax.tick_params(labelsize=18)
     ax.tick_params(labelsize=18)
-    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    fig.text(0.5, 0.02, f'{common_info_text} Colorbar range: $[{vmin:.3f}, {vmax:.3f}]$.', ha='center', fontsize=12, wrap=True)
     plt.tight_layout(rect=[0, 0.05, 1, 0.98])
     plt.savefig(output_dir / 'meanfield_log_ratio_heatmap.png', dpi=300, bbox_inches='tight')
     print(f"Saved figure to {output_dir / 'meanfield_log_ratio_heatmap.png'}")
+    print(f"  Log-ratio range: [{vmin:.6f}, {vmax:.6f}]")
     plt.close()
     
     # we plot 2: log ratio statistics over time (separate figure)
@@ -442,17 +444,35 @@ def run_experiment():
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
     log_ratios_final_flat = log_ratios_final[np.triu_indices_from(log_ratios_final, k=1)]
+    triu_indices = np.triu_indices_from(log_ratios_final, k=1)
+    
+    # we find the pairs with highest and lowest log ratios
+    max_idx = np.argmax(log_ratios_final_flat)
+    min_idx = np.argmin(log_ratios_final_flat)
+    max_pair = (triu_indices[0][max_idx], triu_indices[1][max_idx])
+    min_pair = (triu_indices[0][min_idx], triu_indices[1][min_idx])
+    max_value = log_ratios_final_flat[max_idx]
+    min_value = log_ratios_final_flat[min_idx]
+    
     ax.hist(log_ratios_final_flat, bins=50, alpha=0.7, edgecolor='black', linewidth=1.5)
+    
+    # we mark the max and min pairs
+    ax.axvline(max_value, color='red', linestyle='--', linewidth=2, alpha=0.7, label=f'Max: $R_{{{max_pair[0]},{max_pair[1]}}} = {max_value:.3f}$')
+    ax.axvline(min_value, color='blue', linestyle='--', linewidth=2, alpha=0.7, label=f'Min: $R_{{{min_pair[0]},{min_pair[1]}}} = {min_value:.3f}$')
+    
     ax.set_xlabel('Log-Ratio $R_{i,j}$', fontsize=24)
     ax.set_ylabel('Count', fontsize=24)
     n_pairs = r * (r - 1) // 2
     ax.set_title(f'Log-Ratio Distribution (Final Time $t={final_time:.1f}$, all ${n_pairs}$ pairs, rank $r={r}$)', fontsize=22)
+    ax.legend(fontsize=16)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
-    fig.text(0.5, 0.02, common_info_text, ha='center', fontsize=12, wrap=True)
+    fig.text(0.5, 0.02, f'{common_info_text} Highest log-ratio: channel pair $({max_pair[0]}, {max_pair[1]})$. Lowest log-ratio: channel pair $({min_pair[0]}, {min_pair[1]})$.', ha='center', fontsize=12, wrap=True)
     plt.tight_layout(rect=[0, 0.05, 1, 0.98])
     plt.savefig(output_dir / 'meanfield_log_ratio_distribution.png', dpi=300, bbox_inches='tight')
     print(f"Saved figure to {output_dir / 'meanfield_log_ratio_distribution.png'}")
+    print(f"  Highest log-ratio: R_{max_pair[0]},{max_pair[1]} = {max_value:.6f}")
+    print(f"  Lowest log-ratio: R_{min_pair[0]},{min_pair[1]} = {min_value:.6f}")
     plt.close()
     
     # we plot 3b: log ratio distributions across different time points (separate figure)

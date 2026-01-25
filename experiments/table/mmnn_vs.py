@@ -62,17 +62,25 @@ class MMNN(nn.Module):
                            fc_sizes[j+1], device=device) 
             fcs.append(fc)
         self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
-        # mu-parameterization init: we zero biases and scale output heads by 1/sqrt(width)  # we implement mu parameterization with minimal changes
+        # mu-parameterization init: uniform on [-1,1] then divided by 1/sqrt(n)
+        # rank→width: uniform[-1,1] / sqrt(rank), width→rank: uniform[-1,1] / sqrt(width)
         for j, fc in enumerate(self.fcs):
             with torch.no_grad():
                 
                 if j % 2 == 1:  # we scale width→rank weights (odd indices) by 1/sqrt(hidden width)
                     hidden_width = widths[j // 2]  # we get hidden width for this block
-                    fc.weight.normal_(mean=0.0, std=1.0/np.sqrt(hidden_width))  # we apply mu scaling
-                    fc.bias.normal_(mean=0.0, std=1/np.sqrt(hidden_width))  # we set bias to normal 
+                    # uniform on [-1,1] then divide by sqrt(width)
+                    fc.weight.uniform_(-1.0, 1.0)
+                    fc.weight.div_(np.sqrt(hidden_width))
+                    fc.bias.uniform_(-1.0, 1.0)
+                    fc.bias.div_(np.sqrt(hidden_width))
                 else:
-                    fc.weight.normal_(mean=0.0, std=1/np.sqrt(ranks[j//2]))  # we keep unit variance for rank→width weights
-                    fc.bias.normal_(mean=0.0, std=1/np.sqrt(ranks[j//2]))  # we keep unit variance for rank→width weights
+                    # uniform on [-1,1] then divide by sqrt(rank)
+                    rank = ranks[j//2]
+                    fc.weight.uniform_(-1.0, 1.0)
+                    fc.weight.div_(np.sqrt(rank))
+                    fc.bias.uniform_(-1.0, 1.0)
+                    fc.bias.div_(np.sqrt(rank))
         
         if fixWb: # if True, the weights and biases are not updated during training
             for j in range(len(fcs)):
