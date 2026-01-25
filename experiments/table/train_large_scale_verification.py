@@ -163,6 +163,12 @@ def train_one_config(config, output_dir, target_func):
     x_test_tensor = torch.tensor(x_test.reshape([-1, 1]), device=device, dtype=mydtype)
     y_test_tensor = torch.tensor(y_test.reshape([-1, 1]), device=device, dtype=mydtype)
     
+    # we keep numpy arrays for plotting
+    x_train_plot = x_train.copy()
+    y_train_plot = y_train.copy()
+    x_test_plot = x_test.copy()
+    y_test_plot = y_test.copy()
+    
     # we set up optimizer
     lr = 0.001
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -192,6 +198,11 @@ def train_one_config(config, output_dir, target_func):
     
     start_time = time.time()
     
+    # we track instabilities
+    instability_count = 0
+    max_instabilities = 3
+    last_stable_checkpoint = None
+    
     # we use tqdm for progress bar
     pbar = tqdm(range(start_epoch, num_epochs), desc=f"Training", unit="epoch")
     
@@ -217,7 +228,104 @@ def train_one_config(config, output_dir, target_func):
         all_losses.append(epoch_loss)
         
         # we update tqdm with current loss
-        pbar.set_postfix({'loss': f'{epoch_loss:.6e}'})
+        pbar.set_postfix({'loss': f'{epoch_loss:.6e}', 'instabilities': instability_count})
+        
+        # we detect instability: loss > 2 indicates spike/instability
+        if epoch_loss > 2.0:
+            instability_count += 1
+            print(f"\n⚠️  INSTABILITY DETECTED at epoch {epoch}: loss = {epoch_loss:.6e}")
+            print(f"   Instability count: {instability_count}/{max_instabilities}")
+            
+            # we restore from last stable checkpoint if available
+            if last_stable_checkpoint is not None:
+                print(f"   Restoring from stable checkpoint at epoch {last_stable_checkpoint['epoch']}")
+                model.load_state_dict(last_stable_checkpoint["model_state_dict"])
+                optimizer.load_state_dict(last_stable_checkpoint["optimizer_state_dict"])
+                scheduler.load_state_dict(last_stable_checkpoint["scheduler_state_dict"])
+                
+                # we restore losses up to stable point
+                stable_epoch = last_stable_checkpoint['epoch']
+                all_losses = all_losses[:stable_epoch - start_epoch + 1] if start_epoch == 0 else last_stable_checkpoint.get("all_losses", [])
+                errors_train = last_stable_checkpoint.get("errors_train", [])
+                errors_test = last_stable_checkpoint.get("errors_test", [])
+                errors_test_max = last_stable_checkpoint.get("errors_test_max", [])
+                
+                # we plot instability visualization
+                model.eval()
+                with torch.no_grad():
+                    y_pred_test = model(x_test_tensor)
+                    y_pred_train = model(x_train_tensor)
+                
+                y_pred_test_np = y_pred_test.cpu().numpy().flatten()
+                y_pred_train_np = y_pred_train.cpu().numpy().flatten()
+                
+                # plot prediction vs baseline during instability
+                fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+                
+                # test set - prediction vs target
+                ax1 = axes[0, 0]
+                ax1.plot(x_test_plot, y_test_plot, 'b-', linewidth=2, label='Target', alpha=0.7)
+                ax1.plot(x_test_plot, y_pred_test_np, 'r--', linewidth=2, label='Prediction (unstable)', alpha=0.7)
+                ax1.set_xlabel('x', fontsize=18)
+                ax1.set_ylabel('y', fontsize=18)
+                ax1.set_title(f'Test Set - Instability at epoch {epoch}\nLoss: {epoch_loss:.6e}', fontsize=16)
+                ax1.legend(fontsize=12)
+                ax1.grid(True, alpha=0.3)
+                
+                # train set - prediction vs target
+                ax2 = axes[0, 1]
+                ax2.plot(x_train_plot, y_train_plot, 'b-', linewidth=2, label='Target', alpha=0.7)
+                ax2.plot(x_train_plot, y_pred_train_np, 'r--', linewidth=2, label='Prediction (unstable)', alpha=0.7)
+                ax2.set_xlabel('x', fontsize=18)
+                ax2.set_ylabel('y', fontsize=18)
+                ax2.set_title(f'Train Set - Instability at epoch {epoch}\nLoss: {epoch_loss:.6e}', fontsize=16)
+                ax2.legend(fontsize=12)
+                ax2.grid(True, alpha=0.3)
+                
+                # test set - fit/baseline ratio
+                ax3 = axes[1, 0]
+                ratio_test = np.divide(y_pred_test_np, y_test_plot, out=np.zeros_like(y_pred_test_np), where=y_test_plot!=0)
+                ax3.plot(x_test_plot, ratio_test, 'g-', linewidth=2, alpha=0.7)
+                ax3.axhline(y=1.0, color='k', linestyle='--', linewidth=1, alpha=0.5, label='Perfect fit')
+                ax3.set_xlabel('x', fontsize=18)
+                ax3.set_ylabel('Prediction / Target', fontsize=18)
+                ax3.set_title(f'Test Set - Fit/Baseline Ratio\n(Instability visualization)', fontsize=16)
+                ax3.legend(fontsize=12)
+                ax3.grid(True, alpha=0.3)
+                
+                # train set - fit/baseline ratio
+                ax4 = axes[1, 1]
+                ratio_train = np.divide(y_pred_train_np, y_train_plot, out=np.zeros_like(y_pred_train_np), where=y_train_plot!=0)
+                ax4.plot(x_train_plot, ratio_train, 'g-', linewidth=2, alpha=0.7)
+                ax4.axhline(y=1.0, color='k', linestyle='--', linewidth=1, alpha=0.5, label='Perfect fit')
+                ax4.set_xlabel('x', fontsize=18)
+                ax4.set_ylabel('Prediction / Target', fontsize=18)
+                ax4.set_title(f'Train Set - Fit/Baseline Ratio\n(Instability visualization)', fontsize=16)
+                ax4.legend(fontsize=12)
+                ax4.grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                plt.savefig(output_dir / f'instability_epoch{epoch}.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                print(f"   Instability plot saved: instability_epoch{epoch}.png")
+            
+            # we stop if too many instabilities
+            if instability_count >= max_instabilities:
+                print(f"\n❌ STOPPING TRAINING: {instability_count} instabilities detected")
+                break
+        
+        # we save stable checkpoint if loss is reasonable
+        if epoch_loss <= 2.0 and (epoch % 1000 == 0 or epoch == num_epochs - 1):
+            last_stable_checkpoint = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict().copy(),
+                "optimizer_state_dict": optimizer.state_dict().copy(),
+                "scheduler_state_dict": scheduler.state_dict().copy(),
+                "all_losses": all_losses.copy(),
+                "errors_train": errors_train.copy() if errors_train else [],
+                "errors_test": errors_test.copy() if errors_test else [],
+                "errors_test_max": errors_test_max.copy() if errors_test_max else [],
+            }
         
         # we evaluate every 50 epochs
         if epoch % 50 == 0 or epoch == num_epochs - 1:
@@ -235,7 +343,7 @@ def train_one_config(config, output_dir, target_func):
                 errors_test_max.append(error_test_max)
         
         # we save checkpoint and plot every 1000 epochs
-        if epoch % 1000 == 0 and epoch > 0:
+        if epoch % 1000 == 0 and epoch > 0 and epoch_loss <= 2.0:
             checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -259,6 +367,41 @@ def train_one_config(config, output_dir, target_func):
             plt.tick_params(labelsize=18)
             plt.tight_layout()
             plt.savefig(output_dir / 'loss_evolution.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # we plot prediction vs baseline every 1000 epochs
+            model.eval()
+            with torch.no_grad():
+                y_pred_test = model(x_test_tensor)
+                y_pred_train = model(x_train_tensor)
+            
+            y_pred_test_np = y_pred_test.cpu().numpy().flatten()
+            y_pred_train_np = y_pred_train.cpu().numpy().flatten()
+            
+            fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+            
+            # test set
+            ax1 = axes[0]
+            ax1.plot(x_test_plot, y_test_plot, 'b-', linewidth=2, label='Target', alpha=0.7)
+            ax1.plot(x_test_plot, y_pred_test_np, 'r--', linewidth=2, label='Prediction', alpha=0.7)
+            ax1.set_xlabel('x', fontsize=18)
+            ax1.set_ylabel('y', fontsize=18)
+            ax1.set_title(f'Test Set - Epoch {epoch}\nLoss: {epoch_loss:.6e}', fontsize=16)
+            ax1.legend(fontsize=12)
+            ax1.grid(True, alpha=0.3)
+            
+            # train set
+            ax2 = axes[1]
+            ax2.plot(x_train_plot, y_train_plot, 'b-', linewidth=2, label='Target', alpha=0.7)
+            ax2.plot(x_train_plot, y_pred_train_np, 'r--', linewidth=2, label='Prediction', alpha=0.7)
+            ax2.set_xlabel('x', fontsize=18)
+            ax2.set_ylabel('y', fontsize=18)
+            ax2.set_title(f'Train Set - Epoch {epoch}\nLoss: {epoch_loss:.6e}', fontsize=16)
+            ax2.legend(fontsize=12)
+            ax2.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(output_dir / f'prediction_epoch{epoch}.png', dpi=300, bbox_inches='tight')
             plt.close()
     
     pbar.close()
@@ -290,6 +433,8 @@ def train_one_config(config, output_dir, target_func):
         "total_parameters": int(total_params),
         "trainable_parameters": int(trainable_params),
         "epochs_run": int(len(all_losses)),
+        "instability_count": int(instability_count),
+        "stopped_due_to_instability": bool(instability_count >= max_instabilities),
         "all_losses": [float(l) for l in all_losses],
         "errors_train": [float(e) for e in errors_train],
         "errors_test": [float(e) for e in errors_test],
