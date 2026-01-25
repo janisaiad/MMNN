@@ -230,12 +230,12 @@ def train_one_config(factor, lr_config, output_dir):
     pbar = tqdm(range(num_epochs), desc=desc, unit="epoch")
     
     # Store model state before each epoch to capture "before" state for large drops
-    model_state_before = None
+    model_state_before_epoch = None
     
     for epoch in pbar:
-        # Save model state before training this epoch (for plotting before large drops)
-        if epoch > 0:  # Don't save at epoch 0 (already plotted initialization)
-            model_state_before = {k: v.clone() for k, v in model.state_dict().items()}
+        # Save model state at the START of this epoch (before training)
+        # This will be the "before" state if next epoch has a large drop
+        model_state_before_epoch = {k: v.clone().cpu() for k, v in model.state_dict().items()}
         
         model.train()
         indices = torch.randperm(n_train, device=device)
@@ -282,6 +282,49 @@ def train_one_config(factor, lr_config, output_dir):
             break
         
         all_losses.append(epoch_loss)
+        
+        # Detect large loss drop (>2x reduction in one step) and plot before/after
+        if len(all_losses) >= 2:
+            prev_loss = all_losses[-2]
+            current_loss = all_losses[-1]
+            # Check if loss dropped by more than 2x (i.e., current_loss < prev_loss / 2)
+            if prev_loss > 0 and current_loss < prev_loss / 2.0:
+                print(f"\n📉 Large loss drop detected at epoch {epoch}: {prev_loss:.6e} → {current_loss:.6e} (reduction by {prev_loss/current_loss:.2f}x)")
+                
+                # We need the state BEFORE this epoch's training (which is model_state_before_epoch saved at start)
+                # But we also need to plot the current state (AFTER this epoch)
+                # Save current state temporarily
+                model_state_after = {k: v.clone().cpu() for k, v in model.state_dict().items()}
+                
+                # Plot BEFORE (state at start of this epoch, which is end of previous epoch)
+                if model_state_before_epoch is not None:
+                    # Move state back to device
+                    model_state_before_device = {k: v.to(device) for k, v in model_state_before_epoch.items()}
+                    model.load_state_dict(model_state_before_device)
+                    current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
+                    plot_prediction_vs_baseline(
+                        model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
+                        epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum
+                    )
+                    plot_filename_before = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}_before_large_drop.png"
+                    plot_filename_current = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}.png"
+                    if (output_dir / plot_filename_current).exists():
+                        (output_dir / plot_filename_current).rename(output_dir / plot_filename_before)
+                    print(f"   💾 Saved plot BEFORE large drop: {plot_filename_before}")
+                
+                # Restore current state and plot AFTER
+                model_state_after_device = {k: v.to(device) for k, v in model_state_after.items()}
+                model.load_state_dict(model_state_after_device)
+                current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
+                plot_prediction_vs_baseline(
+                    model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
+                    epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum
+                )
+                plot_filename_after = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}_after_large_drop.png"
+                plot_filename_current_after = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}.png"
+                if (output_dir / plot_filename_current_after).exists():
+                    (output_dir / plot_filename_current_after).rename(output_dir / plot_filename_after)
+                print(f"   💾 Saved plot AFTER large drop: {plot_filename_after}")
         
         # Switch from Adam to SGD when loss < 1e-3
         if use_adam_first and not switched_to_sgd and epoch_loss < 1e-3:
