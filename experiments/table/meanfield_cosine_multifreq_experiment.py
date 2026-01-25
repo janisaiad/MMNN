@@ -94,6 +94,7 @@ class MeanFieldODESolver:
         # we initialize random features (frozen)
         torch.manual_seed(42)
         self.f1 = torch.randn(n1, d, device=device)  # random features for first layer
+        self.b1 = torch.randn(n1, device=device)  # frozen activation biases for first layer (Gaussian N(0, 1))
         
         # we initialize mixing matrix L (frozen, random Gaussian)
         self.L = torch.randn(n2, r, device=device)  # Gaussian N(0, 1)
@@ -113,6 +114,7 @@ class MeanFieldODESolver:
         batch_size = X.shape[0]
         
         inner = torch.matmul(self.f1, X.t())  # [n1, batch_size]
+        inner = inner + self.b1.unsqueeze(1)  # we add frozen bias: [n1, batch_size]
         phi1 = torch.relu(inner)  # [n1, batch_size]
         
         m_k = torch.zeros(self.r, batch_size, device=self.device)
@@ -217,6 +219,7 @@ class MeanFieldODESolver:
         batch_size = X.shape[0]
         
         inner = torch.matmul(self.f1, X.t())  # [n1, batch_size]
+        inner = inner + self.b1.unsqueeze(1)  # we add frozen bias: [n1, batch_size]
         phi1 = torch.relu(inner)  # [n1, batch_size]
         
         f_k = torch.zeros(self.r, batch_size, device=self.device)
