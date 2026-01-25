@@ -216,13 +216,27 @@ def train_one_config(factor, lr_config, output_dir):
     
     start_time = time.time()
     
+    # Plot network at initialization (epoch 0)
+    print(f"\n📊 Plotting network at initialization...")
+    plot_prediction_vs_baseline(
+        model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
+        0, lr_init, output_dir, factor, 'Adam' if use_adam_first else 'SGD', lr_config, sgd_momentum
+    )
+    
     # we use tqdm for progress bar
     desc = f"factor={factor}, {optimizer_type}"
     if scheduler_type:
         desc += f", {scheduler_type}"
     pbar = tqdm(range(num_epochs), desc=desc, unit="epoch")
     
+    # Store model state before each epoch to capture "before" state for large drops
+    model_state_before = None
+    
     for epoch in pbar:
+        # Save model state before training this epoch (for plotting before large drops)
+        if epoch > 0:  # Don't save at epoch 0 (already plotted initialization)
+            model_state_before = {k: v.clone() for k, v in model.state_dict().items()}
+        
         model.train()
         indices = torch.randperm(n_train, device=device)
         epoch_loss = 0.0
