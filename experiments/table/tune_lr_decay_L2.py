@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 Tune learning rate decay for L=2 with cos(2*factor*pi*x)
-Test over 250 epochs to find optimal LR decay schedule
+Test over 500 epochs to find optimal LR decay schedule
 Batch size = 4*factor (linear in frequency for Fourier approximation)
+Runs configurations in parallel on GPU
 """
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim.lr_scheduler import StepLR, ExponentialLR
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, LinearLR
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -20,6 +21,8 @@ from pathlib import Path
 from datetime import datetime
 import sys
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 
 # we add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,8 +47,15 @@ def target_function(x, factor):
     """Simple cosine function: cos(2*factor*pi*x)"""
     return np.cos(2 * factor * np.pi * x)
 
+def train_one_config_wrapper(args):
+    """Wrapper for multiprocessing - unpacks arguments"""
+    factor, lr_config, output_dir = args
+    return train_one_config(factor, lr_config, Path(output_dir))
+
 def train_one_config(factor, lr_config, output_dir):
     """we train one configuration with different LR decay schedules"""
+    # Ensure output_dir is a Path object
+    output_dir = Path(output_dir)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mydtype = torch.float32
     
@@ -124,10 +134,17 @@ def train_one_config(factor, lr_config, output_dir):
         scheduler = StepLR(optimizer, step_size=scheduler_params['step_size'], gamma=scheduler_params['gamma'])
     elif scheduler_type == 'ExponentialLR':
         scheduler = ExponentialLR(optimizer, gamma=scheduler_params['gamma'])
+    elif scheduler_type == 'LinearLR':
+        # LinearLR: lr = lr_init * (1 - start_factor + start_factor * (1 - epoch / total_epochs))
+        # By default, start_factor=1.0, end_factor=0.0 (decay from lr_init to 0)
+        start_factor = scheduler_params.get('start_factor', 1.0)
+        end_factor = scheduler_params.get('end_factor', 0.0)
+        total_iters = scheduler_params.get('total_iters', num_epochs)
+        scheduler = LinearLR(optimizer, start_factor=start_factor, end_factor=end_factor, total_iters=total_iters)
     
     # training parameters
     batch_size = max(1, int(4 * factor))  # batch_size = 4*factor (linear in frequency)
-    num_epochs = 250  # 250 epochs for faster testing
+    num_epochs = 1000  # 1000 epochs
     
     # we track training
     all_losses = []
@@ -361,12 +378,15 @@ def main():
     # SGD only as preferred, test multiple learning rates
     lr_configs = []
     
-    # Test multiple learning rates: 0.001, 0.005, 0.01, 0.02, 0.05
-    learning_rates = [0.001, 0.005, 0.01, 0.02, 0.05]
+    # Test specific learning rates: 0.001 (e-3) and 0.005 (5e-3)
+    learning_rates = [0.001, 0.005]
+    
+    # Test specific momentum values: 0.3, 0.4, 0.5, 0.6, 0.7
+    momentum_values = [0.3, 0.4, 0.5, 0.6, 0.7]
     
     # SGD with different momentum values and learning rates - NO SCHEDULER (constant LR)
     for lr in learning_rates:
-        for momentum in [0.0, 0.5, 0.9, 0.99]:
+        for momentum in momentum_values:
             # SGD without scheduler (constant LR)
             lr_configs.append({
                 'optimizer_type': 'SGD',
@@ -381,19 +401,20 @@ def main():
     print("="*80)
     print(f"Testing factors: {factors}")
     print(f"Testing ranks: {ranks_to_test}")
-    print(f"Epochs per config: 250")
+    print(f"Epochs per config: 1000")
     print(f"Batch size: 4*factor (linear in frequency)")
     print(f"Parameterization: NTK (fixWb=True)")
     print(f"Initialization: Uniform[-1,1] / sqrt(n)")
     print(f"Optimizer: SGD only")
-    print(f"Learning rates: {learning_rates}")
-    print(f"Momentum values: [0.0, 0.5, 0.9, 0.99]")
+    print(f"Learning rates: {learning_rates} (e-3 and 5e-3)")
+    print(f"Momentum values: {momentum_values}")
+    print(f"No LR scheduler (constant LR)")
     print(f"Total configs to test: {len(lr_configs) * len(factors) * len(ranks_to_test)}")
     print(f"Output directory: {output_base}")
     print("="*80)
     
-    all_results = []
-    
+    # Prepare all configurations for parallel execution
+    all_configs_to_run = []
     for factor in factors:
         for rank in ranks_to_test:
             for i, lr_config in enumerate(lr_configs):
@@ -408,6 +429,9 @@ def main():
                     scheduler_name = f"StepLR_step{lr_config['scheduler_params'].get('step_size', 'N/A')}_gamma{lr_config['scheduler_params'].get('gamma', 'N/A')}"
                 elif lr_config.get('scheduler_type') == 'ExponentialLR':
                     scheduler_name = f"ExpLR_gamma{lr_config['scheduler_params'].get('gamma', 'N/A')}"
+                elif lr_config.get('scheduler_type') == 'LinearLR':
+                    end_factor = lr_config['scheduler_params'].get('end_factor', 0.0)
+                    scheduler_name = f"LinearLR_end{end_factor}"
                 else:
                     scheduler_name = "NoScheduler"
                 
@@ -418,15 +442,40 @@ def main():
                 lr_config_with_rank = lr_config.copy()
                 lr_config_with_rank['hidden_rank'] = rank
                 
-                results = train_one_config(factor, lr_config_with_rank, output_dir)
-                all_results.append(results)
+                all_configs_to_run.append((factor, lr_config_with_rank, str(output_dir)))
+    
+    # Run configurations in parallel
+    print(f"\n🚀 Running {len(all_configs_to_run)} configurations in parallel on GPU...")
+    print(f"   Using {min(8, len(all_configs_to_run))} parallel workers\n")
+    
+    all_results = []
+    num_workers = min(8, len(all_configs_to_run))  # Limit to 8 parallel processes to avoid GPU saturation
+    
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        # Submit all tasks (pass as tuple for easier pickling)
+        future_to_config = {
+            executor.submit(train_one_config_wrapper, (factor, lr_config, output_dir)): (factor, lr_config, output_dir)
+            for factor, lr_config, output_dir in all_configs_to_run
+        }
+        
+        # Process completed tasks with progress bar
+        with tqdm(total=len(all_configs_to_run), desc="Training configs", unit="config") as pbar:
+            for future in as_completed(future_to_config):
+                try:
+                    results = future.result()
+                    all_results.append(results)
+                    pbar.update(1)
+                except Exception as e:
+                    config_info = future_to_config[future]
+                    print(f"\n❌ Error in config {config_info[2]}: {e}")
+                    pbar.update(1)
     
     # we save summary
     summary = {
         'experiment': 'LR decay tuning: L=2, cos(2*factor*pi*x)',
         'factors_tested': factors,
         'num_layers': 2,
-        'num_epochs': 2000,
+        'num_epochs': 500,
         'batch_size_formula': '4*factor',
         'lr_configs_tested': lr_configs,
         'results': all_results
