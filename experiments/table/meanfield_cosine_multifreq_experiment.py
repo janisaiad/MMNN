@@ -674,6 +674,167 @@ def run_experiment():
         json.dump(save_results, f, indent=4)
     print(f"Saved results to {output_dir / 'results.json'}")
     
+    # we plot partial functions f_k(x) and functions after low-rank mixing
+    print("\n" + "="*80)
+    print("Plotting Partial Functions f_k(x) and Functions After Low-Rank Mixing...")
+    print("="*80)
+    
+    # we compute partial functions on a fine grid
+    x_fine = np.linspace(-1, 1, 500)
+    x_fine_tensor = torch.tensor(x_fine.reshape(-1, 1), dtype=torch.float32, device=device)
+    
+    # we get weights at final time
+    w1_final, w2_final = mf_solver.get_weights_at_time(-1)
+    
+    # we compute the 15 low-rank functions (output of low-rank layer, like in MMNN)
+    # in mean-field: these are computed as the output after mixing f_k via L
+    # but we need to extract them differently - the 15 functions should be the output
+    # of the low-rank operation, which in mean-field corresponds to what goes into H2
+    
+    # actually, in mean-field 2-layer: 
+    # f_k = E_C1[w1(C1,k) * phi1] are the components BEFORE mixing
+    # H2 = sum_k L_{c2,k} * f_k mixes them
+    # but the 15 low-rank functions the user wants are likely the f_k themselves
+    # OR they want the output of a low-rank layer which would be the result of mixing
+    
+    # let me compute both: f_k (before mixing) and also what would be the output
+    # if we had a low-rank layer that outputs r dimensions (like MMNN does)
+    
+    # we compute f_k (the 15 low-rank components before mixing via L)
+    f_k_fine = mf_solver.compute_partial_functions(w1_final, x_fine_tensor)  # [r, 500]
+    f_k_fine_np = f_k_fine.detach().cpu().numpy()  # [r, 500]
+    
+    # we check values at x=0 to verify
+    idx_zero = np.argmin(np.abs(x_fine))
+    print(f"\nDiagnostic: Values at x={x_fine[idx_zero]:.6f} (closest to 0):")
+    print(f"  f_k values: min={np.min(f_k_fine_np[:, idx_zero]):.6f}, max={np.max(f_k_fine_np[:, idx_zero]):.6f}, mean={np.mean(f_k_fine_np[:, idx_zero]):.6f}")
+    print(f"  Number of f_k that are exactly 0: {(np.abs(f_k_fine_np[:, idx_zero]) < 1e-10).sum()}/{r}")
+    
+    # we also check at other points
+    idx_05 = np.argmin(np.abs(x_fine - 0.5))
+    print(f"\nDiagnostic: Values at x={x_fine[idx_05]:.6f}:")
+    print(f"  f_k values: min={np.min(f_k_fine_np[:, idx_05]):.6f}, max={np.max(f_k_fine_np[:, idx_05]):.6f}, mean={np.mean(f_k_fine_np[:, idx_05]):.6f}")
+    
+    # we check if functions are all ReLU-like (linear piecewise)
+    # by checking if they're all 0 at x=0
+    if np.allclose(f_k_fine_np[:, idx_zero], 0, atol=1e-6):
+        print(f"\nWARNING: All f_k are 0 at x=0. This is expected because ReLU(0)=0.")
+        print(f"  The functions f_k are linear combinations of ReLU activations,")
+        print(f"  so they are piecewise linear and pass through 0.")
+        print(f"  This is NORMAL for this architecture.")
+    
+    # in MMNN, the partial functions are the OUTPUT of the low-rank layer
+    # which means they are the result of: low_rank_layer(ReLU(random_features(x)))
+    # in mean-field, this would be: after mixing f_k, we get H2, but H2 has n2 dimensions
+    # but if we want r=15 outputs like MMNN, we need to think differently
+    
+    # actually, I think the user wants the f_k functions (the 15 low-rank components)
+    # which are what come out of the first low-rank operation
+    # these are the 15 functions that get mixed via L to form H2
+    
+    # we plot the 15 low-rank functions (these are f_k, the output of the low-rank operation)
+    # NOTE: These functions are piecewise linear (combinations of ReLU) and pass through 0
+    # This is NORMAL - they are averages of ReLU activations without bias
+    fig = plt.figure(figsize=(16, 10))
+    ax = fig.add_subplot(111)
+    
+    colors = plt.cm.tab20(np.linspace(0, 1, r))
+    for k in range(r):
+        ax.plot(x_fine, f_k_fine_np[k], linewidth=2.5, alpha=0.8, label=f'$f_{{{k+1}}}(x)$', color=colors[k])
+    
+    # we also plot the target function for reference
+    y_target = cosine_func(x_fine)
+    ax.plot(x_fine, y_target, 'k--', linewidth=3, label='Target $f(x)$', alpha=0.8)
+    
+    # we mark x=0 to show functions pass through 0
+    ax.axvline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+    ax.axhline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+    
+    ax.set_xlabel('$x$', fontsize=24)
+    ax.set_ylabel('$f_k(x)$ (low-rank functions)', fontsize=24)
+    ax.set_title(f'Low-Rank Functions $f_k(x)$ at Final Time $t={final_time:.1f}$\nAll $r={r}$ channels (output of low-rank layer)\nNote: Functions are piecewise linear (combinations of ReLU) and pass through 0', fontsize=20)
+    ax.legend(ncol=3, fontsize=12, loc='upper right')
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, f'{common_info_text} Low-rank functions: $f_k(x) = \\mathbb{{E}}_{{C_1}}[w_1(C_1,k) \\cdot \\phi_1(f_1(C_1), x)]$ where $\\phi_1$ is ReLU. These are piecewise linear (combinations of ReLU) and pass through 0, which is NORMAL for this architecture.', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_lowrank_functions_all.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_lowrank_functions_all.png'}")
+    plt.close()
+    
+    # we plot top 5 and bottom 5 channels by magnitude at x=0
+    f_k_at_zero = f_k_fine_np[:, np.argmin(np.abs(x_fine))]  # values at x closest to 0
+    abs_f_k_at_zero = np.abs(f_k_at_zero)
+    top_5_indices = np.argsort(abs_f_k_at_zero)[-5:][::-1]
+    bottom_5_indices = np.argsort(abs_f_k_at_zero)[:5]
+    
+    fig, axes = plt.subplots(2, 1, figsize=(14, 12))
+    
+    # we plot top 5 channels
+    ax = axes[0]
+    for idx in top_5_indices:
+        ax.plot(x_fine, f_k_fine_np[idx], linewidth=2.5, label=f'$f_{{{idx+1}}}(x)$ (magnitude={abs_f_k_at_zero[idx]:.6f})', alpha=0.8)
+    ax.plot(x_fine, y_target, 'k--', linewidth=2, label='Target $f(x)$', alpha=0.6)
+    ax.set_xlabel('$x$', fontsize=22)
+    ax.set_ylabel('$f_k(x)$', fontsize=22)
+    ax.set_title(f'Top 5 Low-Rank Functions by Magnitude at $x \\approx 0$ (Final Time $t={final_time:.1f}$)', fontsize=20)
+    ax.legend(fontsize=14)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=16)
+    
+    # we plot bottom 5 channels
+    ax = axes[1]
+    for idx in bottom_5_indices:
+        ax.plot(x_fine, f_k_fine_np[idx], linewidth=2.5, label=f'$f_{{{idx+1}}}(x)$ (magnitude={abs_f_k_at_zero[idx]:.6f})', alpha=0.8)
+    ax.plot(x_fine, y_target, 'k--', linewidth=2, label='Target $f(x)$', alpha=0.6)
+    ax.set_xlabel('$x$', fontsize=22)
+    ax.set_ylabel('$f_k(x)$', fontsize=22)
+    ax.set_title(f'Bottom 5 Low-Rank Functions by Magnitude at $x \\approx 0$ (Final Time $t={final_time:.1f}$)', fontsize=20)
+    ax.legend(fontsize=14)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=16)
+    
+    fig.text(0.5, 0.02, f'{common_info_text} These are the $r={r}$ low-rank functions (output of the low-rank layer), like in MMNN.', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_lowrank_functions_top_bottom.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_lowrank_functions_top_bottom.png'}")
+    plt.close()
+    
+    # we also plot the final output (weighted average of phi2)
+    H2_fine, _ = mf_solver.compute_H2(w1_final, w2_final, x_fine_tensor)  # [n2, 500]
+    y_hat_fine = mf_solver.compute_output(w1_final, w2_final, x_fine_tensor).detach().cpu().numpy()
+    
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    ax.plot(x_fine, y_target, 'k-', linewidth=3, label='Target $f(x)$', alpha=0.8)
+    ax.plot(x_fine, y_hat_fine, 'r--', linewidth=2.5, label='Network Output $\\hat{{y}}(x)$', alpha=0.8)
+    ax.set_xlabel('$x$', fontsize=24)
+    ax.set_ylabel('$y$', fontsize=24)
+    ax.set_title(f'Final Network Output vs Target (Final Time $t={final_time:.1f}$)', fontsize=22)
+    ax.legend(fontsize=18)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=18)
+    fig.text(0.5, 0.02, f'{common_info_text} Final output: $\\hat{{y}}(x) = \\mathbb{{E}}_{{C_2}}[w_2(C_2) \\cdot \\phi_2(H_2)]$.', ha='center', fontsize=12, wrap=True)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
+    plt.savefig(output_dir / 'meanfield_final_output.png', dpi=300, bbox_inches='tight')
+    print(f"Saved figure to {output_dir / 'meanfield_final_output.png'}")
+    plt.close()
+    
+    print("\n" + "="*80)
+    print("Mean-Field Implementation Summary:")
+    print("="*80)
+    print("1. Architecture: 2-layer network with frozen random features f1 and mixing matrix L")
+    print("2. Partial Functions: f_k(x) = E_C1[w1(C1,k) * phi1(f1(C1), x)] where phi1 = ReLU")
+    print("3. Hidden Layer: H2(c2;x) = sum_k L_{c2,k} * f_k(x)")
+    print("4. Output: y_hat = E_C2[w2(C2) * phi2(H2)] where phi2 = ReLU")
+    print("5. Backprop Signal: B_k = E_C2[L_{C2,k} * phi2'(H2) * w2]")
+    print("6. Weight Updates:")
+    print("   - dw1[:,k] = -xi1 * E[dL * phi1 * B_k]")
+    print("   - dw2 = -xi2 * E[dL * phi2]")
+    print("   where dL = y_hat - y (square loss derivative)")
+    print("7. ODE Solver: scipy.integrate.solve_ivp with RK45 method")
+    print("="*80)
+    
     print("\n" + "="*80)
     print("Experiment Complete!")
     print("="*80)
