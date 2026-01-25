@@ -102,6 +102,7 @@ class MeanFieldODESolver:
         # we initialize weights as Gaussian O(1) (not zero)
         self.w1_0 = torch.randn(n1, r, device=device)  # Gaussian N(0, 1) - order 1
         self.w2_0 = torch.randn(n2, device=device)  # Gaussian N(0, 1) - order 1
+        self.c_0 = torch.randn(1, device=device).item()  # scalar output bias (trainable), initialized as N(0, 1)
         
         # we store trajectory
         self.trajectory = []
@@ -137,22 +138,24 @@ class MeanFieldODESolver:
             B_k[k] = torch.mean(L_k * phi2_prime * w2.unsqueeze(1), dim=0)  # [batch_size]
         return B_k
     
-    def compute_output(self, w1, w2, X):
-        """we compute network output y_hat = E_C2[w2(C2) phi2(H2)]"""
+    def compute_output(self, w1, w2, c, X):
+        """we compute network output y_hat = E_C2[w2(C2) phi2(H2)] + c"""
         H2, _ = self.compute_H2(w1, w2, X)
         phi2 = torch.relu(H2)  # [n2, batch_size]
-        y_hat = torch.mean(w2.unsqueeze(1) * phi2, dim=0)  # [batch_size]
+        y_hat = torch.mean(w2.unsqueeze(1) * phi2, dim=0) + c  # [batch_size] + scalar bias
         return y_hat
     
-    def ode_rhs(self, t, y, X_data, y_data, xi1=1.0, xi2=1.0):
+    def ode_rhs(self, t, y, X_data, y_data, xi1=1.0, xi2=1.0, xic=1.0):
         """we compute right-hand side of mean-field ODEs"""
         w1_flat = y[:self.n1 * self.r]
-        w2_flat = y[self.n1 * self.r:]
+        w2_flat = y[self.n1 * self.r:-1]
+        c_val = y[-1]
         w1 = w1_flat.reshape(self.n1, self.r)
         w2 = w2_flat
         
         w1_t = torch.tensor(w1, device=self.device, dtype=torch.float32)
         w2_t = torch.tensor(w2, device=self.device, dtype=torch.float32)
+        c_t = torch.tensor(c_val, device=self.device, dtype=torch.float32)
         X_t = torch.tensor(X_data, device=self.device, dtype=torch.float32)
         if X_t.dim() == 1:
             X_t = X_t.unsqueeze(1)
@@ -161,10 +164,11 @@ class MeanFieldODESolver:
         H2, m_k = self.compute_H2(w1_t, w2_t, X_t)
         B_k = self.compute_backprop_signal(w2_t, H2)
         
-        y_hat = self.compute_output(w1_t, w2_t, X_t)
+        y_hat = self.compute_output(w1_t, w2_t, c_t, X_t)
         dL = y_hat - y_data_t  # square loss derivative [batch_size]
         
         inner_prod = torch.matmul(self.f1, X_t.t())  # [n1, batch_size]
+        inner_prod = inner_prod + self.b1.unsqueeze(1)  # we add frozen bias: [n1, batch_size]
         phi1_vals = torch.relu(inner_prod)  # [n1, batch_size]
         
         dw1 = torch.zeros_like(w1_t)
@@ -175,21 +179,26 @@ class MeanFieldODESolver:
         phi2_vals = torch.relu(H2)  # [n2, batch_size]
         dw2 = -xi2 * torch.mean(dL.unsqueeze(0) * phi2_vals, dim=1)  # [n2]
         
+        # we compute gradient for output bias c: dc/dt = -xic * E[dL]
+        dc = -xic * torch.mean(dL)  # scalar
+        
         dw1_flat = dw1.cpu().numpy().flatten()
         dw2_flat = dw2.cpu().numpy()
-        return np.concatenate([dw1_flat, dw2_flat])
+        dc_val = dc.cpu().numpy().item()
+        return np.concatenate([dw1_flat, dw2_flat, [dc_val]])
     
-    def solve(self, X_data, y_data, t_span=(0, 1000), dt=1.0, xi1=1.0, xi2=1.0):
+    def solve(self, X_data, y_data, t_span=(0, 1000), dt=1.0, xi1=1.0, xi2=1.0, xic=1.0):
         """we solve the mean-field ODEs"""
         y0 = np.concatenate([
             self.w1_0.cpu().numpy().flatten(),
-            self.w2_0.cpu().numpy()
+            self.w2_0.cpu().numpy(),
+            [self.c_0]
         ])
         
         t_eval = np.arange(t_span[0], t_span[1] + dt, dt)
         
         sol = solve_ivp(
-            lambda t, y: self.ode_rhs(t, y, X_data, y_data, xi1=xi1, xi2=xi2),
+            lambda t, y: self.ode_rhs(t, y, X_data, y_data, xi1=xi1, xi2=xi2, xic=xic),
             t_span,
             y0,
             t_eval=t_eval,
@@ -207,10 +216,11 @@ class MeanFieldODESolver:
         """we extract weights at a given time index"""
         y = self.trajectory[t_idx]
         w1_flat = y[:self.n1 * self.r]
-        w2_flat = y[self.n1 * self.r:]
+        w2_flat = y[self.n1 * self.r:-1]
+        c_val = y[-1]
         w1 = w1_flat.reshape(self.n1, self.r)
         w2 = w2_flat
-        return torch.tensor(w1, device=self.device), torch.tensor(w2, device=self.device)
+        return torch.tensor(w1, device=self.device), torch.tensor(w2, device=self.device), c_val
     
     def compute_partial_functions(self, w1, X):
         """we compute f_k(t,x) = m_k(t;x,W) for each channel"""
@@ -299,18 +309,21 @@ def run_experiment():
     # we check initial weights (before solving)
     w1_init = mf_solver.w1_0.clone()
     w2_init = mf_solver.w2_0.clone()
+    c_init = mf_solver.c_0
     print(f"Initial weights: w1 shape={w1_init.shape}, w2 shape={w2_init.shape}")
     print(f"  w1 mean={torch.mean(w1_init).item():.6f}, std={torch.std(w1_init).item():.6f}")
     print(f"  w2 mean={torch.mean(w2_init).item():.6f}, std={torch.std(w2_init).item():.6f}")
+    print(f"  c (output bias) = {c_init:.6f}")
     
     sol = mf_solver.solve(x_train, y_train, t_span=t_span, dt=dt)
     
     print(f"Mean-field ODE solved. Trajectory shape: {mf_solver.trajectory.shape}")
     
     # we check final weights to verify they evolved
-    w1_final, w2_final = mf_solver.get_weights_at_time(-1)
+    w1_final, w2_final, c_final = mf_solver.get_weights_at_time(-1)
     print(f"Final weights: w1 mean={torch.mean(w1_final).item():.6f}, std={torch.std(w1_final).item():.6f}")
     print(f"  w2 mean={torch.mean(w2_final).item():.6f}, std={torch.std(w2_final).item():.6f}")
+    print(f"  c (output bias) = {c_final:.6f}")
     print(f"  Weight change: w1 diff={torch.mean(torch.abs(w1_final - w1_init)).item():.6f}")
     print(f"  Weight change: w2 diff={torch.mean(torch.abs(w2_final - w2_init)).item():.6f}")
     
@@ -333,7 +346,7 @@ def run_experiment():
     
     for t_idx in time_indices:
         t = mf_solver.times[t_idx]
-        w1_t, w2_t = mf_solver.get_weights_at_time(t_idx)
+        w1_t, w2_t, c_t = mf_solver.get_weights_at_time(t_idx)
         
         # we check weight statistics
         w1_mean = torch.mean(torch.abs(w1_t)).item()
@@ -371,10 +384,10 @@ def run_experiment():
     final_time_key = list(results.keys())[-1]
     log_ratios_final = results[final_time_key]['log_ratios']
     final_time = results[final_time_key]['time']
-    w1_final, w2_final = mf_solver.get_weights_at_time(-1)
+    w1_final, w2_final, c_final = mf_solver.get_weights_at_time(-1)
     w1_flat = w1_final.detach().cpu().numpy().flatten()
     w2_flat = w2_final.detach().cpu().numpy().flatten()
-    all_weights = np.concatenate([w1_flat, w2_flat])
+    all_weights = np.concatenate([w1_flat, w2_flat, [c_final]])
     abs_weights = np.abs(all_weights)
     abs_weights = abs_weights[abs_weights > 0]  # we remove zeros for log plot
     
@@ -569,10 +582,10 @@ def run_experiment():
     ax = fig.add_subplot(111)
     for t_idx in time_indices:
         t = mf_solver.times[t_idx]
-        w1_t, w2_t = mf_solver.get_weights_at_time(t_idx)
+        w1_t, w2_t, c_t = mf_solver.get_weights_at_time(t_idx)
         w1_flat_t = w1_t.detach().cpu().numpy().flatten()
         w2_flat_t = w2_t.detach().cpu().numpy().flatten()
-        all_weights_t = np.concatenate([w1_flat_t, w2_flat_t])
+        all_weights_t = np.concatenate([w1_flat_t, w2_flat_t, [c_t]])
         ax.hist(all_weights_t, bins=30, alpha=0.5, label=f'$t={t:.1f}$', density=True)
     ax.set_xlabel('Weight Value $w$', fontsize=24)
     ax.set_ylabel('Density', fontsize=24)
@@ -593,7 +606,8 @@ def run_experiment():
     # we compute weight changes
     w1_change = (w1_final - w1_init).detach().cpu().numpy().flatten()
     w2_change = (w2_final - w2_init).detach().cpu().numpy().flatten()
-    all_weight_changes = np.concatenate([w1_change, w2_change])
+    c_change = np.array([c_final - c_init])
+    all_weight_changes = np.concatenate([w1_change, w2_change, c_change])
     abs_weight_changes = np.abs(all_weight_changes)
     
     # we plot both signed and absolute changes
@@ -687,7 +701,7 @@ def run_experiment():
     x_fine_tensor = torch.tensor(x_fine.reshape(-1, 1), dtype=torch.float32, device=device)
     
     # we get weights at final time
-    w1_final, w2_final = mf_solver.get_weights_at_time(-1)
+    w1_final, w2_final, c_final = mf_solver.get_weights_at_time(-1)
     
     # we compute the 15 low-rank functions (output of low-rank layer, like in MMNN)
     # in mean-field: these are computed as the output after mixing f_k via L
@@ -805,7 +819,8 @@ def run_experiment():
     
     # we also plot the final output (weighted average of phi2)
     H2_fine, _ = mf_solver.compute_H2(w1_final, w2_final, x_fine_tensor)  # [n2, 500]
-    y_hat_fine = mf_solver.compute_output(w1_final, w2_final, x_fine_tensor).detach().cpu().numpy()
+    c_final_tensor = torch.tensor(c_final, device=device, dtype=torch.float32)
+    y_hat_fine = mf_solver.compute_output(w1_final, w2_final, c_final_tensor, x_fine_tensor).detach().cpu().numpy()
     
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
@@ -817,7 +832,7 @@ def run_experiment():
     ax.legend(fontsize=18)
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=18)
-    fig.text(0.5, 0.02, f'{common_info_text} Final output: $\\hat{{y}}(x) = \\mathbb{{E}}_{{C_2}}[w_2(C_2) \\cdot \\phi_2(H_2)]$.', ha='center', fontsize=12, wrap=True)
+    fig.text(0.5, 0.02, f'{common_info_text} Final output: $\\hat{{y}}(x) = \\mathbb{{E}}_{{C_2}}[w_2(C_2) \\cdot \\phi_2(H_2)] + c$ (with output bias $c$).', ha='center', fontsize=12, wrap=True)
     plt.tight_layout(rect=[0, 0.05, 1, 0.98])
     plt.savefig(output_dir / 'meanfield_final_output.png', dpi=300, bbox_inches='tight')
     print(f"Saved figure to {output_dir / 'meanfield_final_output.png'}")
@@ -826,14 +841,15 @@ def run_experiment():
     print("\n" + "="*80)
     print("Mean-Field Implementation Summary:")
     print("="*80)
-    print("1. Architecture: 2-layer network with frozen random features f1 and mixing matrix L")
-    print("2. Partial Functions: f_k(x) = E_C1[w1(C1,k) * phi1(f1(C1), x)] where phi1 = ReLU")
+    print("1. Architecture: 2-layer network with frozen random features f1 (with bias b1) and mixing matrix L")
+    print("2. Partial Functions: f_k(x) = E_C1[w1(C1,k) * phi1(f1(C1)*x + b1(C1))] where phi1 = ReLU")
     print("3. Hidden Layer: H2(c2;x) = sum_k L_{c2,k} * f_k(x)")
-    print("4. Output: y_hat = E_C2[w2(C2) * phi2(H2)] where phi2 = ReLU")
+    print("4. Output: y_hat = E_C2[w2(C2) * phi2(H2)] + c where phi2 = ReLU, c is trainable output bias")
     print("5. Backprop Signal: B_k = E_C2[L_{C2,k} * phi2'(H2) * w2]")
     print("6. Weight Updates:")
     print("   - dw1[:,k] = -xi1 * E[dL * phi1 * B_k]")
     print("   - dw2 = -xi2 * E[dL * phi2]")
+    print("   - dc = -xic * E[dL]")
     print("   where dL = y_hat - y (square loss derivative)")
     print("7. ODE Solver: scipy.integrate.solve_ivp with RK45 method")
     print("="*80)
