@@ -96,7 +96,7 @@ def train_one_config(factor, lr_config, output_dir):
     
     # we create training data
     interval = [-1, 1]
-    n_train = 5000
+    n_train = max(1, int(factor * hidden_width))  # factor * width training points
     x_train = np.linspace(interval[0], interval[1], n_train)
     y_train = target_function(x_train, factor)
     
@@ -153,8 +153,8 @@ def train_one_config(factor, lr_config, output_dir):
         }
     
     # training parameters
-    batch_size = max(1, int(4 * factor))  # batch_size = 4*factor (linear in frequency)
-    num_epochs = 1000  # 1000 epochs
+    batch_size = max(1, int(4 * factor * 10))  # batch_size = 4*factor*10
+    num_epochs = 10000  # 10k epochs
     
     # we track training
     all_losses = []
@@ -257,8 +257,8 @@ def train_one_config(factor, lr_config, output_dir):
         # we update tqdm with current loss
         pbar.set_postfix({'loss': f'{epoch_loss:.6e}', 'lr': f'{all_lrs[-1]:.2e}'})
         
-        # plot loss curve every 50 epochs
-        if (epoch + 1) % 50 == 0 or epoch == 0:
+        # plot loss curve every 200 epochs
+        if (epoch + 1) % 200 == 0 or epoch == 0:
             fig, ax = plt.subplots(1, 1, figsize=(10, 6))
             ax.semilogy(all_losses, 'b-', linewidth=1.5, alpha=0.7, label='Loss')
             
@@ -280,8 +280,8 @@ def train_one_config(factor, lr_config, output_dir):
             plt.savefig(output_dir / "loss_evolution.png", dpi=150)
             plt.close()
         
-        # we compute errors every 50 epochs (more frequent for shorter training)
-        if (epoch + 1) % 50 == 0 or epoch == 0:
+        # we compute errors every 200 epochs
+        if (epoch + 1) % 200 == 0 or epoch == 0:
             model.eval()
             with torch.no_grad():
                 y_pred_train = model(x_train_tensor)
@@ -431,7 +431,7 @@ def main():
     output_base = Path("experiments/table/results_tune_lr_decay_L2")
     output_base.mkdir(parents=True, exist_ok=True)
     
-    factors = [1]  # Only factor=1 for now
+    factors = [4]  # factor=4
     
     # Test different ranks
     ranks_to_test = [10, 15, 20, 25, 50]
@@ -441,8 +441,8 @@ def main():
     lr_configs = []
     
     # Test with adaptive LR scheduler: starts at 1e-2, reduces when loss stagnates
-    # Momentum values: 0.3, 0.4, 0.5, 0.6, 0.7
-    momentum_values = [0.3, 0.4, 0.5, 0.6, 0.7]
+    # Momentum values: 0.0, 0.3, and 0.7
+    momentum_values = [0.0, 0.3, 0.7]
     
     # SGD with adaptive LR scheduler (starts at 1e-2, reduces on stagnation)
     for momentum in momentum_values:
@@ -463,7 +463,7 @@ def main():
     print("="*80)
     print(f"Testing factors: {factors}")
     print(f"Testing ranks: {ranks_to_test}")
-    print(f"Epochs per config: 1000")
+    print(f"Epochs per config: 10000")
     print(f"Batch size: 4*factor (linear in frequency)")
     print(f"Parameterization: NTK (fixWb=True)")
     print(f"Initialization: Uniform[-1,1] / sqrt(n)")
