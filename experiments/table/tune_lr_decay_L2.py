@@ -246,6 +246,10 @@ def train_one_config(factor, lr_config, output_dir):
                         param_group['lr'] = new_lr
                     adaptive_scheduler['current_lr_index'] = current_lr_index
                     adaptive_scheduler['last_reduction_epoch'] = epoch
+                    # Store LR reduction moments
+                    if 'lr_reduction_epochs' not in adaptive_scheduler:
+                        adaptive_scheduler['lr_reduction_epochs'] = []
+                    adaptive_scheduler['lr_reduction_epochs'].append(epoch)
                     print(f"\n📉 Loss stagnating at epoch {epoch}: reducing LR to {new_lr:.2e}")
         
         all_lrs.append(optimizer.param_groups[0]['lr'])
@@ -257,6 +261,13 @@ def train_one_config(factor, lr_config, output_dir):
         if (epoch + 1) % 50 == 0 or epoch == 0:
             fig, ax = plt.subplots(1, 1, figsize=(10, 6))
             ax.semilogy(all_losses, 'b-', linewidth=1.5, alpha=0.7, label='Loss')
+            
+            # Add red vertical bars at LR reduction moments
+            if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
+                for reduction_epoch in adaptive_scheduler['lr_reduction_epochs']:
+                    if reduction_epoch < len(all_losses):
+                        ax.axvline(x=reduction_epoch, color='r', linestyle='--', linewidth=1.5, alpha=0.7)
+            
             ax.set_xlabel('Epoch', fontsize=14)
             ax.set_ylabel('Loss', fontsize=14)
             title = f'Loss Evolution - factor={factor}, {optimizer_type}, LR={lr_init}'
@@ -297,6 +308,12 @@ def train_one_config(factor, lr_config, output_dir):
     # loss evolution
     ax1 = axes[0]
     ax1.semilogy(all_losses, 'b-', linewidth=1.5, alpha=0.7, label='Loss')
+    
+    # Add red vertical bars at LR reduction moments
+    if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
+        for reduction_epoch in adaptive_scheduler['lr_reduction_epochs']:
+            if reduction_epoch < len(all_losses):
+                ax1.axvline(x=reduction_epoch, color='r', linestyle='--', linewidth=1.5, alpha=0.7, label='LR reduction' if reduction_epoch == adaptive_scheduler['lr_reduction_epochs'][0] else '')
     ax1.set_xlabel('Epoch', fontsize=18)
     ax1.set_ylabel('Loss', fontsize=18)
     title = f'Loss Evolution - factor={factor}, {optimizer_type}'
@@ -340,6 +357,11 @@ def train_one_config(factor, lr_config, output_dir):
         cv = float('inf')
         oscillation_ratio = float('inf')
     
+    # Store LR reduction epochs if adaptive scheduler was used
+    lr_reduction_epochs = []
+    if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
+        lr_reduction_epochs = adaptive_scheduler['lr_reduction_epochs']
+    
     # we save results
     results = {
         'factor': factor,
@@ -363,8 +385,9 @@ def train_one_config(factor, lr_config, output_dir):
         'training_time_seconds': training_time,
         'oscillation_cv': cv,
         'oscillation_ratio': oscillation_ratio,
-        'all_losses': all_losses,
+        'all_losses': all_losses,  # Store all losses
         'all_lrs': all_lrs,
+        'lr_reduction_epochs': lr_reduction_epochs,  # Store LR reduction moments
         'errors_train': errors_train,
         'errors_test': errors_test,
         'errors_test_max': errors_test_max,
