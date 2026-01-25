@@ -130,6 +130,7 @@ def train_one_config(factor, lr_config, output_dir):
     
     # we set up scheduler based on type
     scheduler = None
+    adaptive_scheduler = None
     if scheduler_type == 'StepLR':
         scheduler = StepLR(optimizer, step_size=scheduler_params['step_size'], gamma=scheduler_params['gamma'])
     elif scheduler_type == 'ExponentialLR':
@@ -141,6 +142,15 @@ def train_one_config(factor, lr_config, output_dir):
         end_factor = scheduler_params.get('end_factor', 0.0)
         total_iters = scheduler_params.get('total_iters', num_epochs)
         scheduler = LinearLR(optimizer, start_factor=start_factor, end_factor=end_factor, total_iters=total_iters)
+    elif scheduler_type == 'AdaptiveStagnation':
+        # Custom adaptive scheduler: reduces LR when loss stagnates
+        adaptive_scheduler = {
+            'lr_sequence': scheduler_params.get('lr_sequence', [0.01, 0.005, 0.001, 0.0005, 0.0001]),
+            'current_lr_index': 0,
+            'window_size': scheduler_params.get('window_size', 10),
+            'min_epochs_before_reduce': scheduler_params.get('min_epochs_before_reduce', 20),
+            'last_reduction_epoch': -1
+        }
     
     # training parameters
     batch_size = max(1, int(4 * factor))  # batch_size = 4*factor (linear in frequency)
@@ -209,6 +219,35 @@ def train_one_config(factor, lr_config, output_dir):
             break
         
         all_losses.append(epoch_loss)
+        
+        # Handle adaptive stagnation scheduler
+        if adaptive_scheduler is not None:
+            current_lr_index = adaptive_scheduler['current_lr_index']
+            lr_sequence = adaptive_scheduler['lr_sequence']
+            window_size = adaptive_scheduler['window_size']
+            min_epochs = adaptive_scheduler['min_epochs_before_reduce']
+            last_reduction = adaptive_scheduler['last_reduction_epoch']
+            
+            # Check if we can reduce LR (enough epochs passed and enough data)
+            if (epoch >= min_epochs and 
+                epoch - last_reduction >= min_epochs and
+                len(all_losses) >= 2 * window_size and
+                current_lr_index < len(lr_sequence) - 1):
+                
+                # Compare mean of last window_size losses vs previous window_size losses
+                recent_mean = np.mean(all_losses[-window_size:])
+                previous_mean = np.mean(all_losses[-2*window_size:-window_size])
+                
+                # If loss is stagnating (recent mean >= previous mean), reduce LR
+                if recent_mean >= previous_mean:
+                    current_lr_index += 1
+                    new_lr = lr_sequence[current_lr_index]
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = new_lr
+                    adaptive_scheduler['current_lr_index'] = current_lr_index
+                    adaptive_scheduler['last_reduction_epoch'] = epoch
+                    print(f"\n📉 Loss stagnating at epoch {epoch}: reducing LR to {new_lr:.2e}")
+        
         all_lrs.append(optimizer.param_groups[0]['lr'])
         
         # we update tqdm with current loss
@@ -378,23 +417,23 @@ def main():
     # SGD only as preferred, test multiple learning rates
     lr_configs = []
     
-    # Test specific learning rates: 0.001 (e-3) and 0.005 (5e-3)
-    learning_rates = [0.001, 0.005]
-    
-    # Test specific momentum values: 0.3, 0.4, 0.5, 0.6, 0.7
+    # Test with adaptive LR scheduler: starts at 1e-2, reduces when loss stagnates
+    # Momentum values: 0.3, 0.4, 0.5, 0.6, 0.7
     momentum_values = [0.3, 0.4, 0.5, 0.6, 0.7]
     
-    # SGD with different momentum values and learning rates - NO SCHEDULER (constant LR)
-    for lr in learning_rates:
-        for momentum in momentum_values:
-            # SGD without scheduler (constant LR)
-            lr_configs.append({
-                'optimizer_type': 'SGD',
-                'lr_init': lr,
-                'momentum': momentum,
-                'scheduler_type': None,
-                'scheduler_params': {}
-            })
+    # SGD with adaptive LR scheduler (starts at 1e-2, reduces on stagnation)
+    for momentum in momentum_values:
+        lr_configs.append({
+            'optimizer_type': 'SGD',
+            'lr_init': 0.01,  # Start at 1e-2
+            'momentum': momentum,
+            'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
+            'scheduler_params': {
+                'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
+                'window_size': 10,  # Compare last 10 vs previous 10
+                'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
+            }
+        })
     
     print("="*80)
     print("OPTIMIZER & LR DECAY TUNING: L=2, cos(2*factor*pi*x)")
@@ -406,9 +445,10 @@ def main():
     print(f"Parameterization: NTK (fixWb=True)")
     print(f"Initialization: Uniform[-1,1] / sqrt(n)")
     print(f"Optimizer: SGD only")
-    print(f"Learning rates: {learning_rates} (e-3 and 5e-3)")
+    print(f"Initial LR: 0.01 (1e-2), adaptive reduction on stagnation")
+    print(f"LR sequence: [1e-2, 5e-3, 1e-3, 5e-4, 1e-4]")
     print(f"Momentum values: {momentum_values}")
-    print(f"No LR scheduler (constant LR)")
+    print(f"Adaptive scheduler: reduces LR when loss stagnates (mean of last 10 >= mean of previous 10)")
     print(f"Total configs to test: {len(lr_configs) * len(factors) * len(ranks_to_test)}")
     print(f"Output directory: {output_base}")
     print("="*80)
@@ -432,6 +472,8 @@ def main():
                 elif lr_config.get('scheduler_type') == 'LinearLR':
                     end_factor = lr_config['scheduler_params'].get('end_factor', 0.0)
                     scheduler_name = f"LinearLR_end{end_factor}"
+                elif lr_config.get('scheduler_type') == 'AdaptiveStagnation':
+                    scheduler_name = "AdaptiveStagnation"
                 else:
                     scheduler_name = "NoScheduler"
                 
