@@ -49,7 +49,7 @@ def generate_configs():
     
     # we use more frequencies for better coverage
     freq_multipliers = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0]
-    ranks = [10, 15, 25]
+    ranks = [15]  # only rank 15
     batch_size = 100
     
     for freq_mult in freq_multipliers:
@@ -200,7 +200,7 @@ def train_one_config(config, output_dir, target_func):
     
     # we track instabilities
     instability_count = 0
-    max_instabilities = 3
+    max_instabilities = 1  # stop after 1 instability
     last_stable_checkpoint = None
     
     # we use tqdm for progress bar
@@ -230,9 +230,16 @@ def train_one_config(config, output_dir, target_func):
         # we update tqdm with current loss
         pbar.set_postfix({'loss': f'{epoch_loss:.6e}', 'instabilities': instability_count})
         
-        # we detect instability: loss > 2 indicates spike/instability
-        if epoch_loss > 2.0:
-            instability_count += 1
+        # we detect instability: loss > 5 indicates spike/instability
+        # but only if it was lower before (real spike, not just high initial loss)
+        # we need at least 10 epochs to establish a baseline
+        if epoch_loss > 5.0 and epoch >= 10 and len(all_losses) >= 10:
+            # check if loss was lower before (spike detection)
+            recent_losses = all_losses[-10:]  # last 10 losses
+            min_recent_loss = min(recent_losses[:-1])  # min of previous 9
+            # if current loss is much higher than recent minimum, it's a spike
+            if min_recent_loss < 5.0 and epoch_loss > 5.0:
+                instability_count += 1
             print(f"\n⚠️  INSTABILITY DETECTED at epoch {epoch}: loss = {epoch_loss:.6e}")
             print(f"   Instability count: {instability_count}/{max_instabilities}")
             
@@ -315,7 +322,7 @@ def train_one_config(config, output_dir, target_func):
                 break
         
         # we save stable checkpoint if loss is reasonable
-        if epoch_loss <= 2.0 and (epoch % 1000 == 0 or epoch == num_epochs - 1):
+        if epoch_loss <= 5.0 and (epoch % 1000 == 0 or epoch == num_epochs - 1):
             last_stable_checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict().copy(),
@@ -343,7 +350,7 @@ def train_one_config(config, output_dir, target_func):
                 errors_test_max.append(error_test_max)
         
         # we save checkpoint and plot every 1000 epochs
-        if epoch % 1000 == 0 and epoch > 0 and epoch_loss <= 2.0:
+        if epoch % 1000 == 0 and epoch > 0 and epoch_loss <= 5.0:
             checkpoint = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -447,7 +454,11 @@ def train_one_config(config, output_dir, target_func):
     with open(output_dir / "config.json", "w") as f:
         json.dump(config, f, indent=4)
     
+    # we save model parameters at final state
     torch.save(model.state_dict(), output_dir / "model_parameters.pth")
+    
+    # we also save parameters at each 1000 epoch checkpoint
+    # (this is already done in the checkpoint saving above)
     
     # we plot loss evolution
     fig = plt.figure(figsize=(10, 6))
