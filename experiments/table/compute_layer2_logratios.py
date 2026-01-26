@@ -273,17 +273,40 @@ def train_one_config_with_logratios(factor, lr_config, output_dir):
     print(f"\n📊 Computing log ratios for layer 2 at x=0...")
     log_ratio_matrix, f_k_values = compute_log_ratios_layer2(model, x_location=0.0, device=device, mydtype=mydtype)
     
-    # we save log ratios
+    # we save matrices to .npy files (compact binary format)
+    matrix_file = output_dir / 'layer2_logratio_matrix_x0.npy'
+    np.save(matrix_file, log_ratio_matrix)
+    fk_file = output_dir / 'layer2_fk_values_x0.npy'
+    np.save(fk_file, f_k_values)
+    
+    # we compute statistics
+    R_clean = log_ratio_matrix[np.isfinite(log_ratio_matrix)]
+    R_positive = R_clean[R_clean > 0]
+    
+    # we save only statistics in JSON (not full matrices to avoid huge files)
     log_ratios_data = {
         'x_location': 0.0,
         'layer': 2,
-        'log_ratio_matrix': log_ratio_matrix.tolist(),
-        'f_k_values': f_k_values.tolist(),
-        'rank': hidden_rank
+        'rank': hidden_rank,
+        'matrix_file': 'layer2_logratio_matrix_x0.npy',
+        'fk_file': 'layer2_fk_values_x0.npy',
+        'statistics': {
+            'mean': float(np.mean(R_clean)) if len(R_clean) > 0 else None,
+            'std': float(np.std(R_clean)) if len(R_clean) > 0 else None,
+            'min': float(np.min(R_clean)) if len(R_clean) > 0 else None,
+            'max': float(np.max(R_clean)) if len(R_clean) > 0 else None,
+            'n_total': int(len(R_clean)),
+            'n_positive': int(len(R_positive)),
+            'mean_positive': float(np.mean(R_positive)) if len(R_positive) > 0 else None,
+            'std_positive': float(np.std(R_positive)) if len(R_positive) > 0 else None,
+            'min_positive': float(np.min(R_positive)) if len(R_positive) > 0 else None,
+            'max_positive': float(np.max(R_positive)) if len(R_positive) > 0 else None
+        }
     }
     with open(output_dir / 'layer2_logratios_x0.json', 'w') as f:
         json.dump(log_ratios_data, f, indent=2)
-    print(f"   ✅ Saved log ratios to {output_dir / 'layer2_logratios_x0.json'}")
+    print(f"   ✅ Saved log ratios (statistics only) to {output_dir / 'layer2_logratios_x0.json'}")
+    print(f"   ✅ Saved matrices to {matrix_file.name} and {fk_file.name}")
     
     # we replot loss evolution
     print(f"\n📈 Replotting loss evolution...")
