@@ -61,19 +61,27 @@ def compute_log_ratios_layer(model, layer_idx, x_location=0.0, device="cpu", myd
         current = x_tensor
         if layer_idx == 1:
             # we go up to fcs[1] (first low-rank layer)
-            for i in range(2):
-                current = model.fcs[i](current)
-                if i % 2 == 0:  # we apply ReLU after rank→width
-                    current = torch.relu(current)
+            # fcs[0]: rank→width, then ReLU, then fcs[1]: width→rank
+            current = model.fcs[0](current)  # [batch, width]
+            current = torch.relu(current)  # [batch, width]
+            current = model.fcs[1](current)  # [batch, rank] - this is layer 1 output
         elif layer_idx == 2:
             # we go up to fcs[3] (second low-rank layer)
-            for i in range(4):
-                current = model.fcs[i](current)
-                if i % 2 == 0:  # we apply ReLU after rank→width
-                    current = torch.relu(current)
+            # fcs[0]→ReLU→fcs[1]→fcs[2]→ReLU→fcs[3]
+            current = model.fcs[0](current)  # [batch, width]
+            current = torch.relu(current)  # [batch, width]
+            current = model.fcs[1](current)  # [batch, rank]
+            current = model.fcs[2](current)  # [batch, width]
+            current = torch.relu(current)  # [batch, width]
+            current = model.fcs[3](current)  # [batch, rank] - this is layer 2 output
         
         # we extract layer output (partial functions)
         f_k = current.cpu().numpy().flatten()  # [r] - one value per channel at x=x_location
+        
+        # we check for NaN/Inf
+        if np.any(~np.isfinite(f_k)):
+            print(f"      Warning: Found NaN/Inf in f_k at x={x_location}, layer={layer_idx}")
+            print(f"      f_k stats: min={np.nanmin(f_k)}, max={np.nanmax(f_k)}, finite={np.sum(np.isfinite(f_k))}/{len(f_k)}")
         
         # we compute log ratios R[i,j] = log(|f_i|) - log(|f_j|)
         r = len(f_k)
@@ -265,9 +273,12 @@ if __name__ == "__main__":
                     try:
                         R, f_k = compute_log_ratios_layer(model, layer_idx, x_val, device, mydtype, epsilon)
                         
-                        # we compute statistics without storing full matrix
-                        R_clean = R[np.isfinite(R)]
-                        R_positive = R_clean[R_clean > 0]
+                        # we filter out NaN and Inf before computing statistics
+                        R_clean = R[np.isfinite(R)]  # we remove NaN and Inf
+                        R_positive = R_clean[R_clean > 0]  # we keep only positive values
+                        
+                        # we also check f_k for NaN
+                        f_k_clean = f_k[np.isfinite(f_k)]
                         
                         # we save matrix to .npy file (compact binary format)
                         matrix_file = config_dir / f'layer{layer_idx}_logratio_matrix_x{x_val}.npy'
@@ -278,23 +289,53 @@ if __name__ == "__main__":
                         np.save(fk_file, f_k)
                         
                         # we store only statistics in JSON (not full matrices)
+                        # we compute statistics only if we have valid values
+                        stats = {}
+                        if len(R_clean) > 0:
+                            stats = {
+                                'mean': float(np.mean(R_clean)),
+                                'std': float(np.std(R_clean)),
+                                'min': float(np.min(R_clean)),
+                                'max': float(np.max(R_clean)),
+                                'n_total': int(len(R_clean)),
+                                'n_positive': int(len(R_positive)),
+                            }
+                            if len(R_positive) > 0:
+                                stats.update({
+                                    'mean_positive': float(np.mean(R_positive)),
+                                    'std_positive': float(np.std(R_positive)),
+                                    'min_positive': float(np.min(R_positive)),
+                                    'max_positive': float(np.max(R_positive))
+                                })
+                            else:
+                                stats.update({
+                                    'mean_positive': None,
+                                    'std_positive': None,
+                                    'min_positive': None,
+                                    'max_positive': None
+                                })
+                        else:
+                            stats = {
+                                'mean': None,
+                                'std': None,
+                                'min': None,
+                                'max': None,
+                                'n_total': 0,
+                                'n_positive': 0,
+                                'mean_positive': None,
+                                'std_positive': None,
+                                'min_positive': None,
+                                'max_positive': None
+                            }
+                        
                         layer_results[f'x_{x_val}'] = {
                             'x': float(x_val),
                             'epsilon': epsilon,
                             'matrix_file': str(matrix_file.name),
                             'fk_file': str(fk_file.name),
-                            'statistics': {
-                                'mean': float(np.mean(R_clean)) if len(R_clean) > 0 else None,
-                                'std': float(np.std(R_clean)) if len(R_clean) > 0 else None,
-                                'min': float(np.min(R_clean)) if len(R_clean) > 0 else None,
-                                'max': float(np.max(R_clean)) if len(R_clean) > 0 else None,
-                                'n_total': int(len(R_clean)),
-                                'n_positive': int(len(R_positive)),
-                                'mean_positive': float(np.mean(R_positive)) if len(R_positive) > 0 else None,
-                                'std_positive': float(np.std(R_positive)) if len(R_positive) > 0 else None,
-                                'min_positive': float(np.min(R_positive)) if len(R_positive) > 0 else None,
-                                'max_positive': float(np.max(R_positive)) if len(R_positive) > 0 else None
-                            }
+                            'f_k_valid': int(len(f_k_clean)),
+                            'f_k_total': int(len(f_k)),
+                            'statistics': stats
                         }
                         
                         # we plot statistics (only positive values)
