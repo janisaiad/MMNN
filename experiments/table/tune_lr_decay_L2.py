@@ -373,6 +373,28 @@ def train_one_config(factor, lr_config, output_dir):
         
         all_losses.append(epoch_loss)
         
+        # Switch from Adam to SGD when loss < 1e-3
+        if use_adam_first and not switched_to_sgd and epoch_loss < 1e-3:
+            print(f"\n🔄 Switching from Adam to SGD at epoch {epoch} (loss={epoch_loss:.6e} < 1e-3)")
+            # Get current learning rate
+            current_lr = optimizer.param_groups[0]['lr']
+            # Create new SGD optimizer with same LR
+            optimizer = optim.SGD(model.parameters(), lr=current_lr, momentum=sgd_momentum)
+            switched_to_sgd = True
+            # Update scheduler if it exists (need to recreate with new optimizer)
+            if scheduler is not None:
+                if scheduler_type == 'StepLR':
+                    scheduler = StepLR(optimizer, step_size=scheduler_params['step_size'], gamma=scheduler_params['gamma'])
+                elif scheduler_type == 'ExponentialLR':
+                    scheduler = ExponentialLR(optimizer, gamma=scheduler_params['gamma'])
+                elif scheduler_type == 'LinearLR':
+                    start_factor = scheduler_params.get('start_factor', 1.0)
+                    end_factor = scheduler_params.get('end_factor', 0.0)
+                    total_iters = scheduler_params.get('total_iters', num_epochs)
+                    scheduler = LinearLR(optimizer, start_factor=start_factor, end_factor=end_factor, total_iters=total_iters)
+            # Update optimizer_type for logging
+            optimizer_type = 'SGD'
+        
         # Store prediction vs baseline frame for GIF (first 250 epochs, every epoch)
         if epoch <= 250:
             current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
