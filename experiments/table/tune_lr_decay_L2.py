@@ -23,6 +23,8 @@ import sys
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
+import imageio.v2 as imageio
+from io import BytesIO
 
 # we add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,12 +46,12 @@ plt.rcParams['ytick.right'] = True
 plt.rcParams['xtick.top'] = True
 
 def target_function(x, factor):
-    """Simple cosine function: cos(2*factor*pi*x)"""
-    return np.cos(2 * factor * np.pi * x)
+    """Cosine function: cos(2*factor*pi*x) + cos(2*pi*x)"""
+    return np.cos(2 * factor * np.pi * x) + np.cos(2 * np.pi * x)
 
 def plot_prediction_vs_baseline(model, x_test_plot, y_test_plot, x_train_plot, y_train_plot, 
-                                 epoch, new_lr, output_dir, factor, current_optimizer_type, lr_config, sgd_momentum=None):
-    """Plot prediction vs baseline at LR reduction moment"""
+                                 epoch, new_lr, output_dir, factor, current_optimizer_type, lr_config, sgd_momentum=None, save_png=False):
+    """Plot prediction vs baseline - returns figure for GIF, optionally saves PNG"""
     model.eval()
     with torch.no_grad():
         x_test_tensor = torch.tensor(x_test_plot.reshape([-1, 1]), device=next(model.parameters()).device, dtype=torch.float32)
@@ -85,10 +87,15 @@ def plot_prediction_vs_baseline(model, x_test_plot, y_test_plot, x_train_plot, y
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plot_filename = f"prediction_vs_baseline_epoch{epoch}_lr{new_lr:.2e}.png"
-    plt.savefig(output_dir / plot_filename, dpi=150)
-    plt.close()
-    print(f"   💾 Saved prediction plot: {plot_filename}")
+    
+    # Save PNG only if explicitly requested (for initialization plot)
+    if save_png:
+        plot_filename = f"prediction_vs_baseline_epoch{epoch}_lr{new_lr:.2e}.png"
+        plt.savefig(output_dir / plot_filename, dpi=150)
+        print(f"   💾 Saved prediction plot: {plot_filename}")
+    
+    # Return figure for GIF creation
+    return fig
 
 def plot_partial_functions(model, x_plot, output_dir, factor, hidden_rank, hidden_width, num_layers, device, mydtype):
     """Plot partial functions learned by each layer (like in benchmark.py)"""
@@ -288,12 +295,23 @@ def train_one_config(factor, lr_config, output_dir):
     
     start_time = time.time()
     
-    # Plot network at initialization (epoch 0)
+    # Store frames for GIF creation (first 1000 epochs)
+    prediction_frames = []  # Store frames for prediction vs baseline GIF
+    partial_functions_frames = {}  # Store frames for partial functions GIF per layer
+    
+    # Plot network at initialization (epoch 0) - save this one
     print(f"\n📊 Plotting network at initialization...")
-    plot_prediction_vs_baseline(
+    fig_init = plot_prediction_vs_baseline(
         model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
-        0, lr_init, output_dir, factor, 'Adam' if use_adam_first else 'SGD', lr_config, sgd_momentum
+        0, lr_init, output_dir, factor, 'Adam' if use_adam_first else 'SGD', lr_config, sgd_momentum, save_png=True
     )
+    if fig_init is not None:
+        # Save frame for GIF
+        buf = BytesIO()
+        fig_init.savefig(buf, format='png', dpi=100)
+        buf.seek(0)
+        prediction_frames.append((0, imageio.imread(buf)))
+        plt.close(fig_init)
     
     # we use tqdm for progress bar
     desc = f"factor={factor}, {optimizer_type}"
@@ -355,6 +373,81 @@ def train_one_config(factor, lr_config, output_dir):
         
         all_losses.append(epoch_loss)
         
+        # Store prediction vs baseline frame for GIF (first 1000 epochs, every 10 epochs)
+        if epoch <= 1000 and epoch % 10 == 0:
+            current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
+            fig = plot_prediction_vs_baseline(
+                model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
+                epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum, save_png=False
+            )
+            if fig is not None:
+                buf = BytesIO()
+                fig.savefig(buf, format='png', dpi=100)
+                buf.seek(0)
+                prediction_frames.append((epoch, imageio.imread(buf)))
+                plt.close(fig)
+        
+        # Store partial functions frames for GIF (first 2000 epochs, every 50 epochs)
+        if epoch <= 2000 and epoch % 50 == 0:
+            # Generate partial functions for this epoch
+            ranks = [1] + [hidden_rank] * num_layers + [1]
+            widths = [hidden_width] * (num_layers + 1)
+            # Create teacher model (copy of current model)
+            teacher = MMNN(ranks=ranks, widths=widths, device=device, ResNet=False, fixWb=True)
+            teacher.load_state_dict(model.state_dict())
+            x_tensor = torch.tensor(x_test_plot.reshape([-1, 1]), device=device, dtype=mydtype)
+            
+            for layer_idx in range(1, len(teacher.fcs), 1):
+                if layer_idx % 2 == 0:
+                    output_rank = ranks[layer_idx//2+1]
+                else:
+                    output_rank = min(widths[(layer_idx)//2], 36)
+                
+                if layer_idx not in partial_functions_frames:
+                    partial_functions_frames[layer_idx] = []
+                
+                # Get layer output
+                with torch.no_grad():
+                    current = x_tensor
+                    for i in range(layer_idx):
+                        current = teacher.fcs[i](current)
+                        if i % 2 == 0:
+                            current = torch.relu(current)
+                    output = current.cpu().numpy()
+                
+                # Create figure for this layer
+                n_rows = int(np.ceil(np.sqrt(output_rank)))
+                n_cols = int(np.ceil(output_rank / n_rows))
+                fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+                if n_rows == 1 and n_cols == 1:
+                    axes = np.array([[axes]])
+                elif n_rows == 1 or n_cols == 1:
+                    axes = axes.reshape(n_rows, n_cols)
+                
+                fig.suptitle(f'Layer {layer_idx} - Epoch {epoch} (rank {output_rank})', fontsize=14)
+                
+                for idx in range(output_rank):
+                    i = idx // n_cols
+                    j = idx % n_cols
+                    axes[i, j].plot(x_test_plot, output[:, idx], 'b-', linewidth=1)
+                    axes[i, j].set_title(f'Component {idx+1}')
+                    axes[i, j].grid(True, alpha=0.3)
+                    axes[i, j].set_xticks([-1, 0, 1])
+                
+                for idx in range(output_rank, n_rows * n_cols):
+                    i = idx // n_cols
+                    j = idx % n_cols
+                    axes[i, j].axis('off')
+                
+                plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+                
+                # Save frame for GIF
+                buf = BytesIO()
+                fig.savefig(buf, format='png', dpi=100)
+                buf.seek(0)
+                partial_functions_frames[layer_idx].append((epoch, imageio.imread(buf)))
+                plt.close(fig)
+        
         # Detect large loss drop (>2x reduction in one step) and plot before/after
         if len(all_losses) >= 2:
             prev_loss = all_losses[-2]
@@ -368,35 +461,8 @@ def train_one_config(factor, lr_config, output_dir):
                 # Save current state temporarily
                 model_state_after = {k: v.clone().cpu() for k, v in model.state_dict().items()}
                 
-                # Plot BEFORE (state at start of this epoch, which is end of previous epoch)
-                if model_state_before_epoch is not None:
-                    # Move state back to device
-                    model_state_before_device = {k: v.to(device) for k, v in model_state_before_epoch.items()}
-                    model.load_state_dict(model_state_before_device)
-                    current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
-                    plot_prediction_vs_baseline(
-                        model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
-                        epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum
-                    )
-                    plot_filename_before = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}_before_large_drop.png"
-                    plot_filename_current = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}.png"
-                    if (output_dir / plot_filename_current).exists():
-                        (output_dir / plot_filename_current).rename(output_dir / plot_filename_before)
-                    print(f"   💾 Saved plot BEFORE large drop: {plot_filename_before}")
-                
-                # Restore current state and plot AFTER
-                model_state_after_device = {k: v.to(device) for k, v in model_state_after.items()}
-                model.load_state_dict(model_state_after_device)
-                current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
-                plot_prediction_vs_baseline(
-                    model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
-                    epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum
-                )
-                plot_filename_after = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}_after_large_drop.png"
-                plot_filename_current_after = f"prediction_vs_baseline_epoch{epoch}_lr{optimizer.param_groups[0]['lr']:.2e}.png"
-                if (output_dir / plot_filename_current_after).exists():
-                    (output_dir / plot_filename_current_after).rename(output_dir / plot_filename_after)
-                print(f"   💾 Saved plot AFTER large drop: {plot_filename_after}")
+                # Don't save PNG for large drops anymore, just log
+                print(f"   📉 Large drop detected (no PNG saved)")
         
         # Switch from Adam to SGD when loss < 1e-3
         if use_adam_first and not switched_to_sgd and epoch_loss < 1e-3:
@@ -451,13 +517,7 @@ def train_one_config(factor, lr_config, output_dir):
                         adaptive_scheduler['lr_reduction_epochs'] = []
                     adaptive_scheduler['lr_reduction_epochs'].append(epoch)
                     print(f"\n📉 Loss stagnating at epoch {epoch}: reducing LR to {new_lr:.2e}")
-                    
-                    # Plot prediction vs baseline at LR reduction moment
-                    current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
-                    plot_prediction_vs_baseline(
-                        model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
-                        epoch, new_lr, output_dir, factor, current_opt_type, lr_config, sgd_momentum
-                    )
+                    # Don't save PNG for LR reductions anymore
         
         all_lrs.append(optimizer.param_groups[0]['lr'])
         
@@ -514,8 +574,30 @@ def train_one_config(factor, lr_config, output_dir):
     
     training_time = time.time() - start_time
     
-    # Plot partial functions learned by each layer (like in benchmark.py)
-    print(f"\n📊 Plotting partial functions learned by each layer...")
+    # Create GIFs from stored frames
+    print(f"\n🎬 Creating GIFs from stored frames...")
+    
+    # Create prediction vs baseline GIF (first 1000 epochs)
+    if len(prediction_frames) > 0:
+        print(f"   Creating prediction vs baseline GIF ({len(prediction_frames)} frames)...")
+        prediction_frames_sorted = sorted(prediction_frames, key=lambda x: x[0])
+        frames = [frame for _, frame in prediction_frames_sorted]
+        gif_path = output_dir / "prediction_vs_baseline_epochs_0_1000.gif"
+        imageio.mimsave(str(gif_path), frames, duration=0.2, loop=0)
+        print(f"   ✅ Saved: {gif_path.name}")
+    
+    # Create partial functions GIFs per layer (first 2000 epochs)
+    for layer_idx, frames_list in partial_functions_frames.items():
+        if len(frames_list) > 0:
+            print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
+            frames_sorted = sorted(frames_list, key=lambda x: x[0])
+            frames = [frame for _, frame in frames_sorted]
+            gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
+            imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
+            print(f"   ✅ Saved: {gif_path.name}")
+    
+    # Plot final partial functions (static plot at end of training)
+    print(f"\n📊 Plotting final partial functions learned by each layer...")
     plot_partial_functions(model, x_test_plot, output_dir, factor, hidden_rank, hidden_width, num_layers, device, mydtype)
     
     # we plot loss evolution and LR schedule
@@ -639,7 +721,7 @@ def train_one_config(factor, lr_config, output_dir):
         'scheduler_params': scheduler_params,
         'momentum': lr_config.get('momentum', None),
         'betas': lr_config.get('betas', None),
-        'function': f'cos(2*{factor}*pi*x)',
+        'function': f'cos(2*{factor}*pi*x) + cos(2*pi*x)',
         'parameterization': 'NTK',  # fixWb=True
         'initialization': 'uniform[-1,1]/sqrt(n)',
     }
@@ -665,29 +747,27 @@ def main():
     
     factors = [4]  # factor=4
     
-    # Test different ranks - only 10 and 25 for momentum testing
-    ranks_to_test = [10, 25]
+    # Test different ranks - all ranks that were tested with factor=4
+    ranks_to_test = [10, 15, 20, 25, 50]
     
     # we define different optimizer and LR configurations to test
     # SGD only as preferred, test multiple learning rates
     lr_configs = []
     
     # Test with adaptive LR scheduler: starts at 1e-2, reduces when loss stagnates
-    # Use Adam optimizer, test different momentum values for SGD switch (1.3, 1.7)
-    momentum_values_to_test = [1.3, 1.7]
-    for momentum in momentum_values_to_test:
-        lr_configs.append({
-            'optimizer_type': 'Adam',
-            'lr_init': 0.01,  # Start at 1e-2
-            'betas': (0.9, 0.999),  # Default Adam betas
-            'momentum': momentum,  # Momentum for SGD after switch
-            'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
-            'scheduler_params': {
-                'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
-                'window_size': 10,  # Compare last 10 vs previous 10
-                'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
-            }
-        })
+    # Use Adam optimizer with default momentum (0.9) for SGD switch
+    lr_configs.append({
+        'optimizer_type': 'Adam',
+        'lr_init': 0.01,  # Start at 1e-2
+        'betas': (0.9, 0.999),  # Default Adam betas
+        'momentum': 0.9,  # Default momentum for SGD after switch
+        'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
+        'scheduler_params': {
+            'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
+            'window_size': 10,  # Compare last 10 vs previous 10
+            'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
+        }
+    })
     
     print("="*80)
     print("OPTIMIZER & LR DECAY TUNING: L=2, cos(2*factor*pi*x)")
@@ -702,8 +782,9 @@ def main():
     print(f"Initial LR: 0.01 (1e-2), adaptive reduction on stagnation")
     print(f"LR sequence: [1e-2, 5e-3, 1e-3, 5e-4, 1e-4]")
     print(f"Betas: (0.9, 0.999)")
-    print(f"SGD Momentum values: {momentum_values_to_test}")
+    print(f"SGD Momentum: 0.9 (default)")
     print(f"Adaptive scheduler: reduces LR when loss stagnates (mean of last 10 >= mean of previous 10)")
+    print(f"Target function: cos(2*factor*pi*x) + cos(2*pi*x)")
     print(f"Total configs to test: {len(lr_configs) * len(factors) * len(ranks_to_test)}")
     print(f"Output directory: {output_base}")
     print("="*80)
@@ -730,9 +811,6 @@ def main():
                     scheduler_name = f"LinearLR_end{end_factor}"
                 elif lr_config.get('scheduler_type') == 'AdaptiveStagnation':
                     scheduler_name = "AdaptiveStagnation"
-                    # Add momentum to scheduler name if specified
-                    if 'momentum' in lr_config:
-                        scheduler_name += f"_mom{lr_config['momentum']}"
                 else:
                     scheduler_name = "NoScheduler"
                 
@@ -817,12 +895,15 @@ def main():
     df.to_csv(csv_path, index=False)
     print(f"\n✅ Summary table saved to: {csv_path}")
     
-    # Print table sorted by oscillation ratio
+    # Print table sorted by oscillation ratio (if column exists)
     print("\n" + "="*80)
-    print("SUMMARY TABLE (sorted by oscillation ratio)")
+    print("SUMMARY TABLE")
     print("="*80)
-    df_sorted = df.sort_values('Oscillation Ratio', key=lambda x: pd.to_numeric(x, errors='coerce'))
-    print(df_sorted.to_string(index=False))
+    if 'Oscillation Ratio' in df.columns:
+        df_sorted = df.sort_values('Oscillation Ratio', key=lambda x: pd.to_numeric(x, errors='coerce'))
+        print(df_sorted.to_string(index=False))
+    else:
+        print(df.to_string(index=False))
     
     # we analyze results by factor and optimizer
     print("\n" + "="*80)
