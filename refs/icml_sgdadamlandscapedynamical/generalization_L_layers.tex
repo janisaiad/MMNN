@@ -1,0 +1,145 @@
+\section{Generalization to $L$ Layers: Key Patterns and Proof Strategy}
+\label{sec:generalization-L}
+
+This section outlines how to generalize the quantitative approximation proof from 2 layers to arbitrary depth $L$, identifying the key patterns that repeat and the minimal changes needed.
+
+\subsection{Architecture for $L$ Layers}
+
+For an $L$-layer low-rank network:
+\begin{itemize}
+\item \textbf{Layer 1}: Frozen random features $\varphi_1(\langle f_1(C_1), X\rangle)$ (not trained)
+\item \textbf{Layers $i = 2, \ldots, L-1$}: Each layer uses a low-rank mixing matrix $L^{(i)}$ of rank $r$, producing:
+\[
+H_i(t, c_i; X, W) = \sum_{k=1}^r L^{(i)}_{c_i,k}\, m_k^{(i)}(t; X, W),
+\]
+where $m_k^{(i)}(t; X, W) = \mathbb{E}_{C_{i-1}}[w_{i-1}(t, C_{i-1}, k)\,\varphi_{i-1}(H_{i-1}(t, C_{i-1}; X, W))]$ for $i \geq 3$, and $m_k^{(2)}(t; X, W) = \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), X\rangle)]$ for layer 2.
+\item \textbf{Layer $L$ (output)}: Trainable weights $w_L(t, C_L)$ producing the final output.
+\end{itemize}
+
+\subsection{Mean-Field ODE System for $L$ Layers}
+
+The ODE system generalizes as:
+\begin{align*}
+\partial_t w_1(t, c_1, k) &= -\xi_1(t)\,\mathbb{E}_Z\left[d_L(Z; W(t))\,\varphi_1(\langle f_1(c_1), X\rangle)\,B_k^{(2)}(t; X, W(t))\right],\\
+\partial_t w_i(t, c_i, k) &= -\xi_i(t)\,\mathbb{E}_Z\left[d_L(Z; W(t))\,\varphi_i(H_i(t, c_i; X, W(t)))\,B_k^{(i+1)}(t; X, W(t))\right], \quad i = 2, \ldots, L-1,\\
+\partial_t w_L(t, c_L) &= -\xi_L(t)\,\mathbb{E}_Z\left[d_L(Z; W(t))\,\varphi_L(H_L(t, c_L; X, W(t)))\right],
+\end{align*}
+where the backpropagated signals are:
+\begin{align*}
+B_k^{(i)}(t; X, W) &= \mathbb{E}_{C_i}\left[L^{(i)}_{C_i,k}\,\varphi_i'(H_i(t, C_i; X, W))\,w_i(t, C_i, k)\right], \quad i = 2, \ldots, L-1,\\
+B_k^{(L)}(t; X, W) &= \mathbb{E}_{C_L}\left[L^{(L)}_{C_L,k}\,\varphi_L'(H_L(t, C_L; X, W))\,w_L(t, C_L)\right].
+\end{align*}
+
+\subsection{Key Pattern: Recursive Structure}
+
+\textbf{The crucial observation is that the proof structure is recursive and layer-wise.} Each layer follows the same pattern:
+
+\begin{enumerate}
+\item \textbf{Forward propagation bound}: For each $H_i$ with $i = 2, \ldots, L$:
+\[
+|H_i(t, c_i; X, W') - H_i(t, c_i; X, W'')| \le \|L^{(i)}\|_{\infty,1}\,\max_{1 \le k \le r}\mathbb{E}_{C_{i-1}}\left[|w_{i-1}'(t, C_{i-1}, k) - w_{i-1}''(t, C_{i-1}, k)|\right] \le rK\,\mathscr{D}_t(W', W'').
+\]
+
+\item \textbf{Backward propagation bound}: For each $B_k^{(i)}$:
+\[
+|B_k^{(i)}(t; X, W') - B_k^{(i)}(t; X, W'')| \le K\,\|L^{(i)}\|_{\infty,1}\,\mathscr{D}_t(W', W'') \le rK^2\,\mathscr{D}_t(W', W'').
+\]
+
+\item \textbf{Update difference bound}: For each layer $i$:
+\[
+\left|\frac{\partial}{\partial t}\tilde{w}_i(t, j_i, k) - \frac{\partial}{\partial t}w_i(t, C_i(j_i), k)\right| \le K_t\left(\mathbb{E}_Z[|q_i(t, X, j_i, C_i(j_i))|] + \mathbb{E}_Z[|q_{B,k}^{(i+1)}(t, X)|]\right) + K_t\mathscr{D}_t(W, \tilde{W}),
+\]
+where $q_i$ is the forward difference and $q_{B,k}^{(i+1)}$ is the backward difference from the next layer.
+\end{enumerate}
+
+\subsection{Generalization Strategy}
+
+\textbf{The proof generalizes by applying the same three-step pattern at each layer:}
+
+\paragraph*{Step 1: Forward decomposition (same for all layers $i = 2, \ldots, L$)}
+For each $H_i$, we decompose:
+\begin{align*}
+|q_i(t, x, j_i, c_i)| &= \left|\sum_{k=1}^r L^{(i)}_{C_i(j_i),k}\left(\frac{1}{n_{i-1}}\sum_{j_{i-1}=1}^{n_{i-1}}\tilde{w}_{i-1}(t, j_{i-1}, k)\,\varphi_{i-1}(\tilde{H}_{i-1}(t, j_{i-1}; x, \tilde{W}))\right.\right.\\
+&\quad\left.\left. - \mathbb{E}_{C_{i-1}}[w_{i-1}(t, C_{i-1}, k)\,\varphi_{i-1}(H_{i-1}(t, C_{i-1}; x, W))]\right)\right|\\
+&\le \sum_{k=1}^r |L^{(i)}_{C_i(j_i),k}|(Q_{i,1,k}(x, j_i) + Q_{i,2,k}(x, j_i))\\
+&\le rK\,\max_{1 \le k \le r}(Q_{i,1,k}(x, j_i) + Q_{i,2,k}(x, j_i)),
+\end{align*}
+where $Q_{i,1,k}$ bounds the difference in weights and $Q_{i,2,k}$ bounds the concentration error. \textbf{This pattern is identical for all intermediate layers.}
+
+\paragraph*{Step 2: Backward decomposition (same for all layers $i = 2, \ldots, L-1$)}
+For each $B_k^{(i)}$, we decompose:
+\begin{align*}
+|q_{B,k}^{(i)}(t, x)| &= \left|\frac{1}{n_i}\sum_{j_i=1}^{n_i} L^{(i)}_{C_i(j_i),k}\,\varphi_i'(\tilde{H}_i(t, j_i; x, \tilde{W}))\,\tilde{w}_i(t, j_i, k)\right.\\
+&\quad\left. - \mathbb{E}_{C_i}[L^{(i)}_{C_i,k}\,\varphi_i'(H_i(t, C_i; x, W))\,w_i(t, C_i, k)]\right|\\
+&\le Q_{B,1,k}^{(i)}(x) + Q_{B,2,k}^{(i)}(x),
+\end{align*}
+where $Q_{B,1,k}^{(i)}$ bounds the difference in activations/weights and $Q_{B,2,k}^{(i)}$ bounds the concentration error. \textbf{This pattern is identical for all intermediate layers.}
+
+\paragraph*{Step 3: Concentration and Gronwall (same structure)}
+The concentration bounds and Gronwall argument proceed identically:
+\begin{itemize}
+\item Each layer contributes a union bound over $k = 1, \ldots, r$ channels
+\item Each layer contributes factors of $rK$ from $\|L^{(i)}\|_{\infty,1} \le rK$
+\item The final Gronwall bound accumulates as: $\mathscr{D}_T(W, \tilde{W}) \le e^{K_T(1+rK)^{L-2}} \times (\text{polynomial terms})$
+\end{itemize}
+
+\subsection{Key Insight: Bounded Accumulation}
+
+\textbf{The critical point is that with bounded $L^{(i)}$ and bounded activations, the exponential constant grows as $(1+rK)^{L-2}$ rather than exponentially in $L$:}
+
+\begin{theorem}[Generalization to $L$ layers]
+Under the same assumptions as Theorem~\ref{thm:quantitative-lowrank}, but extended to $L$ layers with mixing matrices $L^{(i)}$ satisfying $\|L^{(i)}\|_{\infty,1} \le rK$ for $i = 2, \ldots, L-1$, we have:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le e^{K_T(1+rK)^{L-2}}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2r^{L-2}}{\delta} + e\right),
+\]
+where $n_{\min} = \min\{n_1, \ldots, n_{L-1}\}$ and $n_{\max} = \max\{n_1, \ldots, n_{L-1}\}$.
+\end{theorem}
+
+\textbf{Why this works:}
+\begin{enumerate}
+\item \textbf{Bounded mixing matrices}: Each $\|L^{(i)}\|_{\infty,1} \le rK$ ensures that the factor from each layer is at most $(1+rK)$.
+\item \textbf{Bounded activations}: With ReLU (or any $K$-bounded, $K$-Lipschitz activation), the Lipschitz constants remain bounded.
+\item \textbf{Bounded data}: $|X| \le K$ ensures that all expectations remain bounded.
+\item \textbf{Recursive structure}: Each layer applies the same bound, so the exponential accumulates multiplicatively as $(1+rK)^{L-2}$.
+\end{enumerate}
+
+\subsection{What Changes vs. What Stays the Same}
+
+\textbf{What stays the same:}
+\begin{itemize}
+\item The three-step decomposition pattern (forward, backward, concentration)
+\item The Gronwall argument structure
+\item The concentration inequality applications
+\item The union bound over $r$ channels at each layer
+\end{itemize}
+
+\textbf{What changes:}
+\begin{itemize}
+\item \textbf{Number of layers}: We have $L-2$ intermediate layers instead of 1
+\item \textbf{Exponential constant}: Grows as $(1+rK)^{L-2}$ instead of $(1+rK)$
+\item \textbf{Logarithmic factor}: Union bounds accumulate as $\log(n_{\max}^2r^{L-2}/\delta)$
+\item \textbf{Distance definition}: $\mathscr{D}_T(W, \tilde{W})$ now includes all layers $i = 1, \ldots, L$
+\end{itemize}
+
+\subsection{The Key Simplification: Frozen First Layer}
+
+\textbf{The crucial simplification is that layer 1 is frozen:} $f_1(C_1)$ does not depend on $W(t)$, so:
+\begin{itemize}
+\item No update equation for layer 1 weights (they're fixed)
+\item $H_1(t, c_1; X, W) = \langle f_1(c_1), X\rangle$ is independent of $W(t)$
+\item This eliminates one layer of recursion and ensures the base case is simple
+\end{itemize}
+
+This is why the proof works: \textbf{we start from a fixed, rich basis (frozen random features) and build up layer by layer, with each layer following the same bounded pattern.}
+
+\subsection{Conclusion}
+
+The generalization to $L$ layers is straightforward because:
+\begin{enumerate}
+\item \textbf{The pattern repeats}: Each intermediate layer follows the same three-step decomposition
+\item \textbf{Bounds accumulate multiplicatively}: $(1+rK)^{L-2}$ instead of exponentially
+\item \textbf{Frozen first layer simplifies}: No recursion needed for the base case
+\item \textbf{Boundedness ensures control}: With $\|L^{(i)}\|_{\infty,1} \le rK$, bounded activations, and bounded data, all constants remain under control
+\end{enumerate}
+
+The proof proceeds identically at each layer, with the only change being the accumulation of factors $(1+rK)$ in the exponential constant. This is the key insight: \textbf{the low-rank structure with bounded mixing matrices ensures that depth $L$ only enters polynomially in the exponential constant, not exponentially.}
