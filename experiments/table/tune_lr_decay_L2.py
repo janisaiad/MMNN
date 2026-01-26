@@ -90,6 +90,78 @@ def plot_prediction_vs_baseline(model, x_test_plot, y_test_plot, x_train_plot, y
     plt.close()
     print(f"   💾 Saved prediction plot: {plot_filename}")
 
+def plot_partial_functions(model, x_plot, output_dir, factor, hidden_rank, hidden_width, num_layers, device, mydtype):
+    """Plot partial functions learned by each layer (like in benchmark.py)"""
+    from experiments.table.mmnn_vs import MMNN
+    
+    # Create a copy of the model to extract intermediate outputs
+    ranks = [1] + [hidden_rank] * num_layers + [1]
+    widths = [hidden_width] * (num_layers + 1)
+    
+    teacher = MMNN(
+        ranks=ranks,
+        widths=widths,
+        device=device,
+        ResNet=False,
+        fixWb=True  # Same as training model
+    )
+    teacher.load_state_dict(model.state_dict())
+    
+    x_tensor = torch.tensor(x_plot.reshape([-1, 1]), device=device, dtype=mydtype)
+    
+    # For each layer, plot the learned functions
+    for layer_idx in range(1, len(teacher.fcs), 1):
+        # Determine output rank based on layer index
+        if layer_idx % 2 == 0:
+            output_rank = ranks[layer_idx//2+1]
+        else:
+            output_rank = min(widths[(layer_idx)//2], 36)  # Limit to 36 for visualization
+        
+        print(f"   Plotting layer {layer_idx} with output rank {output_rank}")
+        
+        # Create subplot grid
+        n_rows = int(np.ceil(np.sqrt(output_rank)))
+        n_cols = int(np.ceil(output_rank / n_rows))
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
+        
+        if n_rows == 1 and n_cols == 1:
+            axes = np.array([[axes]])
+        elif n_rows == 1 or n_cols == 1:
+            axes = axes.reshape(n_rows, n_cols)
+        
+        fig.suptitle(f'Functions learned by Layer {layer_idx} (rank {output_rank})\nfactor={factor}, L={num_layers}, W={hidden_width}, R={hidden_rank}', fontsize=16)
+        
+        # Get layer output
+        with torch.no_grad():
+            current = x_tensor
+            for i in range(layer_idx):
+                current = teacher.fcs[i](current)
+                if i % 2 == 0:  # Apply ReLU after first part of each layer
+                    current = torch.relu(current)
+            
+            output = current.cpu().numpy()
+            
+            for idx in range(output_rank):
+                i = idx // n_cols
+                j = idx % n_cols
+                axes[i, j].plot(x_plot, output[:, idx], 'b-', linewidth=1)
+                axes[i, j].set_title(f'Component {idx+1}')
+                axes[i, j].grid(True, alpha=0.3)
+                axes[i, j].set_xticks([-1, 0, 1])
+            
+            # Hide unused subplots
+            for idx in range(output_rank, n_rows * n_cols):
+                i = idx // n_cols
+                j = idx % n_cols
+                axes[i, j].axis('off')
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_filename = f'layer_{layer_idx}_partial_functions.png'
+        plt.savefig(output_dir / plot_filename, dpi=100)
+        plt.close()
+    
+    print(f"   ✅ Partial functions plots saved to {output_dir}")
+
 def train_one_config_wrapper(args):
     """Wrapper for multiprocessing - unpacks arguments"""
     factor, lr_config, output_dir = args
@@ -165,7 +237,7 @@ def train_one_config(factor, lr_config, output_dir):
     optimizer_type = lr_config.get('optimizer_type', 'Adam')
     use_adam_first = (optimizer_type == 'Adam')
     switched_to_sgd = False
-    sgd_momentum = lr_config.get('momentum', 0.9)  # Default momentum for SGD switch
+    sgd_momentum = lr_config.get('momentum', 0.9)  # Momentum for SGD switch (from config)
     
     if optimizer_type == 'SGD':
         momentum = lr_config.get('momentum', 0.9)
@@ -442,6 +514,10 @@ def train_one_config(factor, lr_config, output_dir):
     
     training_time = time.time() - start_time
     
+    # Plot partial functions learned by each layer (like in benchmark.py)
+    print(f"\n📊 Plotting partial functions learned by each layer...")
+    plot_partial_functions(model, x_test_plot, output_dir, factor, hidden_rank, hidden_width, num_layers, device, mydtype)
+    
     # we plot loss evolution and LR schedule
     fig, axes = plt.subplots(2, 1, figsize=(12, 10))
     
@@ -589,26 +665,29 @@ def main():
     
     factors = [4]  # factor=4
     
-    # Test different ranks
-    ranks_to_test = [10, 15, 20, 25, 50]
+    # Test different ranks - only 10 and 25 for momentum testing
+    ranks_to_test = [10, 25]
     
     # we define different optimizer and LR configurations to test
     # SGD only as preferred, test multiple learning rates
     lr_configs = []
     
     # Test with adaptive LR scheduler: starts at 1e-2, reduces when loss stagnates
-    # Use Adam optimizer
-    lr_configs.append({
-        'optimizer_type': 'Adam',
-        'lr_init': 0.01,  # Start at 1e-2
-        'betas': (0.9, 0.999),  # Default Adam betas
-        'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
-        'scheduler_params': {
-            'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
-            'window_size': 10,  # Compare last 10 vs previous 10
-            'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
-        }
-    })
+    # Use Adam optimizer, test different momentum values for SGD switch (1.3, 1.7)
+    momentum_values_to_test = [1.3, 1.7]
+    for momentum in momentum_values_to_test:
+        lr_configs.append({
+            'optimizer_type': 'Adam',
+            'lr_init': 0.01,  # Start at 1e-2
+            'betas': (0.9, 0.999),  # Default Adam betas
+            'momentum': momentum,  # Momentum for SGD after switch
+            'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
+            'scheduler_params': {
+                'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
+                'window_size': 10,  # Compare last 10 vs previous 10
+                'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
+            }
+        })
     
     print("="*80)
     print("OPTIMIZER & LR DECAY TUNING: L=2, cos(2*factor*pi*x)")
@@ -619,10 +698,11 @@ def main():
     print(f"Batch size: 4*factor*10 (linear in frequency)")
     print(f"Parameterization: NTK (fixWb=True)")
     print(f"Initialization: Uniform[-1,1] / sqrt(n)")
-    print(f"Optimizer: Adam")
+    print(f"Optimizer: Adam → SGD (switch when loss < 1e-3)")
     print(f"Initial LR: 0.01 (1e-2), adaptive reduction on stagnation")
     print(f"LR sequence: [1e-2, 5e-3, 1e-3, 5e-4, 1e-4]")
     print(f"Betas: (0.9, 0.999)")
+    print(f"SGD Momentum values: {momentum_values_to_test}")
     print(f"Adaptive scheduler: reduces LR when loss stagnates (mean of last 10 >= mean of previous 10)")
     print(f"Total configs to test: {len(lr_configs) * len(factors) * len(ranks_to_test)}")
     print(f"Output directory: {output_base}")
@@ -650,6 +730,9 @@ def main():
                     scheduler_name = f"LinearLR_end{end_factor}"
                 elif lr_config.get('scheduler_type') == 'AdaptiveStagnation':
                     scheduler_name = "AdaptiveStagnation"
+                    # Add momentum to scheduler name if specified
+                    if 'momentum' in lr_config:
+                        scheduler_name += f"_mom{lr_config['momentum']}"
                 else:
                     scheduler_name = "NoScheduler"
                 
