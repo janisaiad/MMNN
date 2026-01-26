@@ -817,27 +817,6 @@ def run_experiment():
     print(f"Saved figure to {output_dir / 'meanfield_lowrank_functions_top_bottom.png'}")
     plt.close()
     
-    # we also plot the final output (weighted average of phi2)
-    H2_fine, _ = mf_solver.compute_H2(w1_final, w2_final, x_fine_tensor)  # [n2, 500]
-    c_final_tensor = torch.tensor(c_final, device=device, dtype=torch.float32)
-    y_hat_fine = mf_solver.compute_output(w1_final, w2_final, c_final_tensor, x_fine_tensor).detach().cpu().numpy()
-    
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111)
-    ax.plot(x_fine, y_target, 'k-', linewidth=3, label='Target $f(x)$', alpha=0.8)
-    ax.plot(x_fine, y_hat_fine, 'r--', linewidth=2.5, label='Network Output $\\hat{{y}}(x)$', alpha=0.8)
-    ax.set_xlabel('$x$', fontsize=24)
-    ax.set_ylabel('$y$', fontsize=24)
-    ax.set_title(f'Final Network Output vs Target (Final Time $t={final_time:.1f}$)', fontsize=22)
-    ax.legend(fontsize=18)
-    ax.grid(True, alpha=0.3)
-    ax.tick_params(labelsize=18)
-    fig.text(0.5, 0.02, f'{common_info_text} Final output: $\\hat{{y}}(x) = \\mathbb{{E}}_{{C_2}}[w_2(C_2) \\cdot \\phi_2(H_2)] + c$ (with output bias $c$).', ha='center', fontsize=12, wrap=True)
-    plt.tight_layout(rect=[0, 0.05, 1, 0.98])
-    plt.savefig(output_dir / 'meanfield_final_output.png', dpi=300, bbox_inches='tight')
-    print(f"Saved figure to {output_dir / 'meanfield_final_output.png'}")
-    plt.close()
-    
     print("\n" + "="*80)
     print("Mean-Field Implementation Summary:")
     print("="*80)
