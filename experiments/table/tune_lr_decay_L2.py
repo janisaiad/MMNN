@@ -768,7 +768,8 @@ def main():
     output_base = Path("experiments/table/results_tune_lr_decay_L2")
     output_base.mkdir(parents=True, exist_ok=True)
     
-    factors = [4]  # factor=4
+    # Test multiple factors for comprehensive analysis
+    factors = [1, 2, 3, 4, 5]  # Multiple factors to test different frequencies
     
     # Test different ranks - all ranks that were tested with factor=4
     ranks_to_test = [10, 15, 20, 25, 50]
