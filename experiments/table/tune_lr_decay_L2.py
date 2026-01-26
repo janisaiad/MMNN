@@ -387,6 +387,17 @@ def train_one_config(factor, lr_config, output_dir):
                 prediction_frames.append((epoch, imageio.imread(buf)))
                 plt.close(fig)
         
+        # Create prediction vs baseline GIF immediately at epoch 1000
+        if epoch == 1000 and len(prediction_frames) > 0:
+            print(f"\n🎬 Creating prediction vs baseline GIF at epoch 1000 ({len(prediction_frames)} frames)...")
+            prediction_frames_sorted = sorted(prediction_frames, key=lambda x: x[0])
+            frames = [frame for _, frame in prediction_frames_sorted]
+            gif_path = output_dir / "prediction_vs_baseline_epochs_0_1000.gif"
+            imageio.mimsave(str(gif_path), frames, duration=0.2, loop=0)
+            print(f"   ✅ Saved: {gif_path.name}")
+            # Clear frames to free memory
+            prediction_frames.clear()
+        
         # Store partial functions frames for GIF (first 2000 epochs, every 50 epochs)
         if epoch <= 2000 and epoch % 50 == 0:
             # Generate partial functions for this epoch
@@ -447,6 +458,20 @@ def train_one_config(factor, lr_config, output_dir):
                 buf.seek(0)
                 partial_functions_frames[layer_idx].append((epoch, imageio.imread(buf)))
                 plt.close(fig)
+        
+        # Create partial functions GIFs immediately at epoch 2000
+        if epoch == 2000:
+            print(f"\n🎬 Creating partial functions GIFs at epoch 2000...")
+            for layer_idx, frames_list in partial_functions_frames.items():
+                if len(frames_list) > 0:
+                    print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
+                    frames_sorted = sorted(frames_list, key=lambda x: x[0])
+                    frames = [frame for _, frame in frames_sorted]
+                    gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
+                    imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
+                    print(f"   ✅ Saved: {gif_path.name}")
+            # Clear frames to free memory
+            partial_functions_frames.clear()
         
         # Detect large loss drop (>2x reduction in one step) and plot before/after
         if len(all_losses) >= 2:
@@ -574,27 +599,25 @@ def train_one_config(factor, lr_config, output_dir):
     
     training_time = time.time() - start_time
     
-    # Create GIFs from stored frames
-    print(f"\n🎬 Creating GIFs from stored frames...")
-    
-    # Create prediction vs baseline GIF (first 1000 epochs)
+    # GIFs are already created at epochs 1000 and 2000, but create them here if training stopped early
     if len(prediction_frames) > 0:
-        print(f"   Creating prediction vs baseline GIF ({len(prediction_frames)} frames)...")
+        print(f"\n🎬 Creating prediction vs baseline GIF from remaining frames ({len(prediction_frames)} frames)...")
         prediction_frames_sorted = sorted(prediction_frames, key=lambda x: x[0])
         frames = [frame for _, frame in prediction_frames_sorted]
         gif_path = output_dir / "prediction_vs_baseline_epochs_0_1000.gif"
         imageio.mimsave(str(gif_path), frames, duration=0.2, loop=0)
         print(f"   ✅ Saved: {gif_path.name}")
     
-    # Create partial functions GIFs per layer (first 2000 epochs)
-    for layer_idx, frames_list in partial_functions_frames.items():
-        if len(frames_list) > 0:
-            print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
-            frames_sorted = sorted(frames_list, key=lambda x: x[0])
-            frames = [frame for _, frame in frames_sorted]
-            gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
-            imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
-            print(f"   ✅ Saved: {gif_path.name}")
+    if len(partial_functions_frames) > 0:
+        print(f"\n🎬 Creating partial functions GIFs from remaining frames...")
+        for layer_idx, frames_list in partial_functions_frames.items():
+            if len(frames_list) > 0:
+                print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
+                frames_sorted = sorted(frames_list, key=lambda x: x[0])
+                frames = [frame for _, frame in frames_sorted]
+                gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
+                imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
+                print(f"   ✅ Saved: {gif_path.name}")
     
     # Plot final partial functions (static plot at end of training)
     print(f"\n📊 Plotting final partial functions learned by each layer...")
