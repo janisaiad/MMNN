@@ -373,8 +373,8 @@ def train_one_config(factor, lr_config, output_dir):
         
         all_losses.append(epoch_loss)
         
-        # Store prediction vs baseline frame for GIF (first 1000 epochs, every 10 epochs)
-        if epoch <= 1000 and epoch % 10 == 0:
+        # Store prediction vs baseline frame for GIF (first 250 epochs, every epoch)
+        if epoch <= 250:
             current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
             fig = plot_prediction_vs_baseline(
                 model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
@@ -387,19 +387,19 @@ def train_one_config(factor, lr_config, output_dir):
                 prediction_frames.append((epoch, imageio.imread(buf)))
                 plt.close(fig)
         
-        # Create prediction vs baseline GIF immediately at epoch 1000
-        if epoch == 1000 and len(prediction_frames) > 0:
-            print(f"\n🎬 Creating prediction vs baseline GIF at epoch 1000 ({len(prediction_frames)} frames)...")
+        # Create prediction vs baseline GIF immediately at epoch 250
+        if epoch == 250 and len(prediction_frames) > 0:
+            print(f"\n🎬 Creating prediction vs baseline GIF at epoch 250 ({len(prediction_frames)} frames)...")
             prediction_frames_sorted = sorted(prediction_frames, key=lambda x: x[0])
             frames = [frame for _, frame in prediction_frames_sorted]
-            gif_path = output_dir / "prediction_vs_baseline_epochs_0_1000.gif"
-            imageio.mimsave(str(gif_path), frames, duration=0.2, loop=0)
+            gif_path = output_dir / "prediction_vs_baseline_epochs_0_250.gif"
+            imageio.mimsave(str(gif_path), frames, duration=0.1, loop=0)
             print(f"   ✅ Saved: {gif_path.name}")
             # Clear frames to free memory
             prediction_frames.clear()
         
-        # Store partial functions frames for GIF (first 2000 epochs, every 50 epochs)
-        if epoch <= 2000 and epoch % 50 == 0:
+        # Store partial functions frames for GIF (first 250 epochs, every epoch)
+        if epoch <= 250:
             # Generate partial functions for this epoch
             ranks = [1] + [hidden_rank] * num_layers + [1]
             widths = [hidden_width] * (num_layers + 1)
@@ -459,16 +459,16 @@ def train_one_config(factor, lr_config, output_dir):
                 partial_functions_frames[layer_idx].append((epoch, imageio.imread(buf)))
                 plt.close(fig)
         
-        # Create partial functions GIFs immediately at epoch 2000
-        if epoch == 2000:
-            print(f"\n🎬 Creating partial functions GIFs at epoch 2000...")
+        # Create partial functions GIFs immediately at epoch 250
+        if epoch == 250:
+            print(f"\n🎬 Creating partial functions GIFs at epoch 250...")
             for layer_idx, frames_list in partial_functions_frames.items():
                 if len(frames_list) > 0:
                     print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
                     frames_sorted = sorted(frames_list, key=lambda x: x[0])
                     frames = [frame for _, frame in frames_sorted]
-                    gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
-                    imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
+                    gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_250.gif"
+                    imageio.mimsave(str(gif_path), frames, duration=0.1, loop=0)
                     print(f"   ✅ Saved: {gif_path.name}")
             # Clear frames to free memory
             partial_functions_frames.clear()
@@ -599,13 +599,13 @@ def train_one_config(factor, lr_config, output_dir):
     
     training_time = time.time() - start_time
     
-    # GIFs are already created at epochs 1000 and 2000, but create them here if training stopped early
+    # GIFs are already created at epoch 250, but create them here if training stopped early
     if len(prediction_frames) > 0:
         print(f"\n🎬 Creating prediction vs baseline GIF from remaining frames ({len(prediction_frames)} frames)...")
         prediction_frames_sorted = sorted(prediction_frames, key=lambda x: x[0])
         frames = [frame for _, frame in prediction_frames_sorted]
-        gif_path = output_dir / "prediction_vs_baseline_epochs_0_1000.gif"
-        imageio.mimsave(str(gif_path), frames, duration=0.2, loop=0)
+        gif_path = output_dir / "prediction_vs_baseline_epochs_0_250.gif"
+        imageio.mimsave(str(gif_path), frames, duration=0.1, loop=0)
         print(f"   ✅ Saved: {gif_path.name}")
     
     if len(partial_functions_frames) > 0:
@@ -615,8 +615,8 @@ def train_one_config(factor, lr_config, output_dir):
                 print(f"   Creating partial functions GIF for layer {layer_idx} ({len(frames_list)} frames)...")
                 frames_sorted = sorted(frames_list, key=lambda x: x[0])
                 frames = [frame for _, frame in frames_sorted]
-                gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_2000.gif"
-                imageio.mimsave(str(gif_path), frames, duration=0.3, loop=0)
+                gif_path = output_dir / f"layer_{layer_idx}_partial_functions_epochs_0_250.gif"
+                imageio.mimsave(str(gif_path), frames, duration=0.1, loop=0)
                 print(f"   ✅ Saved: {gif_path.name}")
     
     # Plot final partial functions (static plot at end of training)
