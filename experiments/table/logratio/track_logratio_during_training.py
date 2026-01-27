@@ -2,9 +2,10 @@
 """
 Track log ratios R_{i,j} = log|f_i| - log|f_j| during training at x=0.
 
-Uses the same config as factor=4, rank=15 (15 partial functions, 225 pairs).
-At each checkpoint we compute f_k and R at x=0, save all trajectories,
-and plot the max-ratio vs epoch and vs time.
+Uses rerun_four_setups-style training (converges well): factor=1, n_train=5000,
+batch_size=4, num_epochs=250, SGD lr=0.01, momentum=0, AdaptiveStagnation.
+Default and --ranks both use this setup. At each checkpoint we compute f_k and R
+at x=0, save trajectories, and plot max-ratio vs epoch. Outputs stay in --out-dir.
 """
 from __future__ import annotations
 
@@ -47,8 +48,8 @@ plt.rcParams["xtick.top"] = True
 
 
 def target_function(x: np.ndarray, factor: int) -> np.ndarray:
-    """cos(2*factor*pi*x) + cos(2*pi*x)."""
-    return np.cos(2 * factor * np.pi * x) + np.cos(2 * np.pi * x)
+    """cos(2*factor*pi*x), matching rerun_four_setups."""
+    return np.cos(2 * factor * np.pi * x)
 
 
 def get_partial_fk_layer2(
@@ -107,7 +108,7 @@ def run_training_with_logratio_tracking(
 ) -> None:
     """
     Train with config, track f_k and R at x=x_loc every checkpoint_every epochs.
-    Save all 225 trajectories and plot max-ratio vs epoch / time.
+    Save r² trajectories and plot max-ratio vs epoch. Outputs only in output_dir.
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -123,13 +124,14 @@ def run_training_with_logratio_tracking(
     hidden_rank = int(config["hidden_rank"])
     hidden_width = int(config.get("hidden_width", 1024))
     num_layers = int(config.get("num_layers", 2))
-    num_epochs = int(config.get("num_epochs", 10000))
+    num_epochs = int(config.get("num_epochs", 250))
+    n_train = int(config.get("n_train", max(1, int(factor * hidden_width))))
     lr_init = float(config.get("lr_init", 0.01))
     optimizer_type = config.get("optimizer_type", "SGD")
     scheduler_type = config.get("scheduler_type")
     scheduler_params = config.get("scheduler_params", {})
     momentum = float(config.get("momentum", 0.3))
-    batch_size = max(1, int(config.get("batch_size", 4 * factor * 10)))
+    batch_size = max(1, int(config.get("batch_size", 4 * factor)))
 
     ranks = [1] + [hidden_rank] * num_layers + [1]
     widths = [hidden_width] * (num_layers + 1)
@@ -142,7 +144,6 @@ def run_training_with_logratio_tracking(
     )
 
     interval = [-1.0, 1.0]
-    n_train = max(1, int(factor * hidden_width))
     x_train = np.linspace(interval[0], interval[1], n_train)
     y_train = target_function(x_train, factor)
     x_train_t = torch.tensor(x_train.reshape(-1, 1), device=device, dtype=dtype)
@@ -257,18 +258,19 @@ def run_training_with_logratio_tracking(
     # save arrays
     epochs_arr = np.array(epochs_list, dtype=np.int64)
     times_arr = np.array(times_list, dtype=np.float64)
-    fk_arr = np.stack(fk_list, axis=0)  # (n_check, 15)
-    R_arr = np.stack(R_list, axis=0)    # (n_check, 15, 15)
+    fk_arr = np.stack(fk_list, axis=0)  # (n_check, r)
+    R_arr = np.stack(R_list, axis=0)    # (n_check, r, r)
 
     np.save(output_dir / "epochs.npy", epochs_arr)
     np.save(output_dir / "times.npy", times_arr)
     np.save(output_dir / "fk_x0.npy", fk_arr)
     np.save(output_dir / "R_x0.npy", R_arr)
 
-    # flatten to 225 trajectories: row-major (i,j) -> idx = i*15 + j
+    # flatten to r*r trajectories: row-major (i,j) -> idx = i*r + j
     n_check = R_arr.shape[0]
-    trajectories_225 = R_arr.reshape(n_check, -1)  # (n_check, 225)
-    np.save(output_dir / "trajectories_225.npy", trajectories_225)
+    r = R_arr.shape[1]
+    trajectories = R_arr.reshape(n_check, -1)  # (n_check, r*r)
+    np.save(output_dir / "trajectories.npy", trajectories)
 
     # max ratio over (i,j) at each checkpoint
     max_ratio = np.max(R_arr, axis=(1, 2))
@@ -293,7 +295,7 @@ def run_training_with_logratio_tracking(
         "x_loc": float(x_loc),
         "eps": float(eps),
         "rank": int(hidden_rank),
-        "n_pairs": 225,
+        "n_pairs": int(hidden_rank * hidden_rank),
         "max_ratio_final": float(max_ratio[-1]) if len(max_ratio) else None,
         "max_ratio_max": float(np.max(max_ratio)),
         "training_time_s": float(times_arr[-1]) if len(times_arr) else None,
@@ -302,7 +304,7 @@ def run_training_with_logratio_tracking(
         json.dump(summary, f, indent=2)
 
     print(f"Saved all data to {output_dir}")
-    print(f"  epochs.npy, times.npy, fk_x0.npy, R_x0.npy, trajectories_225.npy, max_ratio.npy")
+    print(f"  epochs.npy, times.npy, fk_x0.npy, R_x0.npy, trajectories.npy, max_ratio.npy")
     if save_plot:
         print(f"  trajectory_max_ratio.png")
     print(f"  summary.json")
@@ -310,19 +312,19 @@ def run_training_with_logratio_tracking(
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Track log ratios during training (factor=4, rank=15, x=0)."
+        description="Track log ratios during training (rerun_four_setups-like: factor=1, rank=10, 250 ep, x=0)."
     )
     ap.add_argument(
         "--config",
         type=Path,
         default=None,
-        help="Path to config.json (default: use factor4 rank15 SGD mom0.3 AdaptiveStagnation).",
+        help="Path to config.json (default: factor=1, rank=10, n_train=5000, batch=4, 250 ep, SGD lr=0.01, AdaptiveStagnation).",
     )
     ap.add_argument(
         "--out-dir",
         type=Path,
         default=None,
-        help="Output directory (default: logratio/factor4_rank15_SGD_mom0.3_...)",
+        help="Output directory (default: logratio/runs/factor1_rank10_SGD_mom0.3_lr0.01_AdaptiveStagnation).",
     )
     ap.add_argument(
         "--checkpoint-every",
@@ -355,19 +357,90 @@ def main() -> None:
         default=None,
         help="Override num_epochs from config (default: use config).",
     )
+    ap.add_argument(
+        "--ranks",
+        type=str,
+        default=None,
+        help='Space-separated ranks, e.g. "10 15 20". One training per rank, one figure. Uses rerun_four_setups-like config if --config not set: factor=1, n_train=5000, batch=4, 250 ep, SGD 0.01, AdaptiveStagnation, mom=0.',
+    )
     args = ap.parse_args()
+
+    if args.ranks and args.seeds:
+        raise SystemExit("Use only one of --ranks and --seeds.")
+
+    base = Path(__file__).resolve().parent
+
+    # --ranks: rerun_four_setups-like (factor=1, 5000, batch 4, 250 ep, SGD 0.01, AdaptiveStagnation, mom=0)
+    if args.ranks:
+        ranks = [int(x) for x in args.ranks.split()]
+        if args.config is not None and args.config.exists():
+            with open(args.config) as f:
+                config = json.load(f)
+        else:
+            config = {
+                "factor": 1,
+                "num_layers": 2,
+                "hidden_width": 1024,
+                "n_train": 5000,
+                "num_epochs": 250,
+                "batch_size": 4,
+                "lr_init": 0.01,
+                "optimizer_type": "SGD",
+                "scheduler_type": "AdaptiveStagnation",
+                "scheduler_params": {
+                    "lr_sequence": [0.01, 0.005, 0.001, 0.0005, 0.0001],
+                    "window_size": 10,
+                    "min_epochs_before_reduce": 20,
+                },
+                "momentum": 0.0,
+            }
+        if args.num_epochs is not None:
+            config["num_epochs"] = args.num_epochs
+        out_base = args.out_dir or (base / "runs" / f"ranks_{'_'.join(map(str, ranks))}")
+        out_base.mkdir(parents=True, exist_ok=True)
+        for r in ranks:
+            c = {**config, "hidden_rank": r}
+            run_training_with_logratio_tracking(
+                config=c,
+                output_dir=out_base / f"rank_{r}",
+                checkpoint_every=args.checkpoint_every,
+                x_loc=args.x,
+                eps=args.eps,
+                seed=args.seed,
+                save_plot=False,
+            )
+        ep = np.load(out_base / f"rank_{ranks[0]}" / "epochs.npy")
+        colors = ["#1f77b4", "#ff7f0e", "#2ca02c"][: len(ranks)]
+        fig, ax = plt.subplots(1, 1, figsize=(7, 4.5))
+        for i, r in enumerate(ranks):
+            mr = np.load(out_base / f"rank_{r}" / "max_ratio.npy")
+            n = min(len(ep), len(mr))
+            ax.plot(ep[:n], mr[:n], color=colors[i % len(colors)], linewidth=1.5, alpha=0.8, label=f"r={r}")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel(r"$\max_{i,j} R_{i,j}(x=0)$")
+        ax.set_title(r"Trajectory of $\max_{i,j} R_{i,j}(x=0)$ vs epoch")
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plot_path = out_base / "trajectory_max_ratio.png"
+        plt.savefig(plot_path, bbox_inches="tight")
+        plt.close()
+        print(f"Saved {plot_path} (ranks {ranks}).")
+        return
 
     if args.config is not None and args.config.exists():
         with open(args.config) as f:
             config = json.load(f)
     else:
+        # same as rerun_four_setups (factor=1, 5000, batch 4, 250 ep, SGD 0.01, AdaptiveStagnation, mom=0)
         config = {
-            "factor": 4,
+            "factor": 1,
             "num_layers": 2,
-            "hidden_rank": 15,
+            "hidden_rank": 10,
             "hidden_width": 1024,
-            "num_epochs": 10000,
-            "batch_size": 160,
+            "num_epochs": 250,
+            "n_train": 5000,
+            "batch_size": 4,
             "lr_init": 0.01,
             "optimizer_type": "SGD",
             "scheduler_type": "AdaptiveStagnation",
@@ -376,8 +449,7 @@ def main() -> None:
                 "window_size": 10,
                 "min_epochs_before_reduce": 20,
             },
-            "momentum": 0.3,
-            "parameterization": "NTK",
+            "momentum": 0.0,
         }
 
     if args.num_epochs is not None:
