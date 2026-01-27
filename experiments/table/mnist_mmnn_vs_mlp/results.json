@@ -1,0 +1,82 @@
+{
+  "runs": [
+    {
+      "final_test_acc": 0.9839,
+      "final_test_loss": 0.11765459654766018,
+      "nparams": 669706,
+      "ntrainable": 669706,
+      "arch": "MLP",
+      "hidden": 512,
+      "num_hidden": 2
+    },
+    {
+      "final_test_acc": 0.9697,
+      "final_test_loss": 0.11940504282414913,
+      "nparams": 422937,
+      "ntrainable": 12825,
+      "arch": "MMNN",
+      "ranks": [
+        784,
+        15,
+        10
+      ],
+      "widths": [
+        512,
+        512
+      ],
+      "fix_wb": true
+    },
+    {
+      "final_test_acc": 0.97,
+      "final_test_loss": 0.11392257007944863,
+      "nparams": 433187,
+      "ntrainable": 17955,
+      "arch": "MMNN",
+      "ranks": [
+        784,
+        25,
+        10
+      ],
+      "widths": [
+        512,
+        512
+      ],
+      "fix_wb": true
+    },
+    {
+      "final_test_acc": 0.9701,
+      "final_test_loss": 0.12542428168750486,
+      "nparams": 458812,
+      "ntrainable": 30780,
+      "arch": "MMNN",
+      "ranks": [
+        784,
+        50,
+        10
+      ],
+      "widths": [
+        512,
+        512
+      ],
+      "fix_wb": true
+    }
+  ],
+  "args": {
+    "data_dir": "data",
+    "out_dir": "experiments/table/mnist_mmnn_vs_mlp",
+    "epochs": 30,
+    "batch_size": 128,
+    "lr": 0.001,
+    "seed": 42,
+    "mmnn_ranks": [
+      15,
+      25,
+      50
+    ],
+    "hidden": 512,
+    "num_hidden": 2,
+    "no_fix_wb": false,
+    "skip_mlp": false,
+    "skip_mmnn": false
+  }
+}
