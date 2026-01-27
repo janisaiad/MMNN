@@ -125,39 +125,35 @@ def plot_partials_for_config(config_dir: Path, device: torch.device, out_subdir:
         components_to_plot = [idx for idx in COMPONENTS_TO_PLOT if idx < n_components]
         if len(components_to_plot) == 0:
             continue
-        
+
         # we create a 1x2 subplot for components 1 and 2
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         if not isinstance(axes, np.ndarray):
             axes = np.array([axes])
-        
-        # we set title
+
         fig.suptitle(
             f"Partial functions – Layer {layer_idx}\n{config_str}",
             fontsize=22,
         )
 
-        # we plot component 1
         if 0 in components_to_plot:
             axes[0].plot(x, out[:, 0], "b-", linewidth=2)
-            axes[0].set_title(f"Component 1", fontsize=20)
+            axes[0].set_title("Component 1", fontsize=20)
             axes[0].set_xlabel("$x$", fontsize=20)
             axes[0].set_ylabel("$h_1(x)$", fontsize=20)
-            axes[0].grid(True, alpha=0.3, which='both')
+            axes[0].grid(True, alpha=0.3, which="both")
             axes[0].set_xticks([interval[0], 0, interval[1]])
             axes[0].tick_params(labelsize=18)
-        
-        # we plot component 2
+
         if 1 in components_to_plot and len(components_to_plot) > 1:
             axes[1].plot(x, out[:, 1], "r-", linewidth=2)
-            axes[1].set_title(f"Component 2", fontsize=20)
+            axes[1].set_title("Component 2", fontsize=20)
             axes[1].set_xlabel("$x$", fontsize=20)
             axes[1].set_ylabel("$h_2(x)$", fontsize=20)
-            axes[1].grid(True, alpha=0.3, which='both')
+            axes[1].grid(True, alpha=0.3, which="both")
             axes[1].set_xticks([interval[0], 0, interval[1]])
             axes[1].tick_params(labelsize=18)
         elif len(components_to_plot) == 1:
-            # we hide second subplot if only one component
             axes[1].set_visible(False)
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -171,10 +167,12 @@ def plot_partials_for_config(config_dir: Path, device: torch.device, out_subdir:
 
 def main():
     base = Path(__file__).parent
-    # we search in all possible result locations (including comprehensive benchmark)
+    # we search in all possible result locations (including comprehensive and full-rank)
     candidates = [
         base / "experiments" / "table" / "results_frequency_benchmark_comprehensive",
         base / "experiments" / "table" / "results_frequency_benchmark",
+        base / "experiments" / "table" / "experiments" / "table" / "results_frequency_benchmark_full_rank",
+        base / "results_frequency_benchmark_full_rank",
         base / "results_frequency_benchmark_comprehensive",
         base / "results_frequency_benchmark",
     ]
