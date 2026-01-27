@@ -45,6 +45,20 @@ def _setup_mpl_rc():
     plt.rcParams["xtick.top"] = True
 
 
+def _add_four_setups_caption(fig):
+    """Add the LaTeX-style caption below the axes. Call after tight_layout(rect=[0, 0.16, 1, 1])."""
+    line1 = (
+        "Low-rank (rank $r=10$) vs full-rank ($r=1024$) on $y=\\cos(2\\pi x)$, "
+        "$x\\in[-1,1]$, 3 layers, width 1024, $n=5000$, batch=4, SGD lr 0.01 with red-bar decay."
+    )
+    line2 = (
+        "(momentum $\\eta\\in\\{0,0.3,0.6,0.7\\}$) and one full-rank ($\\eta=0$). "
+        "Red bars: SGD lr reductions for $\\eta=0$."
+    )
+    fig.text(0.5, 0.14, line1, ha="center", va="bottom", fontsize=14)
+    fig.text(0.5, 0.07, line2, ha="center", va="bottom", fontsize=14)
+
+
 def _legend_momentum(meta):
     """Label for legend: η (eta)=momentum, R=rank, e.g. r'$\\eta$ 0.0, R=10'."""
     m = meta.get("momentum")
@@ -282,9 +296,10 @@ def main():
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.set_title("Low rank versus full rank")
-    ax.legend(loc="upper right", fontsize=18)
+    ax.legend(loc="upper right", fontsize=14)
     ax.grid(True, alpha=0.3)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0.16, 1, 1])
+    _add_four_setups_caption(fig)
     plot_path = OUTPUT_DIR / "four_setups_loss_with_lr_bars.png"
     plt.savefig(plot_path)
     plt.close()
@@ -395,9 +410,10 @@ def plot_only(out_dir=None):
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.set_title("Low rank versus full rank")
-    ax.legend(loc="upper right", fontsize=18)
+    ax.legend(loc="upper right", fontsize=14)
     ax.grid(True, alpha=0.3)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0.16, 1, 1])
+    _add_four_setups_caption(fig)
     plot_path = out_dir / "four_setups_loss_with_lr_bars.png"
     plt.savefig(plot_path)
     plt.close()

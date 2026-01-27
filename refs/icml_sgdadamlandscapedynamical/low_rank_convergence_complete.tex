@@ -519,13 +519,13 @@ Under Assumptions~\ref{assump:regularity-lowrank} and \ref{assump:init-lowrank},
 \]
 where $K_0(t)$ is a non-decreasing function of the form
 \[
-K_0(t) = K^{\kappa}(1+t^{\kappa})(1+\interleave W\interleave_0^{\kappa}),
+K_0(t) = (1+rK)^{1/2}\,K^{\kappa}(1+t^{\kappa})(1+\interleave W\interleave_0^{\kappa}),
 \]
 for some constant $\kappa>0$ depending on $K$ and $r$.
 
 A similar result holds for the $\psi_2$ norm. Under the same assumptions, for any $t\in[0,\infty)$, there exists $K_0(t)\ge 1$ of the form
 \[
-K_0(t) = K^{\kappa}(1+t^{\kappa})(1+\llbracket W\rrbracket_{\psi,0}^{\kappa}),
+K_0(t) = (1+rK)^{1/2}\,K^{\kappa}(1+t^{\kappa})(1+\llbracket W\rrbracket_{\psi,0}^{\kappa}),
 \]
 such that a solution $W$, if it exists, must satisfy $\interleave W\interleave_t \le \llbracket W\rrbracket_{\psi,t} \le K_0(t)$ for any $t\in[0,\infty)$. Furthermore, by assuming $\llbracket W\rrbracket_{\psi,0}<\infty$, for any $B\ge 0$:
 \[
@@ -890,7 +890,7 @@ the result follows immediately from Lemmas~\ref{lem:particle-lowrank} and \ref{l
 \subsection{Proof of Global Convergence}
 \label{app:global-convergence-proof}
 
-We now provide the detailed proof, adapting the argument from the full-width three-layer case to our low-rank setting. The key simplification is that we do not train $\rho^1$ (the first layer uses frozen random features), so we avoid the algebraic topology arguments needed to show full support of $\text{Law}(w_1^*(t,C_1))$.
+We now provide the detailed proof, adapting the argument from the full-width three-layer case to our low-rank setting. The key simplification is that we do not train $\rho^1$ (the first layer uses frozen random features), so we avoid the algebraic topology arguments needed to show full support of $\text{Law}(w_1^*(t,C_1))$. $H_i$ bi-Lipschitz in $W$ is sufficient and equivalent to $\varphi_i$ Lipschitz; it is the only thing that matters. After defining norms and updating $K_0(t)$ with $(1+rK)^{1/2}$, the remaining is simple; all steps are in one proof below.
 
 \begin{proof}[Proof of Theorem~\ref{thm:global-convergence-lowrank}]
 
@@ -931,8 +931,8 @@ Using the regularity assumption and the low-rank structure, similar to the calcu
 where the last step uses:
 \begin{itemize}
 \item The Lipschitz property of $\partial_2\mathcal{L}$ and $\varphi_i'$
-\item The bi-Lipschitz bounds for $H_i$ differences with low-rank structure
-\item The structure $B_k^{(i)} = \E_{C_i}[L^{(i)}_{C_i,k}\,\varphi_i'(H_i)\,w_i]$, which gives bounds involving factors of $rK$
+\item \textcolor{red}{The bi-Lipschitz bounds for $H_i$ differences with low-rank structure}
+\item \textcolor{red}{The structure $B_k^{(i)} = \E_{C_i}[L^{(i)}_{C_i,k}\,\varphi_i'(H_i)\,w_i]$, which gives bounds involving factors of $rK$}
 \end{itemize}
 
 By Assumption~\ref{assump:convergence-lowrank}, the right-hand side converges to $0$ as $t\to\infty$.
@@ -1009,7 +1009,7 @@ Finally, to connect $\mathscr{L}(W^*(t))$ with $\mathscr{L}(\bar{w}_1,\ldots,\ba
 &\le K\,\E_{\pi_t}\Big[(1+|\bar{w}_L(C_L)|)\prod_{j=2}^{L-1}(1+|\bar{w}_j(C_j)|)\Big(|w_L^*(t,C_L')-\bar{w}_L(C_L)|\\
 &\quad + \sum_{j=2}^{L-1}\max_{1\le k\le r}|w_j^*(t,C_j',k)-\bar{w}_j(C_j,k)|\Big)\Big],
 \end{align*}
-where the last step uses the Lipschitz property of $\varphi_L$ and the bi-Lipschitz bounds for $H_i$ with low-rank structure.
+where the last step uses the Lipschitz property of $\varphi_L$ and \textcolor{red}{the bi-Lipschitz bounds for $H_i$ with low-rank structure}.
 
 By Assumption~\ref{assump:convergence-lowrank}, the right-hand side converges to $0$ as $t\to\infty$. This completes the proof.
 \end{proof}

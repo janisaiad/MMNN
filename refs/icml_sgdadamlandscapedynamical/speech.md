@@ -81,3 +81,15 @@ at init it's verified the less than 0 predictor
 typology of landscape runs with adam and sgd
 
 we have to explain we can measure log ratios after random features also
+gerer anonymized copy
+
+
+a path against curse of dimensionality through expectaction
+put a gif in supplementary material
+
+put several log ratio dynamics
+and several loss evolution
+keep full comparison with MLP
+explain that it's thanks to frozen random features
+low rank = 1
+complete behavior of the 
