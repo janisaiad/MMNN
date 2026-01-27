@@ -46,8 +46,8 @@ plt.rcParams['ytick.right'] = True
 plt.rcParams['xtick.top'] = True
 
 def target_function(x, factor):
-    """Cosine function: cos(2*factor*pi*x) + cos(2*pi*x)"""
-    return np.cos(2 * factor * np.pi * x) + np.cos(2 * np.pi * x)
+    """Simple cosine function: cos(2*factor*pi*x)"""
+    return np.cos(2 * factor * np.pi * x)
 
 def plot_prediction_vs_baseline(model, x_test_plot, y_test_plot, x_train_plot, y_train_plot, 
                                  epoch, new_lr, output_dir, factor, current_optimizer_type, lr_config, sgd_momentum=None, save_png=False):
@@ -178,6 +178,7 @@ def train_one_config(factor, lr_config, output_dir):
     """we train one configuration with different LR decay schedules"""
     # Ensure output_dir is a Path object
     output_dir = Path(output_dir)
+    plt.close('all')  # avoid inheriting matplotlib state when run in subprocess
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mydtype = torch.float32
     
@@ -397,7 +398,7 @@ def train_one_config(factor, lr_config, output_dir):
         
         # Store prediction vs baseline frame for GIF (first 250 epochs, every epoch)
         if epoch <= 250:
-            current_opt_type = 'SGD' if switched_to_sgd else 'Adam'
+            current_opt_type = 'SGD' if (optimizer_type == 'SGD' or switched_to_sgd) else 'Adam'
             fig = plot_prediction_vs_baseline(
                 model, x_test_plot, y_test_plot, x_train_plot, y_train_plot,
                 epoch, optimizer.param_groups[0]['lr'], output_dir, factor, current_opt_type, lr_config, sgd_momentum, save_png=False
@@ -569,13 +570,15 @@ def train_one_config(factor, lr_config, output_dir):
         all_lrs.append(optimizer.param_groups[0]['lr'])
         
         # we update tqdm with current loss and optimizer type
-        opt_name = 'SGD' if switched_to_sgd else 'Adam'
+        opt_name = 'SGD' if (optimizer_type == 'SGD' or switched_to_sgd) else 'Adam'
         pbar.set_postfix({'loss': f'{epoch_loss:.6e}', 'lr': f'{all_lrs[-1]:.2e}', 'opt': opt_name})
         
         # plot loss curve every 200 epochs
         if (epoch + 1) % 200 == 0 or epoch == 0:
             fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-            ax.semilogy(all_losses, 'b-', linewidth=1.5, alpha=0.7, label='Loss')
+            if len(all_losses) > 0:
+                # use explicit x and '.-' so 1 point is visible (a plain line with 1 pt draws nothing)
+                ax.semilogy(range(len(all_losses)), all_losses, 'b.-', linewidth=1.5, alpha=0.7, label='Loss', markersize=4)
             
             # Add red vertical bars at LR reduction moments
             if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
@@ -585,11 +588,11 @@ def train_one_config(factor, lr_config, output_dir):
             
             ax.set_xlabel('Epoch', fontsize=14)
             ax.set_ylabel('Loss', fontsize=14)
-            current_opt = 'SGD' if switched_to_sgd else 'Adam'
+            current_opt = 'SGD' if (optimizer_type == 'SGD' or switched_to_sgd) else 'Adam'
             title = f'Loss Evolution - factor={factor}, {current_opt}, LR={lr_init}'
-            if switched_to_sgd:
+            if optimizer_type == 'SGD' or switched_to_sgd:
                 title += f', Momentum={sgd_momentum}'
-            elif not switched_to_sgd:
+            else:
                 betas = lr_config.get('betas', (0.9, 0.999))
                 title += f', Betas=({betas[0]}, {betas[1]})'
             ax.set_title(title, fontsize=12)
@@ -650,7 +653,8 @@ def train_one_config(factor, lr_config, output_dir):
     
     # loss evolution
     ax1 = axes[0]
-    ax1.semilogy(all_losses, 'b-', linewidth=1.5, alpha=0.7, label='Loss')
+    if len(all_losses) > 0:
+        ax1.semilogy(range(len(all_losses)), all_losses, 'b.-', linewidth=1.5, alpha=0.7, label='Loss', markersize=4)
     
     # Add red vertical bars at LR reduction moments
     if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
@@ -660,6 +664,7 @@ def train_one_config(factor, lr_config, output_dir):
     
     ax1.set_xlabel('Epoch', fontsize=18)
     ax1.set_ylabel('Loss', fontsize=18)
+    final_optimizer_type = 'SGD' if (optimizer_type == 'SGD' or switched_to_sgd) else 'Adam'
     title = f'Loss Evolution - factor={factor}, {final_optimizer_type}'
     if switched_to_sgd:
         title += ' (Adam→SGD)'
@@ -668,7 +673,7 @@ def train_one_config(factor, lr_config, output_dir):
     title += f'\nBatch size={batch_size}, LR init={lr_init}'
     if final_optimizer_type == 'SGD':
         title += f', Momentum={sgd_momentum if switched_to_sgd else lr_config.get("momentum", 0.9)}'
-    elif not switched_to_sgd:
+    else:
         betas = lr_config.get('betas', (0.9, 0.999))
         title += f', Betas=({betas[0]}, {betas[1]})'
     ax1.set_title(title, fontsize=16)
@@ -677,7 +682,8 @@ def train_one_config(factor, lr_config, output_dir):
     
     # LR schedule
     ax2 = axes[1]
-    ax2.semilogy(all_lrs, 'r-', linewidth=1.5, alpha=0.7, label='Learning Rate')
+    if len(all_lrs) > 0:
+        ax2.semilogy(range(len(all_lrs)), all_lrs, 'r.-', linewidth=1.5, alpha=0.7, label='Learning Rate', markersize=4)
     ax2.set_xlabel('Epoch', fontsize=18)
     ax2.set_ylabel('Learning Rate', fontsize=18)
     ax2.set_title(f'LR Schedule - {scheduler_type}', fontsize=16)
@@ -711,8 +717,7 @@ def train_one_config(factor, lr_config, output_dir):
     if adaptive_scheduler is not None and 'lr_reduction_epochs' in adaptive_scheduler:
         lr_reduction_epochs = adaptive_scheduler['lr_reduction_epochs']
     
-    # Determine final optimizer type (Adam or switched to SGD)
-    final_optimizer_type = 'SGD' if switched_to_sgd else 'Adam'
+    # final_optimizer_type already set in the figure block above
     
     # we save results
     results = {
@@ -790,47 +795,49 @@ def main():
     output_base = Path("experiments/table/results_tune_lr_decay_L2")
     output_base.mkdir(parents=True, exist_ok=True)
     
-    # Test multiple factors for comprehensive analysis
-    factors = [1, 2, 3, 4, 5]  # Multiple factors to test different frequencies
+    # Simple cos: factor=1 (cos(2*pi*x))
+    factors = [1]
     
-    # Test different ranks - all ranks that were tested with factor=4
+    # Test different ranks
     ranks_to_test = [10, 15, 20, 25, 50]
     
     # we define different optimizer and LR configurations to test
-    # SGD only as preferred, test multiple learning rates
+    # SGD only (like configs from commit 8f5d695e39fc32fae5ebedf1719cffdf7c0fdd6d)
     lr_configs = []
     
     # Test with adaptive LR scheduler: starts at 1e-2, reduces when loss stagnates
-    # Use Adam optimizer with default momentum (0.9) for SGD switch
-    lr_configs.append({
-        'optimizer_type': 'Adam',
-        'lr_init': 0.01,  # Start at 1e-2
-        'betas': (0.9, 0.999),  # Default Adam betas
-        'momentum': 0.9,  # Default momentum for SGD after switch
-        'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
-        'scheduler_params': {
-            'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
-            'window_size': 10,  # Compare last 10 vs previous 10
-            'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
-        }
-    })
+    # Momentum values: 0.0, 0.3, 0.7 (like the configs from the commit)
+    momentum_values = [0.0, 0.3, 0.7]
+    
+    # SGD with adaptive LR scheduler (starts at 1e-2, reduces on stagnation)
+    for momentum in momentum_values:
+        lr_configs.append({
+            'optimizer_type': 'SGD',
+            'lr_init': 0.01,  # Start at 1e-2
+            'momentum': momentum,
+            'scheduler_type': 'AdaptiveStagnation',  # Custom adaptive scheduler
+            'scheduler_params': {
+                'lr_sequence': [0.01, 0.005, 0.001, 0.0005, 0.0001],  # 1e-2, 5e-3, 1e-3, 5e-4, 1e-4
+                'window_size': 10,  # Compare last 10 vs previous 10
+                'min_epochs_before_reduce': 20  # Minimum epochs before checking stagnation
+            }
+        })
     
     print("="*80)
     print("OPTIMIZER & LR DECAY TUNING: L=2, cos(2*factor*pi*x)")
     print("="*80)
-    print(f"Testing factors: {factors}")
+    print(f"Testing factors: {factors} (simple cos: cos(2*pi*x))")
     print(f"Testing ranks: {ranks_to_test}")
     print(f"Epochs per config: 10000")
-    print(f"Batch size: 4*factor*10 (linear in frequency)")
+    print(f"Batch size: 4*factor*10")
     print(f"Parameterization: NTK (fixWb=True)")
     print(f"Initialization: Uniform[-1,1] / sqrt(n)")
-    print(f"Optimizer: Adam → SGD (switch when loss < 1e-3)")
+    print(f"Optimizer: SGD only (no Adam switching)")
     print(f"Initial LR: 0.01 (1e-2), adaptive reduction on stagnation")
     print(f"LR sequence: [1e-2, 5e-3, 1e-3, 5e-4, 1e-4]")
-    print(f"Betas: (0.9, 0.999)")
-    print(f"SGD Momentum: 0.9 (default)")
+    print(f"Momentum values: {momentum_values}")
     print(f"Adaptive scheduler: reduces LR when loss stagnates (mean of last 10 >= mean of previous 10)")
-    print(f"Target function: cos(2*factor*pi*x) + cos(2*pi*x)")
+    print(f"Target function: cos(2*factor*pi*x)")
     print(f"Total configs to test: {len(lr_configs) * len(factors) * len(ranks_to_test)}")
     print(f"Output directory: {output_base}")
     print("="*80)
