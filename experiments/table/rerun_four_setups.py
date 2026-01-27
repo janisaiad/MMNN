@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Rerun 4 setups (4 momentum: 0.0, 0.3, 0.6, 0.7) with e8a6947-like settings:
-  factor=1, rank=10, n_train=5000, batch_size=4*factor, num_epochs=1000,
+  factor=1, rank=10, n_train=5000, batch_size=4*factor, num_epochs=250,
   SGD, lr_init=0.01, AdaptiveStagnation.
 
 Saves per-config JSON: all_losses, num_epochs, lr_reduction_epochs, all_lrs.
@@ -15,9 +15,45 @@ import json
 from pathlib import Path
 import sys
 from tqdm import tqdm
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from experiments.table.mmnn_vs import MMNN
+
+
+def _setup_mpl_rc():
+    """LaTeX-style plotting (from meanfield_cosine_multifreq_experiment)."""
+    plt.rcParams["figure.figsize"] = [6, 6]
+    plt.rcParams["font.size"] = 18
+    plt.rcParams["font.weight"] = "normal"
+    mpl.rcParams["mathtext.fontset"] = "cm"
+    mpl.rcParams["mathtext.rm"] = "serif"
+    mpl.rcParams["savefig.dpi"] = 300
+    mpl.rcParams["font.size"] = 22
+    mpl.rcParams["axes.formatter.limits"] = (-6, 6)
+    mpl.rcParams["axes.formatter.use_mathtext"] = True
+    mpl.rcParams["font.family"] = "STIXGeneral"
+    mpl.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
+    mpl.rcParams["mathtext.it"] = "Bitstream Vera Sans:italic"
+    mpl.rcParams["mathtext.bf"] = "Bitstream Vera Sans:bold"
+    mpl.rcParams["xtick.minor.visible"] = True
+    mpl.rcParams["ytick.minor.visible"] = True
+    plt.rcParams["ytick.right"] = True
+    plt.rcParams["xtick.top"] = True
+
+
+def _legend_momentum(meta):
+    """Label for legend: only the momentum, e.g. 'mom 0.0'."""
+    m = meta.get("momentum")
+    if m is not None:
+        return f"mom {m}"
+    for p in (meta.get("config") or "").split("_"):
+        if p.startswith("mom"):
+            return f"mom {p[3:]}" if len(p) > 3 else f"mom {p}"
+    return "?"
 
 OUTPUT_DIR = Path("experiments/table/rerun_four_setups")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -27,14 +63,15 @@ def target_function(x, factor):
     return np.cos(2 * factor * np.pi * x)
 
 
-# e8a6947-like: factor=1, rank=10, n_train=5000, batch_size=4*factor, 1000 epochs
+# e8a6947-like: factor=1, rank=10, n_train=5000, batch_size=4*factor, 250 epochs
 FACTOR = 1
 HIDDEN_RANK = 10
 HIDDEN_WIDTH = 1024
 NUM_LAYERS = 2
 N_TRAIN = 5000
 BATCH_SIZE = max(1, 4 * FACTOR)
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 250
+MAX_EPOCHS_PLOT = 1000  # plot only up to this epoch
 
 
 def train_one(cfg):
@@ -74,7 +111,7 @@ def train_one(cfg):
     all_losses = []
     all_lrs = []
 
-    pbar = tqdm(range(num_epochs), desc=name, unit="epoch")
+    pbar = tqdm(range(num_epochs), desc=f"mom {momentum}", unit="epoch")
     for epoch in pbar:
         model.train()
         indices = torch.randperm(n_train, device=device)
@@ -192,6 +229,7 @@ def main():
         name, all_losses, num_epochs, lr_reduction_epochs, all_lrs = train_one(cfg)
         meta = {
             "config": name,
+            "momentum": cfg["momentum"],
             "num_epochs": num_epochs,
             "all_losses": all_losses,
             "lr_reduction_epochs": lr_reduction_epochs,
@@ -203,34 +241,81 @@ def main():
         results.append(meta)
         print(f"  Saved {p.name} ({len(all_losses)} points, {len(lr_reduction_epochs)} LR reductions)")
 
-    # Plot 4 curves + red bars at LR reductions
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
+    # Plot 4 curves; red LR-reduction bars only for the first curve (mom 0.0)
+    _setup_mpl_rc()
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
-    first_lr_bar = True
+    lw = 3.0  # 2x previous 1.5
     for i, meta in enumerate(results):
-        losses = meta["all_losses"]
-        lbl = meta["config"].replace("factor1_rank10_SGD_", "").replace("_AdaptiveStagnation", "")
-        ax.semilogy(range(len(losses)), losses, color=colors[i % len(colors)], label=lbl, linewidth=1.5, alpha=0.8)
-        for ep in meta.get("lr_reduction_epochs", []):
-            if ep < len(losses):
-                ax.axvline(x=ep, color="r", linestyle="--", linewidth=1, alpha=0.6, 
-                           label="LR reduction" if first_lr_bar else None)
-                first_lr_bar = False
+        losses = meta["all_losses"][:MAX_EPOCHS_PLOT]
+        lbl = _legend_momentum(meta)
+        ax.semilogy(range(len(losses)), losses, color=colors[i % len(colors)], label=lbl, linewidth=lw, alpha=0.8)
+        # Red bars only for the first curve (epoch < MAX_EPOCHS_PLOT)
+        if i == 0:
+            for j, ep in enumerate(meta.get("lr_reduction_epochs", [])):
+                if ep < MAX_EPOCHS_PLOT and ep < len(meta["all_losses"]):
+                    ax.axvline(x=ep, color="r", linestyle="--", linewidth=1, alpha=0.6,
+                               label="LR reduction" if j == 0 else None)
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
-    ax.set_title("Four setups: factor=1, rank=10, SGD lr=0.01, AdaptiveStagnation (red bars = LR reduction)")
-    ax.legend(loc="upper right", fontsize=9)
+    ax.set_title("Four setups: factor=1, rank=10, SGD lr=0.01, AdaptiveStagnation (red bars = LR reduction, mom 0.0)")
+    ax.legend(loc="upper right", fontsize=18)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plot_path = OUTPUT_DIR / "four_setups_loss_with_lr_bars.png"
-    plt.savefig(plot_path, dpi=150)
+    plt.savefig(plot_path)
+    plt.close()
+    print(f"  Saved {plot_path}")
+
+
+def plot_only(out_dir=None):
+    """Regenerate the 4-setups plot from existing *_losses.json in out_dir."""
+    out_dir = Path(out_dir or OUTPUT_DIR)
+    _setup_mpl_rc()
+    pattern = sorted(out_dir.glob("*_losses.json"))
+    if not pattern:
+        print(f"No *_losses.json in {out_dir}. Run without --plot-only first.")
+        return
+    results = []
+    for p in pattern:
+        with open(p) as f:
+            results.append(json.load(f))
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+    lw = 3.0  # 2x previous 1.5
+    for i, meta in enumerate(results):
+        losses = meta["all_losses"][:MAX_EPOCHS_PLOT]
+        lbl = _legend_momentum(meta)
+        ax.semilogy(range(len(losses)), losses, color=colors[i % len(colors)], label=lbl, linewidth=lw, alpha=0.8)
+        # Red bars only for the first curve (epoch < MAX_EPOCHS_PLOT)
+        if i == 0:
+            for j, ep in enumerate(meta.get("lr_reduction_epochs", [])):
+                if ep < MAX_EPOCHS_PLOT and ep < len(meta["all_losses"]):
+                    ax.axvline(x=ep, color="r", linestyle="--", linewidth=1, alpha=0.6,
+                               label="LR reduction" if j == 0 else None)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.set_title("Four setups: factor=1, rank=10, SGD lr=0.01, AdaptiveStagnation (red bars = LR reduction, mom 0.0)")
+    ax.legend(loc="upper right", fontsize=18)
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plot_path = out_dir / "four_setups_loss_with_lr_bars.png"
+    plt.savefig(plot_path)
     plt.close()
     print(f"  Saved {plot_path}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--plot-only", action="store_true", help="Only regenerate plot from existing *_losses.json")
+    ap.add_argument("--out-dir", default=None, help="Output (or input for --plot-only) directory")
+    args = ap.parse_args()
+    if args.out_dir:
+        OUTPUT_DIR = Path(args.out_dir)
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    if args.plot_only:
+        plot_only(OUTPUT_DIR)
+    else:
+        main()
