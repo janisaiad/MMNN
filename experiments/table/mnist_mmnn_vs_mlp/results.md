@@ -22,7 +22,8 @@
 
 **MMNN:** 2 blocks; `ranks = [784, R, 10]`, `widths = [512, 512]`. Each block: Linear(rank→512) → ReLU → Linear(512→rank). Mu-parameterisation init (uniform rescaled by 1/√fan).  
 - **fixWb=True (random/frozen features):** rank→512 (and bias) frozen; only 512→rank trained.  
-- **fixWb=False:** all parameters trained.
+- **fixWb=False:** all parameters trained.  
+- **Factorized first layer (--factorize-first k):** 784→512 replaced by 784→k→512 to cut params (e.g. k=128: 784→128→512 ≈166k vs 402k). Applies to both fixWb settings.
 
 ---
 
@@ -39,6 +40,33 @@
 | **MMNN** | 32 | False | 440,362 | 440,362 | **98.30** | 0.112  |
 
 R=5, R=10 from a separate run with the same training parameters. R=15, 25, 50 (fixWb) and R=32 (fixWb=False) from runs stored in `results.json`.
+
+---
+
+## 2b. MMNN fixWb=False (R=5,10,15,25,50) — to run
+
+**Parameter counts** (fixWb=False ⇒ Params = Trainable):
+
+- **Unfactorized:** \(407{,}562 + 1{,}025\,R\).
+- **Factorized first layer (k=128):** \(172{,}042 + 1{,}025\,R\) (784→512 replaced by 784→128→512).
+
+| R  | Params (unfact.) | Params (fact. k=128) | Test acc (%) | Test loss |
+|----|------------------|----------------------|--------------|-----------|
+|  5 | 412,687          | 177,167              | —            | —         |
+| 10 | 417,812          | 182,292              | —            | —         |
+| 15 | 422,937          | 187,417              | —            | —         |
+| 25 | 433,187          | 197,667              | —            | —         |
+| 50 | 458,812          | 223,292              | —            | —         |
+
+**Run (from project root), factorized (recommended):**
+```bash
+bash experiments/table/mnist_mmnn_vs_mlp/run_fixWbFalse.sh
+```
+Or:
+```bash
+python experiments/table/mnist_mmnn_vs_mlp.py --no-fix-wb --factorize-first 128 --mmnn-ranks 5 10 15 25 50 --skip-mlp --out-dir experiments/table/mnist_mmnn_vs_mlp_fixWbFalse
+```
+For unfactorized, omit `--factorize-first 128`. Output: `experiments/table/mnist_mmnn_vs_mlp_fixWbFalse/` (results.json, mmnn_r*.pt, …). Fill Test acc and Test loss from `results.json` after running.
 
 ---
 
@@ -84,3 +112,4 @@ This experiment is an **example where random (frozen) features are competitive**
 | `results.json` | Last run: MLP + MMNN R=15,25,50 (fixWb) |
 | `histories.json` | Train/test loss and acc per epoch |
 | `mlp.pt`, `mmnn_r*.pt` | Saved model state dicts + config |
+| `run_fixWbFalse.sh` | Script to train MMNN fixWb=False for R=5,10,15,25,50 (output: `mnist_mmnn_vs_mlp_fixWbFalse/`) |
