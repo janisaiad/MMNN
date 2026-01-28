@@ -50,3 +50,35 @@ uv run python experiments/table/logratio/track_logratio_during_training.py
 
 Partial functions are taken from **layer 2** (second low-rank block):  
 `fcs[0]→ReLU→fcs[1]→fcs[2]→ReLU→fcs[3]` → output `(batch, 15)`.
+
+## Figure 5 configs and loss decay
+
+The paper’s Fig. 5 uses **SGD lr 0.01, batch 160, cos(8πx), 20 epochs** (caption) or **10k epochs** (Table 3).  
+**Plain SGD, no scheduler, momentum=0, 20 epochs** on cos(8πx) usually does **not** show loss decay.
+
+**Configs that make loss decay:**
+
+| Config | Target | Optimizer | Scheduler | Epochs | Use when |
+|--------|--------|-----------|-----------|--------|----------|
+| `config_fig5_adam.json` | cos(8πx) | **Adam** 0.001 | — | 100 | Fast decay; can switch to SGD when loss &lt; 1e-3 |
+| `config_fig5_sgd_scheduler.json` | cos(8πx) | SGD 0.01, mom 0.3 | **AdaptiveStagnation** | 100 | Closer to paper; matches `paper_50epochs`-style |
+| `config_fig5_simple.json` | **cos(2πx)** | SGD 0.01, mom 0 | **AdaptiveStagnation** | 100 | Easiest: 1 oscillation, batch 4 |
+
+**Run examples:**
+
+```bash
+# Adam (loss decays quickly):
+uv run python experiments/table/logratio/track_logratio_during_training.py \
+  --config experiments/table/logratio/config_fig5_adam.json \
+  --out-dir experiments/table/logratio/runs/fig5_adam
+
+# SGD + AdaptiveStagnation + momentum (cos(8πx), like paper_50epochs):
+uv run python experiments/table/logratio/track_logratio_during_training.py \
+  --config experiments/table/logratio/config_fig5_sgd_scheduler.json \
+  --out-dir experiments/table/logratio/runs/fig5_sgd_sched
+
+# Simplest: cos(2πx), SGD + AdaptiveStagnation:
+uv run python experiments/table/logratio/track_logratio_during_training.py \
+  --config experiments/table/logratio/config_fig5_simple.json \
+  --out-dir experiments/table/logratio/runs/fig5_simple
+```
