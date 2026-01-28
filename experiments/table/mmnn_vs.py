@@ -19,13 +19,26 @@ import sys
 from datetime import datetime
 
 
+class FactorizedLinear(nn.Module):
+    """we replace a large in_dim→out_dim Linear with in_dim→inner_dim→out_dim to reduce params."""
+
+    def __init__(self, in_dim: int, out_dim: int, inner_dim: int, device: str = "cuda"):
+        super().__init__()
+        self.lin1 = nn.Linear(in_dim, inner_dim, bias=False, device=device)
+        self.lin2 = nn.Linear(inner_dim, out_dim, bias=True, device=device)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.lin2(self.lin1(x))
+
+
 class MMNN(nn.Module):
     def __init__(self, 
                  ranks = [1] + [16]*5 + [1], 
                  widths = [366]*6,
                  device = "cuda", 
                  ResNet = False,
-                 fixWb = False):
+                 fixWb = False,
+                 factorize_first_rank: Optional[int] = None):
         super().__init__()
         """
         A class to configure the neural network model.
@@ -41,8 +54,11 @@ class MMNN(nn.Module):
             ResNet (bool): Indicates whether to use ResNet architecture, which includes identity connections between layers.
             
             fixWb (bool): If True, the weights and biases are not updated during training.
+            
+            factorize_first_rank (int, optional): If set, the first (rank→width) layer is implemented as
+                in→factorize_first_rank→out to reduce parameters. E.g. 128 for 784→128→512 instead of 784→512.
         """
-        
+        self.factorize_first_rank = factorize_first_rank
         self.product = 1
         for j in range(1,len(ranks)):
             self.product *= np.sqrt(widths[j-1] *ranks[j])
@@ -56,37 +72,42 @@ class MMNN(nn.Module):
         for j in range(self.depth):
             fc_sizes += [ widths[j], ranks[j+1] ]
 
-        fcs=[]
-        for j in range(len(fc_sizes)-1):
-            fc = nn.Linear(fc_sizes[j],
-                           fc_sizes[j+1], device=device) 
-            fcs.append(fc)
-        self.fcs = nn.ModuleList(fcs) # list of nn.Linear layers
+        fcs = []
+        for j in range(len(fc_sizes) - 1):
+            if j == 0 and factorize_first_rank is not None:
+                fcs.append(FactorizedLinear(fc_sizes[0], fc_sizes[1], factorize_first_rank, device))
+            else:
+                fcs.append(nn.Linear(fc_sizes[j], fc_sizes[j + 1], device=device))
+        self.fcs = nn.ModuleList(fcs)
         # mu-parameterization init: uniform on [-1,1] then divided by 1/sqrt(n)
         # rank→width: uniform[-1,1] / sqrt(rank), width→rank: uniform[-1,1] / sqrt(width)
         for j, fc in enumerate(self.fcs):
             with torch.no_grad():
-                
                 if j % 2 == 1:  # we scale width→rank weights (odd indices) by 1/sqrt(hidden width)
-                    hidden_width = widths[j // 2]  # we get hidden width for this block
-                    # uniform on [-1,1] then divide by sqrt(width)
+                    hidden_width = widths[j // 2]
                     fc.weight.uniform_(-1.0, 1.0)
                     fc.weight.div_(np.sqrt(hidden_width))
                     fc.bias.uniform_(-1.0, 1.0)
                     fc.bias.div_(np.sqrt(hidden_width))
-                else:
-                    # uniform on [-1,1] then divide by sqrt(rank)
-                    rank = ranks[j//2]
-                    fc.weight.uniform_(-1.0, 1.0)
-                    fc.weight.div_(np.sqrt(rank))
-                    fc.bias.uniform_(-1.0, 1.0)
-                    fc.bias.div_(np.sqrt(rank))
-        
-        if fixWb: # if True, the weights and biases are not updated during training
+                else:  # rank→width
+                    rank_in = ranks[j // 2]
+                    if isinstance(fc, FactorizedLinear):
+                        fc.lin1.weight.uniform_(-1.0, 1.0)
+                        fc.lin1.weight.div_(np.sqrt(rank_in))
+                        fc.lin2.weight.uniform_(-1.0, 1.0)
+                        fc.lin2.weight.div_(np.sqrt(factorize_first_rank))
+                        fc.lin2.bias.uniform_(-1.0, 1.0)
+                        fc.lin2.bias.div_(np.sqrt(factorize_first_rank))
+                    else:
+                        fc.weight.uniform_(-1.0, 1.0)
+                        fc.weight.div_(np.sqrt(rank_in))
+                        fc.bias.uniform_(-1.0, 1.0)
+                        fc.bias.div_(np.sqrt(rank_in))
+        if fixWb:
             for j in range(len(fcs)):
                 if j % 2 == 0:
-                    self.fcs[j].weight.requires_grad = False
-                    self.fcs[j].bias.requires_grad = False
+                    for p in self.fcs[j].parameters():
+                        p.requires_grad = False
  
     
     def forward(self, x):

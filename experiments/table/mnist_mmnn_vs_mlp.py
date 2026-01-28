@@ -125,10 +125,11 @@ def run_mmnn(
     resnet: bool,
     seed: int,
     desc: str = "MMNN",
+    factorize_first_rank: int | None = None,
 ) -> tuple[dict, nn.Module]:
     """Train MMNN and return (history and final metrics, trained model)."""
     torch.manual_seed(seed)
-    model = MMNN(ranks=ranks, widths=widths, device=device, ResNet=resnet, fixWb=fix_wb)
+    model = MMNN(ranks=ranks, widths=widths, device=device, ResNet=resnet, fixWb=fix_wb, factorize_first_rank=factorize_first_rank)
     model = model.to(device)
     nparams = sum(p.numel() for p in model.parameters())
     ntrain = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -154,6 +155,7 @@ def run_mmnn(
         "ranks": ranks,
         "widths": widths,
         "fix_wb": fix_wb,
+        "factorize_first_rank": factorize_first_rank,
     }
     return res, model
 
@@ -256,6 +258,7 @@ def main():
     ap.add_argument("--hidden", type=int, default=512, help="Hidden size (MLP and MMNN width)")
     ap.add_argument("--num-hidden", type=int, default=2, help="Number of hidden layers (MLP) / blocks (MMNN)")
     ap.add_argument("--no-fix-wb", action="store_true", help="MMNN: do not freeze features (default: fixWb=True)")
+    ap.add_argument("--factorize-first", type=int, default=128, help="MMNN: replace first 784→512 with 784→k→512; 0=off. Default 128. Reduces params.")
     ap.add_argument("--skip-mlp", action="store_true", help="Only run MMNN")
     ap.add_argument("--skip-mmnn", action="store_true", help="Only run MLP")
     args = ap.parse_args()
@@ -271,6 +274,7 @@ def main():
 
     results = []
     fix_wb = not args.no_fix_wb
+    factorize_first_rank = args.factorize_first if args.factorize_first > 0 else None
 
     # 1) MLP baseline: full MLP, all parameters trained
     if not args.skip_mlp:
@@ -293,14 +297,17 @@ def main():
             ranks = [in_dim] + [R] * max(0, args.num_hidden - 1) + [out_dim]
             widths = [args.hidden] * args.num_hidden
             desc = f"MMNN R={R} fixWb" if fix_wb else f"MMNN R={R}"
+            if factorize_first_rank is not None:
+                desc += f" fact={factorize_first_rank}"
             r, model = run_mmnn(
                 device, train_loader, test_loader,
                 num_epochs=args.epochs, lr=args.lr,
                 ranks=ranks, widths=widths, fix_wb=fix_wb, resnet=False, seed=args.seed, desc=desc,
+                factorize_first_rank=factorize_first_rank,
             )
             torch.save({
                 "state_dict": model.state_dict(),
-                "config": {"ranks": ranks, "widths": widths, "fixWb": fix_wb, "ResNet": False},
+                "config": {"ranks": ranks, "widths": widths, "fixWb": fix_wb, "ResNet": False, "factorize_first_rank": factorize_first_rank},
             }, args.out_dir / f"mmnn_r{R}.pt")
             print(f"  saved {args.out_dir / f'mmnn_r{R}.pt'}")
             results.append(r)
@@ -344,6 +351,8 @@ def _update_results_md(out_dir: Path, summary: list[dict]) -> None:
             R = r.get("ranks", [0, 0])[1] if len(r.get("ranks", [])) > 1 else "?"
             model = f"**MMNN R={R}**"
             cfg = "fixWb=True (random features)" if r.get("fix_wb") else "fixWb=False"
+            if r.get("factorize_first_rank"):
+                cfg += f" fact={r['factorize_first_rank']}"
         block.append(f"| {model} | {cfg} | {r['nparams']:,} | {r.get('ntrainable', r['nparams']):,} | **{100*r['final_test_acc']:.2f}%** | {r['final_test_loss']:.4f} |")
     block.append("")
     replacement = "\n".join(block)
