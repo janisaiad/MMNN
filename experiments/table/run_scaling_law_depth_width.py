@@ -38,7 +38,7 @@ from experiments.table.mmnn_vs import MMNN
 _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_DIR = _TABLE / "results_frequency_layer_scaling"
 RESULTS_BASELINE_DIR = _TABLE / "results_stable_baseline"
-RESULTS_BASELINE_SWEEP_DIR = _TABLE / "results_baseline_sweep"
+RESULTS_BASELINE_SWEEP_DIR = _TABLE / "results_baseline_sweep_sumcos"
 ANALYSIS_CSV = _TABLE / "frequency_layer_scaling_analysis.csv"
 SUMMARY_TXT = _TABLE / "frequency_layer_scaling_summary.txt"
 
@@ -80,8 +80,13 @@ mpl.rcParams["axes.formatter.use_mathtext"] = True
 
 
 def target_baseline(x, factor=1.0):
-    """we use cos(2 pi factor x) on [-1,1] as stable baseline (from rerun_four_setups)"""
-    return np.cos(2 * factor * np.pi * x)
+    """for factor n we fit sum_{k=1}^{n} cos(2 pi k x) on [-1,1]"""
+    if factor < 1:
+        return np.cos(2 * np.pi * x)
+    out = np.zeros_like(x, dtype=float)
+    for k in range(1, int(factor) + 1):
+        out += np.cos(2 * k * np.pi * x)
+    return out
 
 
 def target_function(x, freq_multiplier=1.0):
@@ -734,6 +739,7 @@ def train_baseline_sweep_one(config, output_dir):
         "init_loss": float(init_loss) if init_loss is not None else None,
         "min_loss_checkpoints": min_loss_checkpoints,
     }
+    torch.save(model.state_dict(), output_dir / "model_parameters.pth")
     with open(output_dir / "losses.json", "w") as f:
         json.dump(losses_payload, f, indent=2)
     with open(output_dir / "config.json", "w") as f:
@@ -743,7 +749,7 @@ def train_baseline_sweep_one(config, output_dir):
 
 
 def run_baseline_sweep():
-    """we run sweep: factor 1..5, N = base*factor, batch_size [1,2,4,8,16], layers 1..2*factor; epochs until 10K or lr < 1e-6; save losses.json and params at min_loss/1.2^k (one losses.json per run, no per-ckpt epoch_info)"""
+    """we run sweep: target = sum_{k=1}^{factor} cos(2 pi k x); factor 1..5, N = base*factor, batch_size [1,2,4,8,16], layers 1..2*factor; epochs until 10K or lr < 1e-6; save losses.json and params at min_loss/1.2^k"""
     RESULTS_BASELINE_SWEEP_DIR.mkdir(parents=True, exist_ok=True)
     for f in RESULTS_BASELINE_SWEEP_DIR.rglob("epoch_info.json"):
         try:
@@ -781,13 +787,25 @@ def run_baseline_sweep():
                         "factor": factor,
                     })
 
+    # we load rerun list: configs that must not be skipped and should be run again (e.g. to save final params)
+    rerun_file = _TABLE / "baseline_sweep_rerun.txt"
+    rerun_set = set()
+    if rerun_file.exists():
+        for line in rerun_file.read_text().strip().splitlines():
+            line = line.split("#")[0].strip()
+            if line:
+                rerun_set.add(line)
+
     for i, cfg in enumerate(configs, 1):
         out_name = cfg["name"]
         out_dir = RESULTS_BASELINE_SWEEP_DIR / out_name
-        if (out_dir / "losses.json").exists():
+        if (out_dir / "losses.json").exists() and out_name not in rerun_set:
             print(f"[{i}/{len(configs)}] skip (done): {out_name}")
             continue
-        print(f"[{i}/{len(configs)}] {out_name}")
+        if out_name in rerun_set:
+            print(f"[{i}/{len(configs)}] rerun (in rerun list): {out_name}")
+        else:
+            print(f"[{i}/{len(configs)}] {out_name}")
         try:
             train_baseline_sweep_one(cfg, out_dir)
         except Exception as e:

@@ -12,10 +12,15 @@ matplotlib.use("Agg")
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-RESULTS_DIR = Path(__file__).resolve().parent / "results_baseline_sweep"
-OUT_MD = Path(__file__).resolve().parent / "baseline_sweep_summary.md"
-OUT_CSV = Path(__file__).resolve().parent / "baseline_sweep_results.csv"
-OUT_HIST_PNG = Path(__file__).resolve().parent / "baseline_sweep_loss_histogram.png"
+_BASE = Path(__file__).resolve().parent
+RESULTS_DIR = _BASE / "results_baseline_sweep"
+OUT_MD = _BASE / "baseline_sweep_summary.md"
+OUT_CSV = _BASE / "baseline_sweep_results.csv"
+OUT_HIST_PNG = _BASE / "baseline_sweep_loss_histogram.png"
+RESULTS_DIR_SUMCOS = _BASE / "results_baseline_sweep_sumcos"
+OUT_MD_SUMCOS = _BASE / "baseline_sweep_sumcos_summary.md"
+OUT_CSV_SUMCOS = _BASE / "baseline_sweep_sumcos_results.csv"
+OUT_HIST_PNG_SUMCOS = _BASE / "baseline_sweep_sumcos_loss_histogram.png"
 
 # we consider "worked" if final test error is below this and finite
 TEST_ERR_WORKED_THRESHOLD = 0.01
@@ -65,7 +70,16 @@ def load_all():
     return rows
 
 
-def main():
+def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
+    global RESULTS_DIR, OUT_MD, OUT_CSV, OUT_HIST_PNG
+    if results_dir is not None:
+        RESULTS_DIR = results_dir
+    if out_md is not None:
+        OUT_MD = out_md
+    if out_csv is not None:
+        OUT_CSV = out_csv
+    if out_hist_png is not None:
+        OUT_HIST_PNG = out_hist_png
     rows = load_all()
     if not rows:
         print("no results found in", RESULTS_DIR)
@@ -92,9 +106,11 @@ def main():
         by_config[k].append(r)
 
     lines = []
-    lines.append("# Baseline sweep summary")
+    title = "Baseline sweep (sumcos)" if "sumcos" in str(OUT_MD) else "Baseline sweep summary"
+    lines.append(f"# {title}")
     lines.append("")
-    lines.append("Target: cos(2 π factor x), N = base×factor, bs ∈ {1,2,4,8,16}, L ∈ {1..2×factor}. "
+    target_desc = "Target: $\\sum_{k=1}^{\\mathrm{factor}} \\cos(2\\pi k x)$" if "sumcos" in str(OUT_MD) else "Target: cos(2 π factor x)"
+    lines.append(f"{target_desc}, N = base×factor, bs ∈ {{1,2,4,8,16}}, L ∈ {{1..2×factor}}. "
                  "**Worked** = final test error < 0.01; **Failed** = test error ≥ 0.5 or NaN/Inf.")
     lines.append("")
     lines.append("## Best configs (by final test error)")
@@ -237,4 +253,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description="Analyze baseline sweep results; optionally use sumcos results.")
+    ap.add_argument("--sumcos", action="store_true", help="use results_baseline_sweep_sumcos (target = sum_{k=1}^{factor} cos(2 pi k x))")
+    args = ap.parse_args()
+    if args.sumcos:
+        main(results_dir=RESULTS_DIR_SUMCOS, out_md=OUT_MD_SUMCOS, out_csv=OUT_CSV_SUMCOS, out_hist_png=OUT_HIST_PNG_SUMCOS)
+    else:
+        main()
