@@ -2,7 +2,8 @@
 """
 we rerun a fixed list of sumcos configs (factor 3) that worked well; we save parameters just before
 each LR divide and 10 epochs after each LR divide (2 saves per divide).
-usage: python run_selected_sumcos_configs.py
+usage: python run_selected_sumcos_configs.py           # default: lr 1e-2 with divide-by-2, 10k max epochs
+        python run_selected_sumcos_configs.py --low-lr-long --only f3_N768_bs4_L3   # lr=1e-4 fixed, 300k ep, save params every 10 ep (for gif); run one config
 """
 import json
 import sys
@@ -13,12 +14,19 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tqdm import tqdm
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_SELECTED_DIR = _TABLE / "results_sumcos_selected_rerun"
+RESULTS_SELECTED_LOWLR_DIR = _TABLE / "results_sumcos_selected_rerun_lowlr"
+
+# low-lr long run: fixed lr 1e-4, 300k epochs (no LR decay); save params every 10 epochs for gif
+LOWLR_LR = 1e-4
+LOWLR_NUM_EPOCHS = 300_000
+LOWLR_SAVE_EVERY_N_EPOCHS = 10
 
 from experiments.table.mmnn_vs import MMNN
 
@@ -104,8 +112,13 @@ def train_one_selected(config, output_dir):
     start_time = time.time()
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    with open(output_dir / "config.json", "w") as f:
+        json.dump(config, f, indent=2)
 
-    for epoch in range(num_epochs):
+    LOG_INTERVAL_SEC = 5.0
+    last_log_time = time.time()
+    pbar = tqdm(range(num_epochs), desc=output_dir.name, unit="ep", mininterval=LOG_INTERVAL_SEC)
+    for epoch in pbar:
         model.train()
         indices = torch.randperm(n_train, device=device)
         epoch_loss = 0.0
@@ -118,7 +131,7 @@ def train_one_selected(config, output_dir):
             y_pred = model(x_batch)
             loss = nn.MSELoss()(y_pred, y_batch)
             if torch.isnan(loss) or torch.isinf(loss):
-                print(f"  NaN/Inf at epoch {epoch}, stopping")
+                tqdm.write(f"  NaN/Inf at epoch {epoch}, stopping")
                 break
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -151,46 +164,57 @@ def train_one_selected(config, output_dir):
                 "threshold": float(threshold),
             })
 
-        # save 10 epochs after a previous LR divide (we do this before checking new divide so order is clear)
-        if epoch >= EPOCHS_AFTER_LR_DIVIDE and (epoch - EPOCHS_AFTER_LR_DIVIDE) in lr_reduction_epochs:
-            e_before = epoch - EPOCHS_AFTER_LR_DIVIDE
-            after_dir = output_dir / f"params_after_lr_divide_epoch_{e_before}_plus{EPOCHS_AFTER_LR_DIVIDE}"
-            after_dir.mkdir(parents=True, exist_ok=True)
-            torch.save(model.state_dict(), after_dir / "model_parameters.pth")
-            lr_divide_saves.append({"after_epoch": epoch, "divide_epoch": e_before})
-            if (epoch + 1) % 200 == 0 or epoch < 50:
-                print(f"  saved after_lr_divide epoch {e_before}+{EPOCHS_AFTER_LR_DIVIDE} -> {after_dir.name}")
-
-        # AdaptiveStagnation: reduce lr when stagnating; save params *before* applying new lr
-        if (
-            epoch >= min_epochs_before_reduce
-            and epoch - last_reduction_epoch >= min_epochs_before_reduce
-            and len(all_losses) >= 2 * window_size
-            and current_lr_index < len(lr_sequence) - 1
-        ):
-            recent = np.mean(all_losses[-window_size:])
-            prev = np.mean(all_losses[-2 * window_size : -window_size])
-            if recent >= prev:
-                # save just before this LR divide (current state, still with old lr for this epoch)
-                before_dir = output_dir / f"params_before_lr_divide_epoch_{epoch}"
-                before_dir.mkdir(parents=True, exist_ok=True)
-                torch.save(model.state_dict(), before_dir / "model_parameters.pth")
-                lr_reduction_epochs.append(epoch)
-                current_lr_index += 1
-                new_lr = lr_sequence[current_lr_index]
-                for g in optimizer.param_groups:
-                    g["lr"] = new_lr
-                last_reduction_epoch = epoch
+        fixed_lr_only = config.get("fixed_lr_only", False)
+        if not fixed_lr_only:
+            # save 10 epochs after a previous LR divide (we do this before checking new divide so order is clear)
+            if epoch >= EPOCHS_AFTER_LR_DIVIDE and (epoch - EPOCHS_AFTER_LR_DIVIDE) in lr_reduction_epochs:
+                e_before = epoch - EPOCHS_AFTER_LR_DIVIDE
+                after_dir = output_dir / f"params_after_lr_divide_epoch_{e_before}_plus{EPOCHS_AFTER_LR_DIVIDE}"
+                after_dir.mkdir(parents=True, exist_ok=True)
+                torch.save(model.state_dict(), after_dir / "model_parameters.pth")
+                lr_divide_saves.append({"after_epoch": epoch, "divide_epoch": e_before})
                 if (epoch + 1) % 200 == 0 or epoch < 50:
-                    print(f"  saved before_lr_divide epoch {epoch} -> {before_dir.name}")
+                    tqdm.write(f"  saved after_lr_divide epoch {e_before}+{EPOCHS_AFTER_LR_DIVIDE} -> {after_dir.name}")
+
+            # AdaptiveStagnation: reduce lr when stagnating; save params *before* applying new lr
+            if (
+                epoch >= min_epochs_before_reduce
+                and epoch - last_reduction_epoch >= min_epochs_before_reduce
+                and len(all_losses) >= 2 * window_size
+                and current_lr_index < len(lr_sequence) - 1
+            ):
+                recent = np.mean(all_losses[-window_size:])
+                prev = np.mean(all_losses[-2 * window_size : -window_size])
+                if recent >= prev:
+                    # save just before this LR divide (current state, still with old lr for this epoch)
+                    before_dir = output_dir / f"params_before_lr_divide_epoch_{epoch}"
+                    before_dir.mkdir(parents=True, exist_ok=True)
+                    torch.save(model.state_dict(), before_dir / "model_parameters.pth")
+                    lr_reduction_epochs.append(epoch)
+                    current_lr_index += 1
+                    new_lr = lr_sequence[current_lr_index]
+                    for g in optimizer.param_groups:
+                        g["lr"] = new_lr
+                    last_reduction_epoch = epoch
+                    if (epoch + 1) % 200 == 0 or epoch < 50:
+                        tqdm.write(f"  saved before_lr_divide epoch {epoch} -> {before_dir.name}")
+
+            current_lr = optimizer.param_groups[0]["lr"]
+            if current_lr < config.get("lr_stop_below", SWEEP_LR_STOP_BELOW):
+                tqdm.write(f"  stopping: lr={current_lr:.2e} < {config.get('lr_stop_below', SWEEP_LR_STOP_BELOW):.0e}")
+                break
 
         current_lr = optimizer.param_groups[0]["lr"]
-        if current_lr < config.get("lr_stop_below", SWEEP_LR_STOP_BELOW):
-            print(f"  stopping: lr={current_lr:.2e} < {config.get('lr_stop_below', SWEEP_LR_STOP_BELOW):.0e}")
-            break
-
-        if (epoch + 1) % 200 == 0 or epoch == 0:
-            print(f"  epoch {epoch+1}/{num_epochs} loss={epoch_loss:.4e} min_loss={min_loss_so_far:.4e} lr={current_lr:.6f} lr_divides={len(lr_reduction_epochs)}")
+        now = time.time()
+        if now - last_log_time >= LOG_INTERVAL_SEC:
+            pbar.set_postfix(loss=f"{epoch_loss:.4e}", min_loss=f"{min_loss_so_far:.4e}", lr=f"{current_lr:.2e}", lr_div=len(lr_reduction_epochs))
+            last_log_time = now
+        # save params every N epochs when fixed_lr_only (for gif later)
+        save_every = config.get("save_checkpoint_every_n_epochs", 0)
+        if save_every > 0 and (epoch + 1) % save_every == 0:
+            ckpt_dir = output_dir / f"params_epoch_{epoch + 1}"
+            ckpt_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(model.state_dict(), ckpt_dir / "model_parameters.pth")
 
     training_time = time.time() - start_time
 
@@ -232,14 +256,38 @@ def train_one_selected(config, output_dir):
 
 
 def main():
-    RESULTS_SELECTED_DIR.mkdir(parents=True, exist_ok=True)
-    lr_seq = _sweep_lr_sequence()
-    print(f"SELECTED SUMCOS RERUN: {len(SELECTED_SUMCOS_CONFIGS)} configs (factor={FACTOR})")
-    print(f"  Saves: params_before_lr_divide_epoch_E and params_after_lr_divide_epoch_E_plus{EPOCHS_AFTER_LR_DIVIDE}")
-    print(f"Output: {RESULTS_SELECTED_DIR}")
+    import argparse
+    parser = argparse.ArgumentParser(description="Rerun selected sumcos configs; optional low-lr long run.")
+    parser.add_argument("--low-lr-long", action="store_true", help="fixed lr=1e-4, 300k epochs; save params every 10 ep; output to results_sumcos_selected_rerun_lowlr")
+    parser.add_argument("--only", type=str, default=None, metavar="CONFIG", help="run only this config (e.g. f3_N768_bs4_L3)")
+    args = parser.parse_args()
+    low_lr_long = args.low_lr_long
+    only_config = args.only
 
+    if low_lr_long:
+        out_dir_base = RESULTS_SELECTED_LOWLR_DIR
+        lr_seq = [LOWLR_LR]
+        num_epochs = LOWLR_NUM_EPOCHS
+        fixed_lr_only = True
+        save_checkpoint_every_n_epochs = LOWLR_SAVE_EVERY_N_EPOCHS
+        print(f"SELECTED SUMCOS RERUN (low-lr long): lr={LOWLR_LR:.0e}, epochs={LOWLR_NUM_EPOCHS}")
+        print(f"  Fixed lr only; no LR divide policy. Save params every {save_checkpoint_every_n_epochs} epochs (for gif).")
+        print(f"Output: {out_dir_base}")
+    else:
+        out_dir_base = RESULTS_SELECTED_DIR
+        lr_seq = _sweep_lr_sequence()
+        num_epochs = SWEEP_NUM_EPOCHS_MAX
+        fixed_lr_only = False
+        save_checkpoint_every_n_epochs = 0
+        print(f"SELECTED SUMCOS RERUN: {len(SELECTED_SUMCOS_CONFIGS)} configs (factor={FACTOR})")
+        print(f"  Saves: params_before_lr_divide_epoch_E and params_after_lr_divide_epoch_E_plus{EPOCHS_AFTER_LR_DIVIDE}")
+        print(f"Output: {out_dir_base}")
+
+    out_dir_base.mkdir(parents=True, exist_ok=True)
     configs = []
     for c in SELECTED_SUMCOS_CONFIGS:
+        if only_config is not None and c["name"] != only_config:
+            continue
         configs.append({
             "name": c["name"],
             "n_train": c["n_train"],
@@ -247,7 +295,7 @@ def main():
             "hidden_width": SWEEP_WIDTH,
             "hidden_rank": SWEEP_RANK,
             "num_layers": c["num_layers"],
-            "num_epochs": SWEEP_NUM_EPOCHS_MAX,
+            "num_epochs": num_epochs,
             "lr_sequence": lr_seq,
             "lr_window": SWEEP_LR_WINDOW,
             "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
@@ -255,11 +303,16 @@ def main():
             "lr_stop_below": SWEEP_LR_STOP_BELOW,
             "momentum": 0.0,
             "factor": FACTOR,
+            "fixed_lr_only": fixed_lr_only,
+            "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs if low_lr_long else 0,
         })
+    if not configs:
+        print("no configs to run (check --only)")
+        return
 
     for i, cfg in enumerate(configs, 1):
         out_name = cfg["name"]
-        out_dir = RESULTS_SELECTED_DIR / out_name
+        out_dir = out_dir_base / out_name
         print(f"[{i}/{len(configs)}] {out_name}")
         try:
             train_one_selected(cfg, out_dir)
