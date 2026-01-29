@@ -21,6 +21,10 @@ RESULTS_DIR_SUMCOS = _BASE / "results_baseline_sweep_sumcos"
 OUT_MD_SUMCOS = _BASE / "baseline_sweep_sumcos_summary.md"
 OUT_CSV_SUMCOS = _BASE / "baseline_sweep_sumcos_results.csv"
 OUT_HIST_PNG_SUMCOS = _BASE / "baseline_sweep_sumcos_loss_histogram.png"
+RESULTS_DIR_EXPCOS = _BASE / "results_baseline_sweep_expcos"
+OUT_MD_EXPCOS = _BASE / "baseline_sweep_expcos_summary.md"
+OUT_CSV_EXPCOS = _BASE / "baseline_sweep_expcos_results.csv"
+OUT_HIST_PNG_EXPCOS = _BASE / "baseline_sweep_expcos_loss_histogram.png"
 
 # we consider "worked" if final test error is below this and finite
 TEST_ERR_WORKED_THRESHOLD = 0.01
@@ -70,7 +74,7 @@ def load_all():
     return rows
 
 
-def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
+def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_variant=None):
     global RESULTS_DIR, OUT_MD, OUT_CSV, OUT_HIST_PNG
     if results_dir is not None:
         RESULTS_DIR = results_dir
@@ -80,6 +84,11 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
         OUT_CSV = out_csv
     if out_hist_png is not None:
         OUT_HIST_PNG = out_hist_png
+    # sweep_variant: None (baseline), "sumcos", "expcos" — used for histogram style
+    if sweep_variant is None and "expcos" in str(out_hist_png or ""):
+        sweep_variant = "expcos"
+    if sweep_variant is None and "sumcos" in str(out_hist_png or ""):
+        sweep_variant = "sumcos"
     rows = load_all()
     if not rows:
         print("no results found in", RESULTS_DIR)
@@ -201,8 +210,20 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
     plt.rcParams["xtick.top"] = True
 
     factors = sorted(set(r["factor"] for r in rows))
-    fig, axes = plt.subplots(2, 3, figsize=(24, 16))
-    axes_flat = axes.ravel()
+    is_expcos = sweep_variant == "expcos"
+    if is_expcos:
+        # expcos: 1 row of 2 panels (factors 3 and 4), distinct style
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        axes_flat = list(axes.ravel())
+        hist_color = "darkorange"
+        hist_alpha = 0.85
+        hist_edge = "navy"
+    else:
+        fig, axes = plt.subplots(2, 3, figsize=(24, 16))
+        axes_flat = list(axes.ravel())
+        hist_color = "steelblue"
+        hist_alpha = 0.8
+        hist_edge = "white"
     for idx, f in enumerate(factors):
         ax = axes_flat[idx]
         sub = [r for r in rows if r["factor"] == f and np.isfinite(r.get("min_loss", np.nan))]
@@ -212,7 +233,6 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1)
         else:
-            # we bin in log space so bins are uniform on log scale (auto count)
             pos = [x for x in min_losses if x > 0]
             if not pos:
                 ax.text(0.5, 0.5, f"factor {f}\nno positive min_loss", ha="center", va="center", transform=ax.transAxes)
@@ -223,15 +243,20 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
                 log_lo = np.log10(min(pos))
                 log_hi = np.log10(max(pos))
                 bins_log = np.logspace(log_lo, log_hi, num=n_bins + 1)
-                ax.hist(pos, bins=bins_log, color="steelblue", alpha=0.8, edgecolor="white")
+                ax.hist(pos, bins=bins_log, color=hist_color, alpha=hist_alpha, edgecolor=hist_edge, linewidth=0.4)
                 ax.set_xscale("log")
                 ax.set_xlabel("min loss (train)")
                 ax.set_ylabel("count")
                 ax.set_title(f"factor {f} (n={len(min_losses)})")
-    if len(factors) < 6:
-        axes_flat[len(factors)].set_visible(False)
-    axes_flat[5].set_visible(False)
-    plt.suptitle("Histogram of min loss per factor (min over epochs)")
+    if not is_expcos:
+        if len(factors) < 6:
+            axes_flat[len(factors)].set_visible(False)
+        axes_flat[5].set_visible(False)
+    else:
+        for j in range(len(factors), 2):
+            axes_flat[j].set_visible(False)
+    suptitle = "Expcos: min loss per factor ($\\sum_{k=0}^{f} \\cos(2^k \\pi x)$)" if is_expcos else "Histogram of min loss per factor (min over epochs)"
+    plt.suptitle(suptitle)
     plt.tight_layout()
     plt.savefig(OUT_HIST_PNG, dpi=300, bbox_inches="tight")
     plt.close()
@@ -254,10 +279,13 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None):
 
 if __name__ == "__main__":
     import argparse
-    ap = argparse.ArgumentParser(description="Analyze baseline sweep results; optionally use sumcos results.")
+    ap = argparse.ArgumentParser(description="Analyze baseline sweep results; optionally use sumcos or expcos results.")
     ap.add_argument("--sumcos", action="store_true", help="use results_baseline_sweep_sumcos (target = sum_{k=1}^{factor} cos(2 pi k x))")
+    ap.add_argument("--expcos", action="store_true", help="use results_baseline_sweep_expcos (target = sum_{k=0}^{factor} cos(2^k pi x)); factor 3 and 4 only; different histogram style")
     args = ap.parse_args()
-    if args.sumcos:
+    if args.expcos:
+        main(results_dir=RESULTS_DIR_EXPCOS, out_md=OUT_MD_EXPCOS, out_csv=OUT_CSV_EXPCOS, out_hist_png=OUT_HIST_PNG_EXPCOS, sweep_variant="expcos")
+    elif args.sumcos:
         main(results_dir=RESULTS_DIR_SUMCOS, out_md=OUT_MD_SUMCOS, out_csv=OUT_CSV_SUMCOS, out_hist_png=OUT_HIST_PNG_SUMCOS)
     else:
         main()

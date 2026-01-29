@@ -3,11 +3,12 @@
 main experiment runner: stable baseline (cos 2pi x) and frequency/layer scaling (depth and width).
 goal: find scaling laws for N (training data), width, L (depth), freq; stable baseline first.
 usage:
-  python run_scaling_law_depth_width.py --baseline        # stable baseline: cos(2pi x), N=width=1024
-  python run_scaling_law_depth_width.py --baseline-sweep # sweep N, batch_size; lr/2 decay; save params at min_loss/1.2^k
-  python run_scaling_law_depth_width.py --train          # scaling-law training only
-  python run_scaling_law_depth_width.py --analyze       # scaling-law analysis only
-  python run_scaling_law_depth_width.py                 # scaling-law: train then analyze (default)
+  python run_scaling_law_depth_width.py --baseline           # stable baseline: cos(2pi x), N=width=1024
+  python run_scaling_law_depth_width.py --baseline-sweep     # sweep sumcos: sum_{k=1}^{f} cos(2 pi k x), factor 1..5
+  python run_scaling_law_depth_width.py --baseline-sweep-expcos  # sweep expcos: sum_{k=0}^{f} cos(2^k pi x), factor 3 and 4 only; N = mult*2^factor (Nyquist)
+  python run_scaling_law_depth_width.py --train              # scaling-law training only
+  python run_scaling_law_depth_width.py --analyze            # scaling-law analysis only
+  python run_scaling_law_depth_width.py                      # scaling-law: train then analyze (default)
 """
 import argparse
 import json
@@ -39,6 +40,7 @@ _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_DIR = _TABLE / "results_frequency_layer_scaling"
 RESULTS_BASELINE_DIR = _TABLE / "results_stable_baseline"
 RESULTS_BASELINE_SWEEP_DIR = _TABLE / "results_baseline_sweep_sumcos"
+RESULTS_BASELINE_SWEEP_EXPCOS_DIR = _TABLE / "results_baseline_sweep_expcos"
 ANALYSIS_CSV = _TABLE / "frequency_layer_scaling_analysis.csv"
 SUMMARY_TXT = _TABLE / "frequency_layer_scaling_summary.txt"
 
@@ -69,6 +71,11 @@ SWEEP_RANK = 10
 SWEEP_LR_WINDOW = 10
 SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE = 20
 
+# expcos sweep: target = sum_{k=0}^{factor} cos(2^k pi x); factors 3 and 4 only.
+# How to choose N_samples: highest mode is cos(2^factor pi x), with 2^factor periods on [-1,1]. Nyquist: need at least 2 points per period => N >= 2 * 2^factor. We use N = mult * 2^factor with mult in {4, 8, 16} for safety (factor 3: N in {32, 64, 128}; factor 4: N in {64, 128, 256}).
+SWEEP_EXPCOS_FACTORS = [3, 4]
+SWEEP_EXPCOS_N_MULTIPLIERS = [4, 8, 16]  # N = mult * 2^factor for each factor
+
 # we configure matplotlib for LaTeX-style plots
 plt.rcParams["figure.figsize"] = [6, 6]
 plt.rcParams["font.size"] = 18
@@ -86,6 +93,16 @@ def target_baseline(x, factor=1.0):
     out = np.zeros_like(x, dtype=float)
     for k in range(1, int(factor) + 1):
         out += np.cos(2 * k * np.pi * x)
+    return out
+
+
+def target_baseline_exp(x, factor=1.0):
+    """for factor n we fit sum_{k=0}^{n} cos(2^k pi x) on [-1,1]; highest mode has 2^factor periods in [-1,1], so Nyquist needs N >= 2 * 2^factor; we use N in {4*2^factor, 8*2^factor, 16*2^factor}"""
+    if factor < 0:
+        return np.cos(np.pi * x)
+    out = np.zeros_like(x, dtype=float)
+    for k in range(0, int(factor) + 1):
+        out += np.cos((2 ** k) * np.pi * x)
     return out
 
 
@@ -618,9 +635,10 @@ def train_baseline_sweep_one(config, output_dir):
     widths = [hidden_width] * (num_layers + 1)
     model = MMNN(ranks=ranks, widths=widths, device=device, ResNet=False, fixWb=True)
 
+    target_fn = target_baseline_exp if config.get("target") == "expcos" else target_baseline
     interval = [-1, 1]
     x_train = np.linspace(interval[0], interval[1], n_train)
-    y_train = target_baseline(x_train, factor)
+    y_train = target_fn(x_train, factor)
     x_train_tensor = torch.tensor(x_train.reshape([-1, 1]), device=device, dtype=mydtype)
     y_train_tensor = torch.tensor(y_train.reshape([-1, 1]), device=device, dtype=mydtype)
 
@@ -716,7 +734,7 @@ def train_baseline_sweep_one(config, output_dir):
 
     n_test = 500
     x_test = np.linspace(interval[0], interval[1], n_test)
-    y_test = target_baseline(x_test, factor)
+    y_test = target_fn(x_test, factor)
     x_test_tensor = torch.tensor(x_test.reshape([-1, 1]), device=device, dtype=mydtype)
     y_test_tensor = torch.tensor(y_test.reshape([-1, 1]), device=device, dtype=mydtype)
     with torch.no_grad():
@@ -813,6 +831,74 @@ def run_baseline_sweep():
             import traceback
             traceback.print_exc()
     print("Baseline sweep done.")
+
+
+def run_baseline_sweep_expcos():
+    """we run sweep: target = sum_{k=0}^{factor} cos(2^k pi x); factor 3 and 4 only; N = mult*2^factor with mult in {4,8,16} (Nyquist: highest mode 2^factor periods on [-1,1] => N >= 2*2^factor); batch_size [1,2,4,8,16], layers 1..2*factor; same lr/epochs as baseline sweep"""
+    RESULTS_BASELINE_SWEEP_EXPCOS_DIR.mkdir(parents=True, exist_ok=True)
+    for f in RESULTS_BASELINE_SWEEP_EXPCOS_DIR.rglob("epoch_info.json"):
+        try:
+            f.unlink()
+        except FileNotFoundError:
+            pass
+    lr_seq = _sweep_lr_sequence()
+    print(f"BASELINE SWEEP EXPCOS: target = sum_{{k=0}}^{{factor}} cos(2^k pi x); factors {SWEEP_EXPCOS_FACTORS}; N = mult*2^factor with mult in {SWEEP_EXPCOS_N_MULTIPLIERS} (Nyquist: N >= 2*2^factor); batch_size {SWEEP_BATCH_SIZES}, layers 1..2*factor")
+    print(f"  N_samples for factor 3: {[m * 2**3 for m in SWEEP_EXPCOS_N_MULTIPLIERS]}; factor 4: {[m * 2**4 for m in SWEEP_EXPCOS_N_MULTIPLIERS]}")
+    print(f"Output: {RESULTS_BASELINE_SWEEP_EXPCOS_DIR}")
+
+    configs = []
+    for factor in SWEEP_EXPCOS_FACTORS:
+        n_samples_for_factor = [m * (2 ** factor) for m in SWEEP_EXPCOS_N_MULTIPLIERS]
+        layer_counts = list(range(1, 2 * factor + 1))
+        for n_train in n_samples_for_factor:
+            for batch_size in SWEEP_BATCH_SIZES:
+                if batch_size > n_train:
+                    continue
+                for num_layers in layer_counts:
+                    name = f"f{factor}_N{n_train}_bs{batch_size}_L{num_layers}"
+                    configs.append({
+                        "name": name,
+                        "n_train": n_train,
+                        "batch_size": batch_size,
+                        "hidden_width": SWEEP_WIDTH,
+                        "hidden_rank": SWEEP_RANK,
+                        "num_layers": num_layers,
+                        "num_epochs": SWEEP_NUM_EPOCHS_MAX,
+                        "lr_sequence": lr_seq,
+                        "lr_window": SWEEP_LR_WINDOW,
+                        "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
+                        "min_loss_divisor": SWEEP_MIN_LOSS_DIVISOR,
+                        "lr_stop_below": SWEEP_LR_STOP_BELOW,
+                        "momentum": 0.0,
+                        "factor": factor,
+                        "target": "expcos",
+                    })
+
+    rerun_file = _TABLE / "baseline_sweep_expcos_rerun.txt"
+    rerun_set = set()
+    if rerun_file.exists():
+        for line in rerun_file.read_text().strip().splitlines():
+            line = line.split("#")[0].strip()
+            if line:
+                rerun_set.add(line)
+
+    for i, cfg in enumerate(configs, 1):
+        out_name = cfg["name"]
+        out_dir = RESULTS_BASELINE_SWEEP_EXPCOS_DIR / out_name
+        if (out_dir / "losses.json").exists() and out_name not in rerun_set:
+            print(f"[{i}/{len(configs)}] skip (done): {out_name}")
+            continue
+        if out_name in rerun_set:
+            print(f"[{i}/{len(configs)}] rerun (in rerun list): {out_name}")
+        else:
+            print(f"[{i}/{len(configs)}] {out_name}")
+        try:
+            train_baseline_sweep_one(cfg, out_dir)
+        except Exception as e:
+            print(f"  error: {e}")
+            import traceback
+            traceback.print_exc()
+    print("Baseline sweep expcos done.")
 
 
 def load_all_results():
@@ -924,7 +1010,8 @@ def main():
         description="Main experiments: stable baseline (cos 2pi x) and scaling law (depth/width/freq)."
     )
     parser.add_argument("--baseline", action="store_true", help="run stable baseline only (N=width=1024, SGD+AdaptiveStagnation)")
-    parser.add_argument("--baseline-sweep", action="store_true", help="sweep N in [16,32,64,128,256], batch_size in [1,2,4,8,16]; lr/2 decay; save params at min_loss/1.2^k")
+    parser.add_argument("--baseline-sweep", action="store_true", help="sweep sumcos: sum_{k=1}^{f} cos(2 pi k x), factor 1..5; N = base*factor")
+    parser.add_argument("--baseline-sweep-expcos", action="store_true", help="sweep expcos: sum_{k=0}^{f} cos(2^k pi x), factor 3 and 4 only; N = mult*2^factor (Nyquist)")
     parser.add_argument("--train", action="store_true", help="run scaling-law training only")
     parser.add_argument("--analyze", action="store_true", help="run scaling-law analysis only")
     args = parser.parse_args()
@@ -933,6 +1020,8 @@ def main():
         run_baseline()
     elif args.baseline_sweep:
         run_baseline_sweep()
+    elif args.baseline_sweep_expcos:
+        run_baseline_sweep_expcos()
     elif args.train:
         run_training()
     elif args.analyze:
