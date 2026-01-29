@@ -1,0 +1,166 @@
+% proofs moved from the main text (meanfield_lowrank.tex)
+
+\subsection*{Proof of Lemma~\ref{lem:halfspace-identities}}
+\begin{proof}
+By symmetry $U\overset{d}{=}-U$, we have $\E[U]=0$ (when $\E[|U|]<\infty$).
+For $a>0$, decompose
+\[
+0=\E[U]=\E[U\1\{U>0\}]+\E[U\1\{U<0\}],
+\]
+so $\E[U\1\{U>0\}]=-\E[U\1\{U<0\}]$.
+Moreover,
+\[
+\E[|U|]=\E[U\1\{U>0\}]-\E[U\1\{U<0\}]=2\,\E[U\1\{U>0\}],
+\]
+which gives $\E[U\1\{U>0\}]=\E[|U|]/2$.
+For $a<0$, $\1\{aU>0\}=\1\{U<0\}$ and the identity becomes $\E[U\1\{U<0\}]=-\E[|U|]/2$.
+This yields $\E[U\1\{aU>0\}]=\mathrm{sign}(a)\E[|U|]/2$ for all $a\neq 0$.
+The second-moment identity follows similarly from symmetry: $U^2\1\{U>0\}$ and $U^2\1\{U<0\}$ have equal expectation, so $\E[U^2\1\{U>0\}]=\E[U^2]/2$ and likewise for $\1\{aU>0\}$.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:onesparse-reinforce}}
+\begin{proof}
+We work on $[0,T]$ and write $U\equiv L_{C_2,j}$.
+Assume inductively that $f(t)=a(t)e_j$ with $a(t)\ge 0$ (this will be justified by the conclusion).
+Then $\ip{L_{c_2}}{f(t)}=a(t)L_{c_2,j}$ and the gate $\1\{\ip{L_{C_2}}{f(t)}>0\}$ is $\1\{U>0\}$.
+The top-layer ODE \eqref{eq:spike-w2} integrates explicitly to
+\[
+w_2(t,c_2)=w_2^0+\Big(\int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds\Big)\,L_{c_2,j}\,\1\{L_{c_2,j}>0\},
+\]
+since $(a(s)L_{c_2,j})_+=a(s)L_{c_2,j}\1\{L_{c_2,j}>0\}$ for $a(s)\ge 0$.
+In particular $w_2(t,C_2)$ is a measurable function of $L_{C_2,j}$ only.
+
+For $k\neq j$, independence of coordinates implies $L_{C_2,k}$ is independent of $(L_{C_2,j},w_2(t,C_2),\1\{U>0\})$, hence
+\[
+B_k(t)=\E\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\{U>0\}\right]
+=\E[L_{C_2,k}]\,\E\!\left[w_2(t,C_2)\,\1\{U>0\}\right]=0,
+\]
+using $\E[L_{C_2,k}]=0$ from symmetry.
+Thus $\partial_t f_k(t)=-\xi_1(t)d(t)B_k(t)=0$ for all $k\neq j$, so $f_k(t)\equiv 0$ on $[0,T]$.
+This proves invariance of the one-sparse manifold.
+
+For $k=j$, let $\alpha(t)\equiv \int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds$.
+Then the above formula gives $w_2(t,C_2)=w_2^0+\alpha(t)\,U\,\1\{U>0\}$ and
+\[
+B_j(t)=\E\!\left[U\,(w_2^0+\alpha(t)U\1\{U>0\})\,\1\{U>0\}\right]
+=w_2^0\,\E[U\1\{U>0\}]+\alpha(t)\,\E[U^2\1\{U>0\}].
+\]
+Applying Lemma~\ref{lem:halfspace-identities} with $a=1$ yields \eqref{eq:Bj-explicit} and in particular $B_j(t)>0$.
+Finally, since $f_j(t)=a(t)$ and $\partial_t f_j(t)=-\xi_1(t)d(t)B_j(t)$, we have $\partial_t a(t)\ge 0$ because $d(t)\le 0$ and $B_j(t)>0$.
+Thus $a(t)\ge a_0>0$ for all $t\in[0,T]$, closing the argument.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:lyapunov-onespike}}
+\begin{proof}
+Under the one-sparse manifold $f(t)=a(t)e_j$ with $a(t)\ge 0$, the network prediction at $x_\star$ is
+\[
+\hat y(t)=\E_{C_2}\!\left[w_2(t,C_2)\,(a(t)L_{C_2,j})_+\right]
+=a(t)\,\E_{C_2}\!\left[w_2(t,C_2)\,L_{C_2,j}\,\1\{L_{C_2,j}>0\}\right]
+=a(t)\,B_j(t),
+\]
+so $d(t)=a(t)B_j(t)-y_\star$.
+Differentiate:
+\[
+\partial_t d(t)=\partial_t(a(t)B_j(t))=(\partial_t a(t))B_j(t)+a(t)\,\partial_t B_j(t).
+\]
+By \eqref{eq:spike-f}, $\partial_t a(t)=\partial_t f_j(t)=-\xi_1(t)\,d(t)\,B_j(t)$.
+Moreover, by definition $B_j(t)=\E[L_{C_2,j}\,w_2(t,C_2)\,\1\{L_{C_2,j}>0\}]$ on this manifold, hence
+\[
+\partial_t B_j(t)=\E\!\left[L_{C_2,j}\,(\partial_t w_2(t,C_2))\,\1\{L_{C_2,j}>0\}\right].
+\]
+Using \eqref{eq:spike-w2} with $\ip{L_{c_2}}{f(t)}=a(t)L_{c_2,j}$ and $a(t)\ge 0$ gives
+$(\ip{L_{C_2}}{f(t)})_+=a(t)L_{C_2,j}\1\{L_{C_2,j}>0\}$, so
+\[
+\partial_t w_2(t,C_2)=-\xi_2(t)\,d(t)\,a(t)\,L_{C_2,j}\,\1\{L_{C_2,j}>0\}.
+\]
+Therefore
+\[
+\partial_t B_j(t)
+=-\xi_2(t)\,d(t)\,a(t)\,\E\!\left[L_{C_2,j}^2\,\1\{L_{C_2,j}>0\}\right]
+=-\xi_2(t)\,d(t)\,a(t)\,S_j.
+\]
+Substituting the expressions for $\partial_t a$ and $\partial_t B_j$ yields
+\[
+\partial_t d(t)=(-\xi_1(t)d(t)B_j(t))B_j(t)+a(t)(-\xi_2(t)d(t)a(t)S_j)
+=-d(t)\Big(\xi_1(t)B_j(t)^2+\xi_2(t)a(t)^2S_j\Big),
+\]
+which is \eqref{eq:d-dissipative}.
+Finally, $\ell(t)=\tfrac12 d(t)^2$ implies $\partial_t\ell(t)=d(t)\partial_t d(t)$, and \eqref{eq:ell-dissipative} follows.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:kernel-flow-solution}}
+\begin{proof}
+Let $e(t)\equiv \hat y(t)-y$.
+Then \eqref{eq:kernel-flow} is $\partial_t e(t)=-\eta(t)K e(t)$, hence $\partial_\tau e(\tau)=-K e(\tau)$ in the time-change variable $\tau$.
+The unique solution is $e(\tau)=e^{-\tau K}e(0)$, which is \eqref{eq:kernel-solution}.
+Diagonalizing $K$ yields \eqref{eq:mode-solution}.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:r2-logratio-criterion}}
+\begin{proof}
+By the exact identity \eqref{eq:logratio-identity} at $x=x_0$,
+\[
+\partial_t R_{12}(t,x_0)=\frac{\mathrm{sign}(f_1(t,x_0))\,\partial_t f_1(t,x_0)}{|f_1(t,x_0)|+\varepsilon}
+-\frac{\mathrm{sign}(f_2(t,x_0))\,\partial_t f_2(t,x_0)}{|f_2(t,x_0)|+\varepsilon}.
+\]
+Insert the local dynamics and use $-d_0(t)\ge 0$:
+\[
+\partial_t R_{12}(t,x_0)=\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\Big(
+\frac{\mathrm{sign}(f_1)B_{1,1}}{|f_1|+\varepsilon}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|+\varepsilon}\Big).
+\]
+By the sign assumption on $B_{1,1}$, $\mathrm{sign}(f_1)B_{1,1}=|B_{1,1}|$.
+Moreover $-\mathrm{sign}(f_2)B_{2,1}\ge -|B_{2,1}|$.
+Using \eqref{eq:r2-stability-assumption} yields
+\[
+\frac{|B_{1,1}|}{|f_1|+\varepsilon}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|+\varepsilon}
+\ge \frac{|B_{1,1}|}{|f_1|+\varepsilon}-\frac{|B_{2,1}|}{|f_2|+\varepsilon}
+\ge (1-\rho)\frac{|B_{1,1}|}{|f_1|+\varepsilon},
+\]
+which proves the claimed lower bound for $\partial_t R_{12}$.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:isotropic-no-specialization}}
+\begin{proof}
+Let $L\sim\mathcal{N}(0,I_2)$ and $S=\ip{L}{u}$.
+By Gaussian regression, $\E[L\mid S]=\frac{u}{\|u\|^2}S$.
+Therefore
+\[
+\E\!\big[L\,g_t(S)\,\1\{S>0\}\big]=\E\!\big[\E[L\mid S]\,g_t(S)\,\1\{S>0\}\big]
+=\frac{u}{\|u\|^2}\E\!\big[Sg_t(S)\,\1\{S>0\}\big],
+\]
+which proves colinearity.
+If $u_1,u_2$ have the same sign then $\mathrm{sign}(u_k)B_k=|B_k|$ and $|B_k|/(|u_k|+\varepsilon)$ is proportional to $|u_k|/(|u_k|+\varepsilon)$ with the same proportionality constant, so the difference in \eqref{eq:r2-logratio-local} cancels.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:first-step-dominance}}
+\begin{proof}
+From \eqref{eq:first-step-linearized} and $f_k(0,x_p)=0$, one has
+\[
+|f_k^{+}(x_p)|=\eta\,\xi_1(0)\,\pi_p\,|d_p(0)|\,K_{\mu_0}(x_p,x_p)\,|B_{k,p}(0)|.
+\]
+The prefactor does not depend on $k$, so comparing $|f_1^{+}(x_p)|$ and $|f_2^{+}(x_p)|$ is equivalent to comparing $|B_{1,p}(0)|$ and $|B_{2,p}(0)|$.
+By i.i.d.\ continuity, $\Pp(|B_{1,p}(0)|>|B_{2,p}(0)|)=\tfrac12$.
+Independence across spikes gives $\Pp(\mathcal{E})=\tfrac14$.
+Finally, strict inequalities imply the log-ratios at $0^{+}$ are positive for any $\varepsilon\ge 0$.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:geom-width-to-freq}}
+\begin{proof}
+Iterate \eqref{eq:width-recursion} to obtain geometric shrinkage of $h$.
+Since $h(v)=\mathrm{Leb}(\mathrm{supp}(v))/N(v)$ by Definition~\ref{def:spike-width-proxy}, a lower bound on $\mathrm{Leb}(\mathrm{supp}(v^{(\ell)}))$ converts width shrinkage into growth of the number of connected components.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:1d-spline-exp}}
+\begin{proof}
+Each hidden unit computes $\sigma(g(x))$ where $g$ is a linear combination of previous-layer outputs.
+A linear combination of piecewise-linear functions is piecewise-linear with breakpoints contained in the union of the previous breakpoints, hence the number of pieces adds across units.
+Applying $\sigma(\cdot)=\max\{\cdot,0\}$ cannot create more breakpoints than the input piecewise-linear function has (it only clips on subsets of existing affine pieces and can add kinks only at zeros of $g$ inside affine pieces).
+An induction on layers yields $\mathsf{osc}$ growth at most by a factor $m$ per layer (up to constants), hence $\mathsf{osc}(f)\le C m^L$.
+\end{proof}
+
+\subsection*{Proof of Lemma~\ref{lem:1d-osc-achieve}}
+\begin{proof}
+One may use the classical tent-map/sawtooth construction: a fixed piecewise-linear ``folding'' map doubles the number of linear pieces under composition, so after $L$ compositions the number of pieces is $2^L$.
+Each folding map is representable by a small ReLU network; stacking $L$ copies yields the claim.
+\end{proof}
+

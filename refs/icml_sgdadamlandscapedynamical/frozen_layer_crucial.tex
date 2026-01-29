@@ -1,0 +1,154 @@
+\section{Why the Frozen First Layer is Crucial: Preventing Divergence}
+\label{sec:frozen-layer-crucial}
+
+This section explains why the frozen first layer is not just a simplification, but the \textbf{key mechanism} that prevents divergence and enables the generalization to arbitrary depth $L$.
+
+\subsection{The Problem: What If the First Layer Could Diverge?}
+
+If the first layer were trainable and could diverge, we would face a fundamental problem:
+
+\begin{enumerate}
+\item \textbf{Error propagation}: If $w_1(t)$ diverges (e.g., $|w_1(t)| \to \infty$), then:
+   \begin{align*}
+   H_2(t, c_2; X, W) &= \sum_{k=1}^r L_{c_2,k}\,\mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), X\rangle)]\\
+   &\to \infty \quad \text{(if $w_1$ diverges)}
+   \end{align*}
+   This would cause all subsequent layers to diverge.
+
+\item \textbf{Support collapse}: If $w_1(t)$ moves toward a degenerate distribution (e.g., all neurons collapse to the same direction), then:
+   \[
+   \text{supp}(w_1(t, C_1)) \subsetneq \mathbb{R}^d,
+   \]
+   and universal approximation would fail. This is exactly what happens in full-width networks with i.i.d. initialization for $L \geq 3$ (Corollary 29 of \cite{nguyen2023rigorousframeworkmeanfield}).
+
+\item \textbf{Need for correlated initialization}: To prevent divergence and support collapse in a trainable first layer, we would need:
+   \begin{itemize}
+   \item Correlated initialization: $(w_1^0(C_1), w_2^0(C_1, \cdot))$ must have full support
+   \item Function-dependent design: The correlation structure must be chosen based on the target function
+   \item This is exactly what limits full-width proofs to $L=3$ layers
+   \end{itemize}
+\end{enumerate}
+
+\subsection{The Solution: Frozen First Layer}
+
+\textbf{The frozen first layer solves all three problems simultaneously:}
+
+\begin{enumerate}
+\item \textbf{No divergence possible}: Since $f_1(C_1)$ is fixed and independent of $W(t)$:
+   \[
+   H_1(t, c_1; X, W) = \langle f_1(c_1), X\rangle \quad \text{(constant in $t$)}
+   \]
+   This cannot diverge because it doesn't depend on $W(t)$ at all.
+
+\item \textbf{Full support maintained automatically}: Since $f_1(C_1)$ are frozen random features (e.g., Gaussian):
+   \[
+   \text{supp}(f_1(C_1)) = \mathbb{R}^d \quad \text{for all $t \geq 0$}
+   \]
+   This is preserved \textbf{trivially} because $f_1$ never changes.
+
+\item \textbf{No correlated initialization needed}: Since $f_1(C_1)$ has full support by construction (e.g., Gaussian random features), we can initialize $w_1^0(C_1, k)$ and $w_2^0(C_2)$ independently with standard i.i.d. distributions.
+\end{enumerate}
+
+\subsection{Why This Enables Generalization to Arbitrary $L$}
+
+\textbf{The key insight is that we're not actually "stacking" layers in a way that compounds errors.} Instead:
+
+\begin{enumerate}
+\item \textbf{Stable base}: The frozen first layer provides a stable, non-diverging base:
+   \[
+   H_1(t, c_1; X, W) = \langle f_1(c_1), X\rangle \quad \text{(independent of $W(t)$)}
+   \]
+   This is the \textbf{base case} of our recursion.
+
+\item \textbf{Same procedure at each layer}: For layers $i = 2, \ldots, L$, we apply the \textbf{same bounded procedure}:
+   \begin{itemize}
+   \item Forward: $H_i$ depends on $H_{i-1}$ through bounded mixing matrix $L^{(i)}$ with $\|L^{(i)}\|_{\infty,1} \le rK$
+   \item Backward: $B_k^{(i)}$ depends on $B_k^{(i+1)}$ through bounded operations
+   \item All errors bounded in terms of global distance $\mathscr{D}_t(W, \tilde{W})$, not layer-wise errors
+   \end{itemize}
+
+\item \textbf{No error compounding}: Because we bound everything in terms of the global distance $\mathscr{D}_t$, errors don't compound exponentially. Each layer contributes a factor $(1+rK)$ to the Gronwall constant, and these multiply (not compound):
+   \[
+   \text{Gronwall constant} = K_T(1+rK)^{L-2} \quad \text{(polynomial, not exponential)}
+   \]
+\end{enumerate}
+
+\subsection{The Recursive Structure}
+
+\textbf{We're reusing the same procedure, but with a crucial difference:}
+
+For $L=3$ layers:
+\begin{align*}
+H_1 &= \langle f_1(C_1), X\rangle \quad \text{(frozen, stable)}\\
+H_2 &= \sum_{k=1}^r L_{c_2,k}\,\mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(H_1)]\\
+\hat{y} &= \mathbb{E}_{C_2}[w_2(t, C_2)\,\varphi_2(H_2)]
+\end{align*}
+
+For $L$ layers:
+\begin{align*}
+H_1 &= \langle f_1(C_1), X\rangle \quad \text{(frozen, stable - SAME)}\\
+H_2 &= \sum_{k=1}^r L^{(2)}_{c_2,k}\,\mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(H_1)] \quad \text{(SAME procedure)}\\
+H_3 &= \sum_{k=1}^r L^{(3)}_{c_3,k}\,\mathbb{E}_{C_2}[w_2(t, C_2, k)\,\varphi_2(H_2)] \quad \text{(SAME procedure)}\\
+&\vdots\\
+H_L &= \mathbb{E}_{C_{L-1}}[w_{L-1}(t, C_{L-1}, k)\,\varphi_{L-1}(H_{L-1})] \quad \text{(SAME procedure)}
+\end{align*}
+
+\textbf{The key is that:}
+\begin{itemize}
+\item The base case $H_1$ is frozen and stable (can't diverge)
+\item Each subsequent layer applies the same bounded procedure
+\item All errors are bounded in terms of the global distance $\mathscr{D}_t$
+\item The Gronwall constant accumulates multiplicatively: $(1+rK)^{L-2}$
+\end{itemize}
+
+\subsection{What Would Happen With a Trainable First Layer?}
+
+If we tried to make the first layer trainable, we would need to:
+
+\begin{enumerate}
+\item \textbf{Prove $w_1(t)$ doesn't diverge}: This requires showing that the gradient flow keeps $w_1(t)$ bounded. This is non-trivial and requires additional assumptions.
+
+\item \textbf{Prove support remains full}: We need $\text{supp}(w_1(t, C_1)) = \mathbb{R}^d$ for all $t$. This is exactly what requires correlated initialization in the full-width case.
+
+\item \textbf{Handle error compounding}: If $w_1(t)$ could move, then errors in $w_1$ would propagate to $H_2$, then to $H_3$, etc., potentially compounding exponentially.
+
+\item \textbf{Require function-dependent initialization}: The correlation structure $(w_1^0(C_1), w_2^0(C_1, \cdot))$ would need to be chosen based on the target function, limiting applicability.
+\end{enumerate}
+
+\textbf{This is exactly why full-width proofs are limited to $L=3$ layers!}
+
+\subsection{The Key Insight: Frozen = Stable Base}
+
+\textbf{The frozen first layer is not a limitation—it's the key that unlocks arbitrary depth:}
+
+\begin{theorem}[Frozen first layer enables arbitrary depth]
+If the first layer is frozen (i.e., $f_1(C_1)$ is independent of $W(t)$), then:
+\begin{enumerate}
+\item The base case $H_1 = \langle f_1(C_1), X\rangle$ is stable and cannot diverge
+\item Full support $\text{supp}(f_1(C_1)) = \mathbb{R}^d$ is maintained trivially
+\item Standard i.i.d. initialization suffices (no correlated initialization needed)
+\item The same bounded procedure can be applied at each subsequent layer
+\item The Gronwall constant grows polynomially: $(1+rK)^{L-2}$
+\end{enumerate}
+Therefore, global convergence holds for arbitrary depth $L$ with standard initialization.
+\end{theorem}
+
+\subsection{Conclusion}
+
+\textbf{To answer the question: "How do we avoid divergence when stacking layers?"}
+
+The answer is: \textbf{We don't stack layers in a way that compounds errors. Instead:}
+
+\begin{enumerate}
+\item \textbf{Frozen first layer provides stable base}: $H_1 = \langle f_1(C_1), X\rangle$ is independent of $W(t)$, so it cannot diverge.
+
+\item \textbf{Same bounded procedure at each layer}: Each layer $i = 2, \ldots, L$ applies the same procedure with bounded mixing matrix $L^{(i)}$ satisfying $\|L^{(i)}\|_{\infty,1} \le rK$.
+
+\item \textbf{Global distance bounding}: All errors are bounded in terms of the global distance $\mathscr{D}_t(W, \tilde{W})$, not layer-wise errors that would compound.
+
+\item \textbf{Polynomial growth}: The Gronwall constant grows as $(1+rK)^{L-2}$, which is polynomial in $L$ (not exponential).
+
+\item \textbf{Reusing the same procedure}: We're not inventing new techniques for each layer—we're applying the same bounded procedure recursively, starting from a stable frozen base.
+\end{enumerate}
+
+\textbf{The frozen first layer is the key that makes everything work.} Without it, we'd be back to needing correlated initialization and would be limited to $L=3$ layers, just like the full-width case.

@@ -1,0 +1,25 @@
+Low-rank neural networks have emerged as a powerful paradigm for parameter-efficient deep learning, achieving competitive performance with significantly fewer parameters than full-rank networks~\cite{arora2018optimization,novikov2015tensorizing}. However, the mechanisms by which low-rank constraints enable effective learning remain poorly understood. In this work, we provide experimental evidence for a fundamental principle: \emph{low-rank neural networks construct features hierarchically, while networks without low-rank constraints (or with rank too high) fail to build meaningful hierarchical structure}.
+
+\paragraph{The Hierarchical Construction Hypothesis.}
+We hypothesize that in the \emph{extensive-rank regime} where the rank $r$ scales as $r \asymp d^\beta$ for $\beta \in (0,1)$ (where $d$ is the input dimension), the network learns features through a hierarchical process:
+\begin{enumerate}
+    \item \textbf{Sequential activation:} Features are activated sequentially, with low-frequency (smooth) features learned first, followed by progressively higher-frequency (localized) features.
+    \item \textbf{Band-by-band learning:} Each stepwise drop in the training loss corresponds to the activation of a new frequency band or latent direction.
+    \item \textbf{Rank bottleneck:} The number of simultaneously active features is limited by the rank $r$, creating a natural bottleneck that enforces hierarchical structure.
+\end{enumerate}
+
+In contrast, when rank is too high ($r \asymp d$ or full-rank), the network has sufficient capacity to learn all features simultaneously, eliminating the hierarchical bottleneck and resulting in flat, non-hierarchical representations.
+
+\paragraph{Instability as Reinforcement.}
+A key insight from our analysis is that \emph{instability near sharp minima acts as a reinforcement mechanism} that drives hierarchical feature construction. When the network approaches a sharp minimum (characterized by large Hessian eigenvalues), the resulting instability forces the network to reorganize its feature representation, breaking out of local plateaus and activating new frequency bands. This instability-reinforcement cycle is essential for hierarchical construction: without it, the network remains stuck in low-frequency solutions.
+
+\paragraph{Main Contributions.}
+Our contributions are threefold:
+\begin{enumerate}
+    \item \textbf{Experimental evidence:} We provide comprehensive experimental evidence that low-rank networks ($r \asymp d^\beta$) exhibit hierarchical feature construction via stepwise loss curves and sequential frequency band activation, while high-rank networks ($r \asymp d$) fail to develop hierarchical structure.
+    \item \textbf{Theoretical framework:} We connect hierarchical construction to mean-field dynamics and show that the extensive-rank regime naturally gives rise to band-by-band Fourier mode activation.
+    \item \textbf{Instability-reinforcement mechanism:} We demonstrate that instability near sharp minima is not a bug but a feature---it acts as a reinforcement mechanism that drives hierarchical construction by forcing the network to escape low-frequency plateaus.
+\end{enumerate}
+
+\paragraph{Paper Organization.}
+Section~\ref{sec:related} reviews related work on low-rank networks, mean-field theory, and hierarchical learning. Section~\ref{sec:setup} introduces our architecture and notation. Section~\ref{sec:theory} presents theoretical results connecting extensive-rank dynamics to hierarchical construction. Section~\ref{sec:experiments} provides experimental evidence across synthetic and real-world datasets. Section~\ref{sec:instability} analyzes the instability-reinforcement mechanism. Section~\ref{sec:discussion} discusses implications and future directions.

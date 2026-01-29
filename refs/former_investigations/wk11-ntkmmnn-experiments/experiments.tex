@@ -1,0 +1,234 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+
+\geometry{
+    a4paper,
+    margin=2.5cm
+}
+
+\title{Analysis of Neural Tangent Kernel for MMNN}
+\author{Janis AIAD}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    This document presents an analysis of the Neural Tangent Kernel (NTK) for  Neural Networks (MMNNs). We focus on two-layer architectures with ReLU activation functions and examine the NTK behavior under various conditions, including different ranks, sample sizes, and values of the parameter $\beta$. Our results indicate that the NTK standard deviation decreases rapidly with rank, making the mean NTK increasingly deterministic. This property enables reliable analysis of the kernel behavior. We also analyze the NTK distribution, its spectrum, and its dependence on hyperparameters, revealing characteristic behaviors of MMNNs.
+\end{abstract}
+
+\section{Introduction}
+The study of Neural Tangent Kernels (NTK) has provided profound insights into the behavior of deep neural networks, particularly in the infinite-width limit where the training dynamics can be described by a kernel. This analysis is grounded in the fact that, in this limit, the pre-activation outputs of the first layer follow a Gaussian Process. While the NTK for standard architectures like Multi-Layer Perceptrons (MLPs) is well-understood, its properties for more complex models like MMNNs remain less explored.
+
+In this work, I conduct a detailed empirical investigation of the NTK for two-layer MMNNs with ReLU activations. My goal is to characterize the NTK's dependence on two critical hyperparameters: the internal rank of the matrix multiplication and a bias-like parameter, $\beta$. I aim to understand how these parameters affect not only the average behavior of the kernel but also its statistical fluctuations.
+
+\section{Experimental Methodology}
+My experimental setup was designed to systematically explore the parameter space of the MMNNs and their corresponding NTK.
+
+\subsection{Model Architecture and Data}
+\begin{itemize}
+    \item \textbf{Model:} I use a two-layer MMNN with a ReLU activation function, $\sigma(x) = \max(0, x)$, where the first layer has a width of 1000. The network produces a scalar, one-dimensional output.
+    \item \textbf{Data:} My input vectors are two-dimensional and sampled uniformly from the unit sphere. I chose this low-dimensional setup because the NTK is a zonal kernel, meaning it only depends on the scalar product $\rho = x^T x'$ between inputs. This allows for extensive and expressive experiments without suffering from the curse of dimensionality.
+\end{itemize}
+
+\subsection{Hyperparameter Configuration}
+\begin{itemize}
+    \item \textbf{Internal Rank ($r$):} The rank of matrix decomposition is a central parameter, varied on a logarithmic scale (from 2 to 100). The weight matrix of the second layer is normalized by $1/\sqrt{r}$.
+    \item \textbf{Parameter $\beta$:} Unlike standard MLP analyses where $\beta$ is often zero, we explore non-zero values to study its non-trivial influence on the kernel.
+\end{itemize}
+Each experimental configuration is a tuple (dimension, number of points $n$, $\beta$, rank $r$).
+
+\subsection{NTK Computation and Statistical Estimation}
+I estimate the NTK using a Monte Carlo method. This approach is a practical necessity. The exact analytical computation would require an integration over a high-dimensional Gaussian measure associated with the weights of the second layer (where the dimension is the rank $r$), which is computationally intractable.
+\begin{itemize}
+    \item I use 300 random points for the Monte Carlo estimation. Care was taken to resample the weight matrices for each draw to ensure statistical independence.
+    \item For each configuration, I compute 50 distinct NTK matrices over a fixed dataset. This allows me to perform a statistical analysis of the kernel itself.
+    \item Given the uniform sampling, I also employed bootstrapping techniques to generate a richer dataset for more robust density visualizations and statistical estimations of quantities like the mean and standard deviation.
+\end{itemize}
+
+\section{Results and Observations}
+
+\subsection{Impact of Internal Rank on NTK Statistics}
+My most significant observation is that the standard deviation of the NTK entries (both diagonal and off-diagonal) decays as a power law with the internal rank $r$ (Figure \ref{fig:rank_scaling}). This is a powerful finding. It means that as the rank grows, the NTK's random component vanishes, and the kernel becomes increasingly deterministic. Consequently, I can confidently use the mean NTK, $\mathbb{E}[\Theta]$, as a reliable representation of its behavior for my analysis. This is fantastic because it allows me to condition integrals well, even within deep Gaussian processes.
+
+I also noted that for low ranks, the NTK spectrum is enhanced with many positive eigenvalues that are of the same order of magnitude as the leading one (Figure \ref{fig:min_ntk}).
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/rank_scaling_beta0.png}
+    \caption{Decay of the NTK's standard deviation as a function of rank for $\beta=0$.}
+    \label{fig:rank_scaling}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/min_ntk_vs_rank.png}
+    \caption{Behavior of the smallest NTK eigenvalue as a function of rank.}
+    \label{fig:min_ntk}
+\end{figure}
+
+
+\subsection{Dependence on the $\beta$ Parameter}
+The $\beta$ parameter has a very clear impact. For $\beta = 0$, I observed that the mean NTK value converges towards 0 with a particular slope as rank increases. For $\beta > 0$, it converges to a non-zero constant. My plots indicate that the dependence of this limit on $\beta$ appears to be either linear or quadratic (Figure \ref{fig:conv_beta}). I am confident this limit can be computed theoretically, although it would require integrating special functions (like `erf` and Gaussian CDFs), which I also plan to verify numerically in Python.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.49\textwidth]{figures/convergence_vs_beta_rank50.png}
+    \includegraphics[width=0.49\textwidth]{figures/convergence_vs_beta_rank100.png}
+    \caption{Convergence of the mean NTK as a function of $\beta$ for rank 50 (left) and 100 (right).}
+    \label{fig:conv_beta}
+\end{figure}
+
+
+\subsection{Distributional Analysis of the NTK}
+I analyzed the distribution of NTK values, conditioned on the dot product $\rho$ (Figure \ref{fig:dist_rho}). Using various kernel density estimators (Epanechnikov, Gaussian, etc.), I made several key observations.
+\begin{itemize}
+    \item The distributions exhibit heavy, power-law-like tails, especially at low ranks (Figure \ref{fig:loglog_kde}).
+    \item The distribution of the on-diagonal elements is particularly interesting; while it tends towards a Gaussian with rank, it also exhibits a pyramid-like shape, which suggests a potential connection to Random Matrix Theory.
+    \item The off-diagonal elements show a tailed distribution with a mode concentrated near 1 for lower ranks, which then converges to a Gaussian as the rank increases.
+    \item Despite the heavy tails at low ranks, the overall distribution clearly converges towards a Gaussian as the rank grows, as shown in Figure \ref{fig:dist_rank}, which is consistent with the Central Limit Theorem.
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/ntk_loglog_kde_rank1_beta0.0_gaussian.png}
+    \caption{Log-log scale plot of the NTK's probability density (KDE), suggesting a power-law tail for low rank.}
+    \label{fig:loglog_kde}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/ntk_distributions_by_rho_rank1_beta0.1_exponential_bw0.2.png}
+    \caption{Distribution of NTK values as a function of $\rho$.}
+    \label{fig:dist_rho}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.49\textwidth]{figures/ntk_distributions_rank2_beta1.0_gaussian.png}
+    \includegraphics[width=0.49\textwidth]{figures/ntk_distributions_rank5_beta1.0_gaussian.png}
+    \caption{Convergence of the NTK distribution towards a Gaussian as rank increases (from 2 to 5).}
+    \label{fig:dist_rank}
+\end{figure}
+
+
+\subsection{Mean NTK and Structural Properties}
+When I plotted the mean NTK as a function of the input dot product $\rho$, I noticed a very low degree of convexity. Specifically, for high ranks like $r=100$, the relationship is nearly linear with a high R-squared value.
+
+I also compared this behavior to other architectures. I found that the empirical NTK for a 1-layer MMNN looks remarkably similar to the theoretical NTK of a 2-layer MLP, but scaled by a factor of $1/2$ (Figure \ref{fig:comparison_mlp}). The "gain" from adding a second layer to the MMNN appears to correspond to the contributions of two specific terms in the NTK's recurrence formula. Importantly, as the internal rank grows, the MMNN spectrum becomes increasingly comparable to the MLP spectrum (divided by 2 due to having twice fewer parameters). This convergence suggests the existence of a concentration bound that could theoretically prove this spectral convergence, relating the rank-dependent variance decay to the distance between MMNN and MLP kernel spectra.
+
+Furthermore, I remarked that the NTK matrix exhibits a compound structure. To quantify this, I computed its L2 loss over this specific subspace, confirming a structured deviation from a simpler matrix form.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/kernelspectrum_mlp_mmnn.png}
+    \caption{Comparison of kernel spectra. The empirical spectrum for a 1-layer MMNN is compared against the theoretical spectrum for a 2-layer MLP.}
+    \label{fig:comparison_mlp}
+\end{figure}
+
+
+\section{Future Work: Gradient Descent Analysis with $\beta = 0$}
+
+Having established the statistical properties of the NTK for MMNNs, I now propose a comprehensive experimental study to validate the theoretical predictions in practice. This section outlines planned experiments focusing on the case $\beta = 0$, where I will train actual MMNNs using gradient descent and compare their behavior to the theoretical NTK framework.
+
+\subsection{Planned Experimental Design}
+
+My experimental protocol will consist of the following components:
+
+\begin{itemize}
+    \item \textbf{Gradient Descent Training:} I will train two-layer MMNNs with various internal ranks using standard gradient descent on regression and classification tasks. The training dynamics will be monitored by tracking the loss function, gradient norms, and parameter evolution over iterations.
+    
+    \item \textbf{Comparison with Theoretical NTK Predictions:} I will compare the empirical training dynamics with the predictions from the NTK theory. Specifically, in the infinite-width limit, the training dynamics should follow $f_t = f_0 + \Theta (I - e^{-\eta t \Theta}) \Theta^{-1} (y - f_0)$, where $\Theta$ is the NTK at initialization. I will verify this relationship empirically.
+    
+    \item \textbf{Conditioning Analysis:} A critical aspect of this study will be the comparison of the conditioning properties between MMNNs and standard MLPs. I will compute the condition number $\kappa(\Theta) = \lambda_{\max} / \lambda_{\min}$ for both architectures across different ranks and dataset sizes. My hypothesis is that the low-rank structure of MMNNs may lead to better conditioning, which would explain faster convergence rates.
+\end{itemize}
+
+\subsection{NTK at Global Minimum}
+
+A particularly interesting aspect of this investigation concerns the behavior of the NTK after training convergence. I conjecture that MMNNs possess favorable optimization landscapes with accessible global minima. To test this, I will:
+
+\begin{itemize}
+    \item \textbf{Post-Training NTK Analysis:} Compute the NTK after the network has reached a global minimum (or near-global minimum). I will investigate whether the kernel structure changes significantly during training or remains close to its initialization.
+    
+    \item \textbf{Convergence Speed:} Measure the number of iterations required to reach various tolerance levels of the global minimum. My conjecture is that MMNNs will converge faster than comparable MLPs due to their structured parameterization.
+    
+    \item \textbf{Kernel Stability:} Compare the NTK matrix $\Theta_0$ at initialization with $\Theta_{\infty}$ at convergence. Under the NTK regime (infinite width), these should be nearly identical. I will quantify the deviation $\|\Theta_0 - \Theta_{\infty}\|_F$ as a function of network width and rank to determine when the NTK approximation holds.
+\end{itemize}
+
+\subsection{Immediate Experiment: NTK Evolution During Training}
+
+Today, I will run a focused experiment to verify whether the NTK framework accurately describes the training dynamics of MMNNs. The core question is: does the NTK remain approximately constant during gradient descent training, as predicted by the theory?
+
+The experimental procedure will be as follows:
+
+\begin{itemize}
+    \item \textbf{NTK Snapshots:} I will train MMNNs with various internal ranks (particularly in the range $r \in [5, 50]$) and compute the NTK matrix at different stages of training: at initialization ($\Theta_0$), at intermediate checkpoints ($\Theta_{t_1}, \Theta_{t_2}, \ldots$), and at convergence ($\Theta_{\infty}$).
+    
+    \item \textbf{NTK Stability Metrics:} To quantify whether the NTK is moving during training, I will compute:
+    \begin{equation}
+        \Delta(t) = \frac{\|\Theta_t - \Theta_0\|_F}{\|\Theta_0\|_F}
+    \end{equation}
+    If the NTK regime holds, $\Delta(t)$ should remain small (typically $< 0.1$) throughout training.
+    
+    \item \textbf{Predictive Power:} I will test whether the training trajectory predicted by the fixed NTK at initialization matches the actual training trajectory. Specifically, I will compare the actual loss $\mathcal{L}_{\text{actual}}(t)$ with the predicted loss from the NTK theory: $\mathcal{L}_{\text{NTK}}(t)$ derived from the kernel dynamics.
+    
+    \item \textbf{Rank-Dependent Behavior:} I will investigate how the stability of the NTK depends on the internal rank. My hypothesis is that higher ranks will exhibit more stable NTK behavior, as suggested by the variance decay observed earlier.
+\end{itemize}
+
+This experiment will provide direct empirical evidence regarding the applicability of the NTK framework to MMNNs and clarify the conditions under which the kernel regime is valid.
+
+\subsection{Motivation from Original MMNN Paper}
+
+An analysis of Figure 5 in the original MMNN paper \cite{zhang2025structuredbalancedmulticomponentmultilayer} reveals particularly interesting behavior in the MMNN1 (S2) regime. This configuration uses an architecture $(400, 20, 6)$ with internal rank varying between 5 and 50. The scaling law for the loss in this regime suggests that the loss landscape is remarkably smooth with similar eigenvalues throughout the optimization trajectory. 
+
+Most importantly, I observe a clear logarithmic scaling law with exponential decay of the form $\mathcal{L}(t) \sim e^{-\lambda t}$, which strongly suggests that the NTK framework explains the training dynamics very well. This is precisely the signature one expects when the kernel remains approximately constant during training, leading to the exponential convergence predicted by the NTK theory. This observation is the most critical motivation for the proposed experiments, as it indicates that the low-rank regime (between 5 and 50) is where MMNNs truly operate in the kernel regime and exhibit their most favorable optimization properties.
+
+\subsubsection{Learning Rate Configuration}
+
+A critical implementation detail from the original paper is the learning rate scheduler used. The authors employed a step decay schedule defined as:
+\begin{equation}
+    \eta_k = 10^{-3} \times 0.9^{\lfloor k/200 \rfloor}, \quad k = 1, 2, \ldots, 10000
+\end{equation}
+
+The authors note that while the Step Learning Rate scheduler was sufficient for their experiments, the choice of learning rate scheduler is a subtle and important issue for all training processes in practice. They remark that other schedulers, such as the Cosine Scheduler or gradual warm-up strategies, could also be considered. They further suggest that exploring and designing more efficient learning rate schedulers with automatic restart mechanisms is an interesting topic for future work.
+
+For my experiments, I will adopt this same scheduler to ensure comparability with the original results. However, I will also investigate whether the exponential decay observed in the loss is robust to different learning rate schedules, as this would strengthen the claim that the NTK framework, rather than the specific optimization procedure, governs the training dynamics.
+
+\subsection{Expected Outcomes}
+
+Based on my theoretical understanding, the observations from the original MMNN paper, and my preliminary NTK analysis, I expect the following outcomes:
+
+\begin{enumerate}
+    \item The empirical training curves will closely match NTK predictions for sufficiently high ranks, validating the theoretical framework. Specifically, I expect to observe exponential decay matching the predictions for ranks in the range $r \in [5, 50]$.
+    \item MMNNs will exhibit better conditioning than MLPs with comparable expressivity, leading to faster and more stable convergence.
+    \item The NTK at the global minimum will remain close to the initialization NTK, confirming that MMNNs operate in the kernel regime. The smoothness of the loss landscape observed in the original paper supports this expectation.
+    \item The convergence speed will scale favorably with the internal rank, with higher ranks achieving global minima in fewer iterations while maintaining the exponential decay behavior.
+\end{enumerate}
+
+These experiments will provide crucial empirical validation of the NTK framework for MMNNs and offer practical insights into their optimization properties.
+
+
+\section{Conclusion}
+In conclusion, my empirical analysis has uncovered several distinct properties of the NTK for MMNNs. The most critical result is the rapid decay of the NTK's variance with increasing internal rank. This concentration phenomenon implies that for sufficiently high ranks, the NTK behaves like a deterministic kernel that can be fully characterized by its mean. This is a powerful conclusion, as it greatly simplifies the theoretical analysis of these models. Furthermore, I have characterized the significant influence of the $\beta$ parameter and identified unique signatures in the kernel's functional form that distinguish MMNNs from classical MLP architectures.
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+
+\bibitem{zhang2025structuredbalancedmulticomponentmultilayer}
+Shijun Zhang, Hongkai Zhao, Yimin Zhong, and Haomin Zhou.
+\textit{Structured and Balanced Multi-Component and Multi-Layer Neural Networks}.
+arXiv preprint arXiv:2407.00765, 2025.
+\url{https://arxiv.org/abs/2407.00765}
+
+\end{thebibliography}
+
+\end{document}

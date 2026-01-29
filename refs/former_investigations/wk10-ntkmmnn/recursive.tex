@@ -1,0 +1,243 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage[a4paper, margin=2cm]{geometry}
+
+\title{Recursive Formulation of the Neural Tangent Kernel for MMNNs}
+\author{Handwritten Notes Transcription}
+\date{July 2025}
+
+\input{preamble}
+\begin{document}
+
+\maketitle
+
+\section{Model Definition and Asymptotic Regime}
+This work derives the Neural Tangent Kernel (NTK) of a Multi-component and Multi-layer Neural Network (MMNN). The kernel is computed with respect to a specific set of trainable parameters, under the standard "NTK parameterization" which ensures a well-defined infinite-width limit.
+
+\subsection{Multi-Layer MMNN Architecture}
+We consider an MMNN of depth $L$. Let the input be $\bm{h}^{(0)}(\bm{x}) = \bm{x} \in \mathbb{R}^{d_0}$. For each layer $\ell = 1, \dots, L$, the output $\bm{h}^{(\ell)}$ is defined recursively:
+\begin{equation}
+    \bm{h}^{(\ell)}(\bm{x}) = \bm{c}^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} \bm{A}_j^{(\ell)} \sigma\left(\bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)}(\bm{x}) + \beta b_j^{(\ell)}\right)
+\end{equation}
+where $n_\ell$ is the width of layer $\ell$. For simplicity, we consider scalar outputs, i.e., $\bm{h}^{(\ell)} \in \mathbb{R}$.
+
+The parameters for each layer are divided into two groups:
+\begin{itemize}
+    \item \textbf{Trainable Parameters:} The output weights $\{\bm{A}_j^{(\ell)}\}_{j=1}^{n_\ell}$ and biases $\bm{c}^{(\ell)}$ are optimized during training. The NTK is computed with respect to these parameters. They are initialized as follows:
+    \begin{itemize}
+        \item The weights $\bm{A}_j^{(\ell)}$ are drawn from a standard normal distribution, $\bm{A}_j^{(\ell)} \sim \mathcal{N}(0, 1)$. The term $\frac{\sigma_A}{\sqrt{n_\ell}}$ is the \textbf{NTK parameterization}, which ensures that the kernel converges as $n_\ell \to \infty$. The hyperparameter $\sigma_A$ controls the variance of the layer's output.
+        \item The bias $\bm{c}^{(\ell)}$ is initialized at zero. For the kernel computation, its variance is taken as $\sigma_c^2 = 1$ for all layers.
+    \end{itemize}
+    \item \textbf{Random Parameters:} The input weights $\bm{w}_j^{(\ell)}$ and biases $b_j^{(\ell)}$ are randomly initialized and fixed throughout training. They are drawn from standard normal distributions: $\bm{w}_j^{(\ell)} \sim \mathcal{N}(0, \mathbf{I})$ and $b_j^{(\ell)} \sim \mathcal{N}(0, 1)$. The parameter $\beta$ controls the variance of the random bias term inside the activation.
+\end{itemize}
+
+\subsection{Asymptotic Regime}
+The entire NTK and NNGP formalism relies on the infinite-width limit. Following the framework established by Jacot et al., we analyze the network in a specific asymptotic regime:
+\begin{itemize}
+    \item The dimensions of the hidden layers, or widths, $n_1, n_2, \dots, n_L$ are taken to infinity.
+    \item The input and output dimensions of each layer ($d_0, d_1, \dots, d_L$) are kept fixed and finite.
+    \item Critically, the limits are taken sequentially: first we let $n_1 \to \infty$, then $n_2 \to \infty$, and so on up to $n_L \to \infty$.
+    \item In this limit, the output of each layer $h^{(\ell)}$ converges in distribution to a Gaussian Process (GP). Consequently, the NNGP and NTK kernels for layers $\ell > 1$, which are functions of the previous layer's output, remain random quantities (random fields). The recursive formulas describe the relationship between these random kernels.
+\end{itemize}
+This sequential limit is the key theoretical tool. When analyzing layer $\ell$ in the limit $n_\ell \to \infty$, the output of the previous layer, $\bm{h}^{(\ell-1)}$, is a sum of an infinite number of i.i.d. random variables (by construction of layer $\ell-1$). By the Central Limit Theorem, $\bm{h}^{(\ell-1)}$ converges in distribution to a Gaussian Process. This allows us to replace the complex, random function $\bm{h}^{(\ell-1)}$ with a GP whose covariance structure is precisely the NNGP kernel $\Sigma^{(\ell-1)}$. This is the foundation of the recursive calculation.
+
+\section{Signal Propagation and the Edge of Chaos (EOC)}
+Before analyzing the kernel, we study the propagation of the signal's magnitude through the network at initialization. We are interested in the evolution of the average variance per dimension of the layer outputs, defined as $q^{(\ell)} = \mathbb{E}[\|\bm{h}^{(\ell)}\|^2]/d_\ell$.
+
+For a ReLU activation and assuming centered parameters, the variance evolves according to the following recurrence relation (see Appendix for proof):
+\begin{equation}
+    q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right)
+\end{equation}
+This is an affine map $q^{(\ell)} = M \cdot q^{(\ell-1)} + C$. For the signal to propagate stably without vanishing ($M<1$) or exploding ($M>1$), the dynamics must be at the "Edge of Chaos", where the multiplicative factor is exactly 1.
+
+\begin{block}{Edge of Chaos Condition}
+The condition for stable signal propagation is:
+\begin{equation}
+    \frac{\sigma_A^2}{2} \text{Tr}(\Sigma_w) = 1 \quad \implies \quad \sigma_A \sqrt{\text{Tr}(\Sigma_w)} = \sqrt{2}
+\end{equation}
+This establishes a critical relationship between the variance of the trainable weights ($\sigma_A^2$) and the trace of the random weight covariance matrix ($\Sigma_w$).
+\end{block}
+
+\section{NTK for a Single-Layer MMNN}
+\label{sec:single_layer_mmfn}
+We begin by deriving the Neural Tangent Kernel for a single-layer MMNN. This result forms the base case for the multi-layer recursion. For simplicity, we consider a single scalar output, such that the network is defined as:
+\begin{equation}
+    h(\bm{x}) = \frac{1}{\sqrt{n}} \sum_{j=1}^n A_j \sigma(\bm{w}_j^\top \bm{x} + b_j) + c
+\end{equation}
+The trainable parameters are $\theta = \{A_j\}_{j=1}^n \cup \{c\}$. The parameters $\{\bm{w}_j, b_j\}$ are fixed and randomly drawn, with $\bm{w}_j \sim \mathcal{N}(0, \Sigma_w)$ and $b_j \sim \mathcal{N}(\mu_b, \sigma_b^2)$. While Gaussian distributions are used here for analytic tractability, the formalism can be extended to other distributions.
+
+\subsection{From Gradient Products to an Expectation}
+In the infinite-width limit ($n \to \infty$), the NTK converges to an expectation over the distribution of the random parameters $(\bm{w}, b)$. The full NTK is the sum of the kernel part from the weights $\{A_j\}$ and the part from the bias $\{c\}$.
+\begin{equation}
+\label{eq:ntk_expectation}
+    \Theta^{(1)}(\bm{x}, \bm{x}') = \underbrace{\mathbb{E}_{\bm{w},b} \left[ \sigma(\bm{w}^\top \bm{x} + b)\sigma(\bm{w}^\top \bm{x}' + b) \right]}_{\text{NNGP Kernel } \Sigma^{(1)}(\bm{x}, \bm{x}')} + \underbrace{\sigma_c^2}_{\text{from bias } c}
+\end{equation}
+The expectation term is exactly the Neural Network Gaussian Process (NNGP) kernel for this layer, which we denote $\Sigma^{(1)}$.
+
+\subsection{Integral Formulation and Parameter Mapping}
+The NNGP kernel $\Sigma^{(1)}$ is an integral over the distributions of $\bm{w}$ and $b$:
+\begin{equation}
+    \Sigma^{(1)}(\bm{x}, \bm{x}') = \int_{\mathbb{R}^d} \int_{\mathbb{R}} \sigma(\bm{w}^\top \bm{x} + b)\sigma(\bm{w}^\top \bm{x}' + b) p(\bm{w})p(b) \,db \,d\bm{w}
+\end{equation}
+where $p(\bm{w})$ and $p(b)$ are the probability density functions. A change of variables is performed from the parameter space $(\bm{w}, b)$ to the pre-activation space $(g_1, g_2)$, where $g_1 = \bm{w}^\top \bm{x} + b$ and $g_2 = \bm{w}^\top \bm{x}' + b$. This transforms the high-dimensional integral into an expectation over a 2D bivariate Gaussian distribution. The parameters of this distribution are:
+\begin{itemize}
+    \item \textbf{Means:} $\mu_1 = \mathbb{E}[g_1] = \mathbb{E}[\bm{w}^\top\bm{x} + b] = \mu_b$. By symmetry, $\mu_2 = \mu_b$.
+    \item \textbf{Variances:} $\sigma_1^2 = \text{Var}(g_1) = \text{Var}(\bm{w}^\top\bm{x}) + \text{Var}(b) = \bm{x}^\top \Sigma_w \bm{x} + \sigma_b^2$. Similarly, $\sigma_2^2 = {\bm{x}'}^\top \Sigma_w \bm{x}' + \sigma_b^2$.
+    \item \textbf{Covariance:} $\text{Cov}(g_1, g_2) = \mathbb{E}[(\bm{w}^\top\bm{x})(\bm{w}^\top\bm{x}')] + \text{Var}(b) = \bm{x}^\top \Sigma_w \bm{x}' + \sigma_b^2$.
+\end{itemize}
+
+\subsection{Final Analytical Expression}
+\begin{theorem}[NNGP Kernel for a Single-Layer ReLU MMNN]
+Let the pre-activations $(g_1, g_2)$ be jointly Gaussian with parameters $(\mu_1, \sigma_1^2)$ and $(\mu_2, \sigma_2^2)$ and correlation $\rho$. The NNGP kernel $\Sigma^{(1)} = \mathbb{E}[\text{ReLU}(g_1)\text{ReLU}(g_2)]$ is given by the decomposition:
+\begin{equation}
+\label{eq:final_ntk_decomp}
+\boxed{
+\Sigma^{(1)} = \sigma_1\sigma_2 \cdot I_{12} + \mu_1\sigma_2 \cdot I_{01} + \mu_2\sigma_1 \cdot I_{10} + \mu_1\mu_2 \cdot I_{00}
+}
+\end{equation}
+where the terms $I_{ij}$ are moments of standardized bivariate normal variables $(Z_1, Z_2)$ with thresholds $a_1 = -\mu_1/\sigma_1$ and $a_2 = -\mu_2/\sigma_2$. These moments and their analytical solutions are well-known in the literature.
+\end{theorem}
+
+
+
+
+
+
+
+\section{Recursion for Multi-Layer MMNNs}
+We now extend the single-layer result to deep networks. The recursion involves two distinct but intertwined kernels: the NNGP kernel $\Sigma^{(\ell)}$ and the NTK kernel $\Theta^{(\ell)}$.
+An important fact is that the NNGP kernel $\Sigma^{(\ell)}$ is a random field that is NOT a gaussian process but a deep gaussian process, while the NTK kernel $\Theta^{(\ell)}$ is also a random field that is not a gaussian process.
+
+\subsection{Remark on Model Structure and the Role of \(\beta\)}
+A key feature of this model is the structure of the pre-activation at each layer: $g = \bm{w}^\top \bm{h}_{in} + \beta b$. This structure, where $\bm{w}$ and $b$ are random parameters, is central to the model's behavior. It introduces two sources of randomness that are propagated through the network:
+\begin{enumerate}
+    \item \textbf{Function-space Randomness:} In the infinite-width limit, the output of each layer is a random function drawn from a Gaussian Process, whose covariance is the NNGP kernel $\Sigma^{(\ell)}$.
+    \item \textbf{Parameter Randomness:} The explicit random parameter $b$, scaled by $\beta$, inside the non-linearity adds another layer of randomness. It ensures that the pre-activation remains a random variable even if the layer's input becomes deterministic. 
+\end{enumerate}
+This implies that the function inside the expectation of the $\mathcal{L}$ operator is not just the activation $\sigma(\cdot)$, but represents the entire operation whose statistics are captured by the recursive kernel definitions below.
+
+\subsection{NNGP Kernel \(\Sigma^{(\ell)}\) Recursion}
+The NNGP kernel describes the covariance of the network's output function at initialization. For any finite width, this output is a random function. In the infinite-width limit, it converges to a Gaussian Process. The base kernel $\Sigma^{(\ell)}$ is defined recursively.
+\begin{itemize}
+    \item \textbf{Base Case (\(\ell=1\)):} The NNGP kernel for the first layer, $\Sigma^{(1)}$, corresponds to the expectation part of the single-layer kernel theorem.
+    \begin{equation}
+        \Sigma^{(1)}(x, x') = \mathbb{E}_{\bm{w},b}\left[\sigma(\bm{w}^\top x + b)\sigma(\bm{w}^\top x' + b)\right]
+    \end{equation}
+    \item \textbf{Recursive Step (\(\ell > 1\)):} For subsequent layers, the base kernel $\Sigma^{(\ell)}$ is defined by taking the expectation only over the random parameters of the current layer ($\bm{w}, b$), for a given realization of the previous layer's output GP $\bm{h}^{(\ell-1)}$.
+    \begin{equation}
+        \Sigma^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \sigma\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \right] 
+        % }
+    \end{equation}
+    and for the full NNGP kernel, we have
+    \begin{equation}
+        \boxed{
+        \mathcal{K}_{NNGP}^{(\ell)}=\sigma_A^2\Sigma^{(\ell-1)}+\sigma_c^2
+        }
+    \end{equation}
+    Because $\bm{h}^{(\ell-1)}$ is a GP with kernel $\mathcal{K}_{NNGP}^{(\ell-1)}$, this expression defines a transformation that maps the kernel of layer $\ell-1$ to the kernel of layer $\ell$. For specific choices of distributions and activation functions (like Gaussians and ReLU), this expectation can be computed, often leading to a recursive formula expressed in terms of an operator acting on $\Sigma^{(\ell-1)}$.
+
+    It's important to notice that this kernel becomes random and non-deterministic for $\ell >1$.
+
+    \paragraph{Remark on the non-propagation of the Gaussian Process property.}
+    It is crucial to understand how the Gaussian Process property is not maintained from layer to layer. 
+    
+    The composition of a non-linear function with a Gaussian Process, $g(f(x))$, is not, in general, a Gaussian Process. In our model, while $\bm{h}^{(\ell-1)}$ is a GP, the output of the non-linear activation, $\sigma(\bm{w}^\top \bm{h}^{(\ell-1)} + \beta b)$, is not.
+   
+    In general, if you want to compute the mean value of this deep gaussian process, you need to compute the expectation over the random field of the previous layer by conditioning on the random field of the previous layer.
+    which means to change $\mathbb{E}_{\bm{w}, b} \left[ \dots \right]$ to $\mathbb{E}_{\bm{w}, b, \bm{h}^{(\ell-1)}} \left[ \dots \right]$.
+
+    So the NNGP kernel that is defined is not the same as the NNGP that you can compute for MLPs, because the NNGP of MLPs is a gaussian process, while the NNGP of MMNNs is a deep gaussian process.
+\end{itemize}
+
+\subsection{NTK Kernel \(\Theta^{(\ell)}\) Recursion}
+The NTK is the Gram matrix of function gradients with respect to the trainable parameters. For any finite width, it is a random matrix because it depends on the specific parameter initialization. The following recursion describes its deterministic limit, $\Theta^{(\ell)}$, as the layer widths tend sequentially to infinity.
+
+We recall then that the NTK is a random field that is not a gaussian process. 
+We compose gaussian processes in the definition of $\Sigma_{\ell}$ and  $\dot{\Sigma}^{(\ell)}$.
+
+
+\begin{itemize}
+    \item \textbf{Initialization (\(\ell=0\)):} The recursion starts with $\Theta^{(0)} = 0$.
+    
+    \item \textbf{Recursive Step (\(\ell \ge 1\)):} The NTK for layer $\ell$ combines the NTK from previous layers with the contributions from the trainable parameters of the current layer, $A^{(\ell)}$ and $c^{(\ell)}$.
+    \begin{equation}
+        \boxed{
+        \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \left(\sigma_A^2\dot{\Sigma}^{(\ell)}(x, x')\right) + \Sigma^{(\ell)}(x, x') +1
+        }
+    \end{equation}
+    Here, $+1$ is the contribution from the trainable bias. $\Sigma^{(\ell)}$ is the base NNGP kernel defined above. $\dot{\Sigma}^{(\ell)}$ is the base derivative kernel, defined similarly as an expectation over layer-$\ell$ parameters:
+    \begin{equation}
+        \dot{\Sigma}^{(\ell)}(x, x') = \mathbb{E}_{\bm{w}, b} \left[ \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x) + \beta b\right) \dot{\sigma}\left(\bm{w}^\top \bm{h}^{(\ell-1)}(x') + \beta b\right) \bm{w}^\top\bm{w} \right]
+    \end{equation}
+    with $\dot{\sigma}$ being the derivative of the activation function. Both $\Sigma^{(\ell)}$ and $\dot{\Sigma}^{(\ell)}$ are random kernels for $\ell > 1$.
+\end{itemize}
+This formulation now correctly incorporates the contribution of all trainable parameters at each layer.
+
+
+
+\newpage
+
+\appendix
+\section{Appendix}
+\subsection{Derivation of the Variance Recurrence (EOC)}
+We derive the recurrence relation for the average variance per dimension, $q^{(\ell)} = \mathbb{E}[\|\bm{h}^{(\ell)}\|^2]/d_\ell$, assuming scalar outputs for simplicity ($d_\ell=1$).
+The output of layer $\ell$ is $h^{(\ell)} = c^{(\ell)} + \frac{\sigma_A}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} A_j^{(\ell)} \sigma(g_j^{(\ell)})$, where $g_j^{(\ell)} = \bm{w}_j^{(\ell)\top} \bm{h}^{(\ell-1)} + \beta b_j^{(\ell)}$.
+We assume all parameters are zero-mean and independent. The variance is:
+\begin{align*}
+    q^{(\ell)} = \mathbb{E}[(h^{(\ell)})^2] &= \mathbb{E}[(c^{(\ell)})^2] + \frac{\sigma_A^2}{n_\ell} \mathbb{E}\left[ \left( \sum_{j=1}^{n_\ell} A_j^{(\ell)} \sigma(g_j^{(\ell)}) \right)^2 \right] \\
+    &= \sigma_c^2 + \frac{\sigma_A^2}{n_\ell} \sum_{j=1}^{n_\ell} \mathbb{E}[(A_j^{(\ell)})^2] \mathbb{E}[(\sigma(g_j^{(\ell)}))^2] \quad \text{(by independence)} \\
+    &= \sigma_c^2 + \sigma_A^2 \mathbb{E}[\sigma(g^{(\ell)})^2] \quad (\text{since } \mathbb{E}[(A_j)^2]=1 \text{ and terms are i.i.d.})
+\end{align*}
+The pre-activation $g^{(\ell)} = \bm{w}^\top \bm{h}^{(\ell-1)} + \beta b$ is a zero-mean Gaussian. Its variance is:
+\begin{align*}
+    \text{Var}(g^{(\ell)}) &= \mathbb{E}[(\bm{w}^\top \bm{h}^{(\ell-1)})^2] + \mathbb{E}[(\beta b)^2] \\
+    &= \mathbb{E}[\text{Tr}(\bm{w}^\top \bm{h}^{(\ell-1)} (\bm{h}^{(\ell-1)})^\top \bm{w})] = \mathbb{E}[\text{Tr}(\bm{w}\bm{w}^\top \bm{h}^{(\ell-1)}(\bm{h}^{(\ell-1)})^\top)] \\
+    &= \text{Tr}(\mathbb{E}[\bm{w}\bm{w}^\top] \mathbb{E}[\bm{h}^{(\ell-1)}(\bm{h}^{(\ell-1)})^\top]) + \beta^2 \\
+    &= \text{Tr}(\Sigma_w \cdot (q^{(\ell-1)} \mathbf{I}_{d_{\ell-1}})) + \beta^2 = q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2
+\end{align*}
+For a zero-mean Gaussian variable $g$ and ReLU activation $\sigma$, we have $\mathbb{E}[\sigma(g)^2] = \frac{1}{2}\text{Var}(g)$.
+Substituting back, we get the recurrence:
+\[ q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} \left( q^{(\ell-1)}\text{Tr}(\Sigma_w) + \beta^2 \right) \]
+
+\subsection{Proof of the NNGP kernel for a single-layer MMNN}
+
+\subsection{Proof of the NTK Recurrence Relation}
+We provide a derivation for the recursive formula of the Neural Tangent Kernel (NTK). For any finite-width network, the NTK is a random matrix, $\Theta_{rand}$, depending on the specific initialization of the random parameters. Here, we derive a recurrence relation that holds for these random kernels in the infinite-width limit, where sums over the layer width converge to expectations by the Law of Large Numbers.
+
+The total NTK at layer $\ell$ is the sum of contributions from all trainable parameters up to that layer:
+\[ \Theta^{(\ell)}_{rand}(x, x') = \underbrace{(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x))^\top (\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x'))}_{\text{Term 1}} + \underbrace{\sum_{j=1}^{n_\ell} \frac{\partial f^{(\ell)}(x)}{\partial A_j^{(\ell)}} \frac{\partial f^{(\ell)}(x')}{\partial A_j^{(\ell)}}}_{\text{Term 2}} + \underbrace{\frac{\partial f^{(\ell)}(x)}{\partial c^{(\ell)}} \frac{\partial f^{(\ell)}(x')}{\partial c^{(\ell)}}}_{\text{Term 3}} \]
+
+\paragraph{Term 3 (Bias contribution):}
+This term is deterministic and equals $\frac{\partial f}{\partial c} \frac{\partial f}{\partial c} = 1 \cdot 1 = 1$ (with $\sigma_c^2=1$).
+
+\paragraph{Term 2 (Layer $\ell$ weights contribution):}
+The gradient with respect to a weight $A_j^{(\ell)}$ is $\frac{\partial f^{(\ell)}(x)}{\partial A_j^{(\ell)}} = \frac{\sigma_A}{\sqrt{n_\ell}} \sigma(w_j^\top h^{(\ell-1)}(x) + \dots)$.
+Term 2 is thus $\frac{\sigma_A^2}{n_\ell} \sum_{j=1}^{n_\ell} \sigma(w_j^\top h^{(\ell-1)}(x) + \dots) \sigma(w_j^\top h^{(\ell-1)}(x') + \dots)$.
+For a fixed realization of the previous layer's output $h^{(\ell-1)}$, this is a sum of i.i.d. random variables (over $w_j, b_j$). By the Law of Large Numbers, as $n_\ell \to \infty$, this sum converges in probability to its conditional expectation:
+\[ \text{Term 2} \xrightarrow{p} \sigma_A^2 \mathbb{E}_{w,b} \left[ \sigma(\dots_x) \sigma(\dots_{x'}) \right] = \sigma_A^2 \Sigma^{(\ell)}_{rand}(x, x') \]
+As per the standard NTK parameterization literature, the $\sigma_A^2$ factor is often absorbed into the definition, such that this term's contribution to the final NTK is simply $\Sigma^{(\ell)}_{rand}(x, x')$.
+
+\paragraph{Term 1 (Previous layers contribution):}
+Using the chain rule, $\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x) = \frac{\partial f^{(\ell)}(x)}{\partial h^{(\ell-1)}(x)} \nabla_{\theta^{(\ell-1)}} h^{(\ell-1)}(x)$. The term becomes:
+\[ (\nabla_{\theta^{(\ell-1)}} h^{(\ell-1)}(x))^\top \left(\frac{\partial f^{(\ell)}}{\partial h^{(\ell-1)}}(x)\right)^\top \left(\frac{\partial f^{(\ell)}}{\partial h^{(\ell-1)}}(x')\right) (\nabla_{\theta^{(\ell-1)}} h^{(\ell-1)}(x')) \]
+The first and last parts form the random NTK of the previous layers, $\Theta^{(\ell-1)}_{rand}$. The middle part is a product of Jacobians. As $n_\ell \to \infty$, this Jacobian product also converges in probability to its conditional expectation over the layer-$\ell$ parameters $(A, w, b)$.
+\[ \left(\frac{\partial f^{(\ell)}}{\partial h^{(\ell-1)}}\right)^\top \left(\frac{\partial f^{(\ell)}}{\partial h^{(\ell-1)}}\right) \xrightarrow{p} \mathbb{E}_{A,w,b} \left[ \dots \right] = \sigma_A^2 \dot{\Sigma}^{(\ell)}_{rand}(x, x') \]
+Thus, the entire Term 1 converges to the product of these random quantities:
+\[ \text{Term 1} \xrightarrow{p} \Theta^{(\ell-1)}_{rand}(x, x') \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)}_{rand}(x, x') \]
+
+\paragraph{Combining terms:}
+In the infinite-width limit, the recurrence relation for the random kernels is:
+\[ \Theta^{(\ell)}(x, x') = \Theta^{(\ell-1)}(x, x') \cdot \sigma_A^2 \dot{\Sigma}^{(\ell)}(x, x') + \Sigma^{(\ell)}(x, x') + 1\]
+This proves the relationship between the random kernels as stated in the main text.
+
+
+
+
+
+
+
+
+\end{document}

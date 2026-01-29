@@ -1,0 +1,54 @@
+\subsection{Low-Rank Neural Network Architecture}
+
+We consider a multi-layer neural network with low-rank constraints. For layer $\ell = 1, \ldots, L$, the hidden representation is:
+\begin{equation}
+\label{eq:lowrank-layer}
+h^{(\ell)}(x) = \frac{1}{\sqrt{n_\ell}} \sum_{j=1}^{n_\ell} A^{(\ell)}_j \,\ReLU\!\left(w^{(\ell)\top}_j h^{(\ell-1)}(x) + b^{(\ell)}_j\right),
+\end{equation}
+where $h^{(0)}(x) = x \in \mathbb{R}^d$, $n_\ell$ is the width of layer $\ell$, and $A^{(\ell)} \in \mathbb{R}^{n_\ell \times r_\ell}$ is a low-rank matrix with rank $r_\ell \ll n_\ell$. The weights $w^{(\ell)}_j$ and biases $b^{(\ell)}_j$ are \emph{frozen random features} (sampled once at initialization and never updated), while $A^{(\ell)}$ are \emph{trainable parameters}.
+
+The key architectural constraint is the \emph{rank bottleneck}: $\rank(A^{(\ell)}) \le r_\ell$. This creates a bottleneck that limits the number of simultaneously active features, which we hypothesize enables hierarchical construction.
+
+\subsection{Regimes of Interest}
+
+We distinguish three regimes based on the scaling of rank $r$ relative to input dimension $d$:
+
+\begin{definition}[Rank Regimes]
+\label{def:rank-regimes}
+\begin{itemize}
+    \item \textbf{Low-rank regime:} $r = O(1)$ or $r = O(\log d)$. The rank is much smaller than the input dimension.
+    \item \textbf{Extensive-rank regime:} $r \asymp d^\beta$ for $\beta \in (0,1)$. The rank scales polynomially with dimension but remains sublinear.
+    \item \textbf{High-rank regime:} $r \asymp d$ or $r = d$ (full-rank). The rank scales linearly with dimension or equals the full width.
+\end{itemize}
+\end{definition}
+
+Our main hypothesis is that \emph{hierarchical feature construction occurs only in the extensive-rank regime}, while both low-rank and high-rank regimes fail to develop meaningful hierarchical structure (for different reasons: low-rank lacks capacity, high-rank lacks bottleneck).
+
+\subsection{Mean-Field Dynamics}
+
+In the infinite-width limit $n_\ell \to \infty$, the training dynamics are described by mean-field theory. Let $\rho_t^{(\ell)}$ denote the empirical distribution of trainable weights $A^{(\ell)}$ at time $t$. The mean-field gradient flow satisfies:
+\begin{equation}
+\label{eq:meanfield-flow}
+\partial_t \rho_t^{(\ell)} = -\nabla \cdot (\rho_t^{(\ell)} v_t^{(\ell)}),
+\end{equation}
+where $v_t^{(\ell)}$ is the velocity field given by the gradient of the population risk $R(\rho)$.
+
+The key insight is that in the extensive-rank regime, the mean-field dynamics exhibit \emph{emergent hierarchical structure} through sequential activation of frequency bands, as we formalize in Section~\ref{sec:theory}.
+
+\subsection{Training Setup}
+
+We train networks using gradient descent (or Adam) on the mean squared error loss:
+\begin{equation}
+\label{eq:loss}
+\mathcal{L}(\theta) = \frac{1}{2}\mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ (f_\theta(x) - y)^2 \right],
+\end{equation}
+where $f_\theta$ is the network output and $\mathcal{D}$ is the data distribution.
+
+We track several metrics during training:
+\begin{itemize}
+    \item \textbf{Training loss:} $\mathcal{L}_{\text{train}}(t)$
+    \item \textbf{Test loss:} $\mathcal{L}_{\text{test}}(t)$
+    \item \textbf{Frequency spectrum:} $\hat{f}_t(\omega)$ (Fourier transform of learned function)
+    \item \textbf{Hessian eigenvalues:} $\lambda_{\max}(H_t)$ (largest eigenvalue of loss Hessian)
+    \item \textbf{Feature activation:} Which frequency bands are active at each time $t$
+\end{itemize}

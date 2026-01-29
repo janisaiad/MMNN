@@ -1,0 +1,59 @@
+\subsection{Implications for Deep Learning}
+
+Our results have several important implications:
+
+\paragraph{Hierarchical Feature Learning.}
+The extensive-rank regime enables hierarchical feature learning, where features are constructed sequentially from low to high frequency (or from coarse to fine). This hierarchical structure is not just a byproduct but a fundamental property enabled by the rank bottleneck.
+
+\paragraph{Parameter Efficiency.}
+Low-rank networks achieve better generalization with fewer parameters not despite the rank constraint, but \emph{because} of it. The bottleneck enforces hierarchical structure, which improves generalization by learning features in order of importance.
+
+\paragraph{Interpretability.}
+Hierarchical construction enables better interpretability: features at different levels correspond to different abstraction levels, making it easier to understand what the network learns.
+
+\subsection{Limitations and Future Work}
+
+\paragraph{Theoretical Gaps.}
+While we provide experimental evidence and theoretical intuition, rigorous proofs of hierarchical construction remain incomplete. Future work should:
+\begin{itemize}
+    \item Formalize the connection between rank scaling and hierarchical construction
+    \item Prove that high-rank networks fail to develop hierarchy
+    \item Characterize the optimal rank scaling $\beta$ for different tasks
+\end{itemize}
+
+\paragraph{Empirical Validation.}
+Our experiments are limited to specific architectures and datasets. Future work should:
+\begin{itemize}
+    \item Test on larger-scale datasets (ImageNet, language models)
+    \item Validate on different architectures (CNNs, transformers)
+    \item Study the effect of different activation functions
+\end{itemize}
+
+\paragraph{Instability Mechanism.}
+The instability-reinforcement mechanism needs deeper theoretical analysis:
+\begin{itemize}
+    \item Characterize the escape dynamics from plateaus
+    \item Understand why instability preferentially activates orthogonal bands
+    \item Design optimizers that leverage this mechanism
+\end{itemize}
+
+\subsection{Connection to Other Paradigms}
+
+\paragraph{Random Features.}
+Our frozen random features enable hierarchical construction by providing a rich dictionary. This connects to random feature methods~\cite{rahimi2007random}, but with the key difference that low-rank enforces hierarchical selection.
+
+\paragraph{Kernel Methods.}
+The extensive-rank regime can be viewed as learning a kernel with hierarchical structure, where different frequency bands correspond to different kernel components.
+
+\paragraph{Multi-Index Models.}
+Our results connect to multi-index learning~\cite{benarous2021online}, showing that low-rank networks naturally learn multi-index structure through sequential direction activation.
+
+\subsection{Practical Recommendations}
+
+Based on our results, we recommend:
+\begin{enumerate}
+    \item \textbf{Rank selection:} Use extensive-rank scaling $r = d^\beta$ with $\beta \in (0.3, 0.7)$ for hierarchical construction.
+    \item \textbf{Optimizer:} Use Adam early to navigate plateaus, then switch to SGD for fine-tuning.
+    \item \textbf{Architecture:} Deeper networks enable more hierarchical levels; use $L \ge 4$ layers.
+    \item \textbf{Monitoring:} Track $\lambda_{\max}(H)$ to identify instability-driven transitions.
+\end{enumerate}

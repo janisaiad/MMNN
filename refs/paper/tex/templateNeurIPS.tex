@@ -1,0 +1,245 @@
+\documentclass{article}
+
+% NeurIPS 2023 style - use [final] option for camera-ready
+\usepackage[preprint]{neurips_2023}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}       % graphics
+\graphicspath{{media/}{figures/}}     % organize your images and other figures under media/ and figures/ folders
+
+% Math and theorem environments
+\usepackage{amsmath,amsthm,bm}
+\usepackage{amssymb}        % Additional math symbols
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{thmtools}       % Beautiful theorem styling
+\usepackage{needspace}      % Better page breaking control
+\usepackage{mdframed}       % Frames for theorems
+\usepackage{appendix}       % Enhanced appendix support with letter sections
+\definecolor{personalcontribcolor}{RGB}{30,136,229}
+\definecolor{k3color}{RGB}{233,30,99}
+
+% Macros
+\DeclareRobustCommand{\ReLU}{\mathrel{\boldsymbol{\sigma}}}
+
+\newcommand{\Kop}{\boldsymbol{\Theta}}
+
+% Beautiful theorem environments using amsthm with mdframed
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{assumption}{Assumption}[section]
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% Custom mdframed styles for beautiful theorem boxes (subtle white tones, breakable across pages)
+\mdfdefinestyle{theoremstyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=blue!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{corollarystyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=blue!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{definitionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=orange!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{lemmastyle}{%
+    linecolor=blue!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=blue!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=blue!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{propositionstyle}{%
+    linecolor=cyan!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=cyan!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=cyan!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{assumptionstyle}{%
+    linecolor=orange!40!gray!30,
+    linewidth=0.8pt,
+    backgroundcolor=orange!2!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=orange!2!white,
+    everyline=true
+}
+
+\mdfdefinestyle{remarkstyle}{%
+    linecolor=gray!30!white,
+    linewidth=0.8pt,
+    backgroundcolor=gray!1!white,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=5pt,
+    innerbottommargin=5pt,
+    skipabove=8pt,
+    skipbelow=6pt,
+    roundcorner=3pt,
+    font=\normalfont,
+    splitbottomskip=-20pt,
+    splittopskip=-20pt,
+    middlelinewidth=0pt,
+    middlelinecolor=gray!1!white,
+    everyline=true
+}
+
+% Wrap theorem environments with beautiful boxes (breakable across pages)
+% mdframed automatically allows page breaks when boxes don't fit on one page
+% The needspace package helps prevent awkward breaks by checking available space
+\surroundwithmdframed[style=theoremstyle]{theorem}
+\surroundwithmdframed[style=corollarystyle]{corollary}
+\surroundwithmdframed[style=definitionstyle]{definition}
+\surroundwithmdframed[style=lemmastyle]{lemma}
+\surroundwithmdframed[style=propositionstyle]{proposition}
+\surroundwithmdframed[style=assumptionstyle]{assumption}
+\surroundwithmdframed[style=remarkstyle]{remark}
+
+% Configure mdframed to allow splitting with proper continuation styles
+\mdfsetup{skipabove=\topskip,skipbelow=\topskip}
+
+%% Title
+\title{Low-rank is enough for the MLPs Neural Tangent Kernel}
+
+\author{%
+  Janis Aiad\thanks{This work, including all theoretical derivations, calculations, and manuscript writing, was completed by J.H-A. during a Visiting Assistant Researcher at University of Maryland.} \\
+  École Polytechnique, École Normale Supérieure Paris-Saclay \\
+  \texttt{janis.aiad@polytechnique.org} \\
+  \And
+  Haizhao Yang \\
+  University of Maryland \\
+  Department of Mathematics \\
+  Department of Computer Science \\
+  \texttt{hzyang@umd.edu} \\
+  \And
+  Shijun Zhang \\
+  The Hong Kong Polytechnic University \\
+  \texttt{shijun.zhang@polyu.edu.hk} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a Neural Tangent Kernel (NTK) theory for low‑rank random feature networks (RF‑LR/MMNN) that combines expressivity guarantees, concentration, and spectral predictions within a single tractable framework. First, we prove RKHS equivalence: in the NTK regime, RF‑LR induces the same RKHS as the shallow ReLU kernel, so depth confers no RKHS advantage. Second, we establish rank‑driven concentration for the empirical two‑layer NTK: using Fisher–Kibble decoupling and Hanson–Wright, we obtain sub‑Gaussian tails in the rank \(r\) and identify a first‑order \(1/r\) fluctuation cancellation mechanism. Third, we show that the NTK Gram spectrum has a spike–Marchenko–Pastur structure: a single rank‑one outlier sitting above a bulk that follows a deformed Marchenko–Pastur law; the bulk location and width are determined by basic kernel characteristics (on‑diagonal value and slope at orthogonality). Finally, we provide an explicit NTK recursion and closed‑form depth expansion. Overall, RF‑LR yields the same expressivity as dense networks while lowering the parameter budget for the kernel regime from \(O(N^2)\) to \(O(rN)\), enabling accurate kernel predictions at moderate widths and ranks.
+\end{abstract}
+
+\newpage
+\input{introduction}
+\input{definition}
+\input{rkhs}
+\input{spectra}
+\input{conclusion}
+
+% Bibliography
+\bibliographystyle{plain}
+\bibliography{references}
+
+% Appendix
+\newpage
+\begin{appendices}
+\renewcommand{\thesection}{\Alph{section}}  % Use letters A, B, C, ... for appendix sections
+\setcounter{section}{0}  % Reset section counter to start from A
+\input{appendix}
+\end{appendices}
+
+\end{document}
+

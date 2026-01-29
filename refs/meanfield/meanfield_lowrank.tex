@@ -1,0 +1,1297 @@
+\section{Low-rank channel mixing: where the factor $r$ enters (and why Picard is unchanged)}
+
+% optional macros (submission.tex overrides these with colored flags and appendix pointers)
+\providecommand{\provedflag}{}
+\providecommand{\openflag}{}
+\providecommand{\proofinapp}[1]{\emph{Proof deferred to appendix.}}
+
+\noindent\provedflag\ \textit{(proofs for flagged results are deferred to the appendix / supplementary material).}
+
+This note isolates the only extra bookkeeping induced by the channel-mixing / low-rank structure
+\[
+H_2(t,c_2;X,W)=\sum_{k=1}^r L_{c_2,k}\,m_k(t;X,W),\qquad
+m_k(t;X,W)=\E_{C_1}\!\left[w_1(t,C_1,k)\,\varphi_1(\ip{f_1(C_1)}{X})\right],
+\]
+relative to the standard mean-field ODE well-posedness template (a priori $\psi_2$ bounds, good/bad event decomposition, and Picard iteration).
+
+\subsection{A deterministic $r$-factor for low-rank sums}
+
+It is convenient to record row norms of $L$:
+\[
+\|L\|_{\infty,1}\equiv \sup_{c_2\in\Omega_2}\sum_{k=1}^r |L_{c_2,k}|,\qquad
+\|L\|_{\infty,2}\equiv \sup_{c_2\in\Omega_2}\Big(\sum_{k=1}^r L_{c_2,k}^2\Big)^{1/2}.
+\]
+Under the entrywise bound $\sup_{c_2,k}|L_{c_2,k}|\le K$ (as in Assumption~\ref{assump:regularity}),
+\[
+\|L\|_{\infty,1}\le rK,\qquad \|L\|_{\infty,2}\le \sqrt{r}\,K.
+\]
+
+\begin{lemma}[Moment and $\psi_2$ control for low-rank sums]\label{lem:lowrank-psi}
+Let $(U_k)_{k=1}^r$ be real random variables on a common probability space and $(a_k)_{k=1}^r\in\R^r$ deterministic.
+Then for every $m\ge 1$,
+\[
+\E\Big[\big|\sum_{k=1}^r a_k U_k\big|^m\Big]^{1/m}\le \sum_{k=1}^r |a_k|\,\E[|U_k|^m]^{1/m}
+\le \Big(\sum_{k=1}^r |a_k|\Big)\max_{1\le k\le r}\E[|U_k|^m]^{1/m}.
+\]
+Consequently, any ``$\psi_2$-type'' seminorm defined by $\sup_{m\ge 1}m^{-1/2}\E[|\,\cdot\,|^m]^{1/m}$ satisfies
+\[
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,\E\Big[\big|\sum_{k=1}^r a_k U_k\big|^m\Big]^{1/m}
+\le \Big(\sum_{k=1}^r |a_k|\Big)\max_{1\le k\le r}\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,\E[|U_k|^m]^{1/m}.
+\]
+If one prefers an $\ell_2$ version, then also $\sum_{k=1}^r |a_k|\le \sqrt{r}\,(\sum_k a_k^2)^{1/2}$ yields a $\sqrt{r}$ factor.
+\end{lemma}
+
+\subsection{Application to $H_2$: $\|L\|_{\infty,1}$ is the only new constant}
+
+\begin{lemma}[Channel mixing only multiplies forward bounds by $\|L\|_{\infty,1}$]\label{lem:H2-row-norm}
+Assume $\varphi_1$ is bounded by $K$.
+Then for every $t\ge 0$ and every $c_2\in\Omega_2$,
+\[
+\sup_{s\le t}\big|H_2(s,c_2;X,W)\big|
+\le \Big(\sum_{k=1}^r |L_{c_2,k}|\Big)\max_{1\le k\le r}\sup_{s\le t}|m_k(s;X,W)|
+\le \|L\|_{\infty,1}\,\max_{1\le k\le r}\sup_{s\le t}|m_k(s;X,W)|.
+\]
+Moreover,
+\[
+\sup_{s\le t}|m_k(s;X,W)|
+\le \E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|\,\big|\varphi_1(\ip{f_1(C_1)}{X})\big|\right]
+\le K\,\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|\right].
+\]
+Combining these inequalities and taking moments yields, for every $m\ge 1$,
+\[
+\E_X\Big[\sup_{s\le t}\sup_{c_2}|H_2(s,c_2;X,W)|^m\Big]^{1/m}
+\le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\Big[\sup_{s\le t}|w_1(s,C_1,k)|^m\Big]^{1/m}.
+\]
+In particular, in the $\psi_2$-type calibration of Section~3,
+\[
+\sqrt{50}\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,
+\E_X\Big[\sup_{s\le t}\sup_{c_2}|H_2(s,c_2;X,W)|^m\Big]^{1/m}
+\le K\,\|L\|_{\infty,1}\,\llbracket w_1\rrbracket_{\psi,t}.
+\]
+\end{lemma}
+
+\begin{remark}[The promised $r$ factor]
+Under $\sup_{c_2,k}|L_{c_2,k}|\le K$, Lemma~\ref{lem:H2-row-norm} gives an explicit $r$-dependence
+\[
+\llbracket H_2\rrbracket_{\psi,t}\ \lesssim\ (rK)\,\llbracket w_1\rrbracket_{\psi,t},
+\]
+up to the same universal constants already present in the two-layer well-posedness proof.
+If one instead assumes a row $\ell_2$ control $\|L\|_{\infty,2}\le K$ (e.g.\ normalized rows), then the same steps yield a $\sqrt{r}$ scaling.
+\end{remark}
+
+\subsection{Where this plugs into the Picard / well-posedness template}
+
+In the Picard map $F$ (Section~4), the mixing kernel $L$ appears only through $H_2$ and through the backpropagated signal
+\[
+B_k(s;X,W')=\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'(H_2(s,C_2;X,W'))\,w_2'(s,C_2)\right].
+\]
+Because $\varphi_2'$ is bounded, $B_k$ itself does not introduce any additional $r$ factor (it has one fixed column $k$ of $L$); the only place where $r$ can enter is when controlling $H_2$ (and hence $\varphi_2(H_2)$ and $\varphi_2'(H_2)$ through Lipschitzness).
+
+Concretely, in the two-layer roadmap of Section~5:
+\begin{itemize}
+\item Lemma~C (Forward Lipschitz) uses a bound of the form
+\[
+|H_2(W')-H_2(W'')|
+\le \|L\|_{\infty,1}\,\max_k |m_k(W')-m_k(W'')|
+\le K\,\|L\|_{\infty,1}\,\|w_1'-w_1''\|_t,
+\]
+so the constant in Lemma~C is multiplied by at most $\|L\|_{\infty,1}$ (hence at most $rK$ under entrywise control).
+\item Lemma~D (Backward Lipschitz) inherits the same multiplicative factor when bounding drift differences involving $\varphi_2(H_2)$ or $\varphi_2'(H_2)$, because those differences are controlled by Lipschitz constants times $|H_2(W')-H_2(W'')|$ on the good event.
+\end{itemize}
+Therefore the difference inequality of the form
+\[
+\|F(W')-F(W'')\|_t \le C\int_0^t\Big((1+B)\,\|W'-W''\|_s+e^{-cB^2}\Big)\,ds
+\]
+remains valid with the same structure, after replacing $C$ by $C\,\mathrm{poly}(\|L\|_{\infty,1})$.
+The Picard iteration and the $B=\sqrt{m}$ choice are unchanged; only the polynomial function $K_0(t)$ (and hidden constants) now depend on $\|L\|_{\infty,1}$, i.e.\ on $r$ through $\|L\|_{\infty,1}\le r\,\sup_{c_2,k}|L_{c_2,k}|$.
+
+\section{Channel-wise partial functions via pushforward and disintegration}
+\provedflag
+
+This section rewrites the $r$ channel summaries $m_k(t;\cdot)$ as integrals against a measure $\mu_0$ on the \emph{untrained} first-layer features, together with a pushforward (or, equivalently, a backward kernel) that incorporates the \emph{trained} first-layer weights $w_1$.
+
+\subsection{Untrained features and their pushforward law}
+
+Let $w_0:\Omega_1\to\R^d$ denote the untrained first-layer map (in the main note, $w_0=f_1$) and let $\rho^1$ be the law of $C_1$.
+Define the pushforward measure on feature space
+\[
+\mu_0 \equiv (w_0)_{\#}\rho^1 \qquad\text{on }\R^d,
+\]
+meaning that for any measurable $A\subseteq \R^d$, $\mu_0(A)=\rho^1(\{c_1: w_0(c_1)\in A\})$.
+
+\subsection{The $r$ partial functions as integrals over $\mu_0$}
+
+For each channel $k\in\{1,\dots,r\}$, recall the partial function
+\[
+m_k(t;X,W)=\E_{C_1}\!\left[w_1(t,C_1,k)\,\varphi_1(\ip{w_0(C_1)}{X})\right].
+\]
+It is often useful to view $m_k(t;\cdot)$ as an integral over $\mu_0$ by packaging $w_1$ into a signed (or weighted) pushforward measure.
+
+\begin{definition}[Signed pushforward incorporating $w_1$]\label{def:mu-k}
+For each $t\ge 0$ and each $k\in\{1,\dots,r\}$, define the (finite signed) measure $\mu_{1,k}^t$ on $\R^d$ by
+\[
+\mu_{1,k}^t \equiv (w_0)_{\#}\big(w_1(t,\cdot,k)\,\rho^1\big),
+\]
+i.e.\ for any measurable $A\subseteq \R^d$,
+\[
+\mu_{1,k}^t(A)=\int_{\Omega_1}\1\{w_0(c_1)\in A\}\,w_1(t,c_1,k)\,\rho^1(dc_1).
+\]
+\end{definition}
+
+\begin{lemma}[Integral representation over feature space]\label{lem:mk-pushforward}
+For every $t\ge 0$, $k\in\{1,\dots,r\}$ and input $X$,
+\[
+m_k(t;X,W)=\int_{\R^d}\varphi_1(\ip{\theta}{X})\,\mu_{1,k}^t(d\theta).
+\]
+\end{lemma}
+
+\subsection{Backward kernel (disintegration) form}
+
+If one prefers to keep $\mu_0$ fixed and represent only a \emph{density} on top of it, one can use a disintegration of $\rho^1$ along the map $w_0$.
+There exists a measurable Markov kernel $\kappa(d c_1\mid \theta)$ on $\Omega_1$ such that
+\[
+\rho^1(dc_1)=\int_{\R^d}\kappa(dc_1\mid \theta)\,\mu_0(d\theta),\qquad
+\kappa\big(\{c_1: w_0(c_1)=\theta\}\mid \theta\big)=1\ \ \text{for }\mu_0\text{-a.e.\ }\theta.
+\]
+Define the channel-wise conditional average of $w_1$ at feature location $\theta$ by
+\[
+\bar w_{1,k}(t,\theta)\equiv \int_{\Omega_1} w_1(t,c_1,k)\,\kappa(dc_1\mid \theta).
+\]
+Then $\mu_{1,k}^t$ is absolutely continuous with respect to $\mu_0$ with Radon--Nikodym derivative $\bar w_{1,k}(t,\cdot)$, in the sense that
+\[
+\mu_{1,k}^t(d\theta)=\bar w_{1,k}(t,\theta)\,\mu_0(d\theta),
+\]
+and hence the $k$th partial function can be written as the $\mu_0$-integral
+\[
+m_k(t;X,W)=\int_{\R^d}\bar w_{1,k}(t,\theta)\,\varphi_1(\ip{\theta}{X})\,\mu_0(d\theta).
+\]
+
+\begin{remark}[Interpretation and special cases]
+The family $(m_k(t;\cdot))_{k=1}^r$ can be seen as $r$ scalar functions generated by the \emph{same} untrained feature measure $\mu_0$ and $r$ channel-dependent coefficient fields $\bar w_{1,k}(t,\cdot)$ on feature space.
+If $w_0$ is injective, then $\kappa(dc_1\mid \theta)$ is a Dirac mass at $c_1=w_0^{-1}(\theta)$ and $\bar w_{1,k}(t,\theta)=w_1(t,w_0^{-1}(\theta),k)$.
+\end{remark}
+
+\section{Time variation of the $r$ partial functions and the induced PDE}
+\provedflag
+
+Define for each channel $k\in\{1,\dots,r\}$ the partial function on input space
+\[
+f_k(t,x)\equiv m_k(t;x,W)=\int_{\R^d}\bar w_{1,k}(t,\theta)\,\varphi_1(\ip{\theta}{x})\,\mu_0(d\theta).
+\]
+We compute its time derivative and state the (measure-valued) evolution equation implied by the MF ODE for $w_1$.
+
+\subsection{Evolution of the coefficient field $\bar w_{1,k}(t,\theta)$}
+
+From the MF ODE (cf.\ \eqref{eq:ode-w1} in the main note), the first-layer weights satisfy
+\[
+\partial_t w_1(t,c_1,k)= -\,\xi_1(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1\!\left(\ip{w_0(c_1)}{X}\right)\,
+\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(t,C_2;X,W(t))\Big)\,w_2(t,C_2)\right]\right].
+\]
+Introduce the channel-$k$ backpropagated signal (a random variable through $X$)
+\[
+B_k(t;X)\equiv \E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(t,C_2;X,W(t))\Big)\,w_2(t,C_2)\right].
+\]
+Since the drift depends on $c_1$ only through $\theta=w_0(c_1)$, the conditional average $\bar w_{1,k}(t,\theta)$ evolves pointwise as
+\begin{equation}\label{eq:barw-evol}
+\partial_t \bar w_{1,k}(t,\theta)
+=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1(\ip{\theta}{X})\,B_k(t;X)\right].
+\end{equation}
+
+\subsection{A measure-valued PDE for $\mu_{1,k}^t$}
+
+Recall $\mu_{1,k}^t(d\theta)=\bar w_{1,k}(t,\theta)\,\mu_0(d\theta)$.
+Equation \eqref{eq:barw-evol} is equivalently the following linear ``reaction'' PDE for the signed measure $\mu_{1,k}^t$:
+\begin{equation}\label{eq:mu-reaction}
+\partial_t \mu_{1,k}^t(d\theta)
+=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1(\ip{\theta}{X})\,B_k(t;X)\right]\mu_0(d\theta).
+\end{equation}
+In weak form, for every bounded measurable test function $\psi:\R^d\to\R$,
+\[
+\frac{d}{dt}\int_{\R^d}\psi(\theta)\,\mu_{1,k}^t(d\theta)
+=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,B_k(t;X)\int_{\R^d}\psi(\theta)\,\varphi_1(\ip{\theta}{X})\,\mu_0(d\theta)\right].
+\]
+Because $w_0$ is frozen, there is no transport term (no $\nabla_\theta\cdot(\cdot)$): the feature locations stay fixed and only the signed density evolves.
+
+\subsection{Variation of $f_k(t,x)$ and an induced integro-differential equation}
+
+Differentiating under the integral and using \eqref{eq:barw-evol} yields
+\begin{align}
+\partial_t f_k(t,x)
+&=\int_{\R^d}\partial_t\bar w_{1,k}(t,\theta)\,\varphi_1(\ip{\theta}{x})\,\mu_0(d\theta)\nonumber\\
+&=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,B_k(t;X)\,\int_{\R^d}\varphi_1(\ip{\theta}{X})\,\varphi_1(\ip{\theta}{x})\,\mu_0(d\theta)\right].\label{eq:fk-evol}
+\end{align}
+Define the kernel induced by the untrained feature measure $\mu_0$:
+\[
+K_{\mu_0}(x,x')\equiv \int_{\R^d}\varphi_1(\ip{\theta}{x})\,\varphi_1(\ip{\theta}{x'})\,\mu_0(d\theta).
+\]
+Then \eqref{eq:fk-evol} becomes the compact evolution equation
+\begin{equation}\label{eq:fk-kernel}
+\partial_t f_k(t,x)=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,B_k(t;X)\,K_{\mu_0}(x,X)\right],\qquad k=1,\dots,r.
+\end{equation}
+This is an $r$-coupled integro-differential system in $t$ (and in $x$ through the kernel), closed once one expresses $B_k(t;X)$ and $d_L(Z;W(t))$ in terms of the network output $\hat y(\cdot;W(t))$, which itself depends on $(f_j)_{j=1}^r$ through $H_2=\sum_{j=1}^r L_{\cdot,j} f_j$.
+
+\subsection{ReLU top layer: sign-coherent gating and a reinforcement heuristic}
+
+Assume the second-layer activation is ReLU, $\varphi_2(u)=u_+$, so that $\varphi_2'(u)=\1\{u>0\}$ a.e.
+Then the channel-$k$ backpropagated signal becomes
+\begin{equation}\label{eq:Bk-relu}
+B_k(t;X)=\E_{C_2}\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\!\left\{H_2(t,C_2;X,W(t))>0\right\}\right].
+\end{equation}
+In words: $B_k(t;X)$ is a \emph{gated mixture} of the $k$th column of $L$, weighted by the current top-layer weights $w_2$, with the gate determined by $H_2$.
+
+Combining \eqref{eq:fk-kernel} with \eqref{eq:Bk-relu} shows that, for each $k$,
+\[
+\partial_t f_k(t,x)=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,K_{\mu_0}(x,X)\,
+\E_{C_2}\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\!\left\{H_2(t,C_2;X,W(t))>0\right\}\right]\right].
+\]
+
+\begin{remark}[When does ``large $f_j$ makes itself larger'' hold?]\label{rem:reinforcement}
+The intuition that a comparatively large $f_j$ amplifies its own future growth goes through a \emph{sign-coherence} regime:
+\begin{itemize}
+\item if $L_{c_2,k}\ge 0$ (or at least does not change sign too much) for the relevant $c_2$,
+\item if $w_2(t,c_2)\ge 0$ (or has a controlled sign pattern aligned with $L_{c_2,\cdot}$),
+\item if the loss derivative $d_L(Z;W(t))$ has a consistent sign on the region of inputs currently being learned (e.g.\ in a residual-fitting phase for square loss),
+\end{itemize}
+then increasing one partial function $f_j(t,\cdot)$ tends to increase $H_2$ on the subset of $(C_2,X)$ where $L_{C_2,j}>0$, which increases the gate $\1\{H_2>0\}$ and hence increases $B_j(t;X)$.
+Since $\partial_t f_j$ is proportional to $B_j(t;X)$ through \eqref{eq:fk-kernel}, this creates a positive feedback loop in that region.
+
+Without such sign restrictions, reinforcement is not guaranteed: $w_2$ and $d_L$ can change sign, and $L_{c_2,k}$ may have mixed signs, so the same mechanism can produce cancellation or even competition between channels.
+\end{remark}
+
+\subsection{Fixed random-sign $L$: an ``emergent'' sign-coherence in a one-spike reduction}\label{subsec:randomL-emergent}
+
+The sign-coherence bullets in Remark~\ref{rem:reinforcement} are sufficient, but in practice $L_{c_2,k}$ can have mixed signs (e.g.\ random at initialization and frozen).
+In that case, one can still obtain an \emph{effective} sign-coherence once the dynamics at a given input location is dominated by a single channel.
+We explain the mechanism in a simplified ``single spike'' reduction.
+
+\paragraph{Single spike reduction.}
+Assume the input distribution is concentrated at one point $x_\star$ (or that we are in a local-kernel regime where the dynamics at $x_\star$ decouple), and set
+\[
+f_k(t)\equiv f_k(t,x_\star),\qquad d(t)\equiv d_L\big((x_\star,y_\star);W(t)\big),\qquad
+L_{c_2}\equiv (L_{c_2,1},\dots,L_{c_2,r})\in\R^r.
+\]
+With ReLU $\varphi_2(u)=u_+$, the gate is $\1\{\ip{L_{c_2}}{f(t)}>0\}$ and the two relevant MF equations become
+\begin{align}
+\partial_t f_k(t)
+&=-\xi_1(t)\,d(t)\,B_k(t),\label{eq:spike-f}\\
+B_k(t)
+&=\E_{C_2}\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\!\left\{\ip{L_{C_2}}{f(t)}>0\right\}\right],\qquad k=1,\dots,r,\label{eq:spike-B}\\
+\partial_t w_2(t,c_2)
+&=-\xi_2(t)\,d(t)\,\big(\ip{L_{c_2}}{f(t)}\big)_+.\label{eq:spike-w2}
+\end{align}
+If $w_2(0,\cdot)\ge 0$ and $-d(t)\ge 0$ (for instance in an underfitting phase for square loss), then \eqref{eq:spike-w2} implies $w_2(t,\cdot)$ remains nonnegative and increases more for those $c_2$ with larger positive $\ip{L_{c_2}}{f(t)}$.
+
+\paragraph{Why mixed signs in $L$ may still reinforce a dominant channel.}
+Suppose at some time $t$ the vector $f(t)$ is (approximately) one-sparse,
+\[
+f(t)\approx a(t)\,e_{j},\qquad a(t)\in\R,\ \ j\in\{1,\dots,r\}.
+\]
+Then $\ip{L_{c_2}}{f(t)}\approx a(t)\,L_{c_2,j}$ and the gate becomes $\1\{a(t)L_{c_2,j}>0\}$.
+If (heuristically, or in an early-time approximation) $w_2(t,C_2)$ is not strongly \emph{negatively} correlated with the sign of $L_{C_2,j}$, then conditioning on the gate makes the $j$th coordinate have a \emph{nonzero mean}:
+\[
+\E\!\left[L_{C_2,j}\,\1\{aL_{C_2,j}>0\}\right]
+=\mathrm{sign}(a)\,\E\!\left[|L_{C_2,j}|\right]/2,
+\]
+whereas for $k\neq j$, under approximate independence and symmetry across coordinates of $L_{C_2}$,
+\[
+\E\!\left[L_{C_2,k}\,\1\{aL_{C_2,j}>0\}\right]\approx 0.
+\]
+Plugging this into \eqref{eq:spike-B} suggests that, even when $L$ has mixed signs, the gate selects a half-space primarily determined by the dominant coordinate $j$, and this selection biases $B_j(t)$ to have the \emph{same sign} as $a(t)$ while keeping $B_k(t)$ small for $k\neq j$.
+Equation \eqref{eq:spike-f} then amplifies the dominant channel at that spike location.
+Moreover, \eqref{eq:spike-w2} further increases $w_2(t,c_2)$ on the gated set $\{c_2:\ip{L_{c_2}}{f(t)}>0\}$, strengthening the conditional bias in \eqref{eq:spike-B}.
+
+\medskip
+\noindent\textbf{A rigorous one-sparse statement.}
+The preceding intuition can be made fully rigorous in the exact one-sparse regime, under a mild symmetry/independence assumption on the frozen random vector $L_{C_2}$ and a sign-consistent residual.
+
+\begin{assumption}[Random mixing vector, symmetric and independent]\label{assump:L-symmetric}
+\openflag
+The random vector $L_{C_2}=(L_{C_2,1},\dots,L_{C_2,r})$ has independent coordinates, each symmetric about $0$:
+$L_{C_2,k}\overset{d}{=}-L_{C_2,k}$ and $\E[L_{C_2,k}^2]<\infty$ for all $k$.
+\end{assumption}
+
+\begin{lemma}[Half-space symmetry identities]\label{lem:halfspace-identities}
+\provedflag
+Let $U$ be a real random variable with $U\overset{d}{=}-U$ and $\E[|U|]<\infty$.
+Then for any $a\in\R\setminus\{0\}$,
+\[
+\E\!\left[U\,\1\{aU>0\}\right]=\mathrm{sign}(a)\,\frac{1}{2}\E[|U|].
+\]
+If moreover $\E[U^2]<\infty$, then
+\[
+\E\!\left[U^2\,\1\{aU>0\}\right]=\frac{1}{2}\E[U^2].
+\]
+\end{lemma}
+\proofinapp{lem:halfspace-identities}
+
+\begin{lemma}[One-sparse invariant manifold and emergent sign-coherence]\label{lem:onesparse-reinforce}
+\provedflag
+Assume the one-spike system \eqref{eq:spike-f}--\eqref{eq:spike-w2}, Assumption~\ref{assump:L-symmetric}, and that the residual has fixed sign on $[0,T]$:
+$d(t)\le 0$ for all $t\in[0,T]$.
+Assume a nonnegative constant initialization in the top layer, $w_2(0,c_2)\equiv w_2^0\ge 0$.
+Fix $j\in\{1,\dots,r\}$ and assume a one-sparse spike at $t=0$ with positive amplitude,
+$f(0)=a_0e_j$ with $a_0>0$.
+Then for all $t\in[0,T]$:
+\begin{itemize}
+\item $f(t)=a(t)e_j$ for some scalar $a(t)\ge a_0$;
+\item for $k\neq j$, $B_k(t)=0$;
+\item $B_j(t)>0$ and admits the explicit representation
+\begin{equation}\label{eq:Bj-explicit}
+B_j(t)=\frac{w_2^0}{2}\E[|L_{C_2,j}|]\;+\;\frac{\E[L_{C_2,j}^2]}{2}\int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds.
+\end{equation}
+Consequently $\partial_t a(t)=-\xi_1(t)\,d(t)\,B_j(t)\ge 0$ on $[0,T]$.
+\end{itemize}
+\end{lemma}
+
+\proofinapp{lem:onesparse-reinforce}
+
+\iffalse
+\begin{proof}
+We work on $[0,T]$ and write $U\equiv L_{C_2,j}$.
+Assume inductively that $f(t)=a(t)e_j$ with $a(t)\ge 0$ (this will be justified by the conclusion).
+Then $\ip{L_{c_2}}{f(t)}=a(t)L_{c_2,j}$ and the gate $\1\{\ip{L_{C_2}}{f(t)}>0\}$ is $\1\{U>0\}$.
+The top-layer ODE \eqref{eq:spike-w2} integrates explicitly to
+\[
+w_2(t,c_2)=w_2^0+\Big(\int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds\Big)\,L_{c_2,j}\,\1\{L_{c_2,j}>0\},
+\]
+since $(a(s)L_{c_2,j})_+=a(s)L_{c_2,j}\1\{L_{c_2,j}>0\}$ for $a(s)\ge 0$.
+In particular $w_2(t,C_2)$ is a measurable function of $L_{C_2,j}$ only.
+
+For $k\neq j$, independence of coordinates implies $L_{C_2,k}$ is independent of $(L_{C_2,j},w_2(t,C_2),\1\{U>0\})$, hence
+\[
+B_k(t)=\E\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\{U>0\}\right]
+=\E[L_{C_2,k}]\,\E\!\left[w_2(t,C_2)\,\1\{U>0\}\right]=0,
+\]
+using $\E[L_{C_2,k}]=0$ from symmetry.
+Thus $\partial_t f_k(t)=-\xi_1(t)d(t)B_k(t)=0$ for all $k\neq j$, so $f_k(t)\equiv 0$ on $[0,T]$.
+This proves invariance of the one-sparse manifold.
+
+For $k=j$, let $\alpha(t)\equiv \int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds$.
+Then the above formula gives $w_2(t,C_2)=w_2^0+\alpha(t)\,U\,\1\{U>0\}$ and
+\[
+B_j(t)=\E\!\left[U\,(w_2^0+\alpha(t)U\1\{U>0\})\,\1\{U>0\}\right]
+=w_2^0\,\E[U\1\{U>0\}]+\alpha(t)\,\E[U^2\1\{U>0\}].
+\]
+Applying Lemma~\ref{lem:halfspace-identities} with $a=1$ yields \eqref{eq:Bj-explicit} and in particular $B_j(t)>0$.
+Finally, since $f_j(t)=a(t)$ and $\partial_t f_j(t)=-\xi_1(t)d(t)B_j(t)$, we have $\partial_t a(t)\ge 0$ because $d(t)\le 0$ and $B_j(t)>0$.
+Thus $a(t)\ge a_0>0$ for all $t\in[0,T]$, closing the argument.
+\end{proof}
+\fi
+
+\begin{remark}[Interpretation of Lemma~\ref{lem:onesparse-reinforce}]
+Even if $L_{C_2,j}$ has mixed signs, once $f(t)=a(t)e_j$ with $a(t)>0$ the gate is exactly $\1\{L_{C_2,j}>0\}$ and $w_2(t,c_2)$ increases on that half-space via \eqref{eq:spike-w2}.
+Lemma~\ref{lem:halfspace-identities} then implies a strictly positive bias in $B_j(t)$, while for $k\neq j$ the independence and symmetry enforce $B_k(t)=0$.
+\end{remark}
+
+\paragraph{Takeaway.}
+In this one-spike regime, \emph{random sign patterns do not necessarily destroy reinforcement}; instead, once one channel dominates, the ReLU gate can create an emergent sign-coherence by conditioning on a half-space determined by that dominant coordinate.
+This provides a plausible route to winner-take-all specialization without requiring $L_{c_2,k}\ge 0$ for all $k$.
+
+\begin{remark}[Heuristic link to specialization and ``spikes'']
+In one-dimensional problems, the gate $\1\{H_2(t,C_2;x)>0\}$ can partition the input axis into regions that activate different subsets of $c_2$ (hence different linear combinations of the $r$ channels through $L$).
+If different channels $k$ become dominant on different regions, \eqref{eq:fk-kernel} shows they are trained using different effective signed measures over $X$, yielding a self-reinforcing \emph{specialization} in distinct ``slots''.
+This is a plausible mechanism for learning localized high-amplitude structures (spikes) at different locations, driven by the gating nonlinearity rather than by a globally smooth kernel alone.
+\end{remark}
+
+\section{Toward a proof of spike specialization: a workable program}\label{sec:proof-program}
+\openflag\ \textit{(this section is a proof program / conjectural roadmap; statements are conditional and may require additional assumptions).}
+
+This section records a proof ``d\'emarche'' for the empirically observed phenomenon:
+different channels $k\in\{1,\dots,r\}$ learn localized high-amplitude structures at different input locations (``spike specialization'').
+The goal is to isolate statements that are both meaningful and provable from the dynamics \eqref{eq:fk-kernel}--\eqref{eq:Bk-relu}.
+
+\subsection{Step 0: formalize what ``specialization'' and ``spike'' mean}
+
+There are at least two mathematically tractable targets.
+
+\paragraph{(A) Channel specialization (winner-take-all at each location).}
+Define the channel shares
+\[
+s_k(t,x)\equiv \frac{|f_k(t,x)|}{\sum_{j=1}^r |f_j(t,x)|+\varepsilon},\qquad k=1,\dots,r,
+\]
+with $\varepsilon>0$ for stability.
+One aims to show that for many $x$ there exists $k^\star(x)$ such that $s_{k^\star(x)}(t,x)\to 1$ and $s_{k}(t,x)\to 0$ for $k\neq k^\star(x)$.
+This captures specialization without committing to a particular notion of spike.
+
+\paragraph{(B) Spike formation (localization / high-frequency growth).}
+One aims to show that for some channels $k$, the function $f_k(t,\cdot)$ becomes localized, e.g.\ $\|f_k(t,\cdot)\|_{\infty}$ grows while $\|f_k(t,\cdot)\|_{L^1}$ stays controlled, or that a suitable high-frequency energy increases.
+This typically requires additional structure on $\mu_0$ and $\varphi_1$ (e.g.\ wavelet-like features).
+
+\subsection{Step 1: reduce to an empirical (finite-sample) dynamical system}
+
+Let $x_1,\dots,x_n$ be the training inputs and consider the finite vector process
+\[
+F_k(t)\equiv \big(f_k(t,x_1),\dots,f_k(t,x_n)\big)\in\R^n,\qquad k=1,\dots,r.
+\]
+If one replaces $\E_X[\cdot]$ by the empirical average $n^{-1}\sum_{i=1}^n (\cdot)\big|_{X=x_i}$, then \eqref{eq:fk-kernel} yields an ODE on $\R^{r\times n}$:
+\[
+\partial_t f_k(t,x_i)=-\xi_1(t)\,\frac{1}{n}\sum_{j=1}^n d_L\big((x_j,y_j);W(t)\big)\,B_k(t;x_j)\,K_{\mu_0}(x_i,x_j).
+\]
+This finite-dimensional setting is a natural starting point for a rigorous analysis of specialization, and it matches what is observed experimentally.
+
+\subsection{Step 2: identify the ``local'' regime (nearly diagonal kernel)}
+
+The kernel
+\[
+K_{\mu_0}(x,x')=\int_{\R^d}\varphi_1(\ip{\theta}{x})\,\varphi_1(\ip{\theta}{x'})\,\mu_0(d\theta)
+\]
+controls how strongly the update at $x$ depends on data at $X$.
+If $K_{\mu_0}$ is localized (as in many wavelet constructions), then in a suitable grid setting one can be close to a diagonal-dominant regime,
+\[
+K_{\mu_0}(x_i,x_j)\approx 0\quad\text{for }i\neq j,
+\]
+so each location $x_i$ is driven primarily by its own residual and gating.
+In the ideal limit $K_{\mu_0}(x_i,x_j)=\delta_{ij}$, the dynamics decouple across $i$, and specialization can be studied pointwise in $x$.
+The general case can then be treated as a perturbation of this local regime.
+
+\subsection{Step 3: make reinforcement into a sign-coherent inequality}
+
+The essential nonlinear feedback comes from the ReLU gate inside $B_k$:
+\[
+B_k(t;X)=\E_{C_2}\!\left[L_{C_2,k}\,w_2(t,C_2)\,\1\{H_2(t,C_2;X)>0\}\right],\qquad
+H_2(t,c_2;X)=\sum_{j=1}^r L_{c_2,j}\,f_j(t,X).
+\]
+To prove a monotone reinforcement effect (``a larger $f_j$ tends to increase its own future growth''), one typically restricts to a sign-coherent regime where:
+\begin{itemize}
+\item $L_{c_2,k}\ge 0$ on the relevant $c_2$-mass (or has controlled sign changes),
+\item $w_2(t,c_2)\ge 0$ (or is aligned with $L_{c_2,\cdot}$),
+\item the residual signal $d_L(Z;W(t))$ has a stable sign on the region of $X$ currently being fit (for instance locally in time or under one-sided targets).
+\end{itemize}
+Under such conditions, increasing $f_j(t,X)$ increases $H_2(t,C_2;X)$ on the set where $L_{C_2,j}>0$, hence (weakly) increases the gate $\1\{H_2>0\}$, hence increases $B_j(t;X)$, closing a positive feedback loop through \eqref{eq:fk-kernel}.
+
+\subsection{Step 4: prove specialization via relative-growth (replicator-style) dynamics}
+
+In a local regime (Step 2), define at fixed $x$ the log-ratio
+\[
+R_{k\ell}(t,x)\equiv \log\frac{|f_k(t,x)|+\varepsilon}{|f_\ell(t,x)|+\varepsilon}.
+\]
+The objective is to show that for most $(k,\ell,x)$ one has a differential inequality of the form
+\[
+\partial_t R_{k\ell}(t,x)\ge \mathrm{Adv}_{k\ell}(t,x)-\mathrm{Err}(t,x),
+\]
+where the ``advantage'' term $\mathrm{Adv}_{k\ell}$ is increasing in the current dominance of channel $k$ at $x$ due to the gating in $B_k$, and $\mathrm{Err}$ is controlled by off-diagonal kernel interactions and bad-event tails.
+Such inequalities yield exponential separation of ratios and thus winner-take-all channel shares $s_k(t,x)$.
+
+\subsection{Step 4.5: log-ratio calculus (exact identity) and a sufficient condition}\label{subsec:step45}
+
+Fix $x$ and define $u_k(t,x)\equiv |f_k(t,x)|+\varepsilon$.
+Whenever $f_k(\cdot,x)$ is absolutely continuous in $t$, the map $u_k(\cdot,x)$ is also absolutely continuous and, for almost every $t$,
+\[
+\partial_t u_k(t,x)=\mathrm{sign}(f_k(t,x))\,\partial_t f_k(t,x)\qquad\text{whenever }f_k(t,x)\neq 0,
+\]
+and any choice in the interval $[-|\partial_t f_k(t,x)|,|\partial_t f_k(t,x)|]$ is a valid subderivative when $f_k(t,x)=0$.
+In particular, for almost every $t$ one has the exact log-ratio identity
+\begin{equation}\label{eq:logratio-identity}
+\partial_t R_{k\ell}(t,x)=\frac{\mathrm{sign}(f_k(t,x))\,\partial_t f_k(t,x)}{|f_k(t,x)|+\varepsilon}
+-\frac{\mathrm{sign}(f_\ell(t,x))\,\partial_t f_\ell(t,x)}{|f_\ell(t,x)|+\varepsilon}.
+\end{equation}
+
+\paragraph{Local decoupling and per-capita gains.}
+In the ideal local regime $K_{\mu_0}(x,X)\approx K_{\mu_0}(x,x)\,\1\{X=x\}$ (or in the diagonal empirical-kernel approximation at a training point $x=x_i$), \eqref{eq:fk-kernel} reduces to
+\begin{equation}\label{eq:local-fk}
+\partial_t f_k(t,x)\approx -\xi_1(t)\,K_{\mu_0}(x,x)\,\Big(d_x(t)\,B_k(t;x)\Big),
+\end{equation}
+where $d_x(t)$ abbreviates the local residual signal (e.g.\ $d_L((x,y);W(t))$ in the one-point reduction).
+Plugging \eqref{eq:local-fk} into \eqref{eq:logratio-identity} motivates the \emph{per-capita gain}
+\[
+\gamma_k(t,x)\equiv \xi_1(t)\,K_{\mu_0}(x,x)\,\frac{-d_x(t)\,\mathrm{sign}(f_k(t,x))\,B_k(t;x)}{|f_k(t,x)|+\varepsilon},
+\]
+so that $\partial_t R_{k\ell}(t,x)\approx \gamma_k(t,x)-\gamma_\ell(t,x)$.
+Thus, specialization at $x$ is implied by a persistent gap in per-capita gains.
+
+\begin{lemma}[A sufficient per-capita gap condition]\label{lem:percap-gap}
+Fix $x$ and suppose there exist $\delta>0$ and an index $j$ such that on a time interval $[t_0,t_1]$,
+\[
+\gamma_j(t,x)\ge \gamma_k(t,x)+\delta\qquad\text{for all }k\neq j\text{ and almost every }t\in[t_0,t_1].
+\]
+Then for every $k\neq j$,
+\[
+R_{jk}(t_1,x)\ge R_{jk}(t_0,x)+\delta\,(t_1-t_0),
+\]
+and hence the share of channel $j$ at $x$ increases relative to all other channels over $[t_0,t_1]$.
+\end{lemma}
+
+\paragraph{Example: the one-sparse spike regime.}
+In the one-spike reduction \eqref{eq:spike-f}--\eqref{eq:spike-w2} under the hypotheses of Lemma~\ref{lem:onesparse-reinforce},
+we have $f(t)=a(t)e_j$ with $a(t)$ nondecreasing and $B_k(t)=0$ for $k\neq j$.
+Then for $k\neq j$ the denominator $|f_k|+\varepsilon=\varepsilon$ is constant while $|f_j|+\varepsilon=a(t)+\varepsilon$ increases, so the log-ratio satisfies
+\[
+\partial_t R_{jk}(t)=\frac{\partial_t a(t)}{a(t)+\varepsilon}=\frac{-\xi_1(t)\,d(t)\,B_j(t)}{a(t)+\varepsilon}>0,
+\]
+illustrating concretely how reinforcement yields monotone growth of log-ratios in a spike-dominated regime.
+
+\begin{remark}[The ``minus sign'' in $\partial_t f_k=-\xi_1 d\,B_k$ does not break specialization]\label{rem:minus-sign}
+The minus sign is simply the gradient-descent direction.
+It does \emph{not} turn reinforcement into anti-reinforcement by itself; what matters is the sign of the residual signal $d_x(t)$.
+For instance, for square loss $\mathcal{L}(y,\hat y)=\tfrac12(\hat y-y)^2$, one has $d_x(t)=\hat y(x;W(t))-y(x)$, which typically changes sign when the prediction crosses the target.
+Thus the spike amplitude $|f_j(t,x)|$ need not increase monotonically for all times.
+The robust specialization statement is instead about \emph{relative dominance}:
+log-ratios $R_{jk}(t,x)$ can grow even during phases where all $|f_k(t,x)|$ decrease, because $R_{jk}$ tracks \emph{per-capita} gains (Step~4.5) rather than absolute growth.
+\end{remark}
+
+\subsection{Step 4.6: effective sharpness along the spike direction (one-point square loss)}\label{subsec:step46}
+
+In a one-point reduction, one can make the intuition ``the descent direction is clear'' fully quantitative via a Lyapunov identity.
+Assume a single training pair $(x_\star,y_\star)$ with square loss $\mathcal{L}=\tfrac12(\hat y-y_\star)^2$, and that we are on the one-sparse manifold of Lemma~\ref{lem:onesparse-reinforce} so that $f(t)=a(t)e_j$ with $a(t)\ge 0$ and $\hat y(t)=a(t)B_j(t)$.
+Define the residual $d(t)\equiv \hat y(t)-y_\star$ and the scalar loss $\ell(t)\equiv \tfrac12 d(t)^2$.
+
+\begin{lemma}[Lyapunov identity and an ``effective curvature'' coefficient]\label{lem:lyapunov-onespike}
+\provedflag
+Assume the one-spike system \eqref{eq:spike-f}--\eqref{eq:spike-w2}, Assumption~\ref{assump:L-symmetric}, and the one-sparse manifold $f(t)=a(t)e_j$ with $a(t)\ge 0$ on a time interval where the gate is $\1\{L_{C_2,j}>0\}$.
+For square loss, the residual satisfies the closed scalar differential equation
+\begin{equation}\label{eq:d-dissipative}
+\partial_t d(t)=-d(t)\Big(\xi_1(t)\,B_j(t)^2+\xi_2(t)\,a(t)^2\,S_j\Big),
+\qquad
+S_j\equiv \E\!\left[L_{C_2,j}^2\,\1\{L_{C_2,j}>0\}\right].
+\end{equation}
+Consequently the loss decreases according to
+\begin{equation}\label{eq:ell-dissipative}
+\partial_t \ell(t)=-2\,\ell(t)\Big(\xi_1(t)\,B_j(t)^2+\xi_2(t)\,a(t)^2\,S_j\Big)\le 0.
+\end{equation}
+\end{lemma}
+
+\proofinapp{lem:lyapunov-onespike}
+\iffalse
+\begin{proof}
+Under the one-sparse manifold $f(t)=a(t)e_j$ with $a(t)\ge 0$, the network prediction at $x_\star$ is
+\[
+\hat y(t)=\E_{C_2}\!\left[w_2(t,C_2)\,(a(t)L_{C_2,j})_+\right]
+=a(t)\,\E_{C_2}\!\left[w_2(t,C_2)\,L_{C_2,j}\,\1\{L_{C_2,j}>0\}\right]
+=a(t)\,B_j(t),
+\]
+so $d(t)=a(t)B_j(t)-y_\star$.
+Differentiate:
+\[
+\partial_t d(t)=\partial_t(a(t)B_j(t))=(\partial_t a(t))B_j(t)+a(t)\,\partial_t B_j(t).
+\]
+By \eqref{eq:spike-f}, $\partial_t a(t)=\partial_t f_j(t)=-\xi_1(t)\,d(t)\,B_j(t)$.
+Moreover, by definition $B_j(t)=\E[L_{C_2,j}\,w_2(t,C_2)\,\1\{L_{C_2,j}>0\}]$ on this manifold, hence
+\[
+\partial_t B_j(t)=\E\!\left[L_{C_2,j}\,(\partial_t w_2(t,C_2))\,\1\{L_{C_2,j}>0\}\right].
+\]
+Using \eqref{eq:spike-w2} with $\ip{L_{c_2}}{f(t)}=a(t)L_{c_2,j}$ and $a(t)\ge 0$ gives
+$(\ip{L_{C_2}}{f(t)})_+=a(t)L_{C_2,j}\1\{L_{C_2,j}>0\}$, so
+\[
+\partial_t w_2(t,C_2)=-\xi_2(t)\,d(t)\,a(t)\,L_{C_2,j}\,\1\{L_{C_2,j}>0\}.
+\]
+Therefore
+\[
+\partial_t B_j(t)
+=-\xi_2(t)\,d(t)\,a(t)\,\E\!\left[L_{C_2,j}^2\,\1\{L_{C_2,j}>0\}\right]
+=-\xi_2(t)\,d(t)\,a(t)\,S_j.
+\]
+Substituting the expressions for $\partial_t a$ and $\partial_t B_j$ yields
+\[
+\partial_t d(t)=(-\xi_1(t)d(t)B_j(t))B_j(t)+a(t)(-\xi_2(t)d(t)a(t)S_j)
+=-d(t)\Big(\xi_1(t)B_j(t)^2+\xi_2(t)a(t)^2S_j\Big),
+\]
+which is \eqref{eq:d-dissipative}.
+Finally, $\ell(t)=\tfrac12 d(t)^2$ implies $\partial_t\ell(t)=d(t)\partial_t d(t)$, and \eqref{eq:ell-dissipative} follows.
+\end{proof}
+\fi
+
+\begin{remark}[What ``sharpness'' means here]
+The coefficient $\lambda(t)\equiv \xi_1(t)B_j(t)^2+\xi_2(t)a(t)^2S_j$ plays the role of an \emph{effective curvature along the active spike direction}.
+If $\lambda(t)\ge \lambda_0>0$ on an interval, then \eqref{eq:ell-dissipative} gives exponential decay $\ell(t)\le \ell(t_0)e^{-2\lambda_0(t-t_0)}$.
+This is a rigorous version of ``the landscape is sharp in the useful direction''.
+It should not be confused with global strong convexity: low-rank / bilinear parametrizations can retain flat directions (e.g.\ scaling symmetries) even while being very sharp along the spike-aligned direction.
+\end{remark}
+
+\subsection{Step 5: connect specialization to spikes using the feature dictionary}
+
+Specialization alone does not force spikes; the spike shape is controlled by $(\mu_0,\varphi_1)$ through $K_{\mu_0}$.
+For wavelet-like features (or other localized dictionaries), channel specialization on disjoint regions implies that different channels are effectively solving different local regression problems, which can produce localized high-amplitude fits (spikes) at different locations.
+Thus a practical strategy is:
+\begin{itemize}
+\item prove channel specialization (Step 4) in a sign-coherent, local-kernel regime,
+\item then quantify how localization properties of $K_{\mu_0}$ convert specialization into spike-like structure.
+\end{itemize}
+
+\subsection{Step 5.1: closed-form dynamics in the kernel (NTK) regime and frequency-by-frequency learning}
+\label{subsec:step51}
+
+This subsection records an explicit ``solved'' dynamics in the regime where the learning dynamics reduce to a \emph{linear} kernel gradient flow with a \emph{fixed} Gram operator.
+This is the cleanest mathematical lens for understanding learning of localized targets (two-sided steps) or pure frequencies (cosines).
+
+\paragraph{Empirical (finite-sample) kernel dynamics.}
+Fix training points $x_1,\dots,x_n$ with targets $y=(y_1,\dots,y_n)^\top$ and let $\hat y(t)\in\R^n$ be the vector of current predictions $\hat y_i(t)\equiv \hat y(x_i;W(t))$.
+In a standard NTK/random-features linearization (kernel frozen at initialization), the squared-loss gradient flow closes as
+\begin{equation}\label{eq:kernel-flow}
+\partial_t \hat y(t)=-\eta(t)\,K\,(\hat y(t)-y),
+\end{equation}
+where $K\in\R^{n\times n}$ is a fixed positive semidefinite Gram matrix (typically $K_{ij}=K_{\mu_0}(x_i,x_j)$ up to a scaling depending on parametrization) and $\eta(t)\ge 0$ is an effective learning-rate factor.
+
+\begin{lemma}[Matrix exponential solution]\label{lem:kernel-flow-solution}
+\provedflag
+Assume $K$ does not depend on $t$ and $\eta$ is integrable on $[0,\infty)$.
+Define the effective time $\tau(t)\equiv \int_0^t \eta(s)\,ds$.
+Then the solution of \eqref{eq:kernel-flow} is
+\begin{equation}\label{eq:kernel-solution}
+\hat y(t)-y=\exp\!\big(-\tau(t)\,K\big)\,(\hat y(0)-y).
+\end{equation}
+Equivalently, if $K=U\,\mathrm{diag}(\lambda_1,\dots,\lambda_n)\,U^\top$ with $\lambda_i\ge 0$, then the mode coefficients $\alpha_i(t)\equiv u_i^\top(\hat y(t)-y)$ satisfy
+\begin{equation}\label{eq:mode-solution}
+\alpha_i(t)=e^{-\lambda_i\,\tau(t)}\,\alpha_i(0),\qquad i=1,\dots,n.
+\end{equation}
+\end{lemma}
+
+\proofinapp{lem:kernel-flow-solution}
+\iffalse
+\begin{proof}
+Let $e(t)\equiv \hat y(t)-y$.
+Then \eqref{eq:kernel-flow} is $\partial_t e(t)=-\eta(t)K e(t)$, hence $\partial_\tau e(\tau)=-K e(\tau)$ in the time-change variable $\tau$.
+The unique solution is $e(\tau)=e^{-\tau K}e(0)$, which is \eqref{eq:kernel-solution}.
+Diagonalizing $K$ yields \eqref{eq:mode-solution}.
+\end{proof}
+\fi
+
+\paragraph{Continuous kernel flow and Fourier modes (translation-invariant case).}
+To connect directly to ``frequency learning'', suppose $x\in\R$ (or $x\in\mathbb{T}$) and the data distribution is uniform so that the kernel operator is approximately translation-invariant:
+$K_{\mu_0}(x,x')=\kappa(x-x')$ for a function $\kappa$.
+Then the squared-loss kernel gradient flow takes the form
+\begin{equation}\label{eq:kernel-flow-continuous}
+\partial_t \hat y(t,x)=-\eta(t)\int \kappa(x-x')\,(\hat y(t,x')-y(x'))\,dx'.
+\end{equation}
+Taking Fourier transforms gives a fully decoupled dynamics:
+for each frequency $\omega$,
+\begin{equation}\label{eq:fourier-flow}
+\partial_t \widehat{(\hat y-y)}(t,\omega)=-\eta(t)\,\widehat{\kappa}(\omega)\,\widehat{(\hat y-y)}(t,\omega),
+\qquad
+\widehat{(\hat y-y)}(t,\omega)=e^{-\widehat{\kappa}(\omega)\tau(t)}\,\widehat{(\hat y-y)}(0,\omega).
+\end{equation}
+Thus each frequency decays exponentially at a rate set by the kernel spectrum $\widehat{\kappa}(\omega)$.
+
+\paragraph{Cosine target (single frequency).}
+If $y(x)=A\cos(\omega_0 x)$ and $\hat y(0,\cdot)$ has no $\omega_0$ component, then \eqref{eq:fourier-flow} implies
+\[
+\hat y(t,x)=A\big(1-e^{-\widehat{\kappa}(\omega_0)\tau(t)}\big)\cos(\omega_0 x),
+\]
+so the learning time-scale of frequency $\omega_0$ is exactly $[\widehat{\kappa}(\omega_0)]^{-1}$ (up to the effective time $\tau$).
+Frequency bias is therefore determined by monotonicity of $\widehat{\kappa}(\omega)$ in $|\omega|$ (many smooth kernels have $\widehat{\kappa}(\omega)$ decreasing in $|\omega|$, yielding slow learning of high frequencies).
+
+\paragraph{Two-sided step target (localized jump).}
+Consider a two-sided step on $\mathbb{T}$ or on a bounded interval, e.g.
+\[
+y(x)=A\,\big(\1\{|x-x_0|\le \delta\}-\1\{|x-x_1|\le \delta\}\big),
+\]
+which is the difference of two localized bumps (``two-sided'' in the sense of two opposite signed supports).
+Its Fourier coefficients satisfy $|\widehat y(\omega)|\asymp |\omega|^{-1}$ for large $|\omega|$ (jump discontinuities generate a $1/\omega$ tail).
+By \eqref{eq:fourier-flow}, each mode decays as $e^{-\widehat{\kappa}(\omega)\tau(t)}$.
+Hence the time needed to resolve sharp edges is controlled by how quickly $\widehat{\kappa}(\omega)$ decays with $|\omega|$:
+\begin{itemize}
+\item if $\widehat{\kappa}(\omega)$ decays rapidly (very smooth kernels), high frequencies are learned slowly and the step is learned by progressive sharpening;
+\item if $\widehat{\kappa}(\omega)$ is flatter across a wide band (more localized dictionaries, less smooth kernels), the step ``locks in'' quickly, producing spike-like localization.
+\end{itemize}
+
+\paragraph{Example: 4-point ``two-sided step'' dataset $\{0,\tfrac13,\tfrac23,1\}$ with labels $(0,A,-A,0)$.}
+Let $x_1=0$, $x_2=\tfrac13$, $x_3=\tfrac23$, $x_4=1$ and $y=(0,A,-A,0)^\top$.
+Assume a symmetric distance kernel $K_{ij}=\kappa(|x_i-x_j|)$ (this includes the NNGP kernel in many isotropic setups restricted to a 1D grid).
+Set
+\[
+k_0\equiv \kappa(0),\qquad k_1\equiv \kappa\!\left(\tfrac13\right),\qquad k_2\equiv \kappa\!\left(\tfrac23\right),\qquad k_3\equiv \kappa(1),
+\]
+so the Gram matrix is the $4\times 4$ Toeplitz matrix
+\[
+K=\begin{pmatrix}
+k_0&k_1&k_2&k_3\\
+k_1&k_0&k_1&k_2\\
+k_2&k_1&k_0&k_1\\
+k_3&k_2&k_1&k_0
+\end{pmatrix}.
+\]
+Consider the kernel flow \eqref{eq:kernel-flow} with $\hat y(0)=0$, hence $e(0)\equiv \hat y(0)-y=-y$.
+Because $K$ is Toeplitz and $y$ is antisymmetric, the dynamics stay in the 2D antisymmetric subspace
+\[
+e(t)=(a(t),\,b(t),\,-b(t),\,-a(t))^\top,
+\qquad\text{equivalently}\qquad
+\hat y(t)=(a(t),\,A+b(t),\,-A-b(t),\,-a(t))^\top.
+\]
+In this subspace the error dynamics close as a $2\times 2$ linear system (in effective time $\tau(t)=\int_0^t \eta(s)\,ds$):
+\begin{equation}\label{eq:4pt-antisym-system}
+\partial_\tau\binom{a}{b}=-M\binom{a}{b},\qquad
+M=\begin{pmatrix}
+k_0-k_3 & k_1-k_2\\
+k_1-k_2 & k_0-k_1
+\end{pmatrix},
+\qquad (a(0),b(0))=(0,-A).
+\end{equation}
+Write
+\[
+m\equiv \frac{\mathrm{tr}(M)}{2}=k_0-\frac{k_1+k_3}{2},\qquad
+d\equiv \frac{M_{11}-M_{22}}{2}=\frac{k_1-k_3}{2},\qquad
+o\equiv M_{12}=k_1-k_2,\qquad
+s\equiv \sqrt{d^2+o^2}.
+\]
+Then the solution is explicit:
+\begin{equation}\label{eq:4pt-solution}
+a(t)=A\,e^{-m\tau(t)}\,\frac{o}{s}\,\sinh\!\big(s\,\tau(t)\big),
+\qquad
+b(t)=-A\,e^{-m\tau(t)}\Big(\cosh\!\big(s\,\tau(t)\big)+\frac{d}{s}\sinh\!\big(s\,\tau(t)\big)\Big).
+\end{equation}
+In particular, the two nonzero labels are learned through the single scalar $\hat y(t,x_2)=A+b(t)$ (and $\hat y(t,x_3)=-A-b(t)$), while the endpoints take the coupling-induced values $\hat y(t,x_1)=a(t)$ and $\hat y(t,x_4)=-a(t)$.
+
+\paragraph{Computing $(k_0,k_1,k_2,k_3)$ explicitly from a closed-form NNGP kernel (ReLU).}
+To obtain concrete numerical rates, one can plug in a closed-form NNGP kernel.
+Assume:
+\begin{itemize}
+\item $\theta\sim \mathcal{N}(0,I_d)$ and $x,x'\in\R^d$ are embedded/normalized so that $\|x\|=\|x'\|=1$ and $\rho\equiv \ip{x}{x'}\in[-1,1]$,
+\item $\varphi_1(u)=u_+$ (ReLU first-layer features).
+\end{itemize}
+Then the NNGP (feature) kernel has the well-known closed form
+\begin{equation}\label{eq:nngp-relu}
+K_{\mu_0}(x,x')=\kappa_{\mathrm{ReLU}}(\rho)
+\equiv \frac{1}{2\pi}\Big(\sqrt{1-\rho^2}+(\pi-\arccos\rho)\rho\Big),
+\qquad \rho=\ip{x}{x'}.
+\end{equation}
+If the 1D coordinate $t\in[0,1]$ is embedded on the unit circle, $x(t)=(\cos(2\pi t),\sin(2\pi t))$, then $\rho(t,t')=\cos(2\pi(t-t'))$ depends only on the distance on the circle.
+For the grid $\{0,\tfrac13,\tfrac23,1\}$ one has
+\[
+\rho(0,1)=1,\qquad \rho\!\left(0,\tfrac13\right)=\rho\!\left(0,\tfrac23\right)=\cos\!\left(\tfrac{2\pi}{3}\right)=-\tfrac12,
+\]
+so $k_0=k_3=\kappa_{\mathrm{ReLU}}(1)=\tfrac12$ and $k_1=k_2=\kappa_{\mathrm{ReLU}}(-\tfrac12)$ with
+\begin{equation}\label{eq:nngp-relu-minus-half}
+k_1=k_2=\frac{1}{2\pi}\Big(\frac{\sqrt{3}}{2}-\frac{\pi}{6}\Big)=\frac{\sqrt{3}}{4\pi}-\frac{1}{12}.
+\end{equation}
+In particular $k_1=k_2$ and $k_0=k_3$, hence the $2\times 2$ system \eqref{eq:4pt-antisym-system} reduces to the scalar ODE
+\[
+\partial_\tau b(\tau)=-(k_0-k_1)\,b(\tau),\qquad b(0)=-A,
+\]
+so
+\begin{equation}\label{eq:4pt-relu-explicit}
+\hat y(t,x_2)=A+b(t)=A\Big(1-e^{-(k_0-k_1)\tau(t)}\Big),\qquad
+\hat y(t,x_3)=-A-b(t)=-A\Big(1-e^{-(k_0-k_1)\tau(t)}\Big),
+\end{equation}
+with the explicit rate
+\[
+k_0-k_1=\frac{1}{2}-\Big(\frac{\sqrt{3}}{4\pi}-\frac{1}{12}\Big)=\frac{7}{12}-\frac{\sqrt{3}}{4\pi}.
+\]
+
+\begin{lemma}[Exact learning curve for the two-sided step on the 4-point grid in the ReLU NNGP kernel regime]\label{lem:4pt-step-curve}
+In the 4-point dataset $x_1=0$, $x_2=\tfrac13$, $x_3=\tfrac23$, $x_4=1$ with $y=(0,A,-A,0)^\top$, assume the fixed-kernel gradient flow \eqref{eq:kernel-flow} with $\hat y(0)=0$ and the ReLU NNGP kernel \eqref{eq:nngp-relu} under the unit-circle embedding $x(t)=(\cos(2\pi t),\sin(2\pi t))$.
+Then the predictions at the two nonzero-label points satisfy the explicit learning curves
+\[
+\hat y(t,x_2)=A\Big(1-e^{-\lambda\,\tau(t)}\Big),\qquad
+\hat y(t,x_3)=-A\Big(1-e^{-\lambda\,\tau(t)}\Big),
+\qquad
+\lambda=\frac{7}{12}-\frac{\sqrt{3}}{4\pi},
+\]
+and $\hat y(t,x_1)=\hat y(t,x_4)=0$ for all $t$.
+In particular, the (normalized) step amplitude
+\[
+g(t)\equiv \frac{\hat y(t,x_2)}{A}=1-e^{-\lambda\,\tau(t)}
+\]
+increases monotonically from $0$ to $1$ at an exponential rate controlled by $\lambda$.
+\end{lemma}
+
+\begin{remark}[How to view this as a ``curve of $f_k$'' in the spike dictionary picture]
+In Step~5.2, in a diagonal-dominant regime the channel functions are superpositions of kernel bumps.
+On the 4-point step dataset, the target is supported on the two interior points $\{x_2,x_3\}$.
+If one is in a regime where the two channels specialize so that channel $1$ carries the positive spike and channel $2$ carries the negative spike, a natural idealized representation is
+\[
+f_1(t,x)\approx A\,g(t)\,\frac{K_{\mu_0}(x,x_2)}{K_{\mu_0}(x_2,x_2)},\qquad
+f_2(t,x)\approx -A\,g(t)\,\frac{K_{\mu_0}(x,x_3)}{K_{\mu_0}(x_3,x_3)},
+\]
+with the same scalar amplitude curve $g(t)=1-e^{-\lambda\tau(t)}$.
+For the ReLU NNGP kernel under the unit-circle embedding, this becomes an explicit bump shape on $t\in[0,1]$:
+for $x=x(t)$ and $x_p=x(t_p)$,
+\[
+K_{\mu_0}(x(t),x(t_p))=\kappa_{\mathrm{ReLU}}(\cos(2\pi(t-t_p))),
+\]
+so the entire shape of $f_1(t,\cdot)$ and $f_2(t,\cdot)$ is given in closed form by $\kappa_{\mathrm{ReLU}}$ and the scalar amplitude $g(t)$.
+The remaining mathematical task (handled by Step~4.5--Step~5.3) is to justify this specialization from the nonlinear mean-field dynamics, rather than postulating it.
+\end{remark}
+
+\begin{remark}[High-dimensional ``almost diagonal'' limit gives an even simpler closed form]
+If off-diagonal kernel entries are approximately equal (a common high-dimensional concentration pattern after centering), $k_1\approx k_2\approx k_3\approx k_{\mathrm{off}}$, then $o\approx 0$ and $d\approx 0$, hence $a(t)\approx 0$ and
+\[
+\hat y(t,x_2)\approx A\big(1-e^{-(k_0-k_{\mathrm{off}})\tau(t)}\big),\qquad \hat y(t,x_3)\approx -A\big(1-e^{-(k_0-k_{\mathrm{off}})\tau(t)}\big),
+\]
+so the ``frequency'' mode $(0,1,-1,0)$ is learned at rate $k_0-k_{\mathrm{off}}$.
+If moreover the features are mean-zero / centered so that $k_{\mathrm{off}}\approx 0$, then the four points essentially decouple and the learning rate is $\approx k_0$.
+\end{remark}
+
+\begin{remark}[What is ``fully solved'' and what remains model-specific]
+The formulas \eqref{eq:kernel-solution}--\eqref{eq:fourier-flow} are an exact closed-form solution \emph{once} one commits to a fixed kernel (NTK regime).
+The model-specific work is to justify that, in the MMNN low-rank mean-field dynamics, the relevant Gram operator is close to a fixed $K_{\mu_0}$ (or to quantify how gating makes it time-dependent).
+In the diagonal-dominant regime $K\approx \mathrm{diag}(K_{11},\dots,K_{nn})$, \eqref{eq:kernel-solution} reduces to $n$ independent scalar ODEs and step-like targets behave as collections of nearly independent ``spikes''.
+\end{remark}
+
+\subsection{Step 5.2: solving the mean-field $w_1$-PDE explicitly for finitely-supported data (and reducing spike learning to scalar ODEs)}
+\label{subsec:step52}
+
+We now go back from the fixed-kernel linearization (Step~5.1) to the actual mean-field equations for $(w_1,w_2)$.
+The key point is that the $w_1$ evolution is \emph{linear} in feature space once $B_k(t;\cdot)$ and the residual signal are fixed, so for finitely-supported data one can solve $\bar w_{1,k}$ and hence $f_k$ \emph{exactly} as a superposition of kernel bumps.
+
+\paragraph{Finite-support data and scalar coefficients.}
+Assume the input marginal is supported on finitely many points $x^{(1)},\dots,x^{(m)}$:
+\[
+X\in\{x^{(1)},\dots,x^{(m)}\},\qquad \Pp(X=x^{(p)})=\pi_p,\qquad p=1,\dots,m,
+\]
+with corresponding targets $y^{(p)}$.
+For each location $x^{(p)}$, write
+\[
+d_p(t)\equiv d_L\big((x^{(p)},y^{(p)});W(t)\big),\qquad B_{k,p}(t)\equiv B_k(t;x^{(p)}).
+\]
+Then \eqref{eq:barw-evol} becomes the explicit ODE (pointwise in $\theta$)
+\begin{equation}\label{eq:barw-finite-support}
+\partial_t \bar w_{1,k}(t,\theta)
+=-\xi_1(t)\sum_{p=1}^m \pi_p\,d_p(t)\,B_{k,p}(t)\,\varphi_1(\ip{\theta}{x^{(p)}}),
+\qquad k=1,\dots,r.
+\end{equation}
+Integrating \eqref{eq:barw-finite-support} in time yields the closed form
+\begin{equation}\label{eq:barw-solved}
+\bar w_{1,k}(t,\theta)
+=\bar w_{1,k}(0,\theta)-\sum_{p=1}^m \varphi_1(\ip{\theta}{x^{(p)}})\,\Gamma_{k,p}(t),
+\qquad
+\Gamma_{k,p}(t)\equiv \int_0^t \xi_1(s)\,\pi_p\,d_p(s)\,B_{k,p}(s)\,ds.
+\end{equation}
+Plugging \eqref{eq:barw-solved} into the definition of $f_k$ gives an explicit superposition in input space:
+\begin{equation}\label{eq:fk-superposition}
+f_k(t,x)=f_k(0,x)-\sum_{p=1}^m \Gamma_{k,p}(t)\,K_{\mu_0}(x,x^{(p)}),\qquad k=1,\dots,r.
+\end{equation}
+Thus, in finitely-supported settings, the \emph{spike shape} of each channel is completely controlled by the dictionary kernel $K_{\mu_0}$, while all learning dynamics reduce to the scalar coefficients $\Gamma_{k,p}(t)$.
+
+\paragraph{One-spike reduction (exact spike shape).}
+If $m=1$ with $x^{(1)}=x_\star$ (a single spike location), then \eqref{eq:fk-superposition} becomes
+\[
+f_k(t,x)=f_k(0,x)-\Gamma_{k,1}(t)\,K_{\mu_0}(x,x_\star).
+\]
+In particular, if $f_k(0,\cdot)\equiv 0$ then $f_k(t,\cdot)$ is \emph{exactly} a kernel bump at $x_\star$ for all $t$, and ``spike learning'' reduces to solving $\Gamma_{k,1}(t)$ (equivalently $f_k(t,x_\star)$).
+This makes precise why Step~5 depends on the localization of $K_{\mu_0}$: the dynamics can only create spikes to the extent that $K_{\mu_0}(x,x_\star)$ is itself localized.
+
+\paragraph{Two-sided step as a two-spike reduction.}
+A two-sided step can be idealized as two opposite-signed locations, $m=2$, e.g.\ $y^{(1)}=+A$ at $x^{(1)}=x_0$ and $y^{(2)}=-A$ at $x^{(2)}=x_1$.
+Then each channel has the exact representation
+\[
+f_k(t,x)=f_k(0,x)-\Gamma_{k,1}(t)\,K_{\mu_0}(x,x_0)-\Gamma_{k,2}(t)\,K_{\mu_0}(x,x_1).
+\]
+If $K_{\mu_0}$ is diagonal-dominant on $\{x_0,x_1\}$ (i.e.\ $|K_{\mu_0}(x_0,x_1)|\ll K_{\mu_0}(x_0,x_0)$), the two coefficients $(\Gamma_{k,1},\Gamma_{k,2})$ are only weakly coupled through the residuals, and one obtains two almost-independent ``local'' spike dynamics (one near $x_0$ and one near $x_1$).
+
+\paragraph{How to read ``instability at initialization'' in this formulation.}
+In this finite-support reduction, ``initialization is unstable'' toward specialization at a location $x^{(p)}$ means:
+starting from small but unequal coefficients $\Gamma_{k,p}(0)$ across $k$, the log-ratios
+\[
+R_{k\ell}(t,x^{(p)})=\log\frac{|f_k(t,x^{(p)})|+\varepsilon}{|f_\ell(t,x^{(p)})|+\varepsilon}
+\]
+grow because the per-capita gains (Step~4.5) generate a persistent gap.
+In the exact one-sparse spike regime of Lemma~\ref{lem:onesparse-reinforce}, this instability is extreme: all non-dominant channels satisfy $B_k(t)=0$ and hence $\Gamma_{k,p}(t)\equiv 0$, while the dominant channel has $B_j(t)>0$ and $\Gamma_{j,p}(t)$ grows in the descent direction as long as the residual has the appropriate sign.
+The remaining (hard) step beyond this exact regime is a stability estimate: if one channel is only \emph{approximately} dominant, then $B_k$ (hence $\Gamma_{k,p}$) is small but nonzero for $k\neq j$, yielding quantitative log-ratio growth rather than exact decoupling.
+
+\paragraph{Case $r=2$, two-spike setting, and ``slight dominance'' at one spike.}
+Take $r=2$ channels and $m=2$ spike locations $x^{(1)}=x_0$ and $x^{(2)}=x_1$ with opposite targets (two-sided step).
+Assume a diagonal-dominant local regime so that $K_{\mu_0}(x_0,x_1)$ is negligible compared to $K_{\mu_0}(x_0,x_0)$ and $K_{\mu_0}(x_1,x_1)$.
+If moreover $f_k(0,\cdot)\equiv 0$, then evaluating \eqref{eq:fk-superposition} at $x_0$ gives the local approximation
+\begin{equation}\label{eq:r2-local-amplitude}
+f_k(t,x_0)\approx -\,\Gamma_{k,1}(t)\,K_{\mu_0}(x_0,x_0),\qquad k=1,2,
+\end{equation}
+so ``channel 1 is slightly dominant at the spike $x_0$'' is the quantitative condition
+\[
+|f_1(t,x_0)|>|f_2(t,x_0)|\qquad\Longleftrightarrow\qquad |\Gamma_{1,1}(t)|>|\Gamma_{2,1}(t)|
+\]
+in the local approximation \eqref{eq:r2-local-amplitude}.
+To conclude that this dominance is self-reinforcing, one needs a \emph{stability} form of the one-sparse mechanism:
+the backprop signals satisfy a bound of the form $|B_{2,1}(t)|\ll |B_{1,1}(t)|$ whenever $|f_2(t,x_0)|\ll |f_1(t,x_0)|$.
+
+\begin{lemma}[A local log-ratio growth criterion for $r=2$]\label{lem:r2-logratio-criterion}
+\provedflag
+Fix the spike location $x_0$ and assume the local reduction \eqref{eq:local-fk} holds there:
+\[
+\partial_t f_k(t,x_0)=-\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,d_0(t)\,B_{k,1}(t),\qquad k=1,2,
+\]
+where $d_0(t)$ is the residual signal at $x_0$ and $B_{k,1}(t)=B_k(t;x_0)$.
+Assume there exists a constant $\rho\in[0,1)$ such that on a time interval $I$,
+\begin{equation}\label{eq:r2-stability-assumption}
+\big|B_{2,1}(t)\big|\le \rho\,\frac{|f_2(t,x_0)|+\varepsilon}{|f_1(t,x_0)|+\varepsilon}\,\big|B_{1,1}(t)\big|
+\qquad\text{for all }t\in I.
+\end{equation}
+If moreover $-d_0(t)\ge 0$ and $B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$ on $I$, then the log-ratio
+\[
+R_{12}(t,x_0)=\log\frac{|f_1(t,x_0)|+\varepsilon}{|f_2(t,x_0)|+\varepsilon}
+\]
+satisfies $\partial_t R_{12}(t,x_0)\ge (1-\rho)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|+\varepsilon}\ge 0$ for a.e.\ $t\in I$.
+In particular, any strict dominance at $t=t_0\in I$ cannot be lost on $I$ and is amplified whenever $|B_{1,1}|$ is not too small.
+\end{lemma}
+
+\proofinapp{lem:r2-logratio-criterion}
+\iffalse
+\begin{proof}
+By the exact identity \eqref{eq:logratio-identity} at $x=x_0$,
+\[
+\partial_t R_{12}(t,x_0)=\frac{\mathrm{sign}(f_1(t,x_0))\,\partial_t f_1(t,x_0)}{|f_1(t,x_0)|+\varepsilon}
+-\frac{\mathrm{sign}(f_2(t,x_0))\,\partial_t f_2(t,x_0)}{|f_2(t,x_0)|+\varepsilon}.
+\]
+Insert the local dynamics and use $-d_0(t)\ge 0$:
+\[
+\partial_t R_{12}(t,x_0)=\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\Big(
+\frac{\mathrm{sign}(f_1)B_{1,1}}{|f_1|+\varepsilon}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|+\varepsilon}\Big).
+\]
+By the sign assumption on $B_{1,1}$, $\mathrm{sign}(f_1)B_{1,1}=|B_{1,1}|$.
+Moreover $-\mathrm{sign}(f_2)B_{2,1}\ge -|B_{2,1}|$.
+Using \eqref{eq:r2-stability-assumption} yields
+\[
+\frac{|B_{1,1}|}{|f_1|+\varepsilon}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|+\varepsilon}
+\ge \frac{|B_{1,1}|}{|f_1|+\varepsilon}-\frac{|B_{2,1}|}{|f_2|+\varepsilon}
+\ge (1-\rho)\frac{|B_{1,1}|}{|f_1|+\varepsilon},
+\]
+which proves the claimed lower bound for $\partial_t R_{12}$.
+\end{proof}
+\fi
+
+\begin{lemma}[Two-sided step (two spikes): log-ratio growth at each spike under local decoupling]\label{lem:r2-twospike-step}
+Assume the two-sided step setting of Step~5.2 with $m=2$ spike locations $x^{(1)}=x_0$ and $x^{(2)}=x_1$, and take $r=2$ channels.
+Assume a diagonal-dominant regime so that the local reductions hold at each spike:
+for $p\in\{0,1\}$ and $k\in\{1,2\}$,
+\[
+\partial_t f_k(t,x_p)=-\xi_1(t)\,K_{\mu_0}(x_p,x_p)\,d_p(t)\,B_{k,p+1}(t),
+\]
+where $d_p(t)$ is the residual signal at $x_p$ and $B_{k,p+1}(t)=B_k(t;x^{(p+1)})$.
+Suppose that on a time interval $I$:
+\begin{itemize}
+\item $-d_0(t)\ge 0$ and $B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$, and there exists $\rho_0\in[0,1)$ such that
+\[
+|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|+\varepsilon}{|f_1(t,x_0)|+\varepsilon}\,|B_{1,1}(t)|,
+\]
+\item $-d_1(t)\ge 0$ and $B_{2,2}(t)$ has the same sign as $f_2(t,x_1)$, and there exists $\rho_1\in[0,1)$ such that
+\[
+|B_{1,2}(t)|\le \rho_1\,\frac{|f_1(t,x_1)|+\varepsilon}{|f_2(t,x_1)|+\varepsilon}\,|B_{2,2}(t)|.
+\]
+\end{itemize}
+Then the log-ratios at the two spikes satisfy, for a.e.\ $t\in I$,
+\[
+\partial_t R_{12}(t,x_0)\ge (1-\rho_0)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|+\varepsilon}\ge 0,
+\]
+and
+\[
+\partial_t R_{21}(t,x_1)\ge (1-\rho_1)\,\xi_1(t)\,K_{\mu_0}(x_1,x_1)\,(-d_1(t))\,\frac{|B_{2,2}(t)|}{|f_2(t,x_1)|+\varepsilon}\ge 0,
+\]
+where $R_{21}(t,x_1)=\log\frac{|f_2(t,x_1)|+\varepsilon}{|f_1(t,x_1)|+\varepsilon}$.
+In particular, any initial strict dominance of channel $1$ at $x_0$ and of channel $2$ at $x_1$ cannot be lost on $I$ and is amplified whenever the corresponding $|B|$ terms are not too small.
+\end{lemma}
+
+\begin{remark}[Why this is the ``step setup'' version of Lemma~\ref{lem:r2-logratio-criterion}]
+Lemma~\ref{lem:r2-logratio-criterion} gives a one-spike sufficient condition for winner-take-all (ratio growth) at a single location.
+Lemma~\ref{lem:r2-twospike-step} is the direct two-spike specialization: under local decoupling, one applies the same log-ratio calculus at both spike locations.
+The remaining model-specific work is therefore reduced to verifying the stability-type inequalities on $B$ (the ``$\rho<1$'' conditions) from the gating dynamics and the mixing structure.
+\end{remark}
+
+\begin{remark}[How \eqref{eq:r2-stability-assumption} can arise from a half-space gate]
+Condition \eqref{eq:r2-stability-assumption} is an abstract ``approximate one-sparse stability'' inequality.
+In the random-sign mixing picture, it is expected to hold when the gate $\1\{\ip{L_{C_2}}{f(t,x_0)}>0\}$ is largely determined by the dominant coordinate (here channel 1), so that the effective selection of $c_2$-indices creates a strong conditional bias for $B_{1,1}$ but only a weak (order $|f_2|/|f_1|$) bias for $B_{2,1}$.
+Making this fully rigorous requires quantitative control of the dependence of $w_2(t,C_2)$ on the small coordinate through \eqref{eq:spike-w2}; in the exact one-sparse regime of Lemma~\ref{lem:onesparse-reinforce} one has $\rho=0$.
+\end{remark}
+
+\subsection{Step 5.3: the full local $r=2$ spike dynamics for $(f_1,f_2)$, per-capita gains, and what can (and cannot) be ``solved''}
+\label{subsec:step53}
+
+This subsection writes the complete closed system at a spike location in the local regime and clarifies which structural assumptions allow an explicit solution or yield (non-)specialization.
+
+\paragraph{Local two-channel dynamics at one spike location.}
+Fix a spike location $x_0$ and assume a diagonal-dominant local regime so that $K_{\mu_0}(x_0,X)\approx K_{\mu_0}(x_0,x_0)\1\{X=x_0\}$.
+Write
+\[
+u_1(t)\equiv f_1(t,x_0),\qquad u_2(t)\equiv f_2(t,x_0),\qquad u(t)=(u_1(t),u_2(t))\in\R^2,
+\]
+and let $L_{c_2}=(L_{c_2,1},L_{c_2,2})\in\R^2$ be the frozen mixing vector for index $c_2$.
+Define the preactivation and gate at $x_0$:
+\[
+S(t,c_2)\equiv \ip{L_{c_2}}{u(t)},\qquad G(t,c_2)\equiv \1\{S(t,c_2)>0\}.
+\]
+For ReLU top activation $\varphi_2(u)=u_+$ and square loss at $(x_0,y_0)$, the local residual is $d_0(t)\equiv \hat y(t,x_0)-y_0$ with
+\begin{equation}\label{eq:r2-yhat-local}
+\hat y(t,x_0)=\E_{C_2}\!\big[w_2(t,C_2)\,S(t,C_2)\,G(t,C_2)\big].
+\end{equation}
+The backprop signals are
+\begin{equation}\label{eq:r2-B-local}
+B_k(t;x_0)=\E_{C_2}\!\big[L_{C_2,k}\,w_2(t,C_2)\,G(t,C_2)\big],\qquad k=1,2.
+\end{equation}
+Then the (local) channel dynamics are
+\begin{equation}\label{eq:r2-u-dynamics}
+\partial_t u_k(t)=-\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,d_0(t)\,B_k(t;x_0),\qquad k=1,2,
+\end{equation}
+and the top-layer mean-field dynamics are (finite-support reduction with one point)
+\begin{equation}\label{eq:r2-w2-dynamics}
+\partial_t w_2(t,c_2)=-\xi_2(t)\,d_0(t)\,S(t,c_2)\,G(t,c_2).
+\end{equation}
+Equations \eqref{eq:r2-yhat-local}--\eqref{eq:r2-w2-dynamics} are the complete closed ODE system for $(u(t),w_2(t,\cdot))$ at one spike location.
+
+\paragraph{Per-capita gains and log-ratio dynamics.}
+Define the log-ratio at $x_0$,
+\[
+R_{12}(t,x_0)=\log\frac{|u_1(t)|+\varepsilon}{|u_2(t)|+\varepsilon}.
+\]
+Combining \eqref{eq:logratio-identity} with \eqref{eq:r2-u-dynamics} yields the exact identity (a.e.\ in $t$)
+\begin{equation}\label{eq:r2-logratio-local}
+\partial_t R_{12}(t,x_0)
+=\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))
+\Big(\frac{\mathrm{sign}(u_1(t))\,B_1(t;x_0)}{|u_1(t)|+\varepsilon}-\frac{\mathrm{sign}(u_2(t))\,B_2(t;x_0)}{|u_2(t)|+\varepsilon}\Big).
+\end{equation}
+Thus the whole winner-take-all question at a spike reduces to comparing the \emph{per-capita gains}
+\[
+\gamma_k(t,x_0)\equiv \xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{\mathrm{sign}(u_k(t))\,B_k(t;x_0)}{|u_k(t)|+\varepsilon},\qquad k=1,2.
+\]
+
+\paragraph{What is explicitly solvable.}
+\begin{itemize}
+\item \emph{Exact one-sparse manifold.} If $u_2(0)=0$ and the mixing distribution is such that $B_2(t;x_0)=0$ whenever $u_2(t)=0$ (as in Lemma~\ref{lem:onesparse-reinforce}), then $u_2(t)\equiv 0$ and $u_1$ reduces to the scalar dynamics already solved in Lemma~\ref{lem:onesparse-reinforce} and Lemma~\ref{lem:lyapunov-onespike}.
+\item \emph{Fixed-kernel linearization.} If one replaces $(B_1,B_2)$ by a linear function of $u$ frozen at initialization, one recovers the matrix exponential solution of Step~5.1.
+\end{itemize}
+
+\paragraph{A useful warning: isotropic Gaussian mixing forces $B(t;x_0)$ to be parallel to $u(t)$ (no ratio dynamics).}
+The half-space mechanism alone does \emph{not} automatically create specialization when the mixing distribution is isotropic.
+The following lemma makes this precise.
+
+\begin{lemma}[Isotropic Gaussian mixing implies $B$ is colinear with $u$]\label{lem:isotropic-no-specialization}
+\provedflag
+Assume $L_{C_2}\sim\mathcal{N}(0,I_2)$ and that $w_2(t,C_2)$ is a measurable function of $S(t,C_2)=\ip{L_{C_2}}{u(t)}$ only, i.e.\ $w_2(t,C_2)=g_t(S(t,C_2))$ for some function $g_t:\R\to\R$.
+Then for any $u(t)\neq 0$,
+\[
+\big(B_1(t;x_0),B_2(t;x_0)\big)=c(t)\,u(t)
+\]
+for a scalar coefficient $c(t)$ depending on $u(t)$ only through $\|u(t)\|$ and on $g_t$ through $\E[Sg_t(S)\1\{S>0\}]$.
+Consequently, if $u_1(t),u_2(t)$ have the same sign, then the bracket in \eqref{eq:r2-logratio-local} vanishes and $R_{12}(t,x_0)$ is constant (no winner-take-all).
+\end{lemma}
+
+\proofinapp{lem:isotropic-no-specialization}
+\iffalse
+\begin{proof}
+Let $L\sim\mathcal{N}(0,I_2)$ and $S=\ip{L}{u}$.
+By Gaussian regression, $\E[L\mid S]=\frac{u}{\|u\|^2}S$.
+Therefore
+\[
+\E\!\big[L\,g_t(S)\,\1\{S>0\}\big]=\E\!\big[\E[L\mid S]\,g_t(S)\,\1\{S>0\}\big]
+=\frac{u}{\|u\|^2}\E\!\big[Sg_t(S)\,\1\{S>0\}\big],
+\]
+which proves colinearity.
+If $u_1,u_2$ have the same sign then $\mathrm{sign}(u_k)B_k=|B_k|$ and $|B_k|/(|u_k|+\varepsilon)$ is proportional to $|u_k|/(|u_k|+\varepsilon)$ with the same proportionality constant, so the difference in \eqref{eq:r2-logratio-local} cancels.
+\end{proof}
+\fi
+
+\begin{remark}[What this means for your experiments]
+Lemma~\ref{lem:isotropic-no-specialization} explains why proving specialization requires more than ``half-space gating + symmetry'':
+one needs either (i) non-isotropic / structured mixing $L$ (e.g.\ dictionary-like rows), or (ii) multi-spike interactions (different gates at different $x$ reshape $w_2$ in a way that breaks the $w_2=g(S)$ symmetry at a single location), or (iii) higher-layer structure beyond the one-spike reduction.
+In such settings, the stability hypothesis \eqref{eq:r2-stability-assumption} becomes plausible and yields strict log-ratio growth via Lemma~\ref{lem:r2-logratio-criterion}.
+\end{remark}
+
+\subsection{Step 5.4: seeding strict dominance by the first SGD step (channel-resolved NTK/linearization)}
+\label{subsec:step54}
+
+The previous steps show that \emph{if} one has strict dominance at each spike location and a stability bound of the form \eqref{eq:r2-stability-assumption}, then winner-take-all amplification follows.
+This subsection explains a complementary (and often simpler) mechanism to obtain the \emph{initial} strict dominance: the very first stochastic gradient step (finite-width, random initialization) typically produces a small but \emph{random} channel imbalance at each spike.
+One then bootstraps: first-step imbalance $\Rightarrow$ log-ratio becomes positive, and afterwards the continuous-time arguments apply.
+
+\paragraph{Discrete-time first step in the two-spike reduction.}
+Consider the two-spike (two-sided step) dataset with $x^{(1)}=x_0$, $x^{(2)}=x_1$ and $y^{(1)}=+A$, $y^{(2)}=-A$, and take $r=2$ channels.
+Assume a local/diagonal-dominant regime so that the evolution at each spike is governed primarily by the diagonal kernel values $K_{\mu_0}(x_p,x_p)$.
+Assume also that the initial prediction is close to $0$ at both spikes, so the initial residuals satisfy
+\[
+d_0(0)\approx -A,\qquad d_1(0)\approx +A,
+\]
+for square loss (underfitting at $x_0$ and overfitting at $x_1$ relative to $0$).
+
+Let $\eta>0$ be a (small) SGD step size and consider the first-step update of the channel values at the spikes under a channel-resolved linearization (freeze the kernel $K_{\mu_0}$ and the backprop signals $B_{k,p}(0)$ at initialization):
+\begin{equation}\label{eq:first-step-linearized}
+f_k^{+}(x_p)\equiv f_k(0,x_p)-\eta\,\xi_1(0)\,\pi_p\,d_p(0)\,B_{k,p}(0)\,K_{\mu_0}(x_p,x_p),
+\qquad k=1,2,\ \ p\in\{0,1\},
+\end{equation}
+where $\pi_p=\Pp(X=x_p)$ and $B_{k,p}(0)=B_k(0;x^{(p+1)})$.
+The precise update rule depends on the optimizer/minibatch, but \eqref{eq:first-step-linearized} captures the leading-order effect: the first step creates channel amplitudes proportional to the random initialization of $B_{k,p}(0)$.
+
+\begin{lemma}[First-step strict dominance occurs with constant probability under exchangeable initialization]\label{lem:first-step-dominance}
+\provedflag
+Assume that at initialization the random variables $(|B_{1,1}(0)|,|B_{2,1}(0)|)$ are i.i.d.\ with a continuous distribution, and likewise $(|B_{1,2}(0)|,|B_{2,2}(0)|)$ are i.i.d., independent of the first pair.
+Assume $f_k(0,x_p)=0$ and that \eqref{eq:first-step-linearized} holds with $K_{\mu_0}(x_p,x_p)>0$ and $\pi_p>0$.
+Then:
+\begin{itemize}
+\item at $x_0$, $\Pp\big(|f_1^{+}(x_0)|>|f_2^{+}(x_0)|\big)=\tfrac12$;
+\item at $x_1$, $\Pp\big(|f_2^{+}(x_1)|>|f_1^{+}(x_1)|\big)=\tfrac12$;
+\item consequently, the ``correct assignment'' event
+\[
+\mathcal{E}\equiv \{|f_1^{+}(x_0)|>|f_2^{+}(x_0)|\}\cap \{|f_2^{+}(x_1)|>|f_1^{+}(x_1)|\}
+\]
+has probability $\Pp(\mathcal{E})=\tfrac14$.
+\end{itemize}
+Moreover, on $\mathcal{E}$ the initial log-ratios are strictly positive:
+\[
+R_{12}(0^{+},x_0)=\log\frac{|f_1^{+}(x_0)|+\varepsilon}{|f_2^{+}(x_0)|+\varepsilon}>0,\qquad
+R_{21}(0^{+},x_1)=\log\frac{|f_2^{+}(x_1)|+\varepsilon}{|f_1^{+}(x_1)|+\varepsilon}>0.
+\]
+\end{lemma}
+
+\proofinapp{lem:first-step-dominance}
+\iffalse
+\begin{proof}
+From \eqref{eq:first-step-linearized} and $f_k(0,x_p)=0$, one has
+\[
+|f_k^{+}(x_p)|=\eta\,\xi_1(0)\,\pi_p\,|d_p(0)|\,K_{\mu_0}(x_p,x_p)\,|B_{k,p}(0)|.
+\]
+The prefactor does not depend on $k$, so comparing $|f_1^{+}(x_p)|$ and $|f_2^{+}(x_p)|$ is equivalent to comparing $|B_{1,p}(0)|$ and $|B_{2,p}(0)|$.
+By i.i.d.\ continuity, $\Pp(|B_{1,p}(0)|>|B_{2,p}(0)|)=\tfrac12$.
+Independence across spikes gives $\Pp(\mathcal{E})=\tfrac14$.
+Finally, strict inequalities imply the log-ratios at $0^{+}$ are positive for any $\varepsilon\ge 0$.
+\end{proof}
+\fi
+
+\begin{remark}[How this plugs into the continuous-time winner-take-all argument]
+Lemma~\ref{lem:first-step-dominance} is only a \emph{seeding} result: it produces an initial strict dominance with constant probability from exchangeable random initialization.
+To conclude that the dominance is \emph{amplified} over time, one then proves a stability bound of the form \eqref{eq:r2-stability-assumption} (or its two-spike version in Lemma~\ref{lem:r2-twospike-step}), which yields monotone log-ratio growth.
+This is exactly the bootstrap structure: first-step symmetry breaking $\Rightarrow$ ratios become positive $\Rightarrow$ stability implies ratios keep increasing.
+\end{remark}
+
+\subsection{Step 6: what is realistically provable first}
+
+A plausible first theorem is a \emph{symmetry-breaking / specialization} result:
+under sign-coherence and a diagonal-dominant kernel assumption, the symmetric state where channels are comparable becomes unstable and the dynamics drive $s_k(t,x)$ toward $\{0,1\}$ (one dominant channel) for most $x$.
+This already captures the observed ``different channels learn different slots'' effect, and it is robust to small perturbations (off-diagonal kernel terms) via Gr\"onwall and stability estimates.
+
+\section{Layer-wise spike sharpening and frequency growth across depth}
+\label{sec:layers-frequency}
+\openflag\ \textit{(this section describes a proposed mechanism and proof targets; the key assumptions are not yet proved).}
+
+This section targets the statement you want to prove.
+It does \emph{not} start by defining a Fourier cutoff and proving a generic localization inequality; instead it isolates the mean-field mechanism that can generate \emph{geometric harmonic growth} when fitting a highly oscillatory target.
+
+\subsection{What must be proved (informal statement)}
+
+When the target is highly oscillatory, the trained network exhibits layerwise partial functions that are increasingly oscillatory and increasingly spike-like.
+The proof goal is to show that, in a sign-coherent regime, the mean-field gradient-flow update acts (after averaging over the gate) like a \emph{sharpening operator} with gain strictly larger than $1$, so that a characteristic spatial scale shrinks geometrically across depth, yielding geometric growth of accessible frequencies.
+
+\subsection{A minimal 1D mean-field sharpening model}
+
+Work on a 1D periodic domain $\mathbb{T}$.
+Let $u^{(\ell)}(t,\cdot)$ denote an effective \emph{pre-ReLU} scalar field at depth $\ell$ (e.g.\ a dominant low-rank channel or a signed linear combination of channels).
+Define the \emph{post-ReLU} field $v^{(\ell)}(t,x)=\max\{u^{(\ell)}(t,x),0\}$.
+The empirical phenomenon is that if $u^{(\ell)}$ has many sign changes, then $v^{(\ell)}$ is supported on many short intervals, producing a collection of localized spikes.
+
+The mean-field gradient flow updates $u^{(\ell)}$ through a gated expectation of the schematic form
+\begin{equation}\label{eq:depth-operator-schematic}
+\partial_t u^{(\ell)}(t,\cdot)\approx -\,\mathcal{K}^{(\ell)}_t\Big(\,d(t,\cdot)\,\mathcal{G}^{(\ell)}_t[u^{(\ell)}(t,\cdot)]\,\Big),
+\end{equation}
+where $\mathcal{K}^{(\ell)}_t$ is a (layer-dependent) integral operator induced by the feature measure at depth $\ell$, $d(t,\cdot)$ is the residual, and $\mathcal{G}^{(\ell)}_t$ is a \emph{gate-induced} multiplication operator (coming from $\1\{S>0\}$ and its correlations with the low-rank coordinates).
+The point is that $\mathcal{G}^{(\ell)}_t$ is \emph{not} neutral: it biases updates toward the active set and can increase the effective slope/scale.
+
+\subsection{Half-space constants and why variance $2$ matters}
+
+The basic half-space constants are explicit.
+If $G\sim\mathcal{N}(0,2)$ then
+\begin{equation}\label{eq:gauss-abs-mean}
+\E|G|=\frac{2}{\sqrt{\pi}}>1,\qquad
+\E\!\big[G\,\1\{G>0\}\big]=\frac{1}{\sqrt{\pi}}.
+\end{equation}
+In the one-sparse / sign-coherent regimes used earlier, the conditional expectations over the gate reduce many vector-valued expressions to one-dimensional half-space averages.
+Equation \eqref{eq:gauss-abs-mean} is exactly the place where the ``variance $2$'' parameterization creates a gain constant $>1$.
+
+\subsection{A provable geometric harmonic-growth principle (template)}
+
+We now isolate a statement that captures the mechanism: \emph{gate bias increases an effective slope parameter}, and slope growth implies shrinking spike widths, hence higher resolvable frequencies.
+To avoid introducing new Fourier notation, we quantify oscillation by the number of sign changes and by a characteristic spike width.
+
+\begin{definition}[Spike-width proxy]\label{def:spike-width-proxy}
+For a nonnegative function $v:\mathbb{T}\to\mathbb{R}$ that is supported on a union of intervals, define its spike width proxy by
+\[
+h(v)\equiv \frac{\mathrm{Leb}\big(\mathrm{supp}(v)\big)}{N(v)},
+\]
+where $N(v)$ is the number of connected components of $\mathrm{supp}(v)$ and $\mathrm{Leb}$ denotes Lebesgue measure on $\mathbb{T}$.
+When $v=u_+$ for an oscillatory $u$, $N(v)$ is proportional to the number of positive excursions, and $h(v)$ measures the typical width of a spike.
+\end{definition}
+
+\begin{assumption}[Mean-field gate sharpening across depth]\label{assump:gate-sharpen}
+\openflag
+There exist deterministic constants $c_\ell>1$ such that, on a regime where a single dominant channel controls the gate, the depth-$\ell$ to depth-$(\ell+1)$ effective map satisfies the following implication:
+if $u^{(\ell)}(t,\cdot)$ has oscillation scale $h_\ell$ in the sense that $v^{(\ell)}(t,\cdot)=(u^{(\ell)}(t,\cdot))_+$ has spike width $h(v^{(\ell)}(t,\cdot))\approx h_\ell$, then $v^{(\ell+1)}(t,\cdot)$ satisfies
+\begin{equation}\label{eq:width-recursion}
+h\!\big(v^{(\ell+1)}(t,\cdot)\big)\ \lesssim\ \frac{1}{c_\ell}\,h\!\big(v^{(\ell)}(t,\cdot)\big),
+\qquad \text{with}\qquad c_\ell \approx \E|G|.
+\end{equation}
+\end{assumption}
+
+\begin{lemma}[Geometric shrinkage implies geometric frequency growth]\label{lem:geom-width-to-freq}
+\provedflag
+Assume \eqref{eq:width-recursion} holds along depths $1,\dots,L-1$ and that $c_\ell\ge c>1$ uniformly.
+Then the typical spike width satisfies $h(v^{(\ell)}(t,\cdot))\lesssim c^{-(\ell-1)} h(v^{(1)}(t,\cdot))$.
+In particular, the number of spikes satisfies
+\[
+N\!\big(v^{(\ell)}(t,\cdot)\big)\ \gtrsim\ c^{\ell-1}\,N\!\big(v^{(1)}(t,\cdot)\big)
+\quad\text{whenever}\quad \mathrm{Leb}(\mathrm{supp}(v^{(\ell)})) \text{ stays bounded below.}
+\]
+Thus, as depth increases, the representation necessarily contains structure at spatial scales of order $c^{-(\ell-1)}$, i.e.\ at frequencies of order $c^{\ell-1}$.
+\end{lemma}
+
+\proofinapp{lem:geom-width-to-freq}
+\iffalse
+\begin{proof}
+Iterate \eqref{eq:width-recursion} to obtain geometric shrinkage of $h$.
+Since $h(v)=\mathrm{Leb}(\mathrm{supp}(v))/N(v)$ by Definition~\ref{def:spike-width-proxy}, a lower bound on $\mathrm{Leb}(\mathrm{supp}(v^{(\ell)}))$ converts width shrinkage into growth of the number of connected components.
+\end{proof}
+\fi
+
+\begin{remark}[What remains to turn this into a theorem for your MMNN mean-field PDE]
+Lemma~\ref{lem:geom-width-to-freq} makes explicit what must be proved:
+the core task is to justify Assumption~\ref{assump:gate-sharpen} from the actual mean-field equations.
+Concretely, one needs to show that, when fitting an oscillatory target, the gate-induced operator $\mathcal{G}^{(\ell)}_t$ in \eqref{eq:depth-operator-schematic} increases an effective slope parameter by a factor comparable to $\E|G|$ (with $G\sim\mathcal{N}(0,2)$), and that this translates into the spike-width recursion \eqref{eq:width-recursion}.
+This is where the earlier sign-coherence / half-space bias lemmas are used: they reduce the gate statistics to one-dimensional half-space expectations, producing the gain constant in \eqref{eq:gauss-abs-mean}.
+\end{remark}
+
+\subsection{Dictionary viewpoint and the $2^L$ oscillation pattern (why depth is the right lens)}
+
+Your observation can be rephrased in a way that is much closer to existing ReLU theory:
+\emph{in 1D, deep ReLU networks represent splines whose number of breakpoints (hence oscillations) can grow exponentially with depth.}
+In the mean-field parameterization, the first layer already provides a universal dictionary; depth then controls how many times the input domain is \emph{folded/cut} by gates, which is what creates many alternating spikes.
+
+\paragraph{First layer as a universal dictionary.}
+On 1D inputs, the ridge dictionary $x\mapsto (x-b)_+$ is universal for piecewise-linear splines.
+In the mean-field limit, choosing a signed measure over biases $b$ and slopes is exactly choosing a (possibly very large) spline dictionary expansion.
+Thus the ``rank-$r$ components are basis functions'' intuition is correct: at each layer, a small number of channel mixtures selects and reweights a huge underlying dictionary.
+
+\paragraph{Depth creates exponentially many breakpoints.}
+The following is a standard expressivity fact in 1D: with ReLU, the function at each hidden unit is piecewise-linear, and each new layer can multiply the number of linear pieces.
+This yields an exponential-in-depth upper bound, and (by explicit constructions) an exponential-in-depth \emph{lower} bound is achievable.
+
+\begin{definition}[Oscillation count]\label{def:osc-count}
+For a continuous piecewise-linear function $f:\mathbb{T}\to\mathbb{R}$, let $\mathsf{osc}(f)$ denote the number of maximal intervals on which $f$ is affine (equivalently, one plus the number of breakpoints).
+This quantity controls the number of sign changes and the number of spikes after thresholding.
+\end{definition}
+
+\begin{lemma}[1D deep ReLU networks are splines with exponentially many pieces]\label{lem:1d-spline-exp}
+\provedflag
+Consider a standard fully-connected ReLU network on 1D input $x\in\mathbb{T}$, of width $m$ and depth $L$ (i.e.\ $L$ hidden layers), with scalar output.
+Then the realized function is continuous piecewise-linear and satisfies
+\[
+\mathsf{osc}(f)\ \le\ C\,m^L
+\]
+for a universal constant $C$ (e.g.\ one may take $C=2$).
+\end{lemma}
+
+\proofinapp{lem:1d-spline-exp}
+\iffalse
+\begin{proof}
+Each hidden unit computes $\sigma(g(x))$ where $g$ is a linear combination of previous-layer outputs.
+A linear combination of piecewise-linear functions is piecewise-linear with breakpoints contained in the union of the previous breakpoints, hence the number of pieces adds across units.
+Applying $\sigma(\cdot)=\max\{\cdot,0\}$ cannot create more breakpoints than the input piecewise-linear function has (it only clips on subsets of existing affine pieces and can add kinks only at zeros of $g$ inside affine pieces).
+An induction on layers yields $\mathsf{osc}$ growth at most by a factor $m$ per layer (up to constants), hence $\mathsf{osc}(f)\le C m^L$.
+\end{proof}
+\fi
+
+\begin{lemma}[Exponential oscillations are achievable (sawtooth / folding construction)]\label{lem:1d-osc-achieve}
+\provedflag
+There exist explicit ReLU networks on $x\in[0,1]$ whose output has $\mathsf{osc}(f)\ge 2^L$ after $L$ repeated ``folding'' steps.
+Moreover, such foldings can be implemented with constant width by using a small fixed ReLU gadget and stacking it $L$ times (equivalently, with depth proportional to $L$).
+\end{lemma}
+
+\proofinapp{lem:1d-osc-achieve}
+\iffalse
+\begin{proof}
+One may use the classical tent-map/sawtooth construction: a fixed piecewise-linear ``folding'' map doubles the number of linear pieces under composition, so after $L$ compositions the number of pieces is $2^L$.
+Each folding map is representable by a small ReLU network; stacking $L$ copies yields the claim.
+\end{proof}
+\fi
+
+\begin{remark}[Why this matches your ``one block $\approx$ two hidden layers'' convention]
+Many explicit folding constructions use a constant-size ReLU gadget whose implementation may take two affine--ReLU stages.
+If your notion of a ``layer'' corresponds to such a block (from input to the $r$ low-rank components, with gating/mixing inside), then the empirical pattern ``depth $L$ produces about $2^L$ oscillations'' is consistent with Lemma~\ref{lem:1d-osc-achieve}.
+For larger rank/width, the natural scaling is $\mathsf{osc}(f)$ of order $r^L$.
+\end{remark}
+
+\paragraph{What this reduces the training proof to.}
+The expressivity lemmas above do \emph{not} say that gradient flow will realize the worst-case oscillation count.
+But they strongly suggest the right invariant/proxy to analyze is not a Fourier cutoff: it is a \emph{knot/oscillation creation functional}, e.g.\ $\mathsf{osc}(u^{(\ell)})$ or a smooth surrogate such as $\mathrm{TV}(\partial_x u^{(\ell)})$.
+The mean-field task is then to show that, when the residual alternates sign at scale $\lambda^{-1}$, the gated dynamics create additional breakpoints at roughly that scale and that the gain constant in \eqref{eq:gauss-abs-mean} makes this process stable across depth.

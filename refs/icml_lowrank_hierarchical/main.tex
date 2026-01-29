@@ -1,0 +1,133 @@
+\documentclass{article}
+
+% we use ICML style
+\usepackage{icml2026}
+\usepackage{times}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% we define math macros
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\1}{\mathbbm{1}}
+\newcommand{\ip}[2]{\left\langle #1,\,#2 \right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\rank}{\text{rank}}
+\newcommand{\supp}{\text{supp}}
+\newcommand{\ReLU}{\text{ReLU}}
+\newcommand{\diag}{\text{diag}}
+\newcommand{\tr}{\text{tr}}
+\newcommand{\Span}{\text{Span}}
+
+% we define theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{remark}[theorem]{Remark}
+
+% we set hyperref options
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+% we set title and authors
+\icmltitlerunning{Hierarchical Feature Construction in Low-Rank Neural Networks}
+
+\begin{document}
+
+\twocolumn[
+  \icmltitle{Hierarchical Feature Construction in Low-Rank Neural Networks:\\
+    Experimental Evidence that Low-Rank Builds Features Hierarchically,\\
+    Otherwise It Builds Nothing}
+
+  % we use anonymous submission format
+  \icmlauthor{Anonymous Author(s)}{Anonymous Affiliation}
+]
+
+\begin{abstract}
+We provide experimental evidence that low-rank neural networks construct features hierarchically through sequential activation of frequency bands, while networks without low-rank constraints (or with rank too high) fail to build meaningful features. Our analysis reveals a fundamental dichotomy: in the extensive-rank regime ($r \asymp d^\beta$ for $\beta \in (0,1)$), training exhibits stepwise loss curves corresponding to hierarchical feature construction via band-by-band Fourier mode activation. In contrast, when rank is too high ($r \asymp d$ or full-rank), the network fails to develop hierarchical structure and instead learns flat, non-hierarchical representations. We connect this phenomenon to mean-field dynamics and show that instability near sharp minima acts as a reinforcement mechanism, driving the hierarchical construction process. Our experiments on synthetic and real-world datasets confirm that low-rank is not merely a parameter-efficient approximation, but a fundamental architectural choice that enables hierarchical feature learning.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+\input{sections/introduction}
+
+\section{Related Work}
+\label{sec:related}
+
+\input{sections/related}
+
+\section{Setup and Architecture}
+\label{sec:setup}
+
+\input{sections/setup}
+
+\section{Theoretical Results: Hierarchical Construction in Extensive-Rank Regime}
+\label{sec:theory}
+
+\input{sections/theory}
+
+\section{Experimental Results}
+\label{sec:experiments}
+
+\input{sections/experiments}
+
+\section{Instability as Reinforcement Mechanism}
+\label{sec:instability}
+
+\input{sections/instability}
+
+\section{Discussion and Implications}
+\label{sec:discussion}
+
+\input{sections/discussion}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+\input{sections/conclusion}
+
+\section*{Acknowledgments}
+We thank anonymous reviewers for their feedback.
+
+\bibliography{references}
+\bibliographystyle{icml2026}
+
+\appendix
+\section{Additional Theoretical Results}
+\label{app:theory}
+
+\input{appendix/theory}
+
+\section{Additional Experimental Details}
+\label{app:experiments}
+
+\input{appendix/experiments}
+
+\section{Proofs}
+\label{app:proofs}
+
+\input{appendix/proofs}
+
+\end{document}
