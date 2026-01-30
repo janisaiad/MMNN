@@ -56,18 +56,23 @@ def main(results_dir=None):
         config = data.get("config") or {}
         n_train = int(config.get("n_train", 0))
         batch_size = int(config.get("batch_size", 1))
+        num_epochs_planned = int(config.get("num_epochs", 0)) or len(all_losses)
         steps_per_epoch = (n_train + batch_size - 1) // batch_size
         # x = cumulative steps at end of each epoch (comparable across bs)
         steps = [(i + 1) * steps_per_epoch for i in range(len(all_losses))]
         steps = np.array(steps, dtype=float)
         losses = np.array(all_losses, dtype=float)
+        expected_total_steps = num_epochs_planned * steps_per_epoch
 
         fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
         ax.plot(steps, losses, color="C0", linewidth=0.9)
+        ax.set_xlim(0, expected_total_steps)
         ax.set_xlabel("gradient steps")
         ax.set_ylabel("loss")
         ax.set_yscale("log")
-        ax.set_title(run_dir.name, fontsize=12)
+        epochs_run = len(all_losses)
+        title = run_dir.name if epochs_run >= num_epochs_planned else f"{run_dir.name} ({epochs_run}/{num_epochs_planned} ep)"
+        ax.set_title(title, fontsize=12)
         ax.grid(True, alpha=0.3, which="both")
         fig.tight_layout()
         out_path = run_dir / "loss_curve.png"
