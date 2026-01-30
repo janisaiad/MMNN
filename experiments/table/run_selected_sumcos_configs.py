@@ -258,19 +258,23 @@ def train_one_selected(config, output_dir):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Rerun selected sumcos configs; optional low-lr long run.")
-    parser.add_argument("--low-lr-long", action="store_true", help="fixed lr=1e-4, 300k epochs; save params every 10 ep; output to results_sumcos_selected_rerun_lowlr")
+    parser.add_argument("--low-lr-long", action="store_true", help="fixed lr=1e-4; save params every 10 ep; output to results_sumcos_selected_rerun_lowlr")
     parser.add_argument("--only", type=str, default=None, metavar="CONFIG", help="run only this config (e.g. f3_N768_bs4_L3)")
+    parser.add_argument("--epochs", type=int, default=None, help="override num_epochs (e.g. 2000)")
+    parser.add_argument("--batch-sizes", type=str, default=None, help="comma-separated batch sizes (e.g. 1,16,32,128); with --only BASE run BASE N,L with each bs")
     args = parser.parse_args()
     low_lr_long = args.low_lr_long
     only_config = args.only
+    epochs_override = args.epochs
+    batch_sizes_str = args.batch_sizes
 
     if low_lr_long:
         out_dir_base = RESULTS_SELECTED_LOWLR_DIR
         lr_seq = [LOWLR_LR]
-        num_epochs = LOWLR_NUM_EPOCHS
+        num_epochs = epochs_override if epochs_override is not None else LOWLR_NUM_EPOCHS
         fixed_lr_only = True
         save_checkpoint_every_n_epochs = LOWLR_SAVE_EVERY_N_EPOCHS
-        print(f"SELECTED SUMCOS RERUN (low-lr long): lr={LOWLR_LR:.0e}, epochs={LOWLR_NUM_EPOCHS}")
+        print(f"SELECTED SUMCOS RERUN (low-lr long): lr={LOWLR_LR:.0e}, epochs={num_epochs}")
         print(f"  Fixed lr only; no LR divide policy. Save params every {save_checkpoint_every_n_epochs} epochs (for gif).")
         print(f"Output: {out_dir_base}")
     else:
@@ -285,29 +289,61 @@ def main():
 
     out_dir_base.mkdir(parents=True, exist_ok=True)
     configs = []
-    for c in SELECTED_SUMCOS_CONFIGS:
-        if only_config is not None and c["name"] != only_config:
-            continue
-        configs.append({
-            "name": c["name"],
-            "n_train": c["n_train"],
-            "batch_size": c["batch_size"],
-            "hidden_width": SWEEP_WIDTH,
-            "hidden_rank": SWEEP_RANK,
-            "num_layers": c["num_layers"],
-            "num_epochs": num_epochs,
-            "lr_sequence": lr_seq,
-            "lr_window": SWEEP_LR_WINDOW,
-            "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
-            "min_loss_divisor": SWEEP_MIN_LOSS_DIVISOR,
-            "lr_stop_below": SWEEP_LR_STOP_BELOW,
-            "momentum": 0.0,
-            "factor": FACTOR,
-            "fixed_lr_only": fixed_lr_only,
-            "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs if low_lr_long else 0,
-        })
+    if batch_sizes_str and only_config and low_lr_long:
+        batch_sizes_list = [int(x.strip()) for x in batch_sizes_str.split(",") if x.strip()]
+        base = next((c for c in SELECTED_SUMCOS_CONFIGS if c["name"] == only_config), None)
+        if base is None:
+            print("--only config not in SELECTED_SUMCOS_CONFIGS:", only_config)
+            return
+        n_train = base["n_train"]
+        num_layers = base["num_layers"]
+        for bs in batch_sizes_list:
+            if bs > n_train:
+                continue
+            name = f"f{FACTOR}_N{n_train}_bs{bs}_L{num_layers}"
+            configs.append({
+                "name": name,
+                "n_train": n_train,
+                "batch_size": bs,
+                "hidden_width": SWEEP_WIDTH,
+                "hidden_rank": SWEEP_RANK,
+                "num_layers": num_layers,
+                "num_epochs": num_epochs,
+                "lr_sequence": lr_seq,
+                "lr_window": SWEEP_LR_WINDOW,
+                "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
+                "min_loss_divisor": SWEEP_MIN_LOSS_DIVISOR,
+                "lr_stop_below": SWEEP_LR_STOP_BELOW,
+                "momentum": 0.0,
+                "factor": FACTOR,
+                "fixed_lr_only": fixed_lr_only,
+                "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs if low_lr_long else 0,
+            })
+        print(f"  batch_sizes={batch_sizes_list} (base {only_config})")
+    else:
+        for c in SELECTED_SUMCOS_CONFIGS:
+            if only_config is not None and c["name"] != only_config:
+                continue
+            configs.append({
+                "name": c["name"],
+                "n_train": c["n_train"],
+                "batch_size": c["batch_size"],
+                "hidden_width": SWEEP_WIDTH,
+                "hidden_rank": SWEEP_RANK,
+                "num_layers": c["num_layers"],
+                "num_epochs": num_epochs,
+                "lr_sequence": lr_seq,
+                "lr_window": SWEEP_LR_WINDOW,
+                "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
+                "min_loss_divisor": SWEEP_MIN_LOSS_DIVISOR,
+                "lr_stop_below": SWEEP_LR_STOP_BELOW,
+                "momentum": 0.0,
+                "factor": FACTOR,
+                "fixed_lr_only": fixed_lr_only,
+                "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs if low_lr_long else 0,
+            })
     if not configs:
-        print("no configs to run (check --only)")
+        print("no configs to run (check --only and --batch-sizes)")
         return
 
     for i, cfg in enumerate(configs, 1):
