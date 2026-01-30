@@ -25,10 +25,11 @@ _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_SELECTED_DIR = _TABLE / "results_sumcos_selected_rerun"
 RESULTS_SELECTED_LOWLR_DIR = _TABLE / "results_sumcos_selected_rerun_lowlr"
 RESULTS_TABLE_BELOW_1E2_DIR = _TABLE / "results_sumcos_lowlr_table_below_1e2"
+RESULTS_TABLE_BELOW_1E2_ADAM_DIR = _TABLE / "results_sumcos_lowlr_table_below_1e2_adam"
 TABLE_SUMCOS_CSV = _TABLE / "baseline_sweep_sumcos_results.csv"
 # when running from table below 1e-2 we use these batch sizes only (high to low)
 TABLE_BATCH_SIZES = [512, 128, 64, 16]
-TABLE_BELOW_NUM_EPOCHS = 1_500_000
+TABLE_BELOW_NUM_EPOCHS = 300_000
 # include these factors in table-below runs regardless of min_loss (e.g. factor 4 has no configs below 1e-2)
 TABLE_INCLUDE_FACTORS = [4]
 
@@ -147,7 +148,11 @@ def train_one_selected(config, output_dir):
     y_train_tensor = torch.tensor(y_train.reshape([-1, 1]), device=device, dtype=mydtype)
 
     lr_init = lr_sequence[0]
-    optimizer = optim.SGD(model.parameters(), lr=lr_init, momentum=momentum)
+    optimizer_name = (config.get("optimizer") or "sgd").lower()
+    if optimizer_name == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=lr_init)
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=lr_init, momentum=momentum)
 
     current_lr_index = 0
     last_reduction_epoch = -1
