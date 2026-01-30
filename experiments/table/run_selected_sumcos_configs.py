@@ -4,7 +4,9 @@ we rerun a fixed list of sumcos configs (factor 3) that worked well; we save par
 each LR divide and 10 epochs after each LR divide (2 saves per divide).
 usage: python run_selected_sumcos_configs.py           # default: lr 1e-2 with divide-by-2, 10k max epochs
         python run_selected_sumcos_configs.py --low-lr-long --only f3_N768_bs4_L3   # lr=1e-4 fixed, 300k ep, save params every 10 ep (for gif); run one config
+        python run_selected_sumcos_configs.py --from-table-below 1e-2   # extract configs with min_loss < 1e-2 from sumcos CSV; run lr=1e-4 long SGD, high-to-low bs
 """
+import csv
 import json
 import sys
 import time
@@ -22,6 +24,13 @@ sys.path.insert(0, str(_REPO_ROOT))
 _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_SELECTED_DIR = _TABLE / "results_sumcos_selected_rerun"
 RESULTS_SELECTED_LOWLR_DIR = _TABLE / "results_sumcos_selected_rerun_lowlr"
+RESULTS_TABLE_BELOW_1E2_DIR = _TABLE / "results_sumcos_lowlr_table_below_1e2"
+TABLE_SUMCOS_CSV = _TABLE / "baseline_sweep_sumcos_results.csv"
+# when running from table below 1e-2 we use these batch sizes only (high to low)
+TABLE_BATCH_SIZES = [512, 128, 64, 16]
+TABLE_BELOW_NUM_EPOCHS = 1_500_000
+# include these factors in table-below runs regardless of min_loss (e.g. factor 4 has no configs below 1e-2)
+TABLE_INCLUDE_FACTORS = [4]
 
 # low-lr long run: fixed lr 1e-4, 300k epochs (no LR decay); save params every 10 epochs for gif
 LOWLR_LR = 1e-4
@@ -61,6 +70,48 @@ SELECTED_SUMCOS_CONFIGS = [
 ]
 FACTOR = 3
 EPOCHS_AFTER_LR_DIVIDE = 10
+
+
+def load_configs_from_table_below(csv_path, min_loss_below, include_factors=None, sort_bs_high_to_low=True):
+    """we load configs from baseline sumcos CSV where min_loss < min_loss_below, or factor in include_factors (any min_loss); sort by batch_size descending (high to low)."""
+    include_factors = set(include_factors or [])
+    rows = []
+    seen = set()  # (factor, n_train, bs, num_layers) to avoid duplicates when both conditions match
+    with open(csv_path, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = row.get("name", "").strip()
+            try:
+                factor = int(row.get("factor", 0))
+                n_train = int(row.get("N", 0))
+                bs = int(row.get("bs", 0))
+                num_layers = int(row.get("L", 0))
+            except (ValueError, TypeError):
+                continue
+            key = (factor, n_train, bs, num_layers)
+            if key in seen:
+                continue
+            min_loss_str = row.get("min_loss", "").strip()
+            try:
+                min_loss = float(min_loss_str) if min_loss_str else float("inf")
+            except ValueError:
+                min_loss = float("inf")
+            include_by_loss = np.isfinite(min_loss) and min_loss < min_loss_below
+            include_by_factor = factor in include_factors
+            if not (include_by_loss or include_by_factor):
+                continue
+            seen.add(key)
+            rows.append({
+                "name": name,
+                "factor": factor,
+                "n_train": n_train,
+                "batch_size": bs,
+                "num_layers": num_layers,
+                "min_loss": min_loss,
+            })
+    if sort_bs_high_to_low:
+        rows.sort(key=lambda r: (-r["batch_size"], r["name"]))
+    return rows
 
 
 def train_one_selected(config, output_dir):
@@ -262,19 +313,32 @@ def main():
     parser.add_argument("--only", type=str, default=None, metavar="CONFIG", help="run only this config (e.g. f3_N768_bs4_L3)")
     parser.add_argument("--epochs", type=int, default=None, help="override num_epochs (e.g. 2000)")
     parser.add_argument("--batch-sizes", type=str, default=None, help="comma-separated batch sizes (e.g. 1,16,32,128); with --only BASE run BASE N,L with each bs")
+    parser.add_argument("--from-table-below", type=float, default=None, metavar="THRESH", help="extract configs from sumcos CSV with min_loss < THRESH (e.g. 0.01); run lr=1e-4 long SGD, high-to-low bs; implies --low-lr-long")
+    parser.add_argument("--table-csv", type=Path, default=None, help="path to baseline sumcos CSV (default: baseline_sweep_sumcos_results.csv)")
     args = parser.parse_args()
     low_lr_long = args.low_lr_long
     only_config = args.only
     epochs_override = args.epochs
     batch_sizes_str = args.batch_sizes
+    from_table_below = args.from_table_below
+    table_csv = args.table_csv or TABLE_SUMCOS_CSV
+
+    if from_table_below is not None:
+        low_lr_long = True
 
     if low_lr_long:
-        out_dir_base = RESULTS_SELECTED_LOWLR_DIR
+        if from_table_below is not None and epochs_override is None:
+            num_epochs = TABLE_BELOW_NUM_EPOCHS
+        else:
+            num_epochs = epochs_override if epochs_override is not None else LOWLR_NUM_EPOCHS
         lr_seq = [LOWLR_LR]
-        num_epochs = epochs_override if epochs_override is not None else LOWLR_NUM_EPOCHS
         fixed_lr_only = True
         save_checkpoint_every_n_epochs = LOWLR_SAVE_EVERY_N_EPOCHS
-        print(f"SELECTED SUMCOS RERUN (low-lr long): lr={LOWLR_LR:.0e}, epochs={num_epochs}")
+        if from_table_below is not None:
+            out_dir_base = RESULTS_TABLE_BELOW_1E2_DIR
+            print(f"TABLE BELOW {from_table_below}: lr={LOWLR_LR:.0e}, epochs={num_epochs}; high-to-low bs.")
+        else:
+            out_dir_base = RESULTS_SELECTED_LOWLR_DIR
         print(f"  Fixed lr only; no LR divide policy. Save params every {save_checkpoint_every_n_epochs} epochs (for gif).")
         print(f"Output: {out_dir_base}")
     else:
@@ -289,7 +353,45 @@ def main():
 
     out_dir_base.mkdir(parents=True, exist_ok=True)
     configs = []
-    if batch_sizes_str and only_config and low_lr_long:
+    if from_table_below is not None:
+        if not table_csv.exists():
+            print("table CSV not found:", table_csv)
+            return
+        rows = load_configs_from_table_below(table_csv, from_table_below, include_factors=TABLE_INCLUDE_FACTORS, sort_bs_high_to_low=True)
+        if not rows:
+            print("no configs with min_loss <", from_table_below, "in", table_csv)
+            return
+        # we expand each table row into runs with batch sizes 512, 128, 64, 16 (high to low); skip bs > n_train
+        for r in rows:
+            n_train = r["n_train"]
+            num_layers = r["num_layers"]
+            factor = r["factor"]
+            for bs in TABLE_BATCH_SIZES:
+                if bs > n_train:
+                    continue
+                name = f"f{factor}_N{n_train}_bs{bs}_L{num_layers}"
+                configs.append({
+                    "name": name,
+                    "n_train": n_train,
+                    "batch_size": bs,
+                    "hidden_width": SWEEP_WIDTH,
+                    "hidden_rank": SWEEP_RANK,
+                    "num_layers": num_layers,
+                    "num_epochs": num_epochs,
+                    "lr_sequence": lr_seq,
+                    "lr_window": SWEEP_LR_WINDOW,
+                    "min_epochs_before_reduce": SWEEP_LR_MIN_EPOCHS_BEFORE_REDUCE,
+                    "min_loss_divisor": SWEEP_MIN_LOSS_DIVISOR,
+                    "lr_stop_below": SWEEP_LR_STOP_BELOW,
+                    "momentum": 0.0,
+                    "factor": factor,
+                    "fixed_lr_only": fixed_lr_only,
+                    "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs,
+                })
+        # order: bs 512 first, then 128, 64, 16 (already in TABLE_BATCH_SIZES order; configs built row-by-row then bs, so sort by -batch_size then name)
+        configs.sort(key=lambda c: (-c["batch_size"], c["name"]))
+        print(f"  loaded {len(rows)} base configs (min_loss < {from_table_below} or factor in {TABLE_INCLUDE_FACTORS}); expanded to {len(configs)} runs with bs={TABLE_BATCH_SIZES} (high-to-low)")
+    elif batch_sizes_str and only_config and low_lr_long:
         batch_sizes_list = [int(x.strip()) for x in batch_sizes_str.split(",") if x.strip()]
         base = next((c for c in SELECTED_SUMCOS_CONFIGS if c["name"] == only_config), None)
         if base is None:
