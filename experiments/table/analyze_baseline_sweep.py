@@ -21,6 +21,14 @@ RESULTS_DIR_SUMCOS = _BASE / "results_baseline_sweep_sumcos"
 OUT_MD_SUMCOS = _BASE / "baseline_sweep_sumcos_summary.md"
 OUT_CSV_SUMCOS = _BASE / "baseline_sweep_sumcos_results.csv"
 OUT_HIST_PNG_SUMCOS = _BASE / "baseline_sweep_sumcos_loss_histogram.png"
+RESULTS_DIR_SUMCOS_RANK5 = _BASE / "results_baseline_sweep_sumcos_rank5"
+OUT_MD_SUMCOS_RANK5 = _BASE / "baseline_sweep_sumcos_rank5_summary.md"
+OUT_CSV_SUMCOS_RANK5 = _BASE / "baseline_sweep_sumcos_rank5_results.csv"
+OUT_HIST_PNG_SUMCOS_RANK5 = _BASE / "baseline_sweep_sumcos_rank5_loss_histogram.png"
+RESULTS_DIR_SUMCOS_RANK20 = _BASE / "results_baseline_sweep_sumcos_rank20"
+OUT_MD_SUMCOS_RANK20 = _BASE / "baseline_sweep_sumcos_rank20_summary.md"
+OUT_CSV_SUMCOS_RANK20 = _BASE / "baseline_sweep_sumcos_rank20_results.csv"
+OUT_HIST_PNG_SUMCOS_RANK20 = _BASE / "baseline_sweep_sumcos_rank20_loss_histogram.png"
 RESULTS_DIR_EXPCOS = _BASE / "results_baseline_sweep_expcos"
 OUT_MD_EXPCOS = _BASE / "baseline_sweep_expcos_summary.md"
 OUT_CSV_EXPCOS = _BASE / "baseline_sweep_expcos_results.csv"
@@ -74,7 +82,7 @@ def load_all():
     return rows
 
 
-def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_variant=None):
+def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_variant=None, rank_label=None):
     global RESULTS_DIR, OUT_MD, OUT_CSV, OUT_HIST_PNG
     if results_dir is not None:
         RESULTS_DIR = results_dir
@@ -89,6 +97,9 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_v
         sweep_variant = "expcos"
     if sweep_variant is None and "sumcos" in str(out_hist_png or ""):
         sweep_variant = "sumcos"
+    if not RESULTS_DIR.exists():
+        print("results dir not found:", RESULTS_DIR)
+        return
     rows = load_all()
     if not rows:
         print("no results found in", RESULTS_DIR)
@@ -256,6 +267,8 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_v
         for j in range(len(factors), 2):
             axes_flat[j].set_visible(False)
     suptitle = "Expcos: min loss per factor ($\\sum_{k=0}^{f} \\cos(2^k \\pi x)$)" if is_expcos else "Histogram of min loss per factor (min over epochs)"
+    if rank_label is not None and not is_expcos:
+        suptitle += f" — rank {rank_label}"
     plt.suptitle(suptitle)
     plt.tight_layout()
     plt.savefig(OUT_HIST_PNG, dpi=300, bbox_inches="tight")
@@ -280,11 +293,17 @@ def main(results_dir=None, out_md=None, out_csv=None, out_hist_png=None, sweep_v
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="Analyze baseline sweep results; optionally use sumcos or expcos results.")
-    ap.add_argument("--sumcos", action="store_true", help="use results_baseline_sweep_sumcos (target = sum_{k=1}^{factor} cos(2 pi k x))")
+    ap.add_argument("--sumcos", action="store_true", help="use results_baseline_sweep_sumcos (target = sum_{k=1}^{factor} cos(2 pi k x)); rank=10")
+    ap.add_argument("--sumcos-rank5", action="store_true", help="use results_baseline_sweep_sumcos_rank5 (same sumcos target, hidden_rank=5)")
+    ap.add_argument("--sumcos-rank20", action="store_true", help="use results_baseline_sweep_sumcos_rank20 (same sumcos target, hidden_rank=20)")
     ap.add_argument("--expcos", action="store_true", help="use results_baseline_sweep_expcos (target = sum_{k=0}^{factor} cos(2^k pi x)); factor 3 and 4 only; different histogram style")
     args = ap.parse_args()
     if args.expcos:
         main(results_dir=RESULTS_DIR_EXPCOS, out_md=OUT_MD_EXPCOS, out_csv=OUT_CSV_EXPCOS, out_hist_png=OUT_HIST_PNG_EXPCOS, sweep_variant="expcos")
+    elif getattr(args, "sumcos_rank20", False):
+        main(results_dir=RESULTS_DIR_SUMCOS_RANK20, out_md=OUT_MD_SUMCOS_RANK20, out_csv=OUT_CSV_SUMCOS_RANK20, out_hist_png=OUT_HIST_PNG_SUMCOS_RANK20, sweep_variant="sumcos", rank_label=20)
+    elif getattr(args, "sumcos_rank5", False):
+        main(results_dir=RESULTS_DIR_SUMCOS_RANK5, out_md=OUT_MD_SUMCOS_RANK5, out_csv=OUT_CSV_SUMCOS_RANK5, out_hist_png=OUT_HIST_PNG_SUMCOS_RANK5, sweep_variant="sumcos", rank_label=5)
     elif args.sumcos:
         main(results_dir=RESULTS_DIR_SUMCOS, out_md=OUT_MD_SUMCOS, out_csv=OUT_CSV_SUMCOS, out_hist_png=OUT_HIST_PNG_SUMCOS)
     else:

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
 we plot for a baseline sweep run: (1) function to fit, (2) model prediction if params saved, (3) loss curve.
-usage: python plot_baseline_sweep_run.py f3_N768_bs4_L3 [--results-dir results_baseline_sweep_sumcos]
+usage:
+  python plot_baseline_sweep_run.py f3_N768_bs4_L3 [--results-dir results_baseline_sweep_sumcos]
+  python plot_baseline_sweep_run.py --rank 5 [--results-dir results_baseline_sweep_sumcos]   # plot all runs with hidden_rank=5
 """
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -43,23 +46,14 @@ def setup_mpl():
     mpl.rcParams["ytick.minor.visible"] = True
 
 
-def main():
-    run_name = sys.argv[1] if len(sys.argv) > 1 else "f3_N768_bs4_L3"
-    base = Path(__file__).resolve().parent
-    results_dir = base / "results_baseline_sweep_sumcos"
-    if "--results-dir" in sys.argv:
-        i = sys.argv.index("--results-dir")
-        if i + 1 < len(sys.argv):
-            results_dir = base / sys.argv[i + 1]
-    run_dir = results_dir / run_name
-    if not run_dir.is_dir():
-        print("run dir not found:", run_dir)
-        return
+def plot_run(run_dir: Path, results_dir: Path) -> bool:
+    """plot a single run; returns True on success."""
+    run_name = run_dir.name
     config_path = run_dir / "config.json"
     losses_path = run_dir / "losses.json"
     if not config_path.exists() or not losses_path.exists():
-        print("config.json or losses.json not found in", run_dir)
-        return
+        print("config.json or losses.json not found in", run_dir, "(skipping)")
+        return False
     with open(config_path) as f:
         config = json.load(f)
     with open(losses_path) as f:
@@ -135,6 +129,50 @@ def main():
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
     print("saved", out_path)
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(description="plot baseline sweep run(s)")
+    parser.add_argument("run_name", nargs="?", default="f3_N768_bs4_L3", help="run name or omit with --rank")
+    parser.add_argument("--results-dir", default="results_baseline_sweep_sumcos", help="results directory name")
+    parser.add_argument("--rank", type=int, default=None, help="plot all runs with this hidden_rank (ignores run_name)")
+    args = parser.parse_args()
+
+    base = Path(__file__).resolve().parent
+    results_dir = base / args.results_dir
+    if not results_dir.is_dir():
+        print("results dir not found:", results_dir)
+        return
+
+    if args.rank is not None:
+        # we find all run dirs with config.json and hidden_rank == args.rank
+        run_names = []
+        for d in sorted(results_dir.iterdir()):
+            if not d.is_dir():
+                continue
+            config_path = d / "config.json"
+            if not config_path.exists():
+                continue
+            with open(config_path) as f:
+                config = json.load(f)
+            if int(config.get("hidden_rank", 10)) == args.rank:
+                run_names.append(d.name)
+        if not run_names:
+            print(f"no runs with hidden_rank={args.rank} in", results_dir)
+            return
+        print(f"plotting {len(run_names)} runs with hidden_rank={args.rank}")
+        ok = 0
+        for run_name in run_names:
+            if plot_run(results_dir / run_name, results_dir):
+                ok += 1
+        print(f"done: {ok}/{len(run_names)} plots saved")
+    else:
+        run_dir = results_dir / args.run_name
+        if not run_dir.is_dir():
+            print("run dir not found:", run_dir)
+            return
+        plot_run(run_dir, results_dir)
 
 
 if __name__ == "__main__":
