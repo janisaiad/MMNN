@@ -43,42 +43,49 @@ _BASE = Path(__file__).resolve().parent
 PLATEAU_DIR = _BASE
 DEFAULT_CONFIG_PATH = _REPO / "experiments" / "table" / "results_sumcos_selected_rerun_lowlr" / "f3_N768_bs128_L3" / "config.json"
 
-LR_LIST = [1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3]
-BATCH_SIZES = [1, 16, 128]
+# we run with decreasing lr (largest first): 1e-2 down to 1e-4; stop at epoch 0.7/lr per run
+LR_LIST = [1e-2, 5e-3, 2e-3, 1e-3, 5e-4, 2e-4, 1e-4]
+# we run with growing batch size: 1, 2, 4, 8, 16, 32, 64, 128 (powers of 2)
+BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128]
 ESCAPE_THRESHOLD = 1.2e-2
 MAX_EPOCHS = 500_000
+# we stop each run at epoch 4/lr (capped by MAX_EPOCHS)
+MAX_EPOCHS_PER_LR_FACTOR = 4.0
 SEED = 42
 X_LOC = 0.0
 EPS_LOG = 1e-6
 # we cap log-ratio checkpoints so long runs stay fast (was causing ~2 s/epoch when checkpointing every 5)
 MAX_LOGratio_CHECKPOINTS = 500
 
-# we store log-ratio distribution every N epochs; larger interval for high lr to avoid 10k+ checkpoints
+# we store log-ratio distribution every N epochs (2x more checkpoints than before)
 LR_TO_CHECKPOINT_EVERY: dict[float, int] = {
-    1e-4: 100,
-    2e-4: 50,
-    5e-4: 25,
-    1e-3: 20,
-    2e-3: 25,
-    5e-3: 50,
+    1e-4: 50,
+    2e-4: 25,
+    5e-4: 12,
+    1e-3: 10,
+    2e-3: 12,
+    5e-3: 25,
+    1e-2: 5,
 }
 
 
 def checkpoint_every_for_lr(lr: float) -> int:
-    """return epoch interval for saving log-ratio distribution for this lr."""
+    """return epoch interval for saving log-ratio distribution for this lr (2x more checkpoints)."""
     if lr in LR_TO_CHECKPOINT_EVERY:
         return LR_TO_CHECKPOINT_EVERY[lr]
     if lr <= 1e-4:
-        return 100
-    if lr <= 2e-4:
         return 50
+    if lr <= 2e-4:
+        return 25
     if lr <= 5e-4:
-        return 25
+        return 12
     if lr <= 1e-3:
-        return 20
+        return 10
     if lr <= 2e-3:
+        return 12
+    if lr <= 5e-3:
         return 25
-    return 50
+    return 5
 
 
 def get_partial_fk_at_block(
@@ -255,6 +262,16 @@ def run_one(
                 f_k_2nd = get_partial_fk_at_block(model, X_LOC, device, dtype, block_index=1)
                 pairs_2nd = compute_log_ratio_pairs(f_k_2nd, eps=EPS_LOG)
                 logratio_values_2nd_list.append(pairs_2nd.copy())
+            # we save incrementally so interrupted runs (or early escape) still have log-ratio data
+            n_check = len(logratio_epochs_list)
+            if n_check == 1 or n_check % 5 == 0:
+                epochs_arr = np.array(logratio_epochs_list, dtype=np.int64)
+                values_arr = np.stack(logratio_values_list, axis=0)
+                np.save(output_dir / "logratio_epochs.npy", epochs_arr)
+                np.save(output_dir / "logratio_values.npy", values_arr)
+                if logratio_values_2nd_list:
+                    values_2nd_arr = np.stack(logratio_values_2nd_list, axis=0)
+                    np.save(output_dir / "logratio_values_2nd.npy", values_2nd_arr)
 
         if epoch_loss < threshold:
             escaped = True
@@ -302,19 +319,26 @@ def make_logratio_gif(
     """
     epochs_path = run_dir / "logratio_epochs.npy"
     values_path = run_dir / values_filename
+    gif_path = run_dir / gif_filename
+    if gif_path.exists():
+        return
     if not epochs_path.exists() or not values_path.exists():
         return
     if imageio is None:
         print("imageio not available; skipping log-ratio GIF")
         return
-    epochs = np.load(epochs_path)
-    values = np.load(values_path)
+    try:
+        epochs = np.load(epochs_path)
+        values = np.load(values_path)
+    except Exception as e:
+        print(f"skip gif {run_dir.name}: load failed: {e}")
+        return
     if epochs.size == 0 or values.size == 0:
         return
+    values = np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
     mpl.rcParams["font.size"] = 11
-    mpl.rcParams["mathtext.fontset"] = "cm"
-    mpl.rcParams["axes.formatter.limits"] = (-6, 6)
-    mpl.rcParams["axes.formatter.use_mathtext"] = True
+    mpl.rcParams["mathtext.fontset"] = "dejavusans"
+    mpl.rcParams["axes.formatter.use_mathtext"] = False
     mpl.rcParams["font.family"] = "serif"
     frames: list[np.ndarray] = []
     vmin = float(np.nanmin(values))
@@ -326,7 +350,7 @@ def make_logratio_gif(
     for t in range(len(epochs)):
         fig, ax = plt.subplots(1, 1, figsize=(6, 4))
         ax.hist(values[t], bins=nbins, color="steelblue", alpha=0.8, edgecolor="white", range=(vmin, vmax))
-        ax.set_xlabel(r"$R_{i,j}(x=0) = \log|f_i| - \log|f_j|$")
+        ax.set_xlabel("R_ij(x=0)  [log|fi| - log|fj|]")
         ax.set_ylabel("count")
         ax.set_title(f"{title_prefix}  epoch {int(epochs[t])}")
         ax.grid(True, alpha=0.3)
@@ -337,7 +361,6 @@ def make_logratio_gif(
         buf.seek(0)
         frames.append(imageio.imread(buf))
         buf.close()
-    gif_path = run_dir / gif_filename
     imageio.mimsave(str(gif_path), frames, duration=0.15, loop=0)
     print("saved", gif_path)
 
@@ -358,15 +381,20 @@ def plot_logratio_trajectories(
     values_path = run_dir / values_filename
     if not epochs_path.exists() or not values_path.exists():
         return
-    epochs = np.load(epochs_path)
-    values = np.load(values_path)
+    try:
+        epochs = np.load(epochs_path)
+        values = np.load(values_path)
+    except Exception as e:
+        print(f"skip {run_dir.name}: load failed: {e}")
+        return
     if epochs.size == 0 or values.size == 0:
         return
+    values = np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
     n_pairs = values.shape[1]
     mpl.rcParams["font.size"] = 11
-    mpl.rcParams["mathtext.fontset"] = "cm"
+    mpl.rcParams["mathtext.fontset"] = "dejavusans"
     mpl.rcParams["axes.formatter.limits"] = (-6, 6)
-    mpl.rcParams["axes.formatter.use_mathtext"] = True
+    mpl.rcParams["axes.formatter.use_mathtext"] = False
     mpl.rcParams["font.family"] = "serif"
     fig, ax = plt.subplots(1, 1, figsize=(8, 5))
     if n_pairs <= max_curves:
@@ -376,17 +404,21 @@ def plot_logratio_trajectories(
         mean_ = np.nanmean(values, axis=1)
         std_ = np.nanstd(values, axis=1)
         ax.fill_between(epochs, mean_ - std_, mean_ + std_, alpha=0.3, color="steelblue")
-        ax.plot(epochs, mean_, color="steelblue", linewidth=1.5, label=r"mean $\pm$ std")
+        ax.plot(epochs, mean_, color="steelblue", linewidth=1.5, label="mean +/- std")
         ax.legend()
     ax.set_xlabel("Epoch")
-    ax.set_ylabel(r"$R_{i,j}(x=0)$")
+    ax.set_ylabel("R_ij(x=0)  [log|fi| - log|fj|]")
     ax.set_title(f"Log-ratio trajectories  {run_name}{layer_suffix}  ({n_pairs} pairs)")
     ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    out_path = run_dir / plot_filename
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print("saved", out_path)
+    try:
+        plt.tight_layout()
+        out_path = run_dir / plot_filename
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print("saved", out_path)
+    except Exception as e:
+        plt.close(fig)
+        print(f"skip {run_dir.name} {plot_filename}: plot failed: {e}")
 
 
 def main() -> None:
@@ -422,14 +454,15 @@ def main() -> None:
                     continue
                 run_name = f"lr{lr:.0e}_bs{bs}".replace(".", "")
                 run_dir = out_dir / run_name
-                print(f"run {run_name}")
+                max_epochs_run = min(args.max_epochs, max(1, int(MAX_EPOCHS_PER_LR_FACTOR / lr)))
+                print(f"run {run_name} (max_epochs={max_epochs_run})")
                 res = run_one(
                     base_config=base_config,
                     lr=lr,
                     batch_size=bs,
                     output_dir=run_dir,
                     threshold=args.threshold,
-                    max_epochs=args.max_epochs,
+                    max_epochs=max_epochs_run,
                     seed=SEED,
                 )
                 res["lr"] = lr
@@ -465,62 +498,129 @@ def main() -> None:
             run_name = f"lr{lr:.0e}_bs{bs}".replace(".", "")
             run_dir = out_dir / run_name
             if (run_dir / "logratio_values.npy").exists():
-                make_logratio_gif(run_dir, run_name, gif_filename="logratio_distribution.gif")
-                plot_logratio_trajectories(run_dir, run_name, plot_filename="logratio_trajectories.png")
+                try:
+                    make_logratio_gif(run_dir, run_name, gif_filename="logratio_distribution.gif")
+                except Exception as e:
+                    print(f"skip gif {run_name}: {e}")
+                try:
+                    plot_logratio_trajectories(run_dir, run_name, plot_filename="logratio_trajectories.png")
+                except Exception as e:
+                    print(f"skip plot {run_name}: {e}")
             if (run_dir / "logratio_values_2nd.npy").exists():
-                make_logratio_gif(
-                    run_dir,
-                    run_name,
-                    layer_suffix=" (2nd layer)",
-                    values_filename="logratio_values_2nd.npy",
-                    gif_filename="logratio_distribution_2nd.gif",
-                )
-                plot_logratio_trajectories(
-                    run_dir,
-                    run_name,
-                    layer_suffix=" (2nd layer)",
-                    values_filename="logratio_values_2nd.npy",
-                    plot_filename="logratio_trajectories_2nd.png",
-                )
+                try:
+                    make_logratio_gif(
+                        run_dir,
+                        run_name,
+                        layer_suffix=" (2nd layer)",
+                        values_filename="logratio_values_2nd.npy",
+                        gif_filename="logratio_distribution_2nd.gif",
+                    )
+                except Exception as e:
+                    print(f"skip gif 2nd {run_name}: {e}")
+                try:
+                    plot_logratio_trajectories(
+                        run_dir,
+                        run_name,
+                        layer_suffix=" (2nd layer)",
+                        values_filename="logratio_values_2nd.npy",
+                        plot_filename="logratio_trajectories_2nd.png",
+                    )
+                except Exception as e:
+                    print(f"skip plot 2nd {run_name}: {e}")
 
     # plot: epochs_to_escape vs lr (log-log), one curve per batch size
     mpl.rcParams["font.size"] = 11
-    mpl.rcParams["mathtext.fontset"] = "cm"
-    mpl.rcParams["axes.formatter.limits"] = (-6, 6)
-    mpl.rcParams["axes.formatter.use_mathtext"] = True
+    mpl.rcParams["mathtext.fontset"] = "dejavusans"
+    mpl.rcParams["axes.formatter.use_mathtext"] = False
     mpl.rcParams["font.family"] = "serif"
+    try:
+        fig1, ax1 = plt.subplots(1, 1, figsize=(7, 5))
+        bs128_points = None
+        for bs in BATCH_SIZES:
+            points = [(r["lr"], r["epochs_to_escape"]) for r in results_grid if r["batch_size"] == bs and r.get("escaped") and r.get("epochs_to_escape") is not None]
+            if not points:
+                continue
+            lrs = [p[0] for p in points]
+            ep = [p[1] for p in points]
+            ax1.loglog(lrs, ep, "o-", label=f"bs={bs}", linewidth=1.5, markersize=6)
+            if bs == 128:
+                bs128_points = (lrs, ep)
+        # scaling law for bs=128: fit epochs ~ lr^exponent in log-log (log(ep) = a + exponent*log(lr))
+        if bs128_points is not None and len(bs128_points[0]) >= 2:
+            lrs_b = np.array(bs128_points[0], dtype=float)
+            ep_b = np.array(bs128_points[1], dtype=float)
+            log_lr = np.log(lrs_b)
+            log_ep = np.log(ep_b)
+            slope, intercept = np.polyfit(log_lr, log_ep, 1)
+            lr_fit = np.linspace(min(lrs_b), max(lrs_b), 50)
+            ep_fit = np.exp(intercept) * (lr_fit ** slope)
+            ax1.loglog(lr_fit, ep_fit, "--", color="black", linewidth=1.2, alpha=0.7)
+            ax1.text(0.05, 0.95, f"bs=128 scaling: epochs ~ lr^{slope:.2f}", transform=ax1.transAxes, fontsize=10, verticalalignment="top", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+        ax1.set_xlabel("learning rate")
+        ax1.set_ylabel("epochs to escape plateau")
+        ax1.set_title(f"Time to escape plateau vs LR (loss < {args.threshold:.2e})")
+        ax1.legend()
+        ax1.grid(True, alpha=0.3, which="both")
+        plt.tight_layout()
+        fig1.savefig(out_dir / "epochs_to_escape_vs_lr.png", dpi=150, bbox_inches="tight")
+        plt.close(fig1)
+        print("saved", out_dir / "epochs_to_escape_vs_lr.png")
+    except Exception as e:
+        print(f"skip epochs_to_escape_vs_lr.png: {e}")
 
-    fig1, ax1 = plt.subplots(1, 1, figsize=(7, 5))
-    for bs in BATCH_SIZES:
-        points = [(r["lr"], r["epochs_to_escape"]) for r in results_grid if r["batch_size"] == bs and r.get("escaped") and r.get("epochs_to_escape") is not None]
-        if not points:
-            continue
-        lrs = [p[0] for p in points]
-        ep = [p[1] for p in points]
-        ax1.loglog(lrs, ep, "o-", label=f"bs={bs}", linewidth=1.5, markersize=6)
-    ax1.set_xlabel(r"learning rate")
-    ax1.set_ylabel(r"epochs to escape plateau")
-    ax1.set_title(r"Time to escape plateau vs LR (loss $<$ " + f"{args.threshold:.2e}" + r")")
-    ax1.legend()
-    ax1.grid(True, alpha=0.3, which="both")
-    plt.tight_layout()
-    fig1.savefig(out_dir / "epochs_to_escape_vs_lr.png", dpi=150, bbox_inches="tight")
-    plt.close(fig1)
-    print("saved", out_dir / "epochs_to_escape_vs_lr.png")
+    # plot: epochs_to_escape vs batch size, one curve per lr; scaling law for lr=1e-3 and bs>10
+    try:
+        fig_bs, ax_bs = plt.subplots(1, 1, figsize=(7, 5))
+        lr1e3_points = None
+        for lr in LR_LIST:
+            points = [(r["batch_size"], r["epochs_to_escape"]) for r in results_grid if r["lr"] == lr and r.get("escaped") and r.get("epochs_to_escape") is not None]
+            if not points:
+                continue
+            bss = [p[0] for p in points]
+            ep = [p[1] for p in points]
+            ax_bs.loglog(bss, ep, "o-", label=f"lr={lr:.0e}", linewidth=1.5, markersize=6)
+            if lr == 1e-3:
+                lr1e3_points = (bss, ep)
+        # scaling law for lr=1e-3, bs>10: fit epochs ~ bs^exponent in log-log
+        if lr1e3_points is not None:
+            bss_b = np.array([b for b in lr1e3_points[0] if b > 10], dtype=float)
+            ep_b = np.array([ep for b, ep in zip(lr1e3_points[0], lr1e3_points[1]) if b > 10], dtype=float)
+            if len(bss_b) >= 2:
+                log_bs = np.log(bss_b)
+                log_ep = np.log(ep_b)
+                slope, intercept = np.polyfit(log_bs, log_ep, 1)
+                bs_fit = np.linspace(min(bss_b), max(bss_b), 50)
+                ep_fit = np.exp(intercept) * (bs_fit ** slope)
+                ax_bs.loglog(bs_fit, ep_fit, "--", color="black", linewidth=1.2, alpha=0.7)
+                ax_bs.text(0.05, 0.95, f"lr=1e-3 (bs>10): epochs ~ bs^{slope:.2f}", transform=ax_bs.transAxes, fontsize=10, verticalalignment="top", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+        ax_bs.set_xlabel("batch size")
+        ax_bs.set_ylabel("epochs to escape plateau")
+        ax_bs.set_title(f"Time to escape plateau vs batch size (loss < {args.threshold:.2e})")
+        ax_bs.legend()
+        ax_bs.grid(True, alpha=0.3, which="both")
+        plt.tight_layout()
+        fig_bs.savefig(out_dir / "epochs_to_escape_vs_bs.png", dpi=150, bbox_inches="tight")
+        plt.close(fig_bs)
+        print("saved", out_dir / "epochs_to_escape_vs_bs.png")
+    except Exception as e:
+        print(f"skip epochs_to_escape_vs_bs.png: {e}")
 
     # histogram of norm_diff (only escaped runs)
     norms = [r["norm_diff"] for r in results_grid if r.get("escaped") and isinstance(r.get("norm_diff"), (int, float)) and not math.isnan(r["norm_diff"])]
     if norms:
-        fig2, ax2 = plt.subplots(1, 1, figsize=(7, 5))
-        ax2.hist(norms, bins=min(20, max(5, len(norms))), color="steelblue", alpha=0.8, edgecolor="white")
-        ax2.set_xlabel(r"$\|\theta_{\mathrm{escape}} - \theta_{\mathrm{init}}\|_2$")
-        ax2.set_ylabel("count")
-        ax2.set_title("Histogram of param norm at plateau escape")
-        ax2.grid(True, alpha=0.3)
-        plt.tight_layout()
-        fig2.savefig(out_dir / "histogram_norm_diff.png", dpi=150, bbox_inches="tight")
-        plt.close(fig2)
-        print("saved", out_dir / "histogram_norm_diff.png")
+        try:
+            fig2, ax2 = plt.subplots(1, 1, figsize=(7, 5))
+            ax2.hist(norms, bins=min(20, max(5, len(norms))), color="steelblue", alpha=0.8, edgecolor="white")
+            ax2.set_xlabel("||theta_escape - theta_init||_2")
+            ax2.set_ylabel("count")
+            ax2.set_title("Histogram of param norm at plateau escape")
+            ax2.grid(True, alpha=0.3)
+            plt.tight_layout()
+            fig2.savefig(out_dir / "histogram_norm_diff.png", dpi=150, bbox_inches="tight")
+            plt.close(fig2)
+            print("saved", out_dir / "histogram_norm_diff.png")
+        except Exception as e:
+            print(f"skip histogram_norm_diff.png: {e}")
     else:
         print("no escaped runs with norm_diff for histogram")
 
