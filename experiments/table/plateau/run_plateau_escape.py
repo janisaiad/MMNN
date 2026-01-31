@@ -45,9 +45,9 @@ DEFAULT_CONFIG_PATH = _REPO / "experiments" / "table" / "results_sumcos_selected
 
 # we run with decreasing lr (largest first): 1e-2 down to 1e-4; stop at epoch 0.7/lr per run
 LR_LIST = [1e-2, 5e-3, 2e-3, 1e-3, 5e-4, 2e-4, 1e-4]
-# we run with growing batch size: 1, 2, 4, 8, 16, 32, 64, 128 (powers of 2)
-BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128]
-ESCAPE_THRESHOLD = 1.2e-2
+# we run with batch size 4 only; escape threshold 1e-1
+BATCH_SIZES = [4]
+ESCAPE_THRESHOLD = 1e-1
 MAX_EPOCHS = 500_000
 # we stop each run at epoch 4/lr (capped by MAX_EPOCHS)
 MAX_EPOCHS_PER_LR_FACTOR = 4.0
@@ -278,7 +278,8 @@ def run_one(
             escape_epoch = epoch + 1
             break
 
-    # we save log-ratio trajectories for GIF and trajectory plot (last and 2nd layer)
+    # we save log-ratio trajectories and plot right away (so plots exist after each run, not only at end)
+    run_name = output_dir.name
     if logratio_epochs_list:
         epochs_arr = np.array(logratio_epochs_list, dtype=np.int64)
         values_arr = np.stack(logratio_values_list, axis=0)
@@ -287,6 +288,21 @@ def run_one(
         if logratio_values_2nd_list:
             values_2nd_arr = np.stack(logratio_values_2nd_list, axis=0)
             np.save(output_dir / "logratio_values_2nd.npy", values_2nd_arr)
+        try:
+            plot_logratio_trajectories(output_dir, run_name, plot_filename="logratio_trajectories.png")
+        except Exception as e:
+            print(f"skip plot {run_name}: {e}")
+        if logratio_values_2nd_list:
+            try:
+                plot_logratio_trajectories(
+                    output_dir,
+                    run_name,
+                    layer_suffix=" (2nd layer)",
+                    values_filename="logratio_values_2nd.npy",
+                    plot_filename="logratio_trajectories_2nd.png",
+                )
+            except Exception as e:
+                print(f"skip plot 2nd {run_name}: {e}")
 
     norm_diff = param_norm_diff(init_state, model.state_dict(), device) if escaped else float("nan")
     results = {
@@ -421,6 +437,52 @@ def plot_logratio_trajectories(
         print(f"skip {run_dir.name} {plot_filename}: plot failed: {e}")
 
 
+def plot_loss_curve(run_dir: Path, run_name: str) -> None:
+    """
+    we plot loss vs epoch for this run; load from losses.npy or results.json all_losses.
+    """
+    losses_arr: np.ndarray | None = None
+    if (run_dir / "losses.npy").exists():
+        try:
+            losses_arr = np.load(run_dir / "losses.npy")
+        except Exception:
+            pass
+    if losses_arr is None or losses_arr.size == 0:
+        res_path = run_dir / "results.json"
+        if not res_path.exists():
+            return
+        try:
+            with open(res_path) as f:
+                res = json.load(f)
+            all_losses = res.get("all_losses")
+            if not all_losses or "..." in str(all_losses):
+                return
+            losses_arr = np.array([float(x) for x in all_losses if isinstance(x, (int, float))], dtype=np.float64)
+        except Exception:
+            return
+    if losses_arr.size == 0:
+        return
+    epochs = np.arange(len(losses_arr), dtype=np.int64)
+    mpl.rcParams["font.size"] = 11
+    mpl.rcParams["mathtext.fontset"] = "dejavusans"
+    mpl.rcParams["axes.formatter.use_mathtext"] = False
+    mpl.rcParams["font.family"] = "serif"
+    try:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 5))
+        ax.plot(epochs, losses_arr, "b-", linewidth=0.8, alpha=0.9)
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Loss (MSE)")
+        ax.set_title(f"Loss curve  {run_name}")
+        ax.grid(True, alpha=0.3)
+        ax.set_yscale("log")
+        plt.tight_layout()
+        fig.savefig(run_dir / "loss_curve.png", dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print("saved", run_dir / "loss_curve.png")
+    except Exception as e:
+        print(f"skip loss_curve {run_name}: {e}")
+
+
 def main() -> None:
     import argparse
     ap = argparse.ArgumentParser(description="Plateau escape: train until loss < threshold, measure epochs and param norm diff.")
@@ -429,10 +491,36 @@ def main() -> None:
     ap.add_argument("--max-epochs", type=int, default=MAX_EPOCHS, help="max epochs per run")
     ap.add_argument("--out-dir", type=Path, default=PLATEAU_DIR, help="output dir (default: plateau/)")
     ap.add_argument("--skip-train", action="store_true", help="skip training, only plot from existing results")
+    ap.add_argument("--plot-logratio-only", action="store_true", help="only plot log-ratio GIFs and trajectories for run dirs that have logratio_values.npy; then exit")
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.plot_logratio_only:
+        for run_dir in sorted(out_dir.iterdir()):
+            if not run_dir.is_dir():
+                continue
+            run_name = run_dir.name
+            if not (run_dir / "logratio_values.npy").exists():
+                continue
+            try:
+                plot_logratio_trajectories(run_dir, run_name, plot_filename="logratio_trajectories.png")
+            except Exception as e:
+                print(f"skip plot {run_name}: {e}")
+            if (run_dir / "logratio_values_2nd.npy").exists():
+                try:
+                    plot_logratio_trajectories(
+                        run_dir,
+                        run_name,
+                        layer_suffix=" (2nd layer)",
+                        values_filename="logratio_values_2nd.npy",
+                        plot_filename="logratio_trajectories_2nd.png",
+                    )
+                except Exception as e:
+                    print(f"skip plot 2nd {run_name}: {e}")
+        print("done (log-ratio plots only). output:", out_dir)
+        return
 
     if args.config.exists():
         with open(args.config) as f:
@@ -499,24 +587,10 @@ def main() -> None:
             run_dir = out_dir / run_name
             if (run_dir / "logratio_values.npy").exists():
                 try:
-                    make_logratio_gif(run_dir, run_name, gif_filename="logratio_distribution.gif")
-                except Exception as e:
-                    print(f"skip gif {run_name}: {e}")
-                try:
                     plot_logratio_trajectories(run_dir, run_name, plot_filename="logratio_trajectories.png")
                 except Exception as e:
                     print(f"skip plot {run_name}: {e}")
             if (run_dir / "logratio_values_2nd.npy").exists():
-                try:
-                    make_logratio_gif(
-                        run_dir,
-                        run_name,
-                        layer_suffix=" (2nd layer)",
-                        values_filename="logratio_values_2nd.npy",
-                        gif_filename="logratio_distribution_2nd.gif",
-                    )
-                except Exception as e:
-                    print(f"skip gif 2nd {run_name}: {e}")
                 try:
                     plot_logratio_trajectories(
                         run_dir,
