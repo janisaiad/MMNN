@@ -68,8 +68,14 @@ def main():
     out_dir_base = RESULTS_TABLE_BELOW_1E2_ADAM_DIR if use_adam else RESULTS_TABLE_BELOW_1E2_DIR
     out_dir_base.mkdir(parents=True, exist_ok=True)
 
+    # one run per (factor, N, L) per batch size; table has one row per (factor, N, bs_orig, L) so dedupe by (factor, N, L)
+    seen_base = set()
     configs = []
     for r in rows:
+        key = (r["factor"], r["n_train"], r["num_layers"])
+        if key in seen_base:
+            continue
+        seen_base.add(key)
         n_train = r["n_train"]
         num_layers = r["num_layers"]
         factor = r["factor"]
@@ -96,11 +102,12 @@ def main():
                 "save_checkpoint_every_n_epochs": save_checkpoint_every_n_epochs,
                 "optimizer": "adam" if use_adam else "sgd",
             })
-    configs.sort(key=lambda c: (-c["batch_size"], c["name"]))
+    # high factor first (4, 3, 2, 1), then high bs, then name
+    configs.sort(key=lambda c: (-c["factor"], -c["batch_size"], c["name"]))
 
     opt_str = "Adam" if use_adam else "SGD"
     print(f"TABLE BELOW {MIN_LOSS_BELOW}: {opt_str}, lr={LOWLR_LR:.0e}, epochs={num_epochs}; fixed lr; save every {save_checkpoint_every_n_epochs} ep (for gif).")
-    print(f"  include factors {TABLE_INCLUDE_FACTORS} regardless of min_loss; {len(rows)} base configs -> {len(configs)} runs with bs={batch_sizes} (high-to-low).")
+    print(f"  include factors {TABLE_INCLUDE_FACTORS} regardless of min_loss; {len(seen_base)} unique (factor,N,L) -> {len(configs)} runs with bs={batch_sizes} (factor 4 first, then high-to-low bs).")
     print(f"Output: {out_dir_base}")
 
     for i, cfg in enumerate(configs, 1):
