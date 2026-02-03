@@ -6,10 +6,10 @@ We now state the main result characterizing the NTK recursion for MMNNs. This re
 Under NTK parameterization \( 1/\sqrt{\bm{n}_\ell} \) and a sequential limit \( \bm{n}_1\to\infty,\dots,\bm{n}_L\to\infty \) with \( \bm{w}^{(\ell)} \sim \mathcal{N}(0, \mathbf{I}_{\bm{d}_{\ell-1}}) \) i.i.d. frozen after initialization, the layer-\( \ell \) NTK satisfies
 \begin{align}
 \Kop^{(0)}(x,x') \;&=\; 0, \\
-\Kop^{(\ell)}(x,x') \;&=\; 1+ \Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x')\;+\;\Sigma^{(\ell)}(x,x'),\quad \ell\ge1,
+\Kop^{(1)}(x,x') \;&=\; 1 + \Sigma^{(1)}(x,x'), \\
+\Kop^{(\ell)}(x,x') \;&=\; 1 + \frac{1}{r}\,\Kop^{(\ell-1)}(x,x')\cdot\dot{\Sigma}^{(\ell)}(x,x')\;+\;\frac{1}{r}\,\Sigma^{(\ell)}(x,x'),\quad \ell\ge2,
 \end{align}
-
-For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with the rank \( r \) of bottlenecks.
+where the factor \( 1/r \) appears for bottleneck layers \( \ell \ge 2 \) (low-rank regime). For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with the rank \( r \) of bottlenecks.
 
 \vspace{0.2cm}
 Furthermore, the gradient flow dynamics in the NTK regime satisfy
@@ -34,18 +34,18 @@ We can now derive an explicit closed-form expression for the NTK at any depth by
 Under the assumptions of Theorem~\ref{thm:ntk_recursion}, for any \( L\ge1 \), the NTK admits the explicit form:
 \begin{equation}
 \label{eq:ntk_explicit_form}
-\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
+\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \frac{1}{r^{L-\ell}}\left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \frac{1}{r^{\max(1,L-\ell)}}\,\Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
 \end{equation}
-where the first sum represents contributions from the bias terms \( +1 \) at each layer \( \ell=1,\dots,L \), each multiplied by all subsequent derivative kernels, and we use the convention that an empty product equals 1.
+where the first sum has bias contributions (empty product \( = 1 \) when \( \ell=L \)) and the second has fresh-basis contributions; each bottleneck layer contributes a factor \( 1/r \). For \( L=2 \): \( \Kop^{(2)} = 1 + \frac{1}{r}(\dot{\Sigma}^{(2)} + \Sigma^{(1)}\dot{\Sigma}^{(2)} + \Sigma^{(2)}) \).
 \end{corollary}
 
 \begin{remark}
-Equivalently, expanding the recursion \( \Kop^{(\ell)} = 1 + \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \) yields a quadratic number of terms. For example, for \( L=3 \):
+Equivalently, expanding the recursion yields a quadratic number of terms. For example, for \( L=3 \):
 \begin{align}
-\Kop^{(3)}(x,x') &= \dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \dot{\Sigma}^{(3)} + 1 \nonumber\\
-&\quad + \Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \Sigma^{(3)}.
+\Kop^{(3)}(x,x') &= 1 + \frac{1}{r}\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\dot{\Sigma}^{(3)} \nonumber\\
+&\quad + \frac{1}{r^2}\Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(3)}.
 \end{align}
-The first three terms (from the first sum with \( \ell=1,2,3 \)) come from the \( +1 \) contributions at layers 1, 2, and 3, each multiplied by all subsequent derivative kernels. The last three terms (from the second sum with \( \ell=1,2,3 \)) come from the \( \Sigma^{(\ell)} \) contributions, each multiplied by subsequent derivative kernels. In total, there are \( 2L = 6 \) terms for \( L=3 \).
+Each bottleneck layer contributes a factor \( 1/r \); layer 1 has no such factor. In total, there are \( 2L \) terms for depth \( L \).
 \end{remark}
 
 \begin{proof}
@@ -55,12 +55,63 @@ By expanding the recursion in Theorem~\ref{thm:ntk_recursion}. See Appendix~\ref
 
 \vspace{0.3cm}
 \paragraph{Structure at depth \( L \).}
-Iterating the recursion \( \Kop^{(\ell)} = 1 + \Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \Sigma^{(\ell)} \) yields a quadratic number of terms. From the explicit form \eqref{eq:ntk_explicit_form}, we see two types of contributions:
+Iterating the recursion yields a quadratic number of terms. From the explicit form \eqref{eq:ntk_explicit_form}, we see two types of contributions:
 \begin{itemize}
-    \item \textbf{Bias terms:} Each layer's \( +1 \) contribution multiplies through all subsequent derivative kernels, giving \( L \) terms of the form \( \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)} \) for \( \ell=1,\dots,L \).
-    \item \textbf{Fresh basis terms:} Each layer's \( \Sigma^{(\ell)} \) contribution propagates through subsequent derivative kernels, giving \( L \) terms of the form \( \Sigma^{(\ell)}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)} \) for \( \ell=1,\dots,L \).
+    \item \textbf{Bias terms:} Each layer's \( +1 \) contribution multiplies by \( 1/r^{L-\ell} \) (for bottleneck layers) and through all subsequent derivative kernels, giving \( L \) terms.
+    \item \textbf{Fresh basis terms:} Each layer's \( \Sigma^{(\ell)} \) contribution carries \( 1/r^{L-\ell} \) and propagates through subsequent derivative kernels, giving \( L \) terms.
 \end{itemize}
 In total, the expansion contains \( 2L \) terms, each representing a different path through the network architecture. This linear growth in the number of terms (with respect to depth) becomes quadratic when considering all combinations of terms in finite-width corrections, making explicit computation and analysis very difficult to handle for deep networks.
+
+\vspace{0.4cm}
+\subsection{Large-depth regime: probabilistic kernel and exponential decay}
+\label{subsec:large-depth}
+
+We now outline how to adapt the recursion for large depth \( L \), focusing on the probabilistic (mean) kernel and the role of the \( 1/r \) scaling at low-rank bottlenecks.
+
+\paragraph{Probabilistic kernel recursion and GP concatenation.}
+For \( \ell > 1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields because they depend on \( \bm{h}^{(\ell-1)} \), which is the output of a (conditional) Gaussian process. By Theorem~\ref{thm:gp-composition}, the hidden states form a \emph{composition of GPs}: each layer's output is conditionally Gaussian given the previous layer, but the unconditional law is a deep GP. The concatenation structure implies that at layer \( \ell \), the pair \( (\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) follows a \( 2r \)-dimensional Gaussian (in the bottleneck regime), with covariance determined by \( \Sigma^{(\ell-1)} \). The base kernel \( \Sigma^{(\ell)} \) and derivative kernel \( \dot{\Sigma}^{(\ell)} \) are thus expectations over \( \bm{w}^{(\ell)} \), conditioned on this Gaussian pair; they inherit randomness from \( \Sigma^{(\ell-1)} \).
+
+The \emph{mean} (probabilistic) NTK \( \tilde{\Kop}^{(L)} = \mathbb{E}[\Kop^{(L)}] \) satisfies a recursion involving expectations of products:
+\begin{equation}
+\label{eq:mean_ntk_recursion}
+\tilde{\Kop}^{(\ell)} \;=\; 1 \;+\; \mathbb{E}\!\big[\Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)}\big] \;+\; \mathbb{E}\!\big[\Sigma^{(\ell)}\big],\quad \ell \ge 1.
+\end{equation}
+Since \( \Kop^{(\ell-1)} \) and \( \Sigma^{(\ell)}, \dot{\Sigma}^{(\ell)} \) are not independent (they share the randomness of \( \bm{h}^{(\ell-1)} \)), we have \( \mathbb{E}[\Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)}] \neq \tilde{\Kop}^{(\ell-1)}\cdot\mathbb{E}[\dot{\Sigma}^{(\ell)}] \) in general. The correct expansion requires tracking covariances between terms across layers. Under Fisher--Kibble decoupling at each layer, the randomness decomposes into independent angular and radial parts, which can be handled iteratively; the technical difficulty lies in controlling the nested expectations.
+
+\paragraph{\( 1/r \) scaling at each bottleneck.}
+In the low-rank regime, the derivative kernel at layer \( \ell \ge 2 \) scales with \( 1/r \). For ReLU and isotropic weights with \( \mathrm{Cov}(w) = I_r/r \) on the \( r \)-dimensional bottleneck output, one has
+\[
+\dot{\Sigma}^{(\ell)}(x,x') \;=\; \frac{1}{r}\,\mathbb{E}_w\!\Big[\dot{\sigma}\!\big(w^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\sigma}\!\big(w^\top \bm{h}^{(\ell-1)}(x')\big)\,\|w\|^2\Big] \;=\; \frac{1}{r}\,\bar{\dot{\Sigma}}^{(\ell)}(\rho_\ell),
+\]
+where \( \rho_\ell = \cos\angle(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) and
+\(
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)
+\)
+denotes the corresponding scalar derivative kernel evaluated at cosine similarity \(\rho\in[-1,1]\).
+For ReLU under the EOC normalization \(\mathrm{Tr}(\mathrm{Cov}(w))=1\), the derivative kernel has the explicit form
+\[
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)=\mathbb{P}(Z>0,Z'>0)=\frac{1}{2}-\frac{\arccos(\rho)}{2\pi}\in\Big[0,\frac12\Big],
+\]
+where \((Z,Z')\) is centered Gaussian with correlation \(\rho\). In particular, \(\sup_{\rho\in[-1,1]}\bar{\dot{\Sigma}}^{(\ell)}(\rho)=1/2\), uniformly in \(\ell\).
+Similarly, \( \Sigma^{(\ell)} \) involves a norm product \( \|\bm{h}^{(\ell-1)}\|^2/r \) with \( \mathbb{E}[\cdot] \to 1 \) and \( \mathrm{Var}(\cdot) = O(1/r) \). Thus, at each bottleneck layer, both the multiplicative and additive contributions carry a \( 1/r \) factor relative to the full-width case.
+
+\paragraph{Exponential decay with depth.}
+Assume for simplicity that all layers \( \ell \ge 2 \) are bottlenecks with the same rank \( r \). For ReLU under EOC we may take the explicit uniform bound
+\[
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)\le c_0:=\frac12,\qquad \forall \rho\in[-1,1],\ \forall \ell\ge 2.
+\]
+From the closed form \eqref{eq:ntk_explicit_form}, the contribution from layer \( \ell \) to \( \Kop^{(L)} \) is multiplied by \( \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)} \). With \( \dot{\Sigma}^{(k)} = \bar{\dot{\Sigma}}^{(k)}(\rho_k)/r \), we obtain
+\[
+\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)} \;\sim\; \frac{1}{r^{L-\ell}}\,\prod_{k=\ell+1}^{L} \bar{\dot{\Sigma}}^{(k)}(\rho_k) \;\le\; \frac{c_0^{L-\ell}}{r^{L-\ell}}.
+\]
+Hence, contributions from early layers (\( \ell \ll L \)) decay \emph{exponentially} in \( L - \ell \) when \( c_0/r < 1 \). The dominant terms in \( \Kop^{(L)} \) come from the last \( O(1) \) layers; the NTK becomes increasingly localized to the top of the network as depth grows.
+
+\begin{proposition}[Informal: depth-induced decay]\label{prop:depth_decay}
+Under the assumptions above, for \( r \) fixed and \( L \to \infty \), early-layer contributions to \( \Kop^{(L)} \) are suppressed by a factor \( (c/r)^{L-\ell} \) for some \( c = O(1) \). In particular, when \( c/r < 1 \), the NTK is dominated by contributions from the last \( O(\log r) \) layers. The mean NTK \( \tilde{\Kop}^{(L)} \) concentrates around a limit that depends primarily on these top layers.
+\end{proposition}
+
+\paragraph{Open directions.}
+A full treatment requires: (i)~a rigorous recursion for \( \tilde{\Kop}^{(\ell)} \) with explicit covariance bounds; (ii)~verification that \( \bar{\dot{\Sigma}}^{(\ell)} \) remains uniformly bounded in \( \ell \) and \( \rho_\ell \); (iii)~extension of Fisher--Kibble decoupling to nested layers to control \( \mathbb{E}[\Kop^{(\ell-1)}\dot{\Sigma}^{(\ell)}] \). The exponential decay suggests that very deep MMNNs may exhibit a ``effective depth'' phenomenon similar to ResNets, where only the top layers meaningfully contribute to the NTK.
 
 \vspace{0.4cm}
 We now specialize to the three-layer case, where we can obtain a particularly compact form under a homogeneity assumption on the activation function.
@@ -71,7 +122,7 @@ Under the assumptions of Theorem~\ref{thm:ntk_recursion} with \( L=2 \),
 \Kop^{(1)}(x,x') \;=\; 1 + \Sigma^{(1)}(x,x'),
 \]
 \[
-\Kop^{(2)}(x,x') \;=\; 1 + \Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \Sigma^{(2)}(x,x'),
+\Kop^{(2)}(x,x') \;=\; 1 + \frac{1}{r}\,\Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \frac{1}{r}\,\Sigma^{(2)}(x,x').
 \]
 \end{corollary}
 
@@ -119,7 +170,7 @@ then \emph{both \(\rho_1\) and \(w_r\) are random variables} induced by the rand
 \(r\) projection; their values fluctuate with the initialization and with \(r\).
 The NTK admits the compact representation
 \[
-\Kop^{(2)}(x,y) \;=\; \Kop^{(1)}(\rho_1)\!\left(1-\frac{\arccos(\rho_1)}{\pi}\right) \;+\; w_r\,\Sigma^{(1)}(\rho_1) \;+\; 1
+\Kop^{(2)}(x,y) \;=\; 1 \;+\; \frac{1}{r}\,\Kop^{(1)}(\rho_1)\!\left(1-\frac{\arccos(\rho_1)}{\pi}\right) \;+\; \frac{1}{r}\,w_r\,\Sigma^{(1)}(\rho_1)
 \]
 with \( \Sigma^{(1)}(u) = \frac{1}{\pi}\big(\sqrt{1-u^2}+u(1-\arccos u)\big) \).
 

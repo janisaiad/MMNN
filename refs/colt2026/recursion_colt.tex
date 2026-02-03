@@ -1,0 +1,17 @@
+\section{NTK recursion}\label{sec:recursion}
+
+\begin{theorem}[NTK recursion]\label{thm:ntk_recursion}
+Under NTK parameterization and sequential limit with frozen \( w^{(\ell)} \sim \mathcal{N}(0, I_{\bm{d}_{\ell-1}}) \),
+\( \Kop^{(0)}=0 \), \( \Kop^{(1)} = 1 + \Sigma^{(1)} \), and for \( \ell\ge 2 \):
+\( \Kop^{(\ell)} = 1 + \frac{1}{r}\,\Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)} + \frac{1}{r}\,\Sigma^{(\ell)} \).
+\end{theorem}
+Proof: Appendix~\ref{appendix:proof-ntk-recursion}.
+
+\begin{corollary}[Closed form]\label{cor:general_L_layer_ntk}
+\( \Kop^{(L)} = \sum_{\ell=1}^{L} \frac{1}{r^{L-\ell}}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)} + \sum_{\ell=1}^{L} \frac{1}{r^{\max(1,L-\ell)}}\Sigma^{(\ell)}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)} \). For \( L=2 \): \( \Kop^{(2)} = 1 + \frac{1}{r}(\dot{\Sigma}^{(2)} + \Sigma^{(1)}\dot{\Sigma}^{(2)} + \Sigma^{(2)}) \).
+\end{corollary}
+Proof: Appendix~\ref{appendix:proof-general-L}.
+
+\begin{remark}[Fisher and Kibble]\label{rmk:fisher-kibble-law}
+Fisher density \( p(\rho_1\mid\rho,r) \)~\cite{fisher1915probable}; Kibble \( f(u,v) \) with Bessel \( I_{r/2-1} \)~\cite{kibble1941two}.
+\end{remark}

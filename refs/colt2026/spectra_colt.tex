@@ -1,0 +1,17 @@
+\section{Spectrum}\label{sec:spectra}
+
+\begin{assumption}[RMT scaling]\label{assump:RMT}
+\( N \sim n^2 \), \( r \asymp n \), \( d \asymp r \); \( \gamma_{\mathrm{ratio}} = \lim n/r \in (0,\infty) \).
+\end{assumption}
+\begin{assumption}[RMT data]\label{assump:RMT-conditions}
+Following~\cite{El_Karoui_2010}: \( X_i = \Sigma_d^{1/2} Y_i \), \( Y_i \) i.i.d. entries with \( 4+\varepsilon \) moments; \( \|\Sigma_d\|_2 \) bounded; \( \mathrm{trace}(\Sigma_d)/d \to \ell \).
+\end{assumption}
+
+\begin{theorem}[CLT for kernel entries]\label{thm:kernel_clt}
+\( \hat{\Theta}^{(2)}_r \xrightarrow{d} K_{\infty}(\rho) + \frac{1}{\sqrt{r}}\mathcal{G}(\rho) + o(r^{-1/2}) \), where \( \mathcal{G}(\rho) \sim \mathcal{N}(0,\sigma_{\mathrm{tot}}^2(\rho)) \) with variance split into Fisher (angular) and Kibble (radial) components.
+\end{theorem}
+
+\begin{theorem}[Spike + Marchenko--Pastur]\label{thm:spike-bulk}
+The NTK Gram matrix \( \mathbf{M} = [\Theta^{(2)}_{ij}] \) has a rank-one spike \( \lambda_{\mathrm{spike}} \approx n\,K_{\infty}(0) \) and a deformed MP bulk on \( [\gamma + \beta(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\, \gamma + \beta(1+\sqrt{\gamma_{\mathrm{ratio}}})^2] \), with \( \beta = K'_{\infty}(0) \), \( \gamma = K_{\infty}(1) - K_{\infty}(0) - K'_{\infty}(0) \).
+\end{theorem}
+Proofs: Appendix~\ref{appendix:proof-kernel-clt},~\ref{appendix:proof-spike-bulk}.

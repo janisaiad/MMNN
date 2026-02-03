@@ -42,9 +42,10 @@ Therefore,
 \text{Term 1} \xrightarrow{p} \Theta^{(\ell-1)}(x,x')\cdot \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
 \end{align}
 
-Combining the bias contribution with the two limits completes the recursion
+Combining the bias contribution with the two limits completes the recursion. For bottleneck layers \( \ell \ge 2 \), the Jacobian and output contributions scale with \( 1/r \) (from the \( r \)-dimensional bottleneck); we absorb \( \sigma_A^2 \) into the normalization. Thus
 \begin{align}
-\Theta^{(\ell)}(x,x') \;=\; 1 \;+\; \Theta^{(\ell-1)}(x,x')\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x') \;+\; \sigma_A^2\,\Sigma^{(\ell)}(x,x').
+\Theta^{(1)}(x,x') \;=\; 1 \;+\; \Sigma^{(1)}(x,x'),\qquad
+\Theta^{(\ell)}(x,x') \;=\; 1 \;+\; \frac{1}{r}\,\Theta^{(\ell-1)}(x,x')\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x') \;+\; \frac{1}{r}\,\sigma_A^2\,\Sigma^{(\ell)}(x,x')\quad (\ell\ge2).
 \end{align}
 The sequential limit assumption ensures that lower-layer random objects have already converged when taking the next-layer limit, justifying the conditional LLN applications.
 \end{proof}
@@ -86,23 +87,15 @@ Apply Theorem~\ref{thm:ntk_recursion} for \( \ell=1 \) and \( \ell=2 \). For \( 
 \end{align}
 For \( \ell=2 \), substitute \( \Kop^{(1)} = 1 + \Sigma^{(1)} \) into the recursion:
 \begin{align}
-\Kop^{(2)}(x,x') = 1 + \Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') + \Sigma^{(2)}(x,x').
+\Kop^{(2)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') + \frac{1}{r}\,\Sigma^{(2)}(x,x').
 \end{align}
 This is the stated three-layer recursion with the bias contribution.
-\paragraph{Mean explicit form.}
-Under the homogeneous ReLU setting on the sphere, the last-layer expectations are
+\paragraph{Mean explicit form (low-rank).}
+Under the homogeneous ReLU setting on the sphere, the mean three-layer NTK (with \( 1/r \) factors) is
 \begin{align}
-\mathbb{E}\big[\dot{\Sigma}^{(2)}(\rho)\big] = 1 - \frac{\arccos(\rho)}{\pi},\qquad \mathbb{E}\big[\Sigma^{(2)}(\rho)\big] = \Sigma^{(1)}(\rho).
+\tilde{\Kop}^{(2)}(\rho) \;=\; 1 \;+\; \frac{1}{r}\,\Kop^{(1)}(\rho)\,\mathbb{E}\!\left[1-\frac{\arccos(\hat{\rho}_r)}{\pi}\right] \;+\; \frac{1}{r}\,\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r)\,\|x_1\|\|y_1\|\right],
 \end{align}
-Taking the conditional mean at layer \(2\) yields the mean three-layer NTK as a function of \( \rho \):
-\begin{align}
-\tilde{\Kop}^{(2)}(\rho) \;=\; 1 \;+\; \Kop^{(1)}(\rho)\!\left(1-\frac{\arccos(\rho)}{\pi}\right) \;+\; \Sigma^{(1)}(\rho).
-\end{align}
-Since \( \Kop^{(1)}(\rho) = 1 + \Sigma^{(1)}(\rho) \), this can be written as
-\begin{align}
-\tilde{\Kop}^{(2)}(\rho) \;=\; \underbrace{\Kop^{(1)}(\rho)}_{\Theta^{(1)}(\rho)}\!\left(1-\frac{\arccos(\rho)}{\pi}\right) \;+\; \Sigma^{(1)}(\rho) \;+\; 1 \;=\; K_\infty(\rho),
-\end{align}
-which proves the explicit expression.
+where the expectations are over Fisher and Kibble. As \( r\to\infty \), \( \hat{\rho}_r\to\rho \) and \( \|x_1\|\|y_1\|/r\to 1 \), so the limit \( K_\infty(\rho) = \Theta^{(1)}(\rho)(1-\arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) is recovered (without the \( 1/r \) prefactors, since the low-rank scaling is absorbed in the limit).
 \end{proof}
 
 \subsection{Proof of General \texorpdfstring{\(L\)}{L}-layer NTK Corollary}
@@ -124,15 +117,11 @@ Assume the formula holds for depth \( L-1 \):
 \begin{align}
 \Kop^{(L-1)}(x,x') = \sum_{\ell=1}^{L-1} \left(\prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L-1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x').
 \end{align}
-By Theorem~\ref{thm:ntk_recursion},
+By Theorem~\ref{thm:ntk_recursion}, for \( L \ge 2 \),
 \begin{align}
-\Kop^{(L)}(x,x') = 1 + \Kop^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') + \Sigma^{(L)}(x,x').
+\Kop^{(L)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') + \frac{1}{r}\,\Sigma^{(L)}(x,x').
 \end{align}
-Substituting the inductive hypothesis:
-\begin{align*}
-\Kop^{(L)}(x,x') &= 1 + \left[\sum_{\ell=1}^{L-1} \left(\prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L-1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x')\right] \cdot \dot{\Sigma}^{(L)}(x,x') + \Sigma^{(L)}(x,x')\\
-&= 1 + \sum_{\ell=1}^{L-1} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L-1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x') + \Sigma^{(L)}(x,x').
-\end{align*}
+Substituting the inductive hypothesis and distributing the \( 1/r \) factor yields the stated closed form; the first sum gains a new term \( 1 \) (from \( \ell=L \)) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \), while the second sum gains \( (1/r)\Sigma^{(L)} \) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \).
 The first term \( 1 \) corresponds to \( \ell=L \) in the first sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). The last term \( \Sigma^{(L)} \) corresponds to \( \ell=L \) in the second sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). Therefore:
 \begin{align}
 \Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
@@ -193,6 +182,48 @@ and the inverse Fourier transform yields Kibble's density, which contains the mo
 Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = \cos\angle(x_1, y_1)\) and the norms \((\|x_1\|, \|y_1\|)\) are independent, yielding the factorization \(p(\rho_1, u, v) = p_{\text{Fisher}}(\rho_1) \cdot p_{\text{Kibble}}(u, v)\). This is the classical independence of the sample correlation from sample variances in bivariate normal data.
 \end{proof}
 
+\begin{lemma}[Nonasymptotic concentration of Gaussian sample cosine]\label{lem:gaussian-sample-cosine}
+Let \(r\ge 1\) and let \((X,Y)\in\mathbb{R}^r\times\mathbb{R}^r\) have i.i.d.\ coordinates \(\{(X_i,Y_i)\}_{i=1}^r\), each distributed as a centered bivariate normal with \(\mathbb{E}[X_i^2]=\mathbb{E}[Y_i^2]=1\) and \(\mathbb{E}[X_iY_i]=\rho\in(-1,1)\).
+Define the empirical cosine (sample correlation without centering)
+\[
+\widehat{\rho}_r \;=\; \frac{\langle X,Y\rangle}{\|X\|\,\|Y\|}.
+\]
+Then there exist absolute constants \(c,C>0\) such that for all \(t\in(0,1)\),
+\[
+\mathbb{P}\big(|\widehat{\rho}_r-\rho|\ge t\big)\;\le\;6\exp(-c\,r\,t^2),
+\qquad
+\mathbb{E}\big[(\widehat{\rho}_r-\rho)^2\big]\;\le\;\frac{C}{r}.
+\]
+\end{lemma}
+\begin{proof}
+Write
+\[
+S_{xx}=\frac{1}{r}\|X\|^2,\qquad S_{yy}=\frac{1}{r}\|Y\|^2,\qquad S_{xy}=\frac{1}{r}\langle X,Y\rangle,
+\qquad\text{so that}\qquad
+\widehat{\rho}_r=\frac{S_{xy}}{\sqrt{S_{xx}S_{yy}}}.
+\]
+Each of \(S_{xx}-1\), \(S_{yy}-1\), and \(S_{xy}-\rho\) is an average of i.i.d.\ centered sub-exponential random variables (since \(X_i^2-1\), \(Y_i^2-1\), and \(X_iY_i-\rho\) have finite \(\psi_1\) norms for Gaussian data). Therefore, by Bernstein's inequality, there exist absolute constants \(c_0>0\) and \(C_0<\infty\) such that for all \(t\in(0,1)\),
+\[
+\mathbb{P}\big(|S_{xx}-1|\ge t\big)\le 2e^{-c_0 r t^2},\quad
+\mathbb{P}\big(|S_{yy}-1|\ge t\big)\le 2e^{-c_0 r t^2},\quad
+\mathbb{P}\big(|S_{xy}-\rho|\ge t\big)\le 2e^{-c_0 r t^2}.
+\]
+On the event \(E_t=\{|S_{xx}-1|\le t,\ |S_{yy}-1|\le t\}\) with \(t\le 1/2\), we have \(S_{xx},S_{yy}\in[1/2,3/2]\), hence
+\[
+\Bigl|\frac{1}{\sqrt{S_{xx}S_{yy}}}-1\Bigr|
+\le C_0\big(|S_{xx}-1|+|S_{yy}-1|\big)
+\le 2C_0 t
+\]
+for an absolute constant \(C_0\). Using
+\[
+\widehat{\rho}_r-\rho
+=\frac{S_{xy}-\rho}{\sqrt{S_{xx}S_{yy}}}
+\;+\;\rho\Bigl(\frac{1}{\sqrt{S_{xx}S_{yy}}}-1\Bigr),
+\]
+we obtain on \(E_t\) the bound \(|\widehat{\rho}_r-\rho|\le C_1(|S_{xy}-\rho|+t)\) for an absolute constant \(C_1\). Taking \(t\asymp t'\) and applying a union bound over the three Bernstein tails yields \(\mathbb{P}(|\widehat{\rho}_r-\rho|\ge t')\le 6e^{-c r t'^2}\) for \(t'\in(0,1)\) and absolute \(c>0\).
+The second-moment bound follows by integrating the tail bound: \(\mathbb{E}[(\widehat{\rho}_r-\rho)^2]=\int_0^\infty 2u\,\mathbb{P}(|\widehat{\rho}_r-\rho|\ge u)\,du\le C/r\).
+\end{proof}
+
 
 
 
@@ -238,7 +269,7 @@ Recall that the kernel function is defined as:
 \begin{align}
 \Psi(u,w) = \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) + w\,\Sigma^{(1)}(u) + 1,
 \end{align}
-where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \). By Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, \( \sqrt{r}(\hat{\rho}_r - \rho) \xrightarrow{d} \mathcal{N}(0, (1-\rho^2)^2) \), and by Theorem~\ref{thm:rkhs_rank_concentration}, \( \hat{w}_r \) concentrates around 1 with sub-Gaussian tails.
+where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\|y_1\|/r \). By Lemma~\ref{lem:gaussian-sample-cosine}, \( \hat{\rho}_r \) concentrates around \(\rho\) with sub-Gaussian tails at rate \(r^{-1/2}\), and by Theorem~\ref{thm:rkhs_rank_concentration}, \( \hat{w}_r \) concentrates around 1 with sub-Gaussian tails.
 
 
 The function \( \Psi \) is differentiable in both arguments. For fixed \( \rho \in (-1,1) \), we have:
@@ -385,7 +416,7 @@ C_1\,\exp\!\big(-C_2\,r\,\epsilon^2\big).
 \label{appendix:proof-conditional-rkhs-homogeneous}
 
 \begin{proof}
-We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow (three-layer) ReLU kernel.
+We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(2)} \) for the three-layer case (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow ReLU kernel.
 
 \paragraph{Puiseux expansion of mean NTK near \( \rho = 1 \):}
 The key observation is that the mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel (depends only on \( \rho \)). Near \( \rho = 1 \) (for \( t \ge 0 \)), we need to compute the Puiseux expansion of \( \mathbb{E}[\arccos(\hat{\rho}_r)] \) when \( \rho = 1-t \), where \( \hat{\rho}_r \sim \text{Fisher}(1-t, r) \).
@@ -472,28 +503,16 @@ Therefore,
 \mathbb{E}[\arccos(\hat{\rho}_r)] \;=\; \sqrt{2t}\,I(r) \;+\; O(t^{3/2}).
 \end{align}
 
-Therefore, the mean NTK expansion is:
+Therefore, the mean NTK expansion is (with the \( 1/r \) prefactor from the recursion):
 \begin{align}
 \tilde{\Kop}^{(2)}(1-t)
 \;=\;
-K_\infty(1)
+1 + \frac{1}{r}\big(K_\infty(1)-1\big)
 \;-\;
-\Bigg[
-\frac{2}{\pi}
-\frac{\sqrt{2}}{\pi}\,\Theta^{(1)}(1)\,\frac{I(r)}{2}
-\Bigg]\,t^{1/2}
-\;+\; O(t^{3/2}),
-\end{align}
-so, for ReLU with \( \Theta^{(1)}(1)=\tfrac{1}{2} \),
-\begin{align}
-\tilde{\Kop}^{(2)}(1-t)
-\;=\;
-K_\infty(1)
-\;-\;
-\left[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}\,I(r)\right]\,t^{1/2}
+\frac{1}{r}\,\Bigg[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}\,I(r)\Bigg]\,t^{1/2}
 \;+\; O(t^{3/2}).
 \end{align}
-This exhibits the complete \( r \)-dependent constant multiplying \( t^{1/2} \).
+This exhibits the \( r \)-dependent constant multiplying \( t^{1/2} \); the \( 1/r \) factor scales the Fisher--Kibble correction.
 
 \begin{remark}[Closed form via Beta function and asymptotics]
 Using the change of variables \( w=v/t \) and Euler's Beta integral, the inner integral appearing in \( I(r) \) can be evaluated explicitly:
@@ -510,11 +529,7 @@ I(r) \;=\; \frac{(r-2)\,2^{\,r-\frac{5}{2}}}{\sqrt{2\pi}}\;
 C_1(r),\qquad
 C_1(r) \;=\; \frac{\Gamma\!\left(r-\tfrac{1}{2}\right)\Gamma\!\left(r-\tfrac{3}{2}\right)}{\Gamma(r-1)^2}.
 \end{align}
-Moreover, by Stirling's formula and standard Gamma-ratio bounds (e.g., Gautschi's inequality), one obtains for fixed \( r\ge 3 \):
-\begin{align}
-0 \;<\; \inf_{r\ge 3} I(r) \;\le\; I(r) \;\le\; \sup_{r\ge 3} I(r) \;<\; \infty,
-\end{align}
-i.e., \( I(r)=\Theta(1) \) as \( r\to\infty \). In particular, the leading Puiseux coefficient
+The asymptotic scaling \( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \) is established in Proposition~\ref{prop:I-r-scaling} (Appendix~\ref{appendix:I-r-scaling}). In particular, the leading Puiseux coefficient
 \begin{align}
 1 - \left[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\right]\,t^{1/2} + O(t^{3/2})
 \end{align}
@@ -526,9 +541,25 @@ The mean NTK \( \tilde{\Kop}^{(2)}(\rho) \) is a zonal kernel with a Puiseux exp
 
 By Theorem 1 of~\cite{bietti2021deepequalsshallowrelu}, the RKHS spectral decay is determined by the leading-order Puiseux expansion coefficient (the \( t^{1/2} \) term). Since \( \tilde{\Kop}^{(2)}(\rho) \) and the shallow ReLU kernel share the same leading-order expansion \( 1 - \frac{2}{\pi} t^{1/2} + \cdots \) (with different higher-order corrections), they induce the same RKHS. The higher-order corrections from Fisher–Kibble expectations affect the \( O(t^{3/2}) \) and higher terms, but do not change the spectral decay rate, ensuring RKHS equivalence.
 
-\paragraph{Extension to general \( L \).}
-For general depth \( L \), the mean NTK involves nested expectations over Fisher and Kibble distributions at each layer. The key is that homogeneity ensures the endpoint Puiseux expansions are preserved (up to \( O(r^{-1/2}) \) corrections per layer), so the RKHS structure remains the same. Proofs is deferred to a future version.
+\paragraph{Extension to general \( L \): open problem.}
+The extension to general depth \( L \ge 3 \) remains open. A rigorous proof would require: (i)~the conditional law of the Fisher chain \( (\rho,\rho_1,\ldots,\rho_{L-2}) \) given \( \rho_{L-1}=u \), or equivalently the \( (L-1) \)-fold marginal distribution of \( \rho_{L-1} \) given \( \rho \); (ii)~an explicit Laplace-type expansion of the integral \( \int_{-1}^1 \dot{\Sigma}^{(L)}(u)\,\mathbb{E}[\Kop^{(L-1)}\mid\rho_{L-1}=u]\,p_{\text{Fisher}}(u\mid\rho,r)\,du \) (and analogous terms) as \( \rho=1-t \to 1^- \). The conditional mean \( \mathbb{E}[\Kop^{(L-1)}\mid\rho_{L-1}=u] \) is not equal to \( \tilde{\Kop}^{(L-1)}(u) \), since the former conditions on the chain endpoint while the latter fixes the input; verifying the Puiseux structure of the conditional expectation would require a detailed analysis of the backward Fisher-chain density. We conjecture that the same \( t^{1/2} \) leading exponent holds for all \( L \), and that the mean NTK induces the same RKHS; we leave a complete proof for future work.
 \end{proof}
+
+\subsection{Asymptotic scaling of \( I(r) \)}\label{appendix:I-r-scaling}
+The Fisher--Kibble integral \( I(r) \) defined in \eqref{eq:I-r-closed-form} governs the \( r \)-dependent coefficient in the mean NTK's Puiseux expansion near \( \rho=1 \). The following proposition gives its scaling as \( r \to \infty \).
+
+\begin{proposition}[\( I(r) \) decays as \( 1/\sqrt{r} \)]\label{prop:I-r-scaling}
+Let \( I(r) \) be as in \eqref{eq:I-r-closed-form} with \( C_1(r) = \Gamma(r-\tfrac{1}{2})\Gamma(r-\tfrac{3}{2})/\Gamma(r-1)^2 \). Then
+\begin{equation}
+I(r) \;\sim\; \frac{C}{\sqrt{r}} \quad \text{as } r\to\infty,\qquad \text{for some } C > 0,
+\end{equation}
+i.e., \( I(r) = O(1/\sqrt{r}) \). For fixed \( r \ge 3 \), \( I(r) \) is bounded and strictly positive.
+\end{proposition}
+\begin{proof}
+Using the Beta representation \( B((r-1)/2,\,r/2-1) = \Gamma((r-1)/2)\Gamma(r/2-1)/\Gamma(r-3/2) \), the closed form reduces to \( I(r) = (r-2)\,2^{r-5/2}/\sqrt{2\pi} \cdot B \cdot \Gamma(r-3/2)\Gamma(r-1/2)/\Gamma(r-1)^3 \). By Stirling's formula and the asymptotics \( B(a,b) \sim \sqrt{2\pi}\,a^{a-1/2}b^{b-1/2}/(a+b)^{a+b-1/2} \) when \( a,b \to \infty \) with \( a \sim b \sim r/2 \), one has \( B((r-1)/2,\,r/2-1) \sim \sqrt{2\pi}\,2^{-r}/\sqrt{r} \). The Gamma-ratio \( \Gamma(r-1/2)\Gamma(r-3/2)/\Gamma(r-1)^2 \sim 1 \). Combining these yields \( I(r) \sim C/\sqrt{r} \).
+\end{proof}
+
+Implications: (i)~the Puiseux coefficient \( c_1(r) = -\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \) satisfies \( c_1(r) \to -2/\pi \) as \( r\to\infty \), recovering the shallow ReLU constant; (ii)~the Fisher--Kibble correction to the mean NTK is \( O(1/(r\sqrt{r})) \) in the \( t^{1/2} \) term when \( I(r) \sim C/\sqrt{r} \).
 
 
 
@@ -583,90 +614,32 @@ which proves the claim.
 
 \begin{proof}
 \label{appendix:proof-spike-bulk}
-We prove the spectral limit using Theorem 2.1 of~\cite{El_Karoui_2010} on the spectrum of inner product kernel random matrices. This connects the microscopic kernel structure (ReLU/Kibble calculations) with the macroscopic matrix behavior (spectrum).
+We prove Theorem~\ref{thm:spike-bulk} by a direct application of~\citet[Theorem~2.1]{El_Karoui_2010}, which describes the limiting spectrum of high-dimensional \emph{inner-product kernel matrices}.
 
-\paragraph{Setting.}
-Let \(\mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n\) be the \(n \times n\) NTK matrix with entries \(M_{ij} = \Theta^{(2)}(x_i, x_j) = K_\infty(\rho_{ij}) + O_p(r^{-1/2})\), where \(\rho_{ij} = \langle x_i, x_j \rangle / (\|x_i\|\|x_j\|)\) is the cosine similarity and \(K_\infty(\rho) = \Theta^{(1)}(\rho)(1 - \arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1\) is the deterministic three-layer kernel limit.
+\paragraph{Setting (deterministic kernel matrix).}
+Let \(x_1,\dots,x_n\in\mathbb{R}^d\) be generated as in Assumption~\ref{assump:RMT-conditions} with \(d\to\infty\) and \(n/d\to\gamma_{\mathrm{ratio}}\in(0,\infty)\). Let \(X=[x_1,\dots,x_n]\in\mathbb{R}^{d\times n}\).
+Define the (uncentered) kernel Gram matrix \(\mathbf{M}\in\mathbb{R}^{n\times n}\) by
+\[
+\mathbf{M}_{ij} \;=\; f\!\Big(\frac{x_i^\top x_j}{d}\Big),
+\qquad
+f(t)\;=\;K_\infty(t),
+\]
+where \(K_\infty(\cdot)\) is the deterministic three-layer kernel function defined in the main text.
+By the smoothness discussion in Section~\ref{sec:depth-scaling} and the regularity conditions in Assumption~\ref{assump:RMT-conditions}, \(f\) satisfies the differentiability hypotheses required by~\cite{El_Karoui_2010}.
 
-Under Assumption~\ref{assump:RMT}, we have \(n \sim r\) (so \(n/p\) remains bounded where \(p\) is the ambient dimension) and the data points \(x_i\) are normalized. The kernel function \(f(\rho) = K_\infty(\rho)\) is \(C^1\) in a neighborhood of \(l = \lim_{p\to\infty} \text{trace}(\Sigma_p)/p = 1\) (for normalized data) and \(C^3\) in a neighborhood of \(0\), satisfying the regularity conditions of~\cite{El_Karoui_2010}.
+\paragraph{El Karoui linearization.}
+\citet[Theorem~2.1]{El_Karoui_2010} implies that \(\mathbf{M}\) is asymptotically equivalent in operator norm to a spike-plus-Wishart-plus-shift matrix of the form
+\[
+\mathbf{K} \;=\; \alpha\,\mathbf{1}\mathbf{1}^\top \;+\; \beta\,\frac{X^\top X}{d} \;+\; \gamma\,I_n,
+\]
+where the coefficients are determined by \(f\) and the trace limit \(\ell=\lim_{d\to\infty}\mathrm{trace}(\Sigma_d)/d\):
+\[
+\alpha=f(0)=K_\infty(0),\qquad
+\beta=f'(0)=K_\infty'(0),\qquad
+\gamma=f(\ell)-f(0)-\ell f'(0)=K_\infty(\ell)-K_\infty(0)-\ell K_\infty'(0).
+\]
+The rank-one term \(\alpha\,\mathbf{1}\mathbf{1}^\top\) yields a single eigenvalue of order \(n\) (the spike). The remaining \(n-1\) eigenvalues are those of the shifted sample covariance term \(\beta X^\top X/d+\gamma I_n\), whose empirical distribution converges to a (deformed) Marchenko--Pastur law with support \([\gamma+\beta(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\ \gamma+\beta(1+\sqrt{\gamma_{\mathrm{ratio}}})^2]\) under Assumption~\ref{assump:RMT-conditions}. This matches the statement of Theorem~\ref{thm:spike-bulk}.
 
-\paragraph{Step 1: Equivalent Matrix Structure.}
-By Theorem 2.1 of~\cite{El_Karoui_2010}, in probability as \(n, p \to \infty\), the kernel matrix \(\mathbf{M}\) is equivalent in operator norm to the matrix \(\mathbf{K}\):
-\begin{align}
-\mathbf{K} = \underbrace{\alpha \mathbf{1}\mathbf{1}^T}_{\text{Spike}} + \underbrace{\beta \frac{XX^T}{p}}_{\text{Bulk}} + \underbrace{\gamma I_n}_{\text{Shift}},
-\end{align}
-where \(X = [x_1, \dots, x_n] \in \mathbb{R}^{p \times n}\) is the data matrix. The three spectral coefficients \(\alpha, \beta, \gamma\) are determined by the kernel function \(f(\rho) = K_\infty(\rho)\) and its derivatives evaluated at \(\rho = 0\) and \(\rho = 1\):
-\begin{align}
-\alpha &= f(0) = K_\infty(0), \label{eq:alpha} \\
-\beta &= f'(0) = K'_\infty(0), \label{eq:beta} \\
-\gamma &= f(1) - f(0) - f'(0) = K_\infty(1) - K_\infty(0) - K'_\infty(0). \label{eq:gamma}
-\end{align}
-
-\paragraph{Spectral Coefficients.}
-
-\textbf{The Spike (\(\alpha\))}
-The spike coefficient is the kernel value at orthogonality (\(\rho = 0\)):
-\begin{align}
-\alpha = K_\infty(0) = \Theta^{(1)}(0)\left(1 - \frac{\arccos(0)}{\pi}\right) + \Sigma^{(1)}(0) + 1.
-\end{align}
-Since \(\arccos(0) = \pi/2\), we obtain:
-\begin{align}
-\alpha = \Theta^{(1)}(0)\left(1 - \frac{\pi}{2\pi}\right) + \Sigma^{(1)}(0) + 1 = \Theta^{(1)}(0)\left(1 - \frac{1}{2}\right) + \Sigma^{(1)}(0) + 1 = \frac{\Theta^{(1)}(0)}{2} + \Sigma^{(1)}(0) + 1.
-\end{align}
-For ReLU activations with normalized inputs, \(\Theta^{(1)}(0) = \Sigma^{(1)}(0) = 0\), hence \(\alpha = 1\). The rank-one mean term \(\alpha \mathbf{1}\mathbf{1}^T\) induces an outlier eigenvalue:
-\begin{align}
-\lambda_{\mathrm{spike}} = n \cdot \alpha = n \cdot K_\infty(0),
-\end{align}
-of order \(O(n)\), isolated from the bulk spectrum.
-
-\textbf{B. The Bulk (\(\beta\)): The Linear Scale.}
-The bulk coefficient is the derivative of the kernel at \(\rho = 0\), capturing the linear sensitivity:
-\begin{align}
-\beta = K'_\infty(0) = \frac{d}{d\rho}\left[\Theta^{(1)}(\rho)\left(1 - \frac{\arccos(\rho)}{\pi}\right) + \Sigma^{(1)}(\rho) + 1\right]_{\rho=0}.
-\end{align}
-Differentiating term by term:
-\begin{align*}
-\frac{d}{d\rho}\left[\Theta^{(1)}(\rho)\left(1 - \frac{\arccos(\rho)}{\pi}\right)\right] &= \Theta^{(1)'}(\rho)\left(1 - \frac{\arccos(\rho)}{\pi}\right) + \Theta^{(1)}(\rho) \cdot \frac{1}{\pi\sqrt{1-\rho^2}}, \\
-\frac{d}{d\rho}\left[\Sigma^{(1)}(\rho)\right] &= \Sigma^{(1)'}(\rho).
-\end{align*}
-Evaluating at \(\rho = 0\) (where \(\arccos(0) = \pi/2\) and \(\sqrt{1-0} = 1\)):
-\begin{align}
-\beta = \Theta^{(1)'}(0)\left(1 - \frac{1}{2}\right) + \Theta^{(1)}(0) \cdot \frac{1}{\pi} + \Sigma^{(1)'}(0) = \frac{\Theta^{(1)'}(0)}{2} + \frac{\Theta^{(1)}(0)}{\pi} + \Sigma^{(1)'}(0).
-\end{align}
-For ReLU kernels with normalized inputs, a common normalization yields \(\Theta^{(1)}(0) = 0\), \(\Theta^{(1)'}(0) = 1/\pi\), and \(\Sigma^{(1)'}(0) = 1/(2\pi)\), hence \(\beta = 1/(2\pi) + 1/(2\pi) = 1/\pi\).
-
-The term \(\beta XX^T/p\) has the same spectral distribution as a Wishart matrix scaled by \(\beta\). When \(n \asymp p\) with aspect ratio \(\gamma_{\mathrm{ratio}} = n/r\), the bulk eigenvalues follow a deformed Marchenko–Pastur distribution scaled by \(\beta\), supported on:
-\begin{align}
-\Big[\;\beta(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\;\; \beta(1+\sqrt{\gamma_{\mathrm{ratio}}})^2\;\Big].
-\end{align}
-
-\textbf{The Shift (\(\gamma\))  (Diagonal Residual)}
-The shift coefficient accounts for the difference between the diagonal value and the linear approximation:
-\begin{align}
-\gamma = K_\infty(1) - K_\infty(0) - K'_\infty(0) = \alpha + \beta \cdot 1 + \text{non-linear terms} - \alpha - \beta = \text{non-linear residual}.
-\end{align}
-Computing \(K_\infty(1)\) (on-diagonal, where \(\arccos(1) = 0\)):
-\begin{align}
-K_\infty(1) = \Theta^{(1)}(1) \cdot 1 + \Sigma^{(1)}(1) + 1 = \Theta^{(1)}(1) + \Sigma^{(1)}(1) + 1.
-\end{align}
-Therefore:
-\begin{align}
-\gamma = \left[\Theta^{(1)}(1) + \Sigma^{(1)}(1) + 1\right] - \alpha - \beta.
-\end{align}
-For normalized ReLU kernels, \(\Theta^{(1)}(1) = \Sigma^{(1)}(1) = 1/2\), so \(K_\infty(1) = 1 + 1 + 1 = 3\), and \(\gamma = 3 - 1 - 3/(2\pi) = 2 - 3/(2\pi) > 0\).
-
-The diagonal shift \(\gamma I_n\) adds \(\gamma\) to all eigenvalues, acting as natural Tikhonov regularization. This ensures the kernel matrix is well-conditioned (bounded away from zero) and stabilizes inversion.
-
-\paragraph{Final Spectral Distribution.}
-Combining the three components, the spectrum of \(\mathbf{M}\) converges (in probability) to:
-\begin{itemize}
-\item \textbf{Spike (rank-one outlier):} A single eigenvalue \(\lambda_{\mathrm{spike}} = n \cdot \alpha = n \cdot K_\infty(0)\) of order \(O(n)\), isolated from the bulk.
-\item \textbf{Bulk (deformed Marchenko–Pastur):} The remaining \(n-1\) eigenvalues follow a deformed MP distribution, supported on:
-\begin{align}
-\Big[\;\gamma + \beta(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\;\; \gamma + \beta(1+\sqrt{\gamma_{\mathrm{ratio}}})^2\;\Big],
-\end{align}
-where \(\gamma_{\mathrm{ratio}} = \lim_{n\to\infty} n/r \in (0,\infty)\). The bulk width is determined by \(\beta = K'_\infty(0)\), and the bulk location is shifted by \(\gamma = K_\infty(1) - K_\infty(0) - K'_\infty(0)\).
-\end{itemize}
-
-The theorem is proved.
+\paragraph{Scope note.}
+The theorem concerns the deterministic kernel matrix \(f(x_i^\top x_j/d)\). Incorporating additional entrywise randomness (e.g. finite-\(r\) Fisher--Kibble fluctuations or finite-width effects) into the limiting ESD requires further resolvent/local-law inputs and is outside the scope of this appendix.
 \end{proof}

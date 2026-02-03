@@ -1,0 +1,604 @@
+\RequirePackage{tikz}
+\usetikzlibrary{shapes, arrows, positioning, decorations, fadings, external}
+\tikzexternalize[prefix=tikz/]
+\tikzsetfigurename{output-figure}
+%the two lines above activate externalization!
+
+\RequirePackage{tikz-feynman}
+\RequirePackage{feynmp-auto}
+
+\pgfdeclaredecoration{parallel}{initial}{%
+  \state{initial}[width=0, next state=main]{\pgfpathmoveto{\pgfpointorigin}}%
+  \state{main}[width=\pgfdecoratedinputsegmentlength/100]
+  {
+    \pgfpathlineto{\pgfpointorigin}
+  }%
+  \state{final}{}%
+}
+
+\tikzfeynmanset{
+    color6color1ddntknew/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color1,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color6,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color6color1ddntk2new/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color6,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color1,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color6color2ddntknew/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color2,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color6,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color6color2ddntk2new/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color6,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color2,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color6color1color2ddntknew/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color1,
+    postaction={
+        draw=color2,
+        decorate,
+        decoration={parallel, raise=-1.5pt}
+        },
+    postaction={
+        draw=color6,
+        decorate,
+        decoration={parallel, raise=1.5pt}
+        },
+    },
+    quarticblob/.style={
+        /tikz/shape=circle,
+        /tikz/draw=black,
+        /tikz/fill=white!70!black,
+        % tikzfeynman/particle={},
+        /tikz/graphs/as={},
+        /tikz/minimum size=15pt,
+        % node contents={},
+    },
+    smallblob/.style={
+        /tikz/shape=circle,
+        /tikz/draw=black,
+        /tikz/fill=white!70!black,
+        % tikzfeynman/particle={},
+        /tikz/graphs/as={},
+        /tikz/minimum size=6pt,
+        /tikz/inner sep=0pt,
+        % node contents={},
+    },
+    propblob/.style={
+      /tikz/shape=circle,
+      /tikz/draw=black,
+      /tikz/fill=white,
+      % tikzfeynman/particle={},
+      /tikz/graphs/as={},
+      /tikz/minimum size=15pt,
+      % node contents={},
+    },
+    color6color1color2ddntk2new/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color1,
+    postaction={
+        draw=color6,
+        decorate,
+        decoration={parallel, raise=-1.5pt}
+        },
+    postaction={
+        draw=color2,
+        decorate,
+        decoration={parallel, raise=1.5pt}
+        },
+    },
+    minidot/.style={
+        /tikz/shape=circle,
+        /tikz/draw=black,
+        /tikz/fill=black,
+        /tikz/graphs/as={},
+        /tikz/inner sep=0pt,
+        /tikz/outer sep=0pt,
+        /tikz/minimum size=0.75mm,
+    },
+    meddot/.style={
+        /tikz/shape=circle,
+        /tikz/draw=black,
+        /tikz/fill=gray,
+        /tikz/graphs/as={},
+        /tikz/inner sep=0pt,
+        /tikz/outer sep=0pt,
+        /tikz/minimum size=5mm,
+    },
+    color1doubghost/.style={
+    transform canvas={shift={(0,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+     }
+    },
+    color2doubghost/.style={
+    transform canvas={shift={(0,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color2,
+    preaction={
+      transform canvas={shift={(0,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+     }
+    },
+    doubghost/.style={
+        dashed,
+        double distance=1.5pt,
+        thick,
+    },
+    color1blackghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    line width=1pt,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+    }
+    },
+    blackcolor1ghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      line width=1pt,
+      draw=black
+    }
+    },
+    color2blackghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    line width=1pt,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+    }
+    },
+    blackcolor2ghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color2,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      line width=1pt,
+      draw=black
+    }
+    },
+    color1color2dntknew/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color1,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color2,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color2color1dntknew/.style={
+    dash pattern=on 1pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    opacity=0,
+    postaction={
+        draw=color2,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=-0.75pt}
+        },
+    postaction={
+        draw=color1,
+        opacity=1,
+        decorate,
+        decoration={parallel, raise=0.75pt}
+        }
+    },
+    color1color2blackghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    line width=1pt,
+    draw=black,  
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      },
+    preaction={
+      transform canvas={shift={(0pt,2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      }  
+    },
+    blackcolor1color2ghost/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    line width=1pt,
+    draw=black,  
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    ntkdntkcolor1color2/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    color1color2ghost/.style={
+    transform canvas={shift={(0,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color2,
+    preaction={
+      transform canvas={shift={(0,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+     }
+    },
+    color2color1ghost/.style={
+    transform canvas={shift={(0,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+    }
+    },
+    color6color6color1color2ghost/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    dash pattern =on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-4pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      }
+    },
+    color6color1color2ddntk/.style={
+    dash pattern=on 0.5pt off 1pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(1pt,-1.5pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color1
+     },
+    preaction={
+      transform canvas={shift={(2pt,-3pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    color6color1ddntk/.style={
+    dash pattern=on 0.5pt off 1pt,
+    line width=1pt,
+    draw=color6,
+      preaction={
+      transform canvas={shift={(1pt,2pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color1
+      }  
+    },    
+    color6color2ddntk/.style={
+    dash pattern=on 0.5pt off 1pt,
+    line width=1pt,
+    draw=color6,
+      preaction={
+      transform canvas={shift={(1pt,-1.5pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    color6color1ddntk2/.style={
+    dash pattern=on 0.5pt off 1pt,
+    line width=1pt,
+    draw=color1,
+      preaction={
+      transform canvas={shift={(0pt,2.5pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color6
+      }  
+    },
+    color6color2ddntk2/.style={
+    dash pattern=on 0.5pt off 1pt,
+    line width=1pt,
+    draw=color2,
+      preaction={
+      transform canvas={shift={(1pt,-1.5pt)}},
+      dash pattern=on 0.5pt off 1pt,
+      line width=1pt,
+      draw=color6
+      }  
+    },
+    ddntkddntkcolor1color2ghost/.style={
+    transform canvas={shift={(0pt,1.5pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,3pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-1.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+      },
+    preaction={
+      transform canvas={shift={(0pt,-3pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    color6blackghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    line width=1pt,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+    }
+    },
+    blackcolor6ghost/.style={
+    transform canvas={shift={(0pt,-1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      line width=1pt,
+      draw=black
+    }
+    },
+    ntkdntkcolor2color2color6/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color2,
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+      }  
+    },
+    ntkdntkcolor6color1color1/.style={
+    transform canvas={shift={(0pt,2.5pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      }  
+    },
+    ntkdntkcolor1color2color6/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+      }  
+    },
+    ntkdntkblackcolor1color2color6/.style={
+    transform canvas={shift={(0pt,1pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color1,
+    preaction={
+      transform canvas={shift={(0pt,2.5pt)}},
+      line width=1pt,
+      draw=black
+      },
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color6
+      }  
+    },
+     ntkdntkcolor6color1color2/.style={
+    transform canvas={shift={(0pt,2.5pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      }  
+    },
+    ntkdntkcolor6color1color2black/.style={
+    transform canvas={shift={(0pt,2.5pt)}},
+    dash pattern=on 3pt off 3pt,
+    line width=1pt,
+    draw=color6,
+    preaction={
+      transform canvas={shift={(0pt,1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color1
+      },
+    preaction={
+      transform canvas={shift={(0pt,-1pt)}},
+      dash pattern=on 3pt off 3pt,
+      line width=1pt,
+      draw=color2
+      },
+    preaction={
+      transform canvas={shift={(0pt,-2.5pt)}},
+      line width=1pt,
+      draw=black
+      }
+    }
+}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

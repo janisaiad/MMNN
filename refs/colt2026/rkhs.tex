@@ -9,6 +9,9 @@ This also removes the EOC condition on the bias.
 
 We can now state a result highly similar to ~\cite{bietti2021deepequalsshallowrelu}: even for in the extensive rank regime, RF-LR NTK under the NTK perspective, deeper architectures do not yield a larger RKHS than shallow networks.
 
+\paragraph{Mean RKHS and random features.}
+Each realization \( \omega \) of the random features yields a kernel \( K_\omega(x,x') = \Theta^{(2)}_\omega(x,x') \) and an induced RKHS \( \mathcal{H}_\omega \). The \emph{mean kernel} \( \tilde{K}(x,x') = \mathbb{E}_\omega[K_\omega(x,x')] \) is deterministic; its RKHS \( \mathcal{H}_{\tilde{K}} \) is the \emph{mean RKHS}. It is not \( \mathbb{E}[\mathcal{H}_\omega] \) (expectation of Hilbert spaces is undefined); rather, \( \mathcal{H}_{\tilde{K}} \) is the RKHS of \( \mathbb{E}[K_\omega] \). For each \( \omega \), the features are \( \varphi_\omega(x) = K_\omega(\cdot,x) \in \mathcal{H}_\omega \); these are random. The mean kernel has a canonical feature map \( \varphi_{\tilde{K}}(x) = \tilde{K}(\cdot,x) \in \mathcal{H}_{\tilde{K}} \), which is deterministic. We have \( \tilde{K}(x,x') = \mathbb{E}_\omega[\langle \varphi_\omega(x), \varphi_\omega(x') \rangle_{\mathcal{H}_\omega}] \), but \( \varphi_{\tilde{K}}(x) \neq \mathbb{E}[\varphi_\omega(x)] \) in general (they live in different spaces). The mean RKHS describes the ``typical'' function space when averaging over random feature realizations; our result that \( \mathcal{H}_{\tilde{K}} \) coincides with the shallow ReLU RKHS implies that depth does not expand this typical expressiveness.
+
 \vspace{0.5em}
 \subsection{Rank-driven concentration in RKHS (Gaussian norms product)}\label{subsec:rank-driven-concentration}
 Having established that low rank and depth confers no RKHS advantage, we now turn to quantifying how the low-rank structure controls kernel fluctuations. We can show that the radial component of the RF-LR NTK concentrates exponentially fast in the rank \( r \), yielding high-dimensional control of RKHS fluctuations. To state this result, we first require a homogeneity assumption on the activation function.
@@ -59,7 +62,7 @@ Then for any \( \epsilon \in (0,1) \), there exist constants \( C_1, C_2 > 0 \) 
 Proof: See Appendix~\ref{appendix:proof-three-layer-ntk-concentration}.
 
 \begin{remark}[Critical cancellation of \( 1/r \) corrections]
-While the general concentration rate is \( O_p(1/\sqrt{r}) \) via Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, the randomness induced from the gaussian process low rank output remove the \( 1/r \) correction term in \( \Sigma^{(2)} \) that would normally appear through the radial component \( \hat{w}_r \). This cancellation is critical: it is precisely the path where finite-width corrections \( 1/N \) analysis~\cite{dyer2019asymptoticswidenetworksfeynman} and Feynman diagram decay come into play, proving that the fluctuation rate is \( 1/r \) rather than \( 1/\sqrt{r} \).
+While the general concentration rate is \( O_p(1/\sqrt{r}) \) via Fisher's CLT~\cite{fisher1915probable,hotelling1953new}, the randomness induced from the gaussian process low rank output removes the \( 1/r \) correction term in \( \Sigma^{(2)} \) that would normally appear through the radial component \( \hat{w}_r \). This cancellation is critical: it is precisely the path where finite-width corrections \( 1/N \) analysis~\cite{dyer2019asymptoticswidenetworksfeynman} and Feynman diagram decay come into play, proving that the fluctuation rate is \( 1/r \) rather than \( 1/\sqrt{r} \). The \( 1/r \) scaling in the NTK recursion (Section~\ref{sec:network-definition}) stems from the EOC parameterization and finite bottleneck width; see the ``Origin of \( 1/r \)'' paragraph there.
 \end{remark}
 
 \begin{remark}[Extension to general \( L \) layers]
@@ -72,52 +75,58 @@ Having established concentration results, we now turn to the mean NTK. The key o
 
 For the three-layer case, the empirical NTK is:
 \[
-\hat{\Theta}^{(2)}_r(x,x') = \Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\| + 1,
+\hat{\Theta}^{(2)}_r(x,x') = 1 + \frac{1}{r}\,\Theta^{(1)}(\rho) \cdot \left(1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right) + \frac{1}{r} \cdot \Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|,
 \]
 where \( \hat{\rho}_r \) follows Fisher's distribution~\cite{fisher1915probable,hotelling1953new} (centered at \( \rho \)) and \( \|x_1\|\|y_1\| \) follows Kibble's distribution. The mean NTK is therefore:
 \[
-\tilde{\Kop}^{(2)}(\rho) = \mathbb{E}_{\text{Fisher}, \text{Kibble}}\left[\hat{\Theta}^{(2)}_r(x,x')\right] = \Theta^{(1)}(\rho) \cdot \mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
+\tilde{\Kop}^{(2)}(\rho) = \mathbb{E}_{\text{Fisher}, \text{Kibble}}\left[\hat{\Theta}^{(2)}_r(x,x')\right] = 1 + \frac{1}{r}\,\Theta^{(1)}(\rho) \cdot \mathbb{E}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right],
 \]
 where the expectations are taken over the Fisher distribution of \( \hat{\rho}_r \) and the Kibble distribution of \( (\|x_1\|^2, \|y_1\|^2) \).
 
-\begin{corollary}[Mean NTK over Fisher–Kibble has same RKHS]\label{cor:conditional_rkhs_homogeneous}
-Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(L)} \) (obtained by taking expectations over Fisher and Kibble distributions at each layer) is a zonal kernel on \( \mathbb{S}^{d-1} \) that induces the same RKHS as the shallow (three-layer) ReLU kernel. In particular, the mean NTK RKHS coincides with the unconditional RKHS as sets with equivalent norms.
+\begin{corollary}[Mean NTK over Fisher–Kibble has same RKHS: three-layer case]\label{cor:conditional_rkhs_homogeneous}
+Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \( \mathbb{S}^{d-1} \), the mean NTK \( \tilde{\Kop}^{(2)} \) for the three-layer case (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel on \( \mathbb{S}^{d-1} \) that induces the same RKHS as the shallow ReLU kernel. In particular, the mean NTK RKHS coincides with the unconditional RKHS as sets with equivalent norms.
 
-For the three-layer case (\( L=2 \)), the mean NTK is:
+The mean NTK is:
 \[
-\tilde{\Kop}^{(2)}(\rho) = \Theta^{(1)}(\rho) \cdot \mathbb{E}_{\hat{\rho}_r \sim \text{Fisher}(\rho,r)}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}_{\hat{\rho}_r, \|x_1\|, \|y_1\|}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right] + 1,
+\tilde{\Kop}^{(2)}(\rho) = 1 + \frac{1}{r}\,\Theta^{(1)}(\rho) \cdot \mathbb{E}_{\hat{\rho}_r \sim \text{Fisher}(\rho,r)}\!\left[1 - \frac{\arccos(\hat{\rho}_r)}{\pi}\right] + \frac{1}{r} \cdot \mathbb{E}_{\hat{\rho}_r, \|x_1\|, \|y_1\|}\!\left[\Sigma^{(1)}(\hat{\rho}_r) \cdot \|x_1\|\|y_1\|\right],
 \]
-where the expectations are over Fisher~\cite{fisher1915probable,hotelling1953new} and Kibble distributions. This yields a zonal kernel with a Puiseux expansion that differs from the deterministic kernel \( K_{\infty}(\rho) \), but preserves the same endpoint behavior, ensuring RKHS equivalence.
+where the expectations are over Fisher~\cite{fisher1915probable,hotelling1953new} and Kibble distributions. This yields a zonal kernel with a Puiseux expansion that differs from the deterministic kernel \( K_{\infty}(\rho) \), but preserves the same \( t^{1/2} \) endpoint behavior, ensuring RKHS equivalence. The extension to general depth \( L \ge 3 \) is conjectured; see Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}.
 \end{corollary}
 
-\paragraph{Intuition and technical challenges.}
-This corollary is highly non-trivial because it requires computing expectations of \( \arccos(\hat{\rho}_r) \) where \( \hat{\rho}_r \sim \text{Fisher}(\rho,r) \)~\cite{fisher1915probable,hotelling1953new}, which involves integrating over Fisher's full distribution density near the boundary \( \rho = 1 \). The key technical challenge is analyzing the Puiseux expansion of the mean NTK near \( \rho = 1 \), where both \( \arccos(\hat{\rho}_r) \) and Fisher's density exhibit singular behavior.
-
-The proof (Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}) computes the integral:
+\paragraph{Hypergeometric proof of the Puiseux expansion.}
+The corollary is non-trivial because it requires computing \( \mathbb{E}[\arccos(\hat{\rho}_r)] \) for \( \hat{\rho}_r \sim \text{Fisher}(\rho,r) \), integrating over Fisher's density near \( \rho = 1 \). Set \( \rho = 1-t \) and \( v = 1-u \). The Fisher density is
 \[
-\mathbb{E}[\arccos(\hat{\rho}_r)] \;=\; \int_{-1}^{1} \arccos(u)\;
-\frac{(r-2)\,\Gamma(r-1)\,\big(1-(1-t)^2\big)^{\frac{r-1}{2}}\,(1-u^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma\!\left(r-\tfrac{1}{2}\right)\,\big(1-(1-t)\,u\big)^{\,r-\frac{3}{2}}}\;
-{}_2F_1\!\left(\tfrac{1}{2},\,\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+(1-t)\,u}{2}\right)\; du,
+p_{\text{Fisher}}(u \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-u^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho u)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2}; r-\tfrac{1}{2}; \tfrac{1+\rho u}{2}\right).
 \]
-Near this boundary, we rely on asymptotic expansions of hypergeometric functions near their argument \( z \to 1^- \) (see~\cite{nist_dlmf} and~\cite{abramowitz1964handbook}).
+Near \( t,v \to 0^+ \): \( 1-\rho^2 \sim 2t \), \( 1-u^2 \sim 2v \), \( 1-\rho u \sim t+v \). For \( {}_2F_1(\tfrac{1}{2},\tfrac{1}{2}; r-\tfrac{1}{2}; z) \) with \( z = 1 - \tfrac{t+v}{2} \to 1^- \), the connection formula (DLMF §15.8.2~\cite{nist_dlmf}) gives \( {}_2F_1 = C_1(r) + O((t+v)^{r-3/2}) \) since \( c-a-b = r-\tfrac{3}{2} > 0 \) (no log). With \( \arccos(1-v) = \sqrt{2v} + O(v^{3/2}) \) and the substitution \( w = v/t \), one obtains
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \sqrt{2t}\,I(r) + O(t^{3/2}),
+\quad
+I(r) = \frac{(r-2)\,2^{r-\frac{5}{2}}}{\sqrt{2\pi}}\,\frac{\Gamma(\frac{r-1}{2})\Gamma(\frac{r}{2}-1)}{\Gamma(r-1)}\,C_1(r),\quad C_1(r) = \frac{\Gamma(r-\tfrac{1}{2})\Gamma(r-\tfrac{3}{2})}{\Gamma(r-1)^2}.
+\]
+This yields the Puiseux expansion \eqref{eq:puiseux-rkhs}. By Theorem 1 of~\cite{bietti2021deepequalsshallowrelu}, the \( t^{1/2} \) leading exponent determines RKHS spectral decay; since it is preserved, the mean NTK induces the same RKHS as the shallow ReLU kernel.
 
-The crucial insight is that while the mean NTK has a different Puiseux expansion than the deterministic kernel \( K_{\infty}(\rho) \), the leading-order \( t^{1/2} \) term (which determines spectral decay and RKHS structure) is preserved. This preservation of endpoint behavior under Fisher–Kibble expectations is what ensures RKHS equivalence, despite the different higher-order corrections that appear in the mean kernel.
-
+\begin{proposition}[\( I(r) \sim 1/\sqrt{r} \)]\label{prop:I-r-scaling}
+\( I(r) \sim C/\sqrt{r} \) as \( r \to \infty \). By Stirling and Beta asymptotics, \( I(r) = O(1/\sqrt{r}) \).
+\end{proposition}
+\paragraph{Link to concentration.}
+Since \( I(r) \sim 1/\sqrt{r} \), the Fisher--Kibble correction in the \( t^{1/2} \) coefficient is \( O(1/(r\sqrt{r})) \): the mean NTK approaches the deterministic limit faster as \( r \) grows, tightening the concentration bound in Corollary~\ref{cor:two_layer_ntk_concentration}.
 
 \vspace{0.5em}
 \subsection{Spectral decay and Puiseux expansions}\label{subsec:spectral-decay-puiseux}
-We now apply the spectral decay theory of~\cite{bietti2021deepequalsshallowrelu} to characterize the RKHS of the RF-LR NTK via endpoint expansions. The base kernel \( \Sigma^{(1)} \) and derivative kernel \( \dot{\Sigma}^{(1)} \) are the fundamental building blocks for the NTK recursion.
+We apply the spectral decay theory of~\cite{bietti2021deepequalsshallowrelu} to characterize the RKHS via endpoint expansions.
 
-From the proof, near \( \rho = 1 \) (for \( t \ge 0 \)), the mean two-layer NTK admits the Puiseux expansion (see Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}):
+Near \( \rho = 1 \) (for \( t \ge 0 \)), the mean NTK admits the Puiseux expansion
 \[
 \tilde{\Kop}^{(2)}(1-t)
 \;=\;
-K_\infty(1)
+1 + \frac{1}{r}\big(K_\infty(1)-1\big)
 \;-\;
-\Bigg[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\Bigg]\,t^{1/2}
-\;+\; O(t^{3/2}),
+\frac{1}{r}\,\Bigg[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\Bigg]\,t^{1/2}
+\;+\; O(t^{3/2}).
+\label{eq:puiseux-rkhs}
 \]
-where the leading non-polynomial term has exponent \( \nu = 1/2 \) with coefficient \( c_1(r) = -\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \). Similarly, near \( \rho = -1 \), by rotational symmetry and homogeneity of ReLU, the expansion has the same structure with \( c_{-1}(r) = c_1(r) \) (see~\cite{bietti2021deepequalsshallowrelu}).
+where the leading non-polynomial term has exponent \( \nu = 1/2 \) with coefficient \( c_1(r) = -\frac{1}{r}\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \); the \( 1/r \) prefactor comes from the NTK recursion (Section~\ref{sec:network-definition}). Similarly, near \( \rho = -1 \), by rotational symmetry and homogeneity of ReLU, the expansion has the same structure with \( c_{-1}(r) = c_1(r) \) (see~\cite{bietti2021deepequalsshallowrelu}).
 
 We can now apply Theorem 1 of~\cite{bietti2021deepequalsshallowrelu} to obtain the spectral decay characterization:
 
@@ -129,7 +138,7 @@ Let \( \kappa(\rho) = \tilde{\Kop}^{(2)}(\rho) \) be the mean NTK on \( \mathbb{
 \]
 with exponent \( \nu = 1/2 \). For ReLU and normalized inputs,
 \[
-c_1(r) \;=\; -\left[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\right],
+c_1(r) \;=\; -\frac{1}{r}\left[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\right],
 \qquad
 I(r) \;=\; \frac{(r-2)\,2^{\,r-\frac{5}{2}}\,\Gamma\!\left(\frac{r-1}{2}\right)\Gamma\!\left(\frac{r}{2}-1\right)}{\sqrt{2\pi}\,\Gamma(r-1)}\cdot\frac{\Gamma\!\left(r-\tfrac{1}{2}\right)\Gamma\!\left(r-\tfrac{3}{2}\right)}{\Gamma(r-1)^2},
 \]
@@ -147,10 +156,10 @@ where \( C(d) > 0 \) depends only on \( d \). Since \( c_1(r) = c_{-1}(r) \), we
 Therefore, the dominant eigenvalue decay rate is \( k^{-d} \), determined by the even-parity eigenvalues.
 \end{theorem}
 
-\begin{corollary}[No advantage in RKHS]\label{thm:no_rkhs_advantage}
-Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the depth-\(L\) NTK induces the \emph{same} RKHS as the shallow (three-layer) ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. This is a direct application of Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}.
+\begin{corollary}[No advantage in RKHS: three-layer case]\label{thm:no_rkhs_advantage}
+Under the RF-LR setting with ReLU nonlinearity, isotropic random features on the sphere \( \mathbb{S}^{d-1} \), and in the kernel (NTK) regime, the three-layer mean NTK \( \tilde{\Kop}^{(2)} \) induces the \emph{same} RKHS as the shallow ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms. This is a direct application of Theorem 1 in~\cite{bietti2021deepequalsshallowrelu}. The extension to depth \( L \ge 3 \) is conjectured (Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}).
 \end{corollary}
 
 \begin{remark}
-This theorem and corollary are direct applications of~\cite{bietti2021deepequalsshallowrelu} to the RF-LR setting. Theorem~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and, together with the explicit kernel formulas above, justifies that deeper NTKs do not enlarge the RKHS beyond the shallow ReLU case (Corollary~\ref{thm:no_rkhs_advantage}).
+This theorem and corollary are direct applications of~\cite{bietti2021deepequalsshallowrelu} to the RF-LR setting. Theorem~\ref{cor:spectral_decay_bietti} supplies explicit rates for approximation and generalization in the RF-LR NTK RKHS and, together with the explicit kernel formulas above, justifies that the three-layer mean NTK does not enlarge the RKHS beyond the shallow ReLU case (Corollary~\ref{thm:no_rkhs_advantage}).
 \end{remark}

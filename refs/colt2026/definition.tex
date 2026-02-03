@@ -1,4 +1,4 @@
-\section{Network definition and EOC parameterization}
+\section{Network definition and EOC parameterization}\label{sec:network-definition}
 
 \vspace{1em}
 \subsection{RF-LR architecture}
@@ -9,7 +9,9 @@ Let \( \bm{h}^{(0)}(x)=x\in\mathbb{R}^{\bm{d}_0} \). For \( \ell=1,\dots,L \),
 = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,
 \bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x) + b^{(\ell)}_j\Big) \;+\; c.
 \end{equation}
-\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{\bm{n}_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll \bm{n}_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
+\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{\bm{n}_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit.
+\paragraph{Width vs bottleneck dimension.}
+We distinguish the feature width \(\bm{n}_\ell\) (number of random features) from the output dimension \(\bm{d}_\ell=\dim(\bm{h}^{(\ell)})\). The trainable matrix \(A^{(\ell)}\in\mathbb{R}^{\bm{d}_\ell\times \bm{n}_\ell}\) has columns \(A^{(\ell)}_j\in\mathbb{R}^{\bm{d}_\ell}\). A \emph{bottleneck} layer corresponds to \(\bm{d}_\ell=r\ll \bm{n}_\ell\), yielding \(O(r\bm{n}_\ell)\) trainable parameters and \(\mathrm{rank}(A^{(\ell)})\le r\) automatically.
 
 \paragraph{Training parameters, biases, and initialization.}
 Initialization is
@@ -20,7 +22,7 @@ A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, \sigma_A^2),\quad
 c \sim \mathcal{N}(0, \sigma_c^2),
 \]
 We use the \emph{edge-of-chaos (EOC)} scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
-The low-rank constraint is enforced as \( \mathrm{rank}\!\big(A^{(\ell)}\big)\le r_\ell \ll \bm{n}_\ell \).
+In our bottleneck regime we take \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), so \(w^{(\ell)}_j\in\mathbb{R}^r\) with covariance \(I_r/r\).
 
 We include an activation bias \( b^{(\ell)} \) and a scalar output bias \( c \) for completeness, but we avoid introducing extra scaling parameters for them. Output scaling can be absorbed into the learning rate; the mean-field and NTK structures remain qualitatively identical, and the Fourier-space interpretation and stepwise loss phenomenon depend on kernel geometry, not absolute scales.
 
@@ -37,15 +39,31 @@ This yields the scaling relation \(\ReLU(\alpha\, w^\top h) = \alpha\,\ReLU(w^\t
 
 With the model and initialization fixed, we can now examine parameterization choices, signal propagation at initialization, and the kernel quantities driving our analysis. We begin by tracking the layer-wise variance at initialization.
 
-For general weight variance \(\Sigma_w\ = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), define the per-layer variance \( q^{(\ell)} \), by weight independance we derive it's recursion:
+For general weight variance \(\Sigma_w = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), define the per-layer variance \( q^{(\ell)} \). By weight independence we obtain the recursion:
 \[
 q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w), \]
 This leads to the \emph{(EOC)} condition: 
 \[ \frac{\sigma_A^2}{2}\mathrm{Tr}(\Sigma_w)=1. \]
 
-it is chosen to prevent activations (forward) and gradients (backward) from exploding or vanishing as they propagate through the layers. By tuning the initialization so that the update satisfies this fixed point, both the signal and its derivative maintain stable variance at each layer. For example, under \(\Sigma_w = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), the EOC choice gives \(\sigma_A = \sqrt{2}\) and typically \(\sigma_c^2 = 1\).
+It is chosen to prevent forward activations and backward sensitivities from exploding or vanishing across depth. For example, under \(\Sigma_w = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), one obtains \(\sigma_A = \sqrt{2}\) (and we keep \(\sigma_c^2\) fixed).
 
+\paragraph{Origin of \( 1/r \) in the NTK recursion.}
+For bottleneck layers \( \ell \ge 2 \), the input dimension is \( \bm{d}_{\ell-1} = r \), so EOC prescribes \( \Sigma_w = I_r/r \) with \( \mathrm{Tr}(\Sigma_w) = 1 \). The derivative kernel
+\[
+\dot{\Sigma}^{(\ell)}(x,x') = \mathbb{E}_w\big[\dot{\sigma}(w^\top h)\,\dot{\sigma}(w^\top h')\,\|w\|^2\big] = \mathrm{Tr}(\Sigma_w)\!\left(\tfrac{1}{2} - \tfrac{\arccos(\rho_\ell)}{2\pi}\right)
+\]
+remains \( O(1) \) under EOC. Moreover, with \(\mathrm{Tr}(\Sigma_w)=1\) this quantity is uniformly bounded as
+\[
+0\le \dot{\Sigma}^{(\ell)}(\rho)\le \frac12,\qquad \forall \rho\in[-1,1],
+\]
+which can be used as an explicit choice of the constant \(c_0\) in large-depth bounds based on products of derivative kernels.
+In our RF-LR setting the NTK involves gradients with respect to the bottleneck readouts \(A^{(\ell)}\), and the resulting recursion carries an explicit \(1/r\) prefactor in the bottleneck regime (Theorem~\ref{thm:ntk_recursion}). Intuitively, this factor reflects the bottleneck scaling in the parameterization and the fact that the relevant Jacobian contributions concentrate in an \(r\)-dimensional subspace. We provide the full derivation in Appendix~\ref{appendix:proof-ntk-recursion}.
+\[
+\Theta^{(\ell)} = 1 + \frac{1}{r}\,\Theta^{(\ell-1)}\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)} + \frac{1}{r}\,\sigma_A^2\,\Sigma^{(\ell)}, \qquad \ell \ge 2.
+\]
+In summary: EOC fixes \( \mathrm{Tr}(\Sigma_w)=1 \) so that \( \dot{\Sigma}^{(\ell)}, \Sigma^{(\ell)} \) are \( O(1) \), while the low-rank/bottleneck scaling appears through the explicit prefactor \(1/r\) in the NTK recursion.
 
+\vspace{0.5em}
 With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel. We emphasize that these are not the NNGP kernel and the derivative kernel, but the base kernel and the derivative kernel of the Gaussian process \( \bm{h}^{(\ell)} \) conditional on \( \bm{h}^{(\ell-1)} \).
 By rotation invariance of Gaussian weights, these kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). We will therefore write \(\Sigma^{(\ell)}(\rho)\) and \(\dot{\Sigma}^{(\ell)}(\rho)\). When no confusion arises (e.g., for \(\ell=1\)), we will also abuse notation and write \(\sigma(\rho)\) for the scalar kernel function; this \(\sigma\) denotes the kernel-as-a-function-of-\(\rho\), not the activation \(\bm{\ReLU}\).
 We can now state the base and derivative kernels precisely.

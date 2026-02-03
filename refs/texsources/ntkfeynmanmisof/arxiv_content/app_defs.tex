@@ -1,0 +1,71 @@
+\section{Definitions of all tensors}
+\label{app:defin-all-tens}
+
+In this section, we provide the definitions for all tensors relevant in this work beyond the NNGP~\eqref{eq:4} and the NTK~\eqref{eq:10}.
+
+The means of the NNGP and NTK receive finite-width corrections which are denoted by
+\begin{align}
+  \EE[\widehat{K}^{(\ell)}_{\alpha_1 \alpha_2} ]
+&= K^{(\ell)}_{\alpha_1 \alpha_2} 
++ \frac{1}{n_{\ell-1}} K^{\{1\}(\ell)}_{\alpha_1 \alpha_2} 
++ O\left( \frac{1}{n^2} \right)\\
+\EE[\widehat{\Theta}^{(\ell)}_{\alpha_1 \alpha_2} ]
+&= \Theta^{(\ell)}_{\alpha_1 \alpha_2} 
++ \frac{1}{n_{\ell-1}} \Theta^{\{1\}(\ell)}_{\alpha_1 \alpha_2} 
++ O\left( \frac{1}{n^2} \right)\,,
+\end{align}
+where the unhatted quantities correspond to the infinite-width limits. The cumulant of four preactivations decomposes into the $V_{4}$ tensor, defining it according to
+\begin{align}
+\mathbb{E}_{\theta}^{c} \left[ z^{(\ell)}_{i_1; \alpha_1}, z^{(\ell)}_{i_2; \alpha_2}, z^{(\ell)}_{i_3; \alpha_3}, z^{(\ell)}_{i_4; \alpha_4} \right]
+&= \frac{1}{n_{\ell-1}} \Big[
+\delta_{i_1 i_2} \delta_{i_3 i_4} V^{(\ell)}_{\alpha_1 \alpha_2\alpha_3 \alpha_4} +
+\delta_{i_1 i_3} \delta_{i_2 i_4} V^{(\ell)}_{\alpha_1 \alpha_3\alpha_2 \alpha_4} \notag \\
+&\qquad+ \delta_{i_1 i_4} \delta_{i_2 i_3} V^{(\ell)}_{\alpha_1 \alpha_4\alpha_2 \alpha_3} \Big]\,.
+\end{align}
+The cumulant of two NTK fluctuations decomposes into the $A$ and $B$ tensors,
+\begin{align}
+  \mathbb{E}_{\theta}^{c} \left[ \widehat{\Delta \Theta}^{(\ell)}_{i_1 i_2; \alpha_1 \alpha_2}, \widehat{\Delta \Theta}^{(\ell)}_{i_3 i_4; \alpha_3 \alpha_4} \right] 
+  &=
+  \frac{1}{n_{\ell-1}} 
+  \left[ 
+    \delta_{i_1 i_2} \delta_{i_3 i_4} A^{(\ell)}_{\alpha_1\alpha_2\alpha_3\alpha_4}
+    + \delta_{i_1 i_3} \delta_{i_2 i_4} B^{(\ell)}_{\alpha_1 \alpha_3 \alpha_2 \alpha_4}\right.\nonumber\\
+    &\qquad+ \left.\delta_{i_1 i_4} \delta_{i_2 i_3} B^{(\ell)}_{\alpha_1 \alpha_4 \alpha_2 \alpha_3} \right]\,.
+\end{align}
+In order to consistently analyze the training dynamics to order $1/n$, the following higher-derivative analogues of the NTK are necessary~\cite{roberts2022}
+\begin{align}
+  \widehat{\text{d}\Theta}_{i_0 i_1 i_2; \delta_0 \delta_1 \delta_2}^{(\ell)} 
+  &= \sum_{\ell_1, \ell_2 = 1}^{\ell} \sum_{\mu_1,\mu_2} 
+  \frac{d^2 z_{i_{0};\delta_{0}}^{(\ell)}}{d\theta_{\mu_{1}}^{(\ell_1)} d\theta_{\mu_{2}}^{(\ell_2)}} 
+  \frac{dz_{i_{1};\delta_{1}}^{(\ell)}}{d\theta_{\mu_{1}}^{(\ell_1)}}
+  \frac{dz_{i_{2};\delta_{2}}^{(\ell)}}{d\theta_{\mu_{2}}^{(\ell_2)}}  \label{eq:12}\\
+  \widehat{\text{dd}_{\text{I}}\Theta}_{i_0i_1i_2i_3;\delta_0\delta_1\delta_2\delta_3}^{(\ell)}
+  &= \sum_{\ell_1, \ell_2, \ell_3=1}^{\ell} \sum_{\mu_{1},\mu_{2},\mu_{3}}
+  \frac{d^3 z_{i_0;\delta_0}^{(\ell)}}{d\theta_{\mu_1}^{(\ell_1)} d\theta_{\mu_2}^{(\ell_2)} d\theta_{\mu_3}^{(\ell_3)}}
+  \frac{dz_{i_1;\delta_1}^{(\ell)}}{d\theta_{\mu_1}^{(\ell_1)}}
+  \frac{dz_{i_2;\delta_2}^{(\ell)}}{d\theta_{\mu_2}^{(\ell_2)}}
+  \frac{dz_{i_3;\delta_3}^{(\ell)}}{d\theta_{\mu_3}^{(\ell_3)}}\label{eq:13}\\
+  \widehat{\text{dd}_{\text{II}}\Theta}^{(\ell)}_{i_1 i_2 i_3 i_4; \delta_1 \delta_2 \delta_3 \delta_4} & = \sum_{\ell_1, \ell_2, \ell_3=1}^{\ell} \sum_{\mu_1,\mu_2, \mu_3} 
+\frac{d^2 z^{(\ell)}_{i_1; \delta_1}}{d\theta_{\mu_1}^{(\ell_1)} d\theta_{\mu_3}^{(\ell_3)}} \frac{d^2 z^{(\ell)}_{i_2; \delta_2}}{d\theta_{\mu_2}^{(\ell_2)} d\theta_{\mu_3}^{(\ell_3)}} \frac{d z^{(\ell)}_{i_3; \delta_3}}{d\theta_{\mu_1}^{(\ell_1)}} \frac{d z^{(\ell)}_{i_4; \delta_4}}{d\theta_{\mu_2}^{(\ell_2)}}\,.\label{eq:14}
+\end{align}
+Their the definitions of their cumulants define the tensors $P$, $Q$, $R$, $S$, $T$ and $U$,
+\begin{align}
+  \mathbb{E}_{\theta}^{c} \left[ \widehat{\mathrm{d}\Theta}^{(\ell)}_{i_0 i_1 i_2; \delta_0 \delta_1 \delta_2 },z^{(\ell)}_{i_3; \delta_3} \right] &{=}
+  \frac{1}{n_{\ell-1}} 
+  \left[ 
+    \delta_{i_0 i_3} \delta_{i_1 i_2} P^{(\ell)}_{\delta_0 \delta_1 \delta_2 \delta_3}
+    + 
+    \delta_{i_0 i_1} \delta_{i_2 i_3} Q^{(\ell)}_{\delta_0 \delta_5 \delta_6 \delta_7}
+    + 
+    \delta_{i_0 i_2} \delta_{i_1 i_3} Q^{(\ell)}_{\delta_{0} \delta_{2} \delta_{1} \delta_{3}}
+  \right]\\
+  \mathbb{E}_{\theta}^{c} \left[ \widehat{\text{dd}_{\text{I}}\Theta}_{i_0i_1i_2i_3;\delta_0\delta_1\delta_2\delta_3}^{(\ell)} \right]
+  &{=} \frac{1}{n_{\ell-1}} \left[ \delta_{i_0i_1}\delta_{i_2i_3} R_{\delta_0\delta_1\delta_2\delta_3}^{(\ell)} + \delta_{i_0i_2}\delta_{i_3i_1} R_{\delta_0\delta_2\delta_3\delta_1}^{(\ell)} + \delta_{i_0i_3}\delta_{i_1i_2} R_{\delta_0\delta_3\delta_1\delta_2}^{(\ell)} \right]\\
+  \mathbb{E}_{\theta}^{c} \left[ \widehat{\text{dd}_{\text{II}}\Theta}_{i_1i_2i_3i_4;\delta_1\delta_2\delta_3\delta_4}^{(\ell)} \right]
+  &{=} \frac{1}{n_{\ell-1}} \left[ \delta_{i_1i_2}\delta_{i_3i_4} S_{\delta_1\delta_2\delta_3\delta_4}^{(\ell)} + \delta_{i_1i_3}\delta_{i_4i_2} T_{\delta_1\delta_3\delta_4\delta_2}^{(\ell)} + \delta_{i_1i_4}\delta_{i_2i_3} U_{\delta_1\delta_4\delta_2\delta_3}^{(\ell)} \right]\,.
+\end{align}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

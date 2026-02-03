@@ -1,0 +1,77 @@
+\section{RKHS preservation and hypergeometric proof}\label{sec:no-rkhs-advantage}
+
+In the NTK regime, \( f_t \in \mathcal{H}_\Theta \) with \( \|f\|_{\mathcal{H}_\Theta}^2 = \langle f, \Theta^{-1} f \rangle_{L^2} \). The \emph{mean RKHS} \( \mathcal{H}_{\tilde{K}} \) is the RKHS of \( \tilde{K} = \mathbb{E}_\omega[K_\omega] \) (not \( \mathbb{E}[\mathcal{H}_\omega] \), which is undefined). We prove \( \mathcal{H}_{\tilde{K}} \) coincides with the shallow ReLU RKHS.
+
+\subsection{Concentration and mean NTK}
+
+\begin{assumption}[Homogeneous activation]\label{assump:homogeneous_activation}
+\( \sigma(\alpha z) = \alpha \sigma(z) \) for \( \alpha \ge 0 \). ReLU satisfies this.
+\end{assumption}
+
+\begin{theorem}[Concentration in rank]\label{thm:rkhs_rank_concentration}
+Under Assumption~\ref{assump:homogeneous_activation}, let \( W = \|x_1\|\|y_1\|/r \) for rank-\( r \) projections \( x_1, y_1 \). Then \( \mathbb{P}(|W-1| \ge \epsilon) \le 4\exp(-r\epsilon^2/8) \) for \( \epsilon \in (0,1) \).
+\end{theorem}
+
+\begin{corollary}[NTK concentration]\label{cor:two_layer_ntk_concentration}
+\( \mathbb{P}(|\hat{\Theta}^{(2)}_r - K_\infty(\rho)| \ge \epsilon) \le C_1 \exp(-C_2 r\epsilon^2) \) for \( \epsilon \in (0,1) \).
+\end{corollary}
+Proofs: Appendix~\ref{appendix:proof-rkhs-rank-concentration},~\ref{appendix:proof-three-layer-ntk-concentration}.
+
+The empirical NTK is \( \hat{\Theta}^{(2)}_r = 1 + \frac{1}{r}\Theta^{(1)}(\rho)(1-\arccos(\hat{\rho}_r)/\pi) + \frac{1}{r}\Sigma^{(1)}(\hat{\rho}_r)\|x_1\|\|y_1\| \), with \( \hat{\rho}_r \sim \text{Fisher}(\rho,r) \), \( (\|x_1\|^2,\|y_1\|^2) \sim \text{Kibble} \). The mean NTK is \( \tilde{\Kop}^{(2)}(\rho) = \mathbb{E}[\hat{\Theta}^{(2)}_r] \).
+
+\subsection{Puiseux expansion: hypergeometric proof}
+
+We prove the mean NTK has a \( t^{1/2} \) Puiseux expansion near \( \rho=1 \), establishing RKHS equivalence.
+
+\begin{theorem}[Mean NTK Puiseux expansion]\label{thm:puiseux-main}
+Near \( \rho = 1-t \) with \( t \ge 0 \),
+\begin{equation}
+\label{eq:puiseux-main}
+\tilde{\Kop}^{(2)}(1-t) = 1 + \frac{1}{r}(K_\infty(1)-1) - \frac{1}{r}\left[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}\,I(r)\right] t^{1/2} + O(t^{3/2}),
+\end{equation}
+where \( I(r) \) has closed form \eqref{eq:I-r-closed-form}. The exponent \( \nu = 1/2 \) is preserved, so the mean NTK induces the same RKHS as the shallow ReLU kernel~\cite{bietti2021deepequalsshallowrelu}.
+\end{theorem}
+
+\begin{proof}
+We compute \( \mathbb{E}[\arccos(\hat{\rho}_r)] \) for \( \rho = 1-t \), \( \hat{\rho}_r \sim \text{Fisher}(1-t,r) \):
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \int_{-1}^{1} \arccos(u)\, p_{\text{Fisher}}(u \mid 1-t, r)\, du.
+\]
+The Fisher density is
+\[
+p_{\text{Fisher}}(u \mid \rho, r) = \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-u^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho u)^{r-\frac{3}{2}}}\,{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2}; r-\tfrac{1}{2}; \tfrac{1+\rho u}{2}\right).
+\]
+Set \( v = 1-u \). Near \( t,v \to 0^+ \): \( 1-\rho^2 \sim 2t \), \( 1-u^2 \sim 2v \), \( 1-\rho u \sim t+v \). For \( {}_2F_1(\tfrac{1}{2},\tfrac{1}{2}; r-\tfrac{1}{2}; z) \) with \( z = 1 - \tfrac{t+v}{2} \to 1^- \), the connection formula (DLMF §15.8.2~\cite{nist_dlmf}) gives, since \( c-a-b = r-\tfrac{3}{2} > 0 \) is a half-integer (no log),
+\[
+{}_2F_1 = \frac{\Gamma(c)\,\Gamma(c-a-b)}{\Gamma(c-a)\,\Gamma(c-b)} + O((1-z)^{r-3/2}) = C_1(r) + O((t+v)^{r-3/2}).
+\]
+So the density behaves as
+\[
+p_{\text{Fisher}}(1-v \mid 1-t, r) \sim \frac{(r-2)\,\Gamma(r-1)\,(2t)^{\frac{r-1}{2}}\,(2v)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(t+v)^{r-\frac{3}{2}}}\,C_1(r).
+\]
+With \( \arccos(1-v) = \sqrt{2v} + O(v^{3/2}) \), the substitution \( w = v/t \) yields
+\[
+\mathbb{E}[\arccos(\hat{\rho}_r)] = \sqrt{2t}\int_0^\infty \sqrt{w}\,\frac{(r-2)\,\Gamma(r-1)\,(2)^{\frac{r-1}{2}}\,(2w)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1+w)^{r-\frac{3}{2}}}\,C_1(r)\, dw + O(t^{3/2}) = \sqrt{2t}\,I(r) + O(t^{3/2}).
+\]
+The inner integral equals \( I(r) \). Using the Beta integral \( \int_0^\infty \frac{w^{\frac{r-3}{2}}}{(1+w)^{r-\frac{3}{2}}} dw = B(\frac{r-1}{2},\frac{r}{2}-1) \),
+\begin{align}
+\label{eq:I-r-closed-form}
+I(r) &= \frac{(r-2)\,2^{r-\frac{5}{2}}}{\sqrt{2\pi}}\,\frac{\Gamma(\frac{r-1}{2})\Gamma(\frac{r}{2}-1)}{\Gamma(r-1)}\,C_1(r), \quad C_1(r) = \frac{\Gamma(r-\tfrac{1}{2})\Gamma(r-\tfrac{3}{2})}{\Gamma(r-1)^2}.
+\end{align}
+Hence \( \mathbb{E}[1 - \arccos(\hat{\rho}_r)/\pi] = 1 - \sqrt{2t}\,I(r)/\pi + O(t^{3/2}) \). Substituting into \( \tilde{\Kop}^{(2)} = 1 + \frac{1}{r}\Theta^{(1)}(\rho)\mathbb{E}[1-\arccos(\hat{\rho}_r)/\pi] + \frac{1}{r}\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)\|x_1\|\|y_1\|] \) and using \( \Theta^{(1)}(1)=\tfrac{1}{2} \), \( \Sigma^{(1)}(1)=\tfrac{1}{2} \) gives \eqref{eq:puiseux-main}.
+\end{proof}
+
+\subsection{\( I(r) \) decay and link to concentration}
+
+\begin{proposition}[\( I(r) \sim 1/\sqrt{r} \)]\label{prop:I-r-scaling}
+\( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \); \( I(r) = O(1/\sqrt{r}) \).
+\end{proposition}
+\begin{proof}
+By Stirling and \( B((r-1)/2, r/2-1) \sim \sqrt{2\pi}\,2^{-r}/\sqrt{r} \), \( \Gamma(r-\tfrac{1}{2})\Gamma(r-\tfrac{3}{2})/\Gamma(r-1)^2 \sim 1 \), we get \( I(r) \sim C/\sqrt{r} \).
+\end{proof}
+
+\paragraph{Link to concentration.} The Puiseux coefficient is \( c_1(r) = -\frac{1}{r}[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}I(r)] \). Since \( I(r) \sim 1/\sqrt{r} \), we have \( c_1(r) \sim -\frac{1}{r}[\frac{2}{\pi} + O(1/\sqrt{r})] = O(1/r) \). The Fisher--Kibble correction to the mean NTK in the \( t^{1/2} \) term is thus \( O(1/(r\sqrt{r})) \): the mean NTK approaches the deterministic limit \emph{faster} as \( r \) grows. This tightens the concentration: the constant \( C_2 \) in \( \exp(-C_2 r\epsilon^2) \) benefits from the \( 1/\sqrt{r} \) decay of \( I(r) \), as the deviation \( |\tilde{\Kop}^{(2)} - K_\infty| \) scales as \( O(1/r) \) for fixed \( t \), improving with \( r \).
+
+\begin{corollary}[RKHS equivalence]\label{cor:conditional_rkhs_homogeneous}\label{thm:no_rkhs_advantage}
+The three-layer mean NTK \( \tilde{\Kop}^{(2)} \) induces the \emph{same} RKHS as the shallow ReLU kernel. Extension to depth \( L \ge 3 \) is conjectured.
+\end{corollary}

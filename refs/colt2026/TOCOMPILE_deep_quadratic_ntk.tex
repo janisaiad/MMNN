@@ -1,0 +1,197 @@
+\documentclass[anon]{colt2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{cleveref}
+
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Id}{\mathrm{Id}}
+\newcommand{\Diag}{\mathrm{Diag}}
+\newcommand{\tr}{\mathrm{Tr}}
+\newcommand{\od}{\odot}
+\newcommand{\ip}[2]{\left\langle #1,#2\right\rangle}
+\newcommand{\Norm}[1]{\left\|#1\right\|}
+\newcommand{\Cplus}{\{z\in\CC:\Im z>0\}}
+
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
+\newtheorem{prop}{Proposition}
+\newtheorem{cor}{Corollary}
+\newtheorem{defn}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{rmk}{Remark}
+
+\title[Deep NTK in quadratic scaling]{Eigenvalue distribution of deep Neural Tangent Kernels in the quadratic scaling}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We extend the quadratic-scaling spectral analysis of the Neural Tangent Kernel (NTK) from two-layer networks to fixed-depth multilayer perceptrons with linear width ratios.
+In the regime $n\asymp d_0 d_1$ with $d_\ell/d_{\ell-1}\to \gamma_{2,\ell}$, each layerwise NTK contribution is a Hadamard product of two low-rank Gram matrices but has nontrivial bulk spectrum.
+Our approach reuses the proof spine of \citet{benigni2025eigenvaluedistributionneuraltangent}: screening low-rank terms, rewriting Hadamard products as Gram matrices in a tensor-product feature space, and applying a Bai--Zhou type Marchenko--Pastur map for independent-row sample covariances.
+The only genuinely new ingredient is a deep Gaussian-equivalence step: finite-width cumulant expansions \citep{guillen2025finitewidthneuraltangentkernels} imply that the relevant fourth-order tensors match their Gaussian counterparts up to $O(1/d)$ deterministic deformations, which are precisely the perturbations carried by the \citet{benigni2025eigenvaluedistributionneuraltangent} machinery.
+\end{abstract}
+
+\begin{keywords}
+Neural Tangent Kernel, random matrix theory, quadratic scaling, deep networks, Marchenko--Pastur, finite-width corrections
+\end{keywords}
+
+\section{Introduction}
+Understanding which functions are learned quickly by gradient descent in neural networks is controlled by the spectrum of the NTK at initialization.
+In the two-layer case, \citet{benigni2025eigenvaluedistributionneuraltangent} identified the limiting eigenvalue distribution of the NTK in a \emph{quadratic} high-dimensional regime, in which the sample size is of the same order as the product of the two relevant widths.
+The purpose of this paper is to generalize this analysis to fixed-depth multilayer perceptrons with \emph{linear} width ratios, where every layer output remains linear in the input dimension.
+
+Our contribution is conceptual and technical.
+Conceptually, we show that the deep NTK admits the same tensor-product Gram representation that underlies the two-layer analysis.
+Technically, we isolate the only new obstruction in depth: the ``diagonal weight'' that appears in the two-layer Hadamard product becomes a deep backpropagated signal, and hence is not a priori independent of the same-layer features.
+We resolve this by importing finite-width cumulant expansions (Feynman-diagram methods) to justify a Gaussian-equivalence/replacement step that restores the BP setting up to $O(1/d)$ deterministic tensor deformations.
+
+\paragraph{Roadmap.}
+In \Cref{sec:model} we define the deep network, the scaling regime, and the NT’K decomposition into layerwise Hadamard products.
+In \Cref{sec:prelim} we record the Marchenko--Pastur map viewpoint and a rank-based Stieltjes transform estimate used to discard low-rank terms.
+In \Cref{sec:decomp} we tensorize the deep NTK into a single Gram matrix with independent rows.
+In \Cref{sec:main} we state the main theorem and outline the proof by matching the dependency graph of \citet{benigni2025eigenvaluedistributionneuraltangent}.
+
+\section{Preliminaries: Stieltjes transforms and the MP map}
+\label{sec:prelim}
+
+\begin{defn}[Empirical spectral distribution and Stieltjes transform]
+For a real symmetric matrix $A\in\RR^{n\times n}$ with eigenvalues $\lambda_1,\dots,\lambda_n$, the empirical spectral distribution is
+\[
+  \mu_A \coloneqq \frac{1}{n}\sum_{i=1}^n \delta_{\lambda_i}.
+\]
+Its Stieltjes transform is $m_A(z)\coloneqq \int \frac{1}{x-z}\,\mu_A(\mathrm{d}x)=\frac{1}{n}\tr(A-z\Id)^{-1}$ for $z\in\Cplus$.
+\end{defn}
+
+\begin{lem}[Rank bound for Stieltjes transforms]\label{lem:rank-st}
+Let $A,B$ be real symmetric $n\times n$ matrices.
+Then for any $z\in\Cplus$,
+\[
+  \left|
+  \frac{1}{n}\tr(A-z\Id)^{-1}-\frac{1}{n}\tr(B-z\Id)^{-1}
+  \right|
+  \leq \frac{\pi}{n\,\Im z}\,\mathrm{rank}(A-B).
+\]
+\end{lem}
+
+\begin{defn}[Marchenko--Pastur map]\label{def:mp-map}
+Let $\nu$ be a probability measure on $[0,\infty)$ and $\gamma>0$.
+The \emph{Marchenko--Pastur map} $\mu_{\mathrm{MP}}^{\gamma}\boxtimes \nu$ is the free multiplicative convolution of $\nu$ with the Marchenko--Pastur law of shape $\gamma$.
+\end{defn}
+
+\section{Model and scaling}
+\label{sec:model}
+Fix a depth $L\geq 1$.
+Let $X^{(0)}\in\RR^{n\times d_0}$ be the data matrix with i.i.d.\ entries (centered, unit variance, finite fourth moment).
+For $\ell=1,\dots,L$, let $W^{(\ell)}\in\RR^{d_{\ell-1}\times d_\ell}$ have i.i.d.\ $\mathcal{N}(0,1)$ entries, independent across layers and independent of $X^{(0)}$.
+Let $a\in\RR^{d_L}$ have i.i.d.\ entries, centered and bounded, independent of all $W^{(\ell)}$.
+Define
+\[
+  Z^{(\ell)} \coloneqq \frac{1}{\sqrt{d_{\ell-1}}}X^{(\ell-1)}W^{(\ell)},\qquad
+  X^{(\ell)} \coloneqq \sigma(Z^{(\ell)}),
+\]
+with $\sigma$ applied entrywise, and consider the scalar-output network
+\[
+  f(X^{(0)}) \coloneqq \frac{1}{\sqrt{d_L}}X^{(L)}a\in\RR^n.
+\]
+Let $\phi\coloneqq \sigma'$ (defined Lebesgue-a.e.).
+Define the backpropagated signals $\Delta^{(\ell)}\in\RR^{n\times d_\ell}$ by
+\[
+  \Delta^{(L)} \coloneqq \phi(Z^{(L)})\odot (\mathbf{1}\, a^\top),
+  \qquad
+  \Delta^{(\ell)} \coloneqq \phi(Z^{(\ell)})\odot \frac{1}{\sqrt{d_\ell}}\Delta^{(\ell+1)}W^{(\ell+1)\top}.
+\]
+
+\begin{assumption}[Quadratic scaling]\label{ass:scaling}
+There exist constants $\gamma_1>0$ and $\gamma_{2,\ell}>0$ such that as $n\to\infty$,
+\[
+  \frac{n}{d_0d_1}\to \gamma_1,
+  \qquad
+  \frac{d_\ell}{d_{\ell-1}}\to \gamma_{2,\ell},
+  \qquad \ell=1,\dots,L.
+\]
+Set $m\coloneqq \sum_{\ell=1}^L d_{\ell-1}d_\ell$ and assume $n/m\to \gamma\in(0,\infty)$.
+\end{assumption}
+
+\begin{assumption}[Activation assumptions]\label{ass:activation}
+The activation $\sigma$ is locally Lipschitz and differentiable Lebesgue-a.e.
+Its derivative $\phi=\sigma'$ is pseudo-Lipschitz and has finite moments under $\mathcal{N}(0,1)$.
+This includes smooth activations and can be extended to ReLU by approximation since $\PP(\mathcal{N}(0,1)=0)=0$.
+\end{assumption}
+
+\section{Deep NTK decomposition and tensorization}
+\label{sec:decomp}
+Let $\Theta^{(L)}$ be the empirical NTK at initialization,
+\[
+  \Theta^{(L)}\coloneqq \nabla_\theta f(X^{(0)})\,\nabla_\theta f(X^{(0)})^\top.
+\]
+It splits as a low-rank conjugate-kernel term and $L$ Hadamard terms,
+\[
+  \Theta^{(L)} = K^{\mathrm{CK}} + \sum_{\ell=1}^L K^{(\ell)},
+  \qquad
+  K^{\mathrm{CK}}=\frac{1}{d_L}X^{(L)}X^{(L)\top},
+\]
+where for each $\ell$,
+\[
+  K^{(\ell)} \coloneqq
+  \frac{1}{d_{\ell-1}}X^{(\ell-1)}X^{(\ell-1)\top}
+  \odot
+  \frac{1}{d_\ell}\Delta^{(\ell)}\Delta^{(\ell)\top}.
+\]
+Since $\mathrm{rank}(K^{\mathrm{CK}})\le d_L$ and $d_L/n\to 0$ in \Cref{ass:scaling}, the bulk ESD is governed by $\sum_{\ell}K^{(\ell)}$.
+
+Define the tensor-product features
+\[
+  \omega_i^{(\ell)} \coloneqq x_i^{(\ell-1)}\otimes \delta^{(\ell)}(x_i)\in \RR^{d_{\ell-1}d_\ell},
+\]
+where $x_i^{(\ell-1)}$ is the $i$-th row of $X^{(\ell-1)}$ and $\delta^{(\ell)}(x_i)$ is the $i$-th row of $\Delta^{(\ell)}$.
+Then
+\[
+  K^{(\ell)}_{ij}=\frac{1}{d_{\ell-1}d_\ell}\,\ip{\omega_i^{(\ell)}}{\omega_j^{(\ell)}},
+\]
+and by concatenating $\omega_i=(\omega_i^{(1)},\dots,\omega_i^{(L)})\in\RR^{m}$ we obtain
+\[
+  \sum_{\ell=1}^L K^{(\ell)} = \frac{1}{m}\Omega\Omega^\top,
+\]
+where $\Omega\in\RR^{n\times m}$ has rows $\omega_i$.
+
+\section{Main result}
+\label{sec:main}
+
+\begin{thm}[Deep quadratic-scaling NTK bulk law]\label{thm:deep-main}
+Assume \Cref{ass:scaling} and \Cref{ass:activation}.
+Assume additionally that the deep replacement/Gaussian-equivalence step holds at each layer in the precise sense of the Benigni--Paquette resolvent replacement strategy, with deterministic $O(1/d_{\ell-1})$ fourth-order tensor deformations controlled by finite-width cumulant expansions.
+Then there exists a deterministic probability measure $\mu_{\mathrm{deep}}$ on $[0,\infty)$ such that the empirical spectral distribution of $\Theta^{(L)}$ converges weakly in probability to
+\[
+  \mu_{\mathrm{MP}}^{\gamma}\boxtimes \mu_{\mathrm{deep}},
+\]
+where $\mu_{\mathrm{MP}}^{\gamma}$ is the Marchenko--Pastur law of shape $\gamma$.
+\end{thm}
+
+\section{Proof overview and dependency graph}
+The proof follows the Benigni--Paquette dependency graph layerwise:
+\begin{enumerate}
+  \item Concentration: control quadratic forms in the deep features (Hanson--Wright type bounds).
+  \item Tensor reduction: compute the conditional covariance tensor $T$ of $\omega_i$ and show it has a deterministic limiting ESD.
+  \item Resolvent method: apply a Bai--Zhou type MP-map theorem to deduce the limiting ESD of $\frac{1}{m}\Omega\Omega^\top$.
+\end{enumerate}
+The only new step is the deep Gaussian-equivalence: we must replace the deep features entering $\omega_i$ by Gaussian surrogates with matching covariance and controlled fourth cumulants; finite-width Feynman-diagram cumulants provide the required $O(1/d)$ control.
+
+\section{Appendix (outline)}
+The appendices in a full version include:
+(i) concentration lemmas for deep features,
+(ii) a layerwise replacement proof mirroring BP,
+(iii) a Bai--Zhou MP-map statement and verification of its hypotheses,
+(iv) analysis of the leading covariance operator $Q$ and its spectrum in special cases.
+
+\bibliography{references}
+
+\end{document}
+

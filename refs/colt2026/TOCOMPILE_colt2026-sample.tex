@@ -19,7 +19,7 @@
 \title[Low-rank random features and NTK]{Low-rank neural networks preserve the MLPs Neural Tangent Kernel}
 
 \coltauthor{%
-  \Name{Janis (Heran) Aiad}\thanks{This work, including all theoretical derivations, calculations, and manuscript, was completed by J.H-A. during an undergraduateinternship at University of Maryland.}\\
+  \Name{Janis (Heran) Aiad}\thanks{This work was completed by J.H-A. during an undergraduate internship at University of Maryland.}\\
   \addr École Polytechnique, École Normale Supérieure Paris-Saclay
   \AND
   \Name{Haizhao Yang}\\
@@ -34,17 +34,7 @@
 \maketitle
 
 \begin{abstract}
-We develop a Neural Tangent Kernel (NTK) theory for low-rank and random feature networks (RF‑LR) that provides an approximation principled and computationally 
-efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that low-rank weight matrices
-do not loses expressivity. RF‑LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; 
-As a toy example, we prove rank‑driven concentration: the empirical three‑layer NTK concentrates around its 
-deterministic limit, combining angular and radial decoupling of gaussian processes outputs, we show mean NTK
-has the same Laplacian RKHS as the shallow ReLU kernel. At the spectral level for random matrices, under some assumptions to be relaxed, the NTK Gram matrix exhibits a 
-spiked and shifted Marchenko–Pastur similar to the 2-layer case : the bulk location is shifted out of 0 thanks to low-rank bottlenecks.
-Finally, we give an explicit NTK recursion and closed‑form depth expansion, clarifying how correlation kernels from random features couple across layers.
-Taken together, these results establish that RF‑LR preserves expressivity and gives optimization guarantees from smallest eigenvalues
-while lowering the entry cost to the kernel regime from \(O(N^2)\) to \(O(rN)\), 
-and they yield a tractable framework for finite‑width corrections and spectral predictions at moderate model sizes.
+We develop a Neural Tangent Kernel (NTK) theory for low-rank random feature networks (RF-LR) that provides a principled, computationally efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that RF-LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; low-rank weight matrices do not lose expressivity. Combining Fisher--Kibble decoupling of Gaussian process outputs with a hypergeometric analysis of the mean NTK near \( \rho=1 \), we establish the Puiseux expansion and RKHS equivalence. We link the \( I(r) \sim 1/\sqrt{r} \) decay to tighter concentration as \( r \) grows. The empirical three-layer NTK concentrates around its deterministic limit with sub-Gaussian tails in \( r \). At the spectral level, the NTK Gram matrix exhibits a spiked and shifted Marchenko--Pastur law. We give an explicit NTK recursion and closed-form depth expansion. Taken together, these results establish that RF-LR preserves expressivity and gives optimization guarantees while lowering the parameter cost from \( O(N^2) \) to \( O(rN) \).
 \end{abstract}
 
 \begin{keywords}
@@ -54,6 +44,7 @@ Neural Tangent Kernel, Random Features, Low Rank, Scaling Laws, Infinite Width, 
 \input{introduction}
 \input{definition}
 \input{recursion}
+\input{depth_scaling}
 \input{rkhs}
 \input{spectra}
 \input{conclusion}

@@ -1,0 +1,142 @@
+\section{NTK mean at next to leading order}
+\label{app:NLO_ntk_mean}
+As disccused in section \ref{sec-finitewidth-corrections-NTK}, the use of the Feynman rules introduced in the main text, and the selection rules of Appendix \ref{app:feynman_rules} constrain the number of diagrams one can construct for the case of two NTK external lines at leading order in $\frac{1}{n}$, to those displayed in \eqref{firstcorrectionntk}.
+
+Next, we provide the algebraic formulae associated to each diagram in such expansion:
+\begingroup
+\allowdisplaybreaks
+\begin{align}
+\begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!\*{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[above = 22pt of v, dot, minimum size = 0pt] (g) {};
+      \vertex[above = 20pt of g, dot, minimum size = 0pt] (w) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (g) -- [color1, ghost, half left] (w) -- [color1, ghost, half left] (g)
+      };
+      \vertex[above = 0pt of G, blob] (K0){};
+      \vertex[above = 20pt of g, smallblob] (K1) {};
+      \vertex[above = 10pt of w] (K1) {{\scriptsize $\frac{1}{n_{\ell-1}} \Theta^{\{1\}(\ell)}$}};
+      \vertex[right = 15pt of G, label = {}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  &= \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}} \Theta^{\{1\}(\ell)}_{\textcolor{color1}{12}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}}\nonumber\\
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!\*{\scriptsize $\widehat{\Delta \Omega}_{j,12}$}}] (j){};
+      \vertex[above = 16pt of v, propblob] (G) {};
+      \vertex[above = 22pt of v, dot, minimum size = 0pt] (g) {};
+      \vertex[above = 20pt of g, dot, minimum size = 0pt] (w) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [photon] (G) -- (g) -- [half left] (w) -- [half left] (g)
+      };
+      \vertex[above = 0pt of G, propblob] (K0){};
+      \vertex[above = 20pt of g, smallblob] (K1) {};
+      \vertex[above = 10pt of w] (K1) {{\scriptsize $\frac{1}{n_{\ell-1}} K^{\{1\}(\ell)}$}};
+      \vertex[right = 15pt of G, label = {\scriptsize $z_j$}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  &=  \frac{1}{2 n_{\ell-1}}\sum_{\beta_{1},\beta_{2} \in \{1,2\}} K^{\{1\}(\ell)}_{\beta_{1}\beta_{2}}\langle \frac{d^{2} (\widehat{\Delta \Omega}^{(\ell+1)}_{12})}{d z^{(\ell)}_{\beta_{1}} d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}} \nonumber\\
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\widehat{\Delta \Omega}_{j,12}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [photon] (G) -- (Gl) -- [half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [quarter right] (V4r) -- [half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} V_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  &= \frac{1}{n_{\ell-1}}\sum_{\beta_{1},\beta_{2},\beta_{3},\beta_{4}\in \{1,2\}}V^{(\ell)}_{(\beta_{1}\beta_{2})(\beta_{3}\beta_{4})}\langle \frac{d^{4}(\widehat{\Delta \Omega}^{(\ell+1)}_{12})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}d z^{(\ell)}_{\beta_{3}}d z^{(\ell)}_{\beta_{4}}}\rangle_{K^{(\ell)}}\nonumber\\
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (Gl) -- [color1, ghost, half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [quarter right] (V4r) -- [color1, ghost, half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} D_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  &= \frac{C_{W}^{(\ell+1)}}{2 n_{\ell-1}}\sum_{\beta_{1},\beta_{2} \in \{1,2\}}\langle \frac{d^{2} (\sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}} D^{(\ell)}_{\beta_{1}\beta_{2}\textcolor{color1}{12}} \nonumber\\
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (Gl) -- [color1, ghost, half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [color1, ghost, quarter right] (V4r) -- [half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} F_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  &= \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\sum_{\beta_{1},\beta_{2} \in \{1,2\}}\langle \frac{d^{2} (\sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}} F^{(\ell)}_{\beta_{1}\textcolor{color1}{1}\beta_{2}\textcolor{color1}{2}}
+\end{align}
+\endgroup
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

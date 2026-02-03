@@ -1,0 +1,1735 @@
+\section{Feynman diagrams}
+\begingroup
+\allowdisplaybreaks
+
+In this Appendix, we provide the formal definition of the relevant tensors describing the statistics of the NTK, dNTK and ddNTKS at leading order in $\frac{1}{n}$, as well as their diagrammatic representation and corresponding algebraic expressions.
+\label{app:proofs}
+
+\subsection{NTK-Preactivation cross correlator}
+As discussed in section \ref{sec-finitewidth-corrections-NTK}, the first non-trivial correlator involving preactivations and the NTK can be written as
+\begin{align}
+  &\EE^{c}_{\theta}[z^{(\ell+1)}_{i_{1}}(x_{1}),z^{(\ell+1)}_{i_{2}}(x_{2}),\widehat{\Delta\Theta}^{(\ell+1)}_{i_{3}i_{4}}(\textcolor{color1}{x_{3}},\textcolor{color1}{x_{4}})]\nonumber\\
+  &\qquad=\frac{1}{n_{\ell}}\!\!\left(\! D^{(\ell+1)}_{12\textcolor{color1}{34}}\delta_{i_{1}i_{2}}\delta_{i_{3}i_{4}}{+}F^{(\ell+1)}_{1\textcolor{color1}{3}2\textcolor{color1}{4}}\delta_{i_{1}i_{3}}\delta_{i_{2}i_{4}}{+}F^{(\ell+1)}_{1\textcolor{color1}{4}2\textcolor{color1}{3}}\delta_{i_{1}i_{4}}\delta_{i_{2}i_{3}} \!\right)\,.
+\end{align}
+The Feynman rules we studied in the main text then allow us to write the following diagrams for the tensor $D^{(\ell+1)}_{12\textcolor{color1}{34}}$:
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, dot, minimum size=3pt, label = {below: {\footnotesize $1$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $2$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}D^{(\ell +1)}_{12\textcolor{color1}{3}\textcolor{color1}{4}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- (b) -- (x2), 
+	 (x3) -- [color1, ghost] (b) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=& 
+\sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex (l) {};
+\vertex[below = 16pt of l, dot, minimum size=3pt, label = {below: {\footnotesize $1$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $2$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(v12) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta G}_{j}$}, inner sep = 4pt] (b) -- [black, photon, edge label = {\scriptsize \,$\widehat{\Delta \Omega}_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color1, ghost] (v34) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, dot, minimum size=3pt, label = {below: {\footnotesize $1$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $2$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b12) {};
+\vertex[right = 16pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 1pt of w12, label = {above: {\scriptsize \hspace{-10pt} $z_{j_1}$}}] (w12u) {};
+\vertex[below = 12pt of w12] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 16pt of w34, blob] (b34) {};
+\vertex[above = 1pt of w34, label = {above: {\scriptsize \hspace{10pt} $z_{j_2}$}}] (w34u) {};
+\vertex[below = 12pt of w34] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 30pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(v12) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [quarter left] (b34) -- [black, photon, edge label = {\scriptsize \,$\widehat{\Delta \Omega}_{j_2}$}, inner sep = 4pt] (v34),
+	(x3) -- [color1, ghost] (v34) -- [color1, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}V_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& 
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, dot, minimum size=3pt, label = {below: {\footnotesize $1$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $2$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b12) {};
+\vertex[right = 16pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 1pt of w12, label = {above: {\scriptsize \hspace{-10pt} $z_{j_1}$}}] (w12u) {};
+\vertex[below = 12pt of w12] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This control the distance to the right white blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 30pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 30pt of b34, dot, minimum size=0pt] (vv34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(v12) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color1, ghost, quarter left] (b34) -- [color1doubghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34), 
+	(x3) -- [color1, ghost] (v34) -- [color1, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}D_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+whose algebraic representation reads 
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}D^{(\ell +1)}_{12\textcolor{color1}{3}\textcolor{color1}{4}} &=& \frac{C_{W}^{(\ell +1)}}{n_{\ell}}\langle \widehat{\Delta G}^{(\ell)}_{12}\widehat{\Delta \Omega}_{34}^{(\ell +1)}\rangle_{K^{(\ell)}} \nonumber\\
+	&& + \frac{C_{W}^{(\ell +1)}}{4n_{\ell-1}}\sum_{\beta_{1},\beta_{2},\beta_{3},\beta_{4} \in \{1,2,3,4\}}V^{(\ell)}_{(\beta_{1}\beta_{2})(\beta_{3}\beta_{4})}\langle \frac{d^{2}(\widehat{\Delta G}^{(\ell)}_{12})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}}\langle \frac{d^{2}(\widehat{\Delta \Omega}^{(\ell +1)}_{34})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{2n_{\ell-1}}\sum_{\beta_{1},\beta_{2} \in \{1,2,3,4\}}\langle \frac{d^{2}(\widehat{\Delta G}^{(\ell)}_{12})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}} \langle \sigma'^{(\ell)}_{\textcolor{color1}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}D^{(\ell)}_{\beta_{1}\beta_{2}\textcolor{color1}{34}}
+\end{eqnarray}
+
+The tensor $F^{(\ell+1)}$ was studied in detail in the main text, thus we omit its discussion.
+
+\subsection{NTK variance}
+As shown in \cite{roberts2021a}, the NTK variance can be written in the compact form
+\begin{align}
+  &\EE^{c}_{\theta}[\widehat{\Delta\Theta}^{(\ell+1)}_{i_{1}i_{2}}(\textcolor{color1}{x_{1}},\textcolor{color1}{x_{2}}),\widehat{\Delta\Theta}^{(\ell+1)}_{i_{3}i_{4}}(\textcolor{color2}{x_{3}},\textcolor{color2}{x_{4}})]\nonumber\\
+  &\qquad=\frac{1}{n_{\ell}}\!\!\left(\! A^{(\ell+1)}_{\textcolor{color1}{12}\textcolor{color2}{34}}\delta_{i_{1}i_{2}}\delta_{i_{3}i_{4}}{+}B^{(\ell+1)}_{\textcolor{color1}{1}\textcolor{color2}{3}\textcolor{color1}{2}\textcolor{color2}{4}}\delta_{i_{1}i_{3}}\delta_{i_{2}i_{4}}{+}B^{(\ell+1)}_{\textcolor{color1}{1}\textcolor{color2}{4}\textcolor{color1}{2}\textcolor{color2}{3}}\delta_{i_{1}i_{4}}\delta_{i_{2}i_{3}} \!\right)\,.
+\end{align}
+The use of the NTK Feynman rules of section \ref{feynman-diagrams-NTKs}, then simply dictate the definition of the tensor $A^{(\ell+1)}_{\textcolor{color1}{12}\textcolor{color2}{34}}$: 
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}A^{(\ell +1)}_{\textcolor{color1}{12}\textcolor{color2}{34}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (b) -- [color1, ghost](x2),
+    (x3) -- [color2, ghost] (b) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=& 
+\sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color1, ghost] (x2),
+	(v12) -- [black, photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{j}$}, inner sep = 4pt] (b) -- [black, photon, edge label = {\scriptsize \,$\widehat{\Delta \Omega}_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+ + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+%This controls the length of the first propagator
+\vertex[right = 35pt of v12, blob] (b12) {};
+\vertex[right = 16pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 1pt of w12, label = {above: {\scriptsize \hspace{-10pt} $z_{j_1}$}}] (w12u) {};
+\vertex[below = 12pt of w12] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 16pt of w34, blob] (b34) {};
+\vertex[above = 1pt of w34, label = {above: {\scriptsize \hspace{10pt} $z_{j_2}$}}] (w34u) {};
+\vertex[below = 12pt of w34] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+%This controls the length of the last propagator
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color1, ghost](x2),
+	(v12) -- [black, photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{j_1}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [quarter left] (b34) -- [black, photon, edge label = {\scriptsize \,$\widehat{\Delta \Omega}_{j_2}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}V_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + 
+\sum_{j_1,j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+%This controls the length of the first propagator
+\vertex[right = 35pt of v12, blob] (b12) {};
+\vertex[right = 16pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 1pt of w12, label = {above: {\scriptsize \hspace{-10pt} $z_{j_1}$}}] (w12u) {};
+\vertex[below = 12pt of w12] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+%This controls the length of the last propagator
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color1, ghost](x2),
+	(v12) -- [black, photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{j_1}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(b34) -- [color2, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2doubghost, edge label = {\scriptsize \,$\sigma'_{j_2}\sigma'_{j_2}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}D_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture} \nonumber\\
+&& + 
+\sum_{j_1,j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+%This controls the length of the first propagator
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the second white blob to the black blob
+\vertex[right = 16pt of w34, blob] (b34) {};
+\vertex[above = 1pt of w34, label = {above: {\scriptsize \hspace{10pt} $z_{j_2}$}}] (w34u) {};
+\vertex[below = 12pt of w34] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+%This controls the length of the last propagator
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color1, ghost](x2),
+	(v12) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color1, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [quarter left] (b34) -- [black, photon, edge label = {\scriptsize \,$\widehat{\Delta \Omega}_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}D_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color1, ghost] (x2),
+	(v12) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color1, ghost, quarter left] (b12),
+	(b34) -- [color2, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2doubghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}A_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+which translates into the analytical expression   
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}A^{(\ell +1)}_{\textcolor{color1}{12}\textcolor{color2}{34}} &=& \frac{1}{n_{\ell}}\langle \widehat{\Delta \Omega}^{(\ell + 1)}_{12}\widehat{\Delta \Omega}_{34}^{(\ell +1)}\rangle_{K^{(\ell)}} \nonumber\\
+	&& + \frac{1}{4n_{\ell-1}}\sum_{\beta_{1},\beta_{2},\beta_{3},\beta_{4} \in \{1,2,3,4\}}V^{(\ell)}_{(\beta_{1}\beta_{2})(\beta_{3}\beta_{4})}\langle \frac{d^{2}(\widehat{\Delta \Omega}^{(\ell + 1)}_{12})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}}\langle \frac{d^{2}(\widehat{\Delta \Omega}^{(\ell +1)}_{34})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}}\nonumber\\
+	&& + \frac{C_{W}^{(\ell +1)}}{2n_{\ell-1}}\sum_{\beta_{1},\beta_{2} \in \{1,2,3,4\}}\langle \frac{d^{2}(\widehat{\Delta \Omega}^{(\ell + 1)}_{12})}{d z^{(\ell)}_{\beta_{1}}d z^{(\ell)}_{\beta_{2}}}\rangle_{K^{(\ell)}} \langle \sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color2}{4}}\rangle_{K^{(\ell)}}D^{(\ell)}_{\beta_{1}\beta_{2}\textcolor{color2}{34}} \nonumber\\
+	&& + \frac{C_{W}^{(\ell +1)}}{2n_{\ell-1}}\sum_{\beta_{3},\beta_{4} \in \{1,2,3,4\}}\langle \frac{d^{2}(\widehat{\Delta \Omega}^{(\ell + 1)}_{34})}{d z^{(\ell)}_{\beta_{3}}d z^{(\ell)}_{\beta_{4}}}\rangle_{K^{(\ell)}} \langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}}D^{(\ell)}_{\textcolor{color1}{12}\beta_{3}\beta_{4}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}} \langle \sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color2}{4}}\rangle_{K^{(\ell)}}A^{(\ell)}_{\textcolor{color1}{12}\textcolor{color2}{34}} 
+\end{eqnarray}
+
+Similarly, one can find the tensor $B^{(\ell + 1)}$ from the following diagrammatic relation:
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}B^{(\ell +1)}_{\textcolor{color1}{1}\textcolor{color2}{3}\textcolor{color1}{2}\textcolor{color2}{4}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (b) -- [color2, ghost](x2),
+	(x3) -- [color1, ghost] (b) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=&
+\sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color2, ghost] (x2),
+	(v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color1, ghost] (v34) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{3}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color2, ghost] (x2),
+	(v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color1, ghost, quarter left] (b12),
+	(b34) -- [color2, ghost, quarter left] (w34) -- [color1, ghost, quarter left] (b34) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color1, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+\end{eqnarray}
+whose algebraic interpretation reads
+\begin{eqnarray}
+\frac{1}{n_{\ell}}B^{(\ell +1)}_{\textcolor{color1}{1}\textcolor{color2}{3}\textcolor{color1}{2}\textcolor{color2}{4}} &=& \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color1}{12}}\Theta^{(\ell)}_{\textcolor{color2}{34}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color2}{4}}\rangle_{K^{(\ell)}} \nonumber\\
+&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{4}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color1}{1}\textcolor{color2}{3}\textcolor{color1}{2}\textcolor{color2}{4}}
+\end{eqnarray}
+
+\subsection{dNTK-Preactivation cross correlator}
+The first relevant correlator at leading order in $\frac{1}{n}$ including the dNTK is given by \cite{roberts2021a}
+\begin{align}
+  \mathbb{E}^{c}_{\theta} \left[ \widehat{\mathrm{d}\Theta}^{(\ell + 1)}_{i_0 i_1 i_2}( \textcolor{color3}{x_0}, \textcolor{color1}{x_1}, \textcolor{color2}{x_2}), z^{(\ell + 1)}_{i_3}(x_3)\right] &=
+  \frac{1}{n_{\ell}} 
+  \left[ 
+    \delta_{i_0 i_3} \delta_{i_1 i_2} P_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}
+    + 
+    \delta_{i_0 i_1} \delta_{i_2 i_3} Q_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}
+    + 
+    \delta_{i_0 i_2} \delta_{i_1 i_3} Q_{\textcolor{color3}{0}\textcolor{color2}{2}\textcolor{color1}{1}3}^{(\ell +1)}
+  \right]
+\end{align}
+The Feynman rules introduced in Appendix \ref{app:feynman_rules}, then lead to the following expression for the tensor $P_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}$:
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}P_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color3, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color3}{0}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (b) -- [color2, ghost](x2),
+	(x3) -- [color1color2dntknew] (b) -- (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=&
+\sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color3, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color3}{0}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color2, ghost] (x2),
+	(v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma''_{j}\sigma_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color1color2dntknew] (v34) -- (x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{0}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{0}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color3, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color3}{0}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color2, ghost] (x2),
+	(v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color1, ghost, quarter left] (b12),
+	(b34) -- [color2, ghost, quarter left] (w34) -- [color1, ghost, quarter left] (b34) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma''_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color1color2dntknew] (v34) -- (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& 
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color3}{0}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_{2},\beta_{3}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color3, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color3}{0}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color1, ghost] (v12) -- [color2, ghost] (x2),
+	(v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color1, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color2color1dntknew, quarter left] (b34) -- [color1color2blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color1color2dntknew] (v34) -- (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}P_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture} 
+\end{eqnarray}
+or, equivalently
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}P_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)} &=& \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color1}{01}}\Theta^{(\ell)}_{\textcolor{color2}{02}}\langle\sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{3}\rangle_{K^{(\ell)}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\rangle_{K^{(\ell)}}\langle \sigma''^{(\ell)}_{\textcolor{color1}{0}}\sigma^{(\ell)}_{\textcolor{color2}{0}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color1}{0}\textcolor{color2}{0}\textcolor{color1}{1}\textcolor{color2}{2}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\rangle_{K^{(\ell)}}\sum_{\beta_{3}\in \{1,2,3,4\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{3})}{d z^{(\ell)}_{\beta_{3}}}\rangle_{K^{(\ell)}}  P^{(\ell)}_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}\beta_{3}}
+\end{eqnarray}
+
+The application of these same rules to the construction of the tensor $Q_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}$ yields:
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}Q_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3}^{(\ell +1)}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color2color1dntknew] (b) -- [color1, ghost](x2),
+	(x3) -- [color2, ghost] (b) -- (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=&
+\frac{1}{C_{W}^{(\ell +1)}} \begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $1$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}F_{\textcolor{color2}{0}1\textcolor{color2}{2}3}^{(\ell +1)}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1)  -- [color2, ghost] (b) -- (x2),
+	(x3) -- [color2, ghost] (b) -- (x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+	(v12) -- [blackcolor2ghost, edge label = {\scriptsize \;$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color2blackghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- (x4)
+};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{1}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{3}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+	(v12) -- [blackcolor2ghost, edge label = {\scriptsize \;$\sigma''_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color2, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& 
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{1}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color3}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\beta_{3}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $3$}}] (x4) {};
+\diagram*{
+	(x1) -- [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+	(v12) -- [ntkdntkcolor1color2, edge label = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color1color2dntknew, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}Q_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture} 
+\end{eqnarray}
+which, in algebraic notation, reads
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}Q^{(\ell +1)}_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}3} &=& \frac{1}{C_{W}^{(\ell +1)}n_{\ell}}F^{(\ell +1)}_{\textcolor{color2}{0}1\textcolor{color2}{2}3} + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color1}{0}\textcolor{color1}{1}}\Theta^{(\ell)}_{\textcolor{color2}{0}\textcolor{color2}{2}}\langle \sigma''^{(\ell)}_{\textcolor{color2}{0}}\sigma'^{(\ell)}_{1}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma^{(\ell)}_{3}\rangle_{K^{(\ell)}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color1}{01}}\sum_{\lambda_{1},\lambda_{3}\in\{0,1,2,3\}}\langle \frac{d (\sigma''^{(\ell)}_{\textcolor{color2}{0}}\sigma'^{(\ell)}_{1})}{d z^{(\ell)}_{\lambda_{1}}}\rangle_{K^{(\ell)}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}F^{(\ell)}_{\lambda_{1}\textcolor{color2}{0}\lambda_{3}\textcolor{color2}{2}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color3}{0}}\sigma'^{(\ell)}_{\textcolor{color1}{1}}\rangle_{K^{(\ell)}}\sum_{\beta_{3} \in \{0,1,2,3\}} \langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma^{(\ell)}_{3})}{d z^{(\ell)}_{\beta_{3}}}\rangle_{K^{(\ell)}}Q^{(\ell)}_{\textcolor{color3}{0}\textcolor{color1}{1}\textcolor{color2}{2}\beta_{3}}
+\end{eqnarray}
+
+
+\subsection{dd$_{\text{I}}$NTK mean}
+Unlike the previous cases, the first non-trivial correlator containing the ddNTK is its mean itself. For the first type, one finds that \cite{roberts2021a}:
+\begin{align}
+  \mathbb{E}^{c}_{\theta} \left[ \widehat{\text{dd}_{\text{I}}\Theta}_{i_0i_1i_2i_3}^{(\ell + 1)}(\textcolor{color4}{x_0},\textcolor{color6}{x_1},\textcolor{color2}{x_2}, \textcolor{color1}{x_3}) \right]
+  &= \frac{1}{n_{\ell}} \left[ \delta_{i_0i_1}\delta_{i_2i_3} R_{\textcolor{color4}{0}\textcolor{color6}{1}\textcolor{color2}{2}\textcolor{color1}{3}}^{(\ell+1)} + \delta_{i_0i_2}\delta_{i_3i_1} R_{\textcolor{color4}{0}\textcolor{color2}{2}\textcolor{color6}{1}\textcolor{color1}{3}}^{(\ell+1)} + \delta_{i_0i_3}\delta_{i_1i_2} R_{\textcolor{color4}{0}\textcolor{color1}{3}\textcolor{color6}{1}\textcolor{color2}{2}}^{(\ell+1)} \right]
+\end{align}
+
+Again, the use of the Feynman rules \ref{app:feynman_rules}, imply the following structure for the tensor $R_{\textcolor{color4}{0}\textcolor{color6}{1}\textcolor{color2}{2}\textcolor{color1}{3}}^{(\ell+1)}$:
+
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, color1, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}R^{(\ell +1)}_{\textcolor{color4}{0}\textcolor{color6}{1}\textcolor{color2}{2}\textcolor{color1}{3}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (b) -- [color6, ghost](x2),
+	(x3) -- [color2, ghost] (b) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=& \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma''_{j}\sigma_{j}$}, inner sep = 4pt] (b) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture} + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{0}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color2, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{1}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color3}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [blackcolor1color2ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color1color2dntknew, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}P_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma'''_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{0}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma'''_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color2, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{1}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color3}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [blackcolor1color2ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color1color2dntknew, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}P_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{0}$}}] (x1) {};
+\vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{1}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color4}{0}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+	(v12) -- [color6color6color1color2ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color6, ghost, quarter left] (w12) -- [color6color1color2ddntk2new, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}R_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+
+or, in analytical form
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}R^{(\ell +1)}_{\textcolor{color4}{0}\textcolor{color6}{1}\textcolor{color2}{2}\textcolor{color1}{3}} &=& \frac{C_{W}^{(\ell +1)}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color2}{0}\textcolor{color2}{2}}\Theta^{(\ell)}_{\textcolor{color1}{0}\textcolor{color1}{3}}\langle \sigma''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}} + \frac{C_{W}^{(\ell +1)}}{n_{\ell-1}}\langle \sigma''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color2}{0}\textcolor{color1}{0}\textcolor{color2}{2}\textcolor{color1}{3}}\nonumber\\
+	&& + \frac{C_{W}^{(\ell +1)}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}}\sum_{\lambda_{1} \in \{0,1,2,3\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1})}{d z^{(\ell)}_{\lambda_{1}}}\rangle_{K^{(\ell)}}P^{(\ell)}_{\textcolor{color3}{0}\textcolor{color2}{2}\textcolor{color1}{3}\lambda_{1}} \nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color6}{0}\textcolor{color6}{1}}\Theta^{(\ell)}_{\textcolor{color2}{0}\textcolor{color2}{2}}\Theta^{(\ell)}_{\textcolor{color1}{0}\textcolor{color1}{3}}\langle \sigma'''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1}\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}} \nonumber\\
+        && + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color6}{0}\textcolor{color6}{1}}\langle \sigma'''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color2}{0}\textcolor{color1}{0}\textcolor{color2}{2}\textcolor{color1}{3}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color6}{0}\textcolor{color6}{1}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}}\sum_{\lambda_{1} \in \{0,1,2,3\}}\langle \frac{d (\sigma''^{(\ell)}_{\textcolor{color3}{0}}\sigma^{(\ell)}_{1})}{d z^{(\ell)}_{\lambda_{1}}}\rangle_{K^{(\ell)}}P^{(\ell)}_{\textcolor{color3}{0}\textcolor{color2}{2}\textcolor{color1}{3}\lambda_{1}} \nonumber\\
+	&& + \frac{(C_{W}^{(\ell +1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color4}{0}}\sigma'^{(\ell)}_{\textcolor{color6}{1}}\rangle_{K^{(\ell)}}\langle\sigma'^{(\ell)}_{\textcolor{color2}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\rangle_{K^{(\ell)}}R^{(\ell)}_{\textcolor{color4}{0}\textcolor{color6}{1}\textcolor{color2}{2}\textcolor{color1}{3}}
+\end{eqnarray}
+
+\subsection{dd$_{\text{II}}$NTK mean}
+Analogously, the mean of the second type of the ddNTK can be shown to have the structure \cite{roberts2021a}:
+
+\begin{align}\label{ddiintkmean}
+  \mathbb{E}^{c}_{\theta} \left[ \widehat{\text{dd}_{\text{II}}\Theta}_{i_0i_1i_2i_3}^{(\ell + 1)}(\textcolor{color7}{x_1}\textcolor{color5}{x_2}\textcolor{color2}{x_3}\textcolor{color1}{x_4}) \right]
+  &= \frac{1}{n_{\ell}} \left[ \delta_{i_1i_2}\delta_{i_3i_4} S_{\textcolor{color7}{1}\textcolor{color5}{2}\textcolor{color2}{3}\textcolor{color1}{4}}^{(\ell+1)} + \delta_{i_1i_3}\delta_{i_2i_4} T_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color5}{2}\textcolor{color1}{4}}^{(\ell+1)} + \delta_{i_1i_4}\delta_{i_2i_3} U_{\textcolor{color7}{1}\textcolor{color1}{4}\textcolor{color5}{2}\textcolor{color2}{3}}^{(\ell+1)} \right]
+\end{align}
+
+Once more, the set of Feynman rules \ref{app:feynman_rules} dictates the definition of the tensors on the r.h.s of \eqref{ddiintkmean}. For the tensor $S_{\textcolor{color7}{1}\textcolor{color5}{2}\textcolor{color2}{3}\textcolor{color1}{4}}^{(\ell+1)}$, one finds
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, color1, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}S^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color5}{2}\textcolor{color2}{3}\textcolor{color1}{4}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (b) -- [color6color1ddntknew](x2),
+	(x3) -- [color2, ghost] (b) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=&  \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
+ + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color2, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma''_{j}\sigma''_{j}$}, inner sep = 4pt] (b) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+	(v12) -- [color1color2ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma''_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color2, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}B_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color5}{2}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color7}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+	(v12) -- [ddntkddntkcolor1color2ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color6color1ddntk2new, quarter left] (w12) -- [color6color2ddntk2new, quarter left] (b12),
+	(b34) -- [color1,ghost, quarter left] (w34) -- [color2, ghost, quarter left] (b34) -- [color2color1ghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color2, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}S_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+or, in algebraic form
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}S^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color5}{2}\textcolor{color2}{3}\textcolor{color1}{4}} &=& \frac{C_{W}^{(\ell+1)}}{n_{\ell}} \langle \sigma'^{(\ell)}_{\textcolor{color2}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}\Theta^{(\ell)}_{\textcolor{color2}{1}\textcolor{color2}{3}}\Theta^{(\ell)}_{\textcolor{color1}{2}\textcolor{color1}{4}} + \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color2}{1}\textcolor{color1}{2}\textcolor{color2}{3}\textcolor{color1}{4}}\nonumber\\
+	&&  + \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color6}{1}\textcolor{color6}{2}}\Theta^{(\ell)}_{\textcolor{color2}{1}\textcolor{color2}{3}}\Theta^{(\ell)}_{\textcolor{color1}{2}\textcolor{color1}{4}}\langle \sigma''^{(\ell)}_{\textcolor{color2}{1}}\sigma''^{(\ell)}_{\textcolor{color1}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color6}{1}\textcolor{color6}{2}}\langle \sigma''^{(\ell)}_{\textcolor{color2}{1}}\sigma''^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}B^{(\ell)}_{\textcolor{color2}{1}\textcolor{color1}{2}\textcolor{color2}{3}\textcolor{color1}{4}}\nonumber\\
+	&& + \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color5}{2}}\rangle_{K^{\ell}}\langle \sigma'^{(\ell)}_{\textcolor{color2}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}S^{(\ell)}_{\textcolor{color7}{1}\textcolor{color5}{2}\textcolor{color2}{3}\textcolor{color1}{4}}
+\end{eqnarray}
+
+
+For the tensor $T_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color5}{2}\textcolor{color1}{4}}^{(\ell+1)}$, one obtains 
+
+
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, color1, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}T^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color5}{2}\textcolor{color1}{4}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (b) -- [color2, ghost](x2),
+	(x3) -- [color6color1ddntk2new] (b) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+&=&  \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \;$\sigma'_{j}\sigma_{j}$}, inner sep = 4pt] (b) -- [color6blackghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color6color1ddntk2new] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \;$\sigma'_{j}\sigma_{j}$}, inner sep = 4pt] (b) -- [color6blackghost, edge label = {\scriptsize \,$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color6color1ddntk2new] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma''_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color5}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color6color1ddntknew, quarter left] (b34) -- [ntkdntkcolor6color1color1, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}Q_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \;$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color6blackghost, edge label = {\scriptsize \,$\sigma'_{j}\sigma_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color6color1ddntk2new] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{3}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color7}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [ntkdntkcolor2color2color6, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color6color2ddntknew, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}Q_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \;$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [color6blackghost, edge label = {\scriptsize \,$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color6color1ddntk2new] (v34) -- [color1, ghost](x4)
+};
+\end{feynman}
+\end{tikzpicture}
++ \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma''_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $z_{j_1,\lambda_{3}}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color6}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color5}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [blackcolor6ghost, edge label = {\scriptsize \,$\sigma''_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [quarter left] (w12) -- [color6, ghost, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color6color1ddntknew, quarter left] (b34) -- [ntkdntkcolor6color1color1, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}Q_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{3}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color7}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color6}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $z_{j_2,\lambda_{4}}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [ntkdntkcolor2color2color6, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color6color2ddntknew, quarter left] (b12),
+	(b34) -- [quarter left] (w34) -- [color6, ghost, quarter left] (b34) -- [color6blackghost, edge label = {\scriptsize \,$\sigma''_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}Q_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color2}{3}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color7}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color5}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color1}{4}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color2, ghost] (x2),
+	(v12) -- [ntkdntkcolor2color2color6, edge label = {\scriptsize \,$\sigma'_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color2, ghost, quarter left] (w12) -- [color6color2ddntknew, quarter left] (b12),
+	(b34) -- [color1, ghost, quarter left] (w34) -- [color6color1ddntknew, ghost, quarter left] (b34) -- [ntkdntkcolor6color1color1, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color1, ghost](x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}T_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+
+with algebraic representation given by
+\begin{eqnarray}
+  \frac{1}{n_{\ell}}T^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color5}{2}\textcolor{color1}{4}} &=& \frac{1}{n_{\ell}}\langle \sigma'^{(\ell)}_{\textcolor{color6}{1}}\sigma^{(\ell)}_{3}\sigma'^{(\ell)}_{\textcolor{color6}{2}}\sigma^{(\ell)}_{4}\rangle_{K^{(\ell)}}\Theta^{(\ell)}_{\textcolor{color6}{12}} \nonumber\\
+  && + \frac{1}{n_{\ell-1}}\sum_{\lambda_{3},\lambda_{4}\in\{1,2,3,4\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{1}}\sigma^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{2}}\sigma^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}F^{(\ell)}_{\lambda_{3}\textcolor{color6}{1}\lambda_{4}\textcolor{color6}{2}}\nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color6}{12}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\langle \sigma'^{(\ell)}_{\textcolor{color6}{1}} \sigma^{(\ell)}_{3}\sigma''^{(\ell)}_{\textcolor{color6}{2}} \sigma'^{(\ell)}_{4} \rangle_{K^{(\ell)}} \nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\sum_{\lambda_{3},\lambda_{4}\in\{1,2,3,4\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{1}}\sigma^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}\langle \frac{d (\sigma''^{(\ell)}_{\textcolor{color6}{2}}\sigma'^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}F^{(\ell)}_{\lambda_{3}\textcolor{color6}{1}\lambda_{4}\textcolor{color6}{2}}\nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color5}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}\sum_{\lambda_{3} \in \{1,2,3,4\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{1}}\sigma'^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}Q^{(\ell)}_{\textcolor{color5}{2}\textcolor{color1}{4}\textcolor{color6}{1}\lambda_{3}}\nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color6}{12}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\langle \sigma''^{(\ell)}_{\textcolor{color6}{1}} \sigma'^{(\ell)}_{3}\sigma'^{(\ell)}_{\textcolor{color6}{2}} \sigma^{(\ell)}_{4} \rangle_{K^{(\ell)}} \nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\sum_{\lambda_{3},\lambda_{4}\in\{1,2,3,4\}}\langle \frac{d (\sigma''^{(\ell)}_{\textcolor{color6}{1}}\sigma'^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{2}}\sigma^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}F^{(\ell)}_{\lambda_{4}\textcolor{color6}{2}\lambda_{3}\textcolor{color6}{1}}\nonumber\\
+&& + \frac{C_{W}^{(\ell+1)}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}}\sum_{\lambda_{4} \in \{1,2,3,4\}}\langle \frac{d (\sigma'^{(\ell)}_{\textcolor{color6}{2}}\sigma'^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}Q^{(\ell)}_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color6}{2}\lambda_{4}}\nonumber\\
+&& + \frac{(C_{W}^{\ell+1})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\Theta^{(\ell)}_{\textcolor{color6}{12}}\langle \sigma''^{(\ell)}_{\textcolor{color6}{1}}\sigma'^{(\ell)}_{3}\sigma''^{(\ell)}_{\textcolor{color6}{2}}\sigma'^{(\ell)}_{4}\rangle_{K^{(\ell)}}\nonumber\\
+&& + \frac{(C_{W}^{\ell+1})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\sum_{\lambda_{3},\lambda_{4} \in \{1,2,3,4\}}\langle\frac{d(\sigma''^{(\ell)}_{\textcolor{color6}{1}}\sigma'^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}\langle\frac{d(\sigma''^{(\ell)}_{\textcolor{color6}{2}}\sigma'^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}F^{(\ell)}_{\lambda_{3}\textcolor{color6}{1}\lambda_{4}\textcolor{color6}{2}}\nonumber\\
+&&  + \frac{(C_{W}^{\ell+1})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\langle \sigma'^{(\ell)}_{\textcolor{color5}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}\sum_{\lambda_{3}\in\{1,2,3,4\}}\langle \frac{d(\sigma''^{(\ell)}_{\textcolor{color6}{1}}\sigma'^{(\ell)}_{3})}{d z^{(\ell)}_{\lambda_{3}}}\rangle_{K^{(\ell)}}Q^{(\ell)}_{\textcolor{color5}{2}\textcolor{color1}{4}\textcolor{color6}{1}\lambda_{3}} \nonumber\\
+&& + \frac{(C_{W}^{\ell+1})^{2}}{n_{\ell-1}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\langle \sigma'^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}}\sum_{\lambda_{4}\in\{1,2,3,4\}}\langle \frac{d(\sigma''^{(\ell)}_{\textcolor{color6}{2}}\sigma'^{(\ell)}_{4})}{d z^{(\ell)}_{\lambda_{4}}}\rangle_{K^{(\ell)}}Q^{(\ell)}_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color6}{2}\lambda_{4}} \nonumber\\
+&& + \frac{(C_{w}^{(\ell+1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color5}{2}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}T^{(\ell)}_{\textcolor{color7}{1}\textcolor{color2}{3}\textcolor{color5}{2}\textcolor{color1}{4}}
+\end{eqnarray}
+
+Finally, for the tensor $U_{\textcolor{color7}{1}\textcolor{color1}{4}\textcolor{color5}{2}\textcolor{color2}{3}}^{(\ell+1)}$, one learns
+
+\begin{eqnarray}
+\begin{tikzpicture}[baseline=(b)]
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{4}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 20pt of v12, quarticblob] (b) {};
+\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}}U^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color1}{4}\textcolor{color5}{2}\textcolor{color2}{3}}$}; 
+\vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (b) -- [color1, ghost](x2),
+	(x3) -- [color6color1ddntk2new] (b) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture} &=& \sum_{j}
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{4}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color1, ghost] (x2),
+	(v12) -- [ntkdntkblackcolor1color2color6, edge label = {\scriptsize \;$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [ntkdntkcolor6color1color2black, edge label = {\scriptsize \,$\sigma''_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- [color6color1ddntk2new] (v34) -- [color2, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}\nonumber\\
+&& + \sum_{j_1, j_2}
+%
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{1}$}}] (x1) {};
+\vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{4}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 35pt of v12, blob] (b12) {};
+%This controls the distance of the first white blob to the black blob
+\vertex[right = 35pt of b12, dot, minimum size=0pt] (w12) {};
+\vertex[above = 5pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color1}{4}$}}] (w12u) {};
+\vertex[below = 12pt of w12, label = {above: {\scriptsize \hspace{-35pt} $\textcolor{color7}{1}$}}] (w12d) {};
+\vertex[left = 10pt of w12d] (w12dl) {};
+\tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+\vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+\vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+%This controls the distance of the right white blob to the black blob
+\vertex[right = 35pt of w34, blob] (b34) {};
+\vertex[above = 5pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color5}{2}$}}] (w34u) {};
+\vertex[below = 12pt of w34, label = {above: {\scriptsize \hspace{30pt} $\textcolor{color2}{3}$}}] (w34d) {};
+\vertex[right = 10pt of w34d] (w34dr) {};
+\vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{2}$}}] (x3) {};
+\vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{3}$}}] (x4) {};
+\diagram*{
+	(x1) -- [color6color2ddntk2new] (v12) -- [color1, ghost] (x2),
+	(v12) -- [ntkdntkcolor1color2color6, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [color6color2ddntknew, quarter left] (b12),
+	(b34) -- [color2, ghost, quarter left] (w34) -- [color6color1ddntknew, quarter left] (b34) -- [ntkdntkcolor6color1color2, edge label = {\scriptsize \,$\sigma'_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+	(x3) -- [color6color1ddntk2new, ghost] (v34) -- [color2, ghost] (x4)
+};
+\draw [decoration={brace}, decorate] (w34dr) -- (w12dl)
+node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}U_4^{(\ell)}$};
+\end{feynman}
+\end{tikzpicture}
+\end{eqnarray}
+whose analytical expression reads
+\begin{eqnarray}
+	\frac{1}{n_{\ell}}U^{(\ell+1)}_{\textcolor{color7}{1}\textcolor{color1}{4}\textcolor{color5}{2}\textcolor{color2}{3}} &=& \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell}}\Theta^{(\ell)}_{\textcolor{color6}{12}}\Theta^{(\ell)}_{\textcolor{color1}{24}}\Theta^{(\ell)}_{\textcolor{color2}{13}}\langle \sigma''^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\sigma''^{(\ell)}_{\textcolor{color5}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}} \nonumber\\
+    && + \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell-1}}\langle \sigma'^{(\ell)}_{\textcolor{color7}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{4}}\rangle_{K^{(\ell)}}\langle \sigma'^{(\ell)}_{\textcolor{color5}{2}}\sigma'^{(\ell)}_{\textcolor{color2}{3}}\rangle_{K^{(\ell)}}U^{(\ell)}_{\textcolor{color7}{1}\textcolor{color1}{4}\textcolor{color5}{2}\textcolor{color2}{3}}
+  \end{eqnarray}
+  \endgroup
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:
