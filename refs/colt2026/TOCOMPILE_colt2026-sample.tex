@@ -16,7 +16,7 @@
 
 \newtheorem{assumption}{Assumption}
 
-\title[Low-rank random features and NTK]{Low-rank random-feature networks: depth--rank scaling and conditioning in the NTK regime}
+\title[Low rank is enough for the NTK]{Low rank is enough for the neural tangent kernel: depth--rank tradeoff in neural network optimization}
 
 \coltauthor{%
   \Name{Janis (Heran) Aiad}\thanks{This work was completed by J.H-A. during an undergraduate internship at University of Maryland.}\\
@@ -35,10 +35,9 @@
 
 \begin{abstract}
 We study low-rank random-feature networks (RF-LR), where each layer is a frozen random feature map followed by a trainable readout into a bottleneck of dimension \(r\ll N\).
-We focus on a finite-sample kernel regime: we take a sequential infinite-width limit \(N\to\infty\) at fixed dataset size \(n\), and then study how the remaining bottleneck randomness concentrates as \(r\to\infty\).
+We focus on a finite-sample kernel regime: we take a sequential infinite-width limit \(N\to\infty\), and then study how the remaining bottleneck randomness concentrates as \(r\to\infty\).
 
-Our main results quantify how depth \(L\) and rank \(r\) control conditioning and optimization scales in kernel regression. In an exactly solvable equicorrelated dataset model we obtain an explicit Gram spectrum, with a nontrivial scale \(\Theta(1/(rL))\) on \(\mathbf{1}^\perp\), yielding a kernel time scale \(\Theta(P/n)\) under \(P\asymp LrN\) and \(N\asymp n^2\). We also derive an explicit RF-LR NTK recursion and show, as a secondary consequence, that the mean three-layer kernel induces the same RKHS as the shallow ReLU kernel via an endpoint (Puiseux) expansion.
-We do not analyze the empirical RF-LR NTK in the quadratic random-matrix scaling \(n\to\infty\); adapting resolvent-based bulk-law techniques developed for shallow two-layer NTKs~\cite{benigni2025eigenvaluedistributionneuraltangent} to low-rank RF-LR and deeper architectures is left for future work.
+Our main results quantify how depth \(L\) and bottleneck dimension \(r\) affect conditioning for kernel regression in the lazy/NTK regime. We derive an explicit RF-LR NTK recursion (with an explicit \(1/r\) bottleneck factor) and analyze the deterministic proxy mean recursion: the kernel magnitude saturates with depth while the diagonal--off-diagonal gap decays. All condition-number bounds in this paper refer to the \emph{proxy} Gram matrix. We prove a \emph{lower bound} \(\kappa\ge\Omega(r\cdot L)\) in general; in one special case---equicorrelated data or high-dimensional random data (pairwise correlations \(O(1/\sqrt{d})\) w.h.p.)---we give one explicit result with exact conditioning (\(\kappa_\perp=1\) or \(1+o(1)\)) and full proof in the appendix. We do not claim that these bounds govern optimization. We also show that \emph{low rank is enough for the NTK RKHS in the three-layer case}: the mean three-layer RF-LR kernel induces the same RKHS as the shallow ReLU kernel via an endpoint (Puiseux) expansion, so the bottleneck does not shrink the kernel-regime function class while reducing the trainable parameter scaling from dense \(O(LN^2)\) to \(O(LrN)\). We connect the \(I(r)\sim r^{-1/2}\) decay to \(1/\sqrt{r}\) sub-Gaussian concentration of the random kernel around the proxy and give a formal bound linking proxy and empirical conditioning (Appendix~\ref{appendix:proxy-empirical-concentration}).
 \end{abstract}
 
 \begin{keywords}

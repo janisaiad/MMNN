@@ -121,7 +121,29 @@ This illustrates the “**driven close to 0 by noise**” phenomenon discussed i
 - `min_eig_distribution.png`
 - `min_eig_cdf.png`
 
-## 5) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
+## 5) Condition number: proxy vs empirical (equicorrelated)
+
+### `condition_number_proxy_empirical.py`
+**What it computes**
+
+- **Proxy:** for equicorrelated data the proxy Gram has \(\kappa_\perp=1\) on \(\mathbf{1}^\perp\) (Corollary 13). The script confirms this (proxy curve at 1).
+- **Empirical:** 3-layer RF-LR NTK Gram over equicorrelated inputs; condition number of the *centered* Gram (restriction to \(\mathbf{1}^\perp\)) vs bottleneck rank \(r\), with mean and std over random initializations.
+- Validates that the empirical condition number concentrates around the proxy value 1 as \(r\) grows (Theorem equicorrelated-op-bound in the appendix).
+
+**Where it maps in the paper**
+
+- Corollary 13 (exact conditioning equicorrelated): `refs/colt2026/depth_scaling.tex` (`cor:conditioning-equicorrelated-highdim`)
+- Proxy–empirical concentration on \(\mathbf{1}^\perp\): `refs/colt2026/appendix.tex` (`thm:equicorrelated-op-bound`)
+
+**Outputs**
+
+- `condition_number_proxy_vs_empirical.png`
+
+**Run**
+
+- `python3 condition_number_proxy_empirical.py` (requires `numpy`, `matplotlib`).
+
+## 6) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
 
 ### `fisher_kibble_and_decay_constants.py`
 **What it computes**

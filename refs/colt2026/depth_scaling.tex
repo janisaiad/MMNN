@@ -2,35 +2,32 @@
 
 \subsection{Main results}\label{subsec:rflr-terjek-generalization}
 
-We now state our main depth--rank scaling results for the mean RF-LR NTK and their dataset-level consequences. The recursion contains an explicit \(1/r\) bottleneck factor, which leads to saturation of the kernel magnitude as depth grows, while the diagonal--off-diagonal gap decays with depth in the mean recursion; a principal consequence is an explicit spectrum formula in an equicorrelated Gram model (Proposition~\ref{prop:equicorrelated-spectrum}).
-\paragraph{Preliminaries (appendix).}
-The scalar ReLU kernel expansions and the deterministic proxy recursion used below are collected in Appendix~\ref{appendix:mean-depth-theorem-preliminaries}.
+\paragraph{Random correlations and deterministic proxy.}
+At each layer \( \ell \ge 2 \), the correlation \( \rho_\ell = \cos\angle(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) is a \emph{random variable}: given the population correlation from the previous layer, Fisher's law and Lemma~\ref{lem:gaussian-sample-cosine} give \( \mathbb{E}[(\rho_\ell - \varrho(\rho_{\ell-1}))^2] \le C/r \) and \( \mathbb{P}(|\rho_\ell - \varrho(\rho_{\ell-1})| \ge t) \le 6\exp(-c\,r\,t^2) \), so fluctuations are \( O(1/\sqrt{r}) \) sub-Gaussian. The NTK recursion passes through this chain of random correlations. The \emph{deterministic proxy} replaces \( \rho_\ell \) by the deterministic iterates \( \rho_k = \varrho^{\circ(k-1)}(\rho_1) \) and analyzes the scalar recursion~\eqref{eq:rflr-scalar-mean-ntk-rec}; for large \(r\) the random kernel concentrates around the proxy (Appendix~\ref{appendix:random-correlation-chain}); a formal bound \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}=o_P(1)\) as \(r\to\infty\) and its implication for empirical conditioning are given in Appendix~\ref{appendix:proxy-empirical-concentration}. In the equicorrelated case, a full proof yields \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) (Theorem~\ref{thm:equicorrelated-op-bound}). All condition-number statements in this section refer to the \emph{proxy} Gram matrix; we give a lower bound on its condition number and, in one special case, exact conditioning with high probability.
 
-\begin{theorem}[Depth scaling for the mean RF-LR NTK]\label{thm:rflr-depth-scaling-mean}
-Fix \(r>1\) and \(\rho_1\in(-1,1)\). Let \(\Theta^{(k)}(\rho_1)\) be defined by~\eqref{eq:rflr-scalar-mean-ntk-rec}. Then:
+\paragraph{Depth--rank scaling.}
+The recursion contains an explicit \(1/r\) bottleneck factor, which leads to saturation of the kernel magnitude as depth grows, while the diagonal--off-diagonal gap decays with depth in the proxy recursion. Theorem~\ref{thm:rflr-depth-scaling-mean} analyzes this deterministic proxy, which approximates the mean path of the random recursion for large \(r\). We refer to Appendix~\ref{appendix:mean-depth-theorem-preliminaries} for notation and kernel expansions.
+
+\begin{theorem}[Depth scaling for the deterministic proxy RF-LR NTK]\label{thm:rflr-depth-scaling-mean}
+Fix \(r>1\) and \(\rho_1\in(-1,1)\). Let \(\Theta^{(k)}(\rho_1)\) be the deterministic proxy defined by~\eqref{eq:rflr-scalar-mean-ntk-rec}, with \(\rho_k = \varrho^{\circ(k-1)}(\rho_1)\) deterministic. Then:
 \begin{itemize}
-  \item (\textbf{Correlation alignment}) There exist \(k_0\in\mathbb{N}\) and constants \(0<c_-<c_+<\infty\) (depending only on \(\rho_1\)) such that for all \(k\ge k_0\),
+  \item (\textbf{Correlation alignment}) The correlation recursion aligns polynomially:
   \[
-  c_-\,k \;\le\; w_k \;\le\; c_+\,k,
-  \qquad\text{hence}\qquad
-  1-\rho_k \;=\; 2 w_k^{-2} \;=\; O(k^{-2}).
+  1-\rho_k \;=\; \Theta(k^{-2}).
   \]
   \item (\textbf{Kernel saturation}) \(\Theta^{(k)}(\rho_1)\to \Theta_\star(r)\) as \(k\to\infty\), where \(\Theta_\star(r)\) is the fixed point of the limiting recursion obtained by setting \(\dot{s}=s=1/2\), namely
   \[
   \Theta_\star(r) \;=\; \frac{2r+1}{2r-1}.
   \]
-  Moreover, there exists \(C_\Theta<\infty\) (depending on \(r,\rho_1\)) such that for all \(k\ge 1\),
+  Moreover,
   \[
-  \bigl|\Theta^{(k)}(\rho_1)-\Theta_\star(r)\bigr| \;\le\; \frac{C_\Theta}{k}.
+  \Theta^{(k)}(\rho_1)-\Theta_\star(r) \;=\; O(k^{-1}).
   \]
-  \item (\textbf{Depth-induced gap decay}) Let \(\Theta^{(k)}_{\mathrm{diag}}=\Theta^{(k)}(1)\) and \(\Theta^{(k)}_{\mathrm{off}}=\Theta^{(k)}(\rho_1)\). Then
+  \item (\textbf{Depth-induced gap decay}) Let \(\Theta^{(k)}_{\mathrm{diag}}:=\Theta^{(k)}(1)\) (on-diagonal value, i.e. identical inputs) and \(\Theta^{(k)}_{\mathrm{off}}:=\Theta^{(k)}(\rho_1)\) (off-diagonal value for an input pair with initial cosine similarity \(\rho_1\)). Then
   \[
   \Theta^{(k)}_{\mathrm{diag}}-\Theta^{(k)}_{\mathrm{off}} \;=\; \Theta\!\Big(\frac{1}{r\,k}\Big),
   \]
-  i.e. there exist \(k_1\in\mathbb{N}\) and constants \(0<c_\Delta<C_\Delta<\infty\) (depending on \(r,\rho_1\)) such that for all \(k\ge k_1\),
-  \[
-  \frac{c_\Delta}{r\,k} \;\le\; \Theta^{(k)}_{\mathrm{diag}}-\Theta^{(k)}_{\mathrm{off}} \;\le\; \frac{C_\Delta}{r\,k}.
-  \]
+  for large \(k\).
 \end{itemize}
 \end{theorem}
 
@@ -38,87 +35,39 @@ Fix \(r>1\) and \(\rho_1\in(-1,1)\). Let \(\Theta^{(k)}(\rho_1)\) be defined by~
 See Appendix~\ref{appendix:proof-rflr-depth-scaling-mean}.
 \end{proof}
 
-\begin{proposition}[Centered eigenvalue in an equicorrelated model]\label{prop:equicorrelated-gap}
-Fix \(L\ge 2\) and \(r>1\). Consider a dataset \(\{x_i\}_{i=1}^n\) with \(\|x_i\|=1\) and \(\rho_{1,ij}=\rho_0\in(-1,1)\) for all \(i\neq j\). Let
-\[
-K^{(L)}_{ij} := \Theta^{(L)}(\rho_{1,ij}),
-\qquad
-H := I_n-\frac{1}{n}\mathbf{1}\mathbf{1}^\top,
-\qquad
-K^{(L)}_c := HK^{(L)}H.
-\]
-Then \(K^{(L)}\) has the explicit form \(K^{(L)} = \Theta^{(L)}(1)\,I_n + \Theta^{(L)}(\rho_0)\,(\mathbf{1}\mathbf{1}^\top-I_n)\). In particular, the nonzero eigenvalues of \(K^{(L)}_c\) are all equal to
-\[
-\lambda_\perp(K^{(L)}) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0),
-\]
-with multiplicity \(n-1\). Moreover, by Theorem~\ref{thm:rflr-depth-scaling-mean}, there exist constants \(0<c_\Delta<C_\Delta<\infty\) (depending on \(r,\rho_0\)) such that for all sufficiently large \(L\),
-\[
-\frac{c_\Delta}{r\,L} \;\le\; \lambda_\perp(K^{(L)}) \;\le\; \frac{C_\Delta}{r\,L}.
-\]
+\begin{proposition}[Lower bound on condition number for the proxy]\label{prop:condition-number-depth}
+In the setting of Theorem~\ref{thm:rflr-depth-scaling-mean}, consider the deterministic proxy kernel \(\Theta^{(L)}(\rho)\) and form the \(n\times n\) Gram matrix \(\mathbf{M}\) with entries \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) for pairwise input cosine similarities \(\rho_{ij}=\langle x_i,x_j\rangle/(\|x_i\|\|x_j\|)\in(-1,1)\). Let \(\lambda_{\max}\) and \(\lambda_{\min}\) denote the maximum and minimum eigenvalues of \(\mathbf{M}\) restricted to \(\mathbf{1}^\perp\). Assume: (i)~\(n\ge 3\); (ii)~there exists a pair \((i,j)\) with \(\rho_{ij}\) bounded away from \(1\); (iii)~the dataset is not equicorrelated (the \(\rho_{ij}\) for \(i\neq j\) are not all equal). Then \(\lambda_{\max}=\Theta(1)\), \(\lambda_{\min}\le O(1/(rL))\), and the condition number \(\kappa=\lambda_{\max}/\lambda_{\min}\) satisfies \(\kappa\ge\Omega(r\cdot L)\). When assumption~(iii) is violated (equicorrelated data), the proposition does not apply; instead Corollary~\ref{cor:conditioning-equicorrelated-highdim} gives the best-case \(\kappa_\perp=1\) (and similarly for approximately equicorrelated high-dimensional data).
 \end{proposition}
 \begin{proof}
-See Appendix~\ref{appendix:proof-equicorrelated-gap}.
+See Appendix~\ref{appendix:proof-condition-number}.
 \end{proof}
 
-\begin{proposition}[Main result: uncentered spectrum in the equicorrelated model]\label{prop:equicorrelated-spectrum}
-Under the assumptions of Proposition~\ref{prop:equicorrelated-gap}, the eigenvalues of the uncentered Gram matrix \(K^{(L)}\) are explicit:
+\begin{theorem}[Operator norm on \(\mathbf{1}^\perp\) in the equicorrelated case]\label{thm:equicorrelated-op-bound}
+Fix \(n,L\ge 1\), \(r\ge 2\), and the equicorrelated setup \(\rho_{1,ii}=1\), \(\rho_{1,ij}=\rho_0\) for \(i\neq j\) with \(\rho_0\in(-1,1)\). Let \(\hat{K}\) be the \(n\times n\) empirical RF-LR NTK Gram matrix and \(K_{\mathrm{proxy}}\) the deterministic proxy with entries \((K_{\mathrm{proxy}})_{ij}=\Theta^{(L)}(\rho_{1,ij})\) (Definition~\ref{def:deterministic-proxy}). Then there exist constants \(C,c>0\) (depending on \(L,\rho_0\)) such that for any \(\epsilon>0\),
 \[
-\lambda_1\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1) + (n-1)\Theta^{(L)}(\rho_0),
-\qquad
-\lambda_2\!\bigl(K^{(L)}\bigr)=\cdots=\lambda_n\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0).
+\mathbb{P}\!\left(\bigl\|\bigl(\hat{K}-K_{\mathrm{proxy}}\bigr)\big|_{\mathbf{1}^\perp}\bigr\|_{\mathrm{op}}\;\ge\; \epsilon\right)
+\;\le\; C\,\exp\!\left(-c\,\frac{r\,\epsilon^2}{L^2}\right)\;+\; C\,\exp\!\left(-c\,\frac{r\,\epsilon}{L}\right).
 \]
-In particular, \(\lambda_1(K^{(L)})\) corresponds to the constant mode aligned with \(\mathbf{1}\), while the spectrum on \(\mathbf{1}^\perp\) equals \(\lambda_\perp(K^{(L)})\).
-Moreover, as \(L\to\infty\) (with \(r\) fixed) this constant-mode eigenvalue saturates:
-\[
-\lambda_1\!\bigl(K^{(L)}\bigr)
-\;=\;
-n\,\Theta_\star(r) \;+\; O\!\Big(\frac{n}{L}\Big),
-\qquad
-\Theta_\star(r)=\frac{2r+1}{2r-1}=1+O\!\Big(\frac{1}{r}\Big),
-\]
-and \(\lambda_\perp(K^{(L)})=\Theta(1/(rL))\) by Proposition~\ref{prop:equicorrelated-gap}. Thus, in this model the depth/rank scaling is
-\[
-\lambda_{\max}(K^{(L)}) \asymp n\Bigl(1+\frac{1}{r}\Bigr),\qquad
-\lambda_{\min}\!\bigl(HK^{(L)}H\bigr) \asymp \frac{1}{rL}.
-\]
-\end{proposition}
+In particular, \(\bigl\|\bigl(\hat{K}-K_{\mathrm{proxy}}\bigr)\big|_{\mathbf{1}^\perp}\bigr\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) as \(r\to\infty\) with \(n,L\) fixed. Hence if \(r=O(L^2)\), then \(\bigl\|\bigl(\hat{K}-K_{\mathrm{proxy}}\bigr)\big|_{\mathbf{1}^\perp}\bigr\|_{\mathrm{op}}=O_P(L/r)\).
+\end{theorem}
 \begin{proof}
-See Appendix~\ref{appendix:proof-equicorrelated-spectrum}.
+See Appendix~\ref{appendix:proxy-empirical-concentration}.
 \end{proof}
 
-\begin{remark}[Conditioning and time scales in the equicorrelated model]\label{rmk:conditioning-centered}
-In the equicorrelated model, the (uncentered) Gram matrix \(K^{(L)}\) has eigenvalues \(\lambda_1(K^{(L)})\asymp n\) and \(\lambda_\perp(K^{(L)})\asymp 1/(rL)\) (Proposition~\ref{prop:equicorrelated-spectrum}). For the \(1/n\)-normalized square loss, the relevant operator is \((1/n)K^{(L)}\), whose largest eigenvalue is \(\lambda_1(K^{(L)})/n=\Theta(1)\) while its smallest eigenvalue is \(\lambda_\perp(K^{(L)})/n=\Theta(1/(nrL))\). Therefore the condition number of \((1/n)K^{(L)}\) scales as
-\[
-\kappa\!\left(\frac{1}{n}K^{(L)}\right)
-\;=\;
-\frac{\lambda_1(K^{(L)})/n}{\lambda_\perp(K^{(L)})/n}
-\;=\;
-\Theta(nrL).
-\]
-Under the parameter budget scaling \(P\asymp LrN\) and the NTK width scaling \(N\asymp n^2\), this becomes \(\kappa((1/n)K^{(L)})=\Theta(P/n)\).
-
-If the targets are mean-zero (or labels are centered), the constant mode decouples and one may restrict to \(\mathbf{1}^\perp\), where in the equicorrelated model \((1/n)HK^{(L)}H\) has \emph{flat} spectrum (condition number \(1\)) with eigenvalue \(\lambda_\perp(K^{(L)})/n=\Theta(1/(nrL))\). Equivalently, the optimization time scale is \(\Theta(n/\lambda_\perp(K^{(L)}))=\Theta(nrL)\), which becomes \(\Theta(P/n)\) under \(P\asymp LrN\) and \(N\asymp n^2\).
-
-\paragraph{Comparison to fully trained MLPs at the edge of chaos.}
-For fully trained MLPs at the EOC, dataset-level spectral control is commonly phrased in terms of the centered operator \((1/n)HKH\), and inverse-cosine-distance matrix bounds yield worst-case lower bounds on the smallest nontrivial eigenvalue of order \(1/n\) under generic non-degeneracy assumptions on the dataset~\cite{terjek2025mlpsateoc}. Since \(\lambda_{\max}((1/n)HKH)=O(1)\) for bounded kernels, these bounds correspond to a condition number scaling \(\kappa((1/n)HKH)=\Theta(n)\). In contrast, in the RF-LR equicorrelated model, the full operator \((1/n)K^{(L)}\) has condition number \(\Theta(P/n)\), while on \(\mathbf{1}^\perp\) the spectrum is flat and the slow time scale is \(\Theta(P/n)\).
-\end{remark}
-
-\begin{corollary}[Optimization time scale and \(P/n\) law in the equicorrelated model]\label{cor:np-optimization-scale}
-Under the assumptions of Proposition~\ref{prop:equicorrelated-gap}, consider kernel gradient flow for the \(1/n\)-normalized square loss with centered targets (equivalently, restrict to \(\mathbf{1}^\perp\)). Then the operator \((1/n)HK^{(L)}H\) has nonzero eigenvalue \(\lambda_\perp(K^{(L)})/n\) with multiplicity \(n-1\), hence the natural optimization time scale is set by \(n/\lambda_\perp(K^{(L)})\).
-Moreover, for large \(L\) one has
-\[
-\frac{\lambda_\perp(K^{(L)})}{n}=\Theta\!\left(\frac{1}{nrL}\right)
-\]
-by Proposition~\ref{prop:equicorrelated-gap}.
-If additionally the per-layer feature widths satisfy \(n_\ell\asymp N\) and the trainable parameter budget scales as \(P\asymp LrN\), then
-\[
-\frac{n}{\lambda_\perp(K^{(L)})}=\Theta\!\left(\frac{nP}{N}\right).
-\]
-Under the standard kernel-regime scaling \(N\asymp n^2\), this simplifies to
-\[
-\frac{n}{\lambda_\perp(K^{(L)})}=\Theta\!\left(\frac{P}{n}\right).
-\]
+\begin{corollary}[Exact conditioning for equicorrelated and high-dimensional random data]\label{cor:conditioning-equicorrelated-highdim}
+In the setting of Proposition~\ref{prop:condition-number-depth}, the following hold.
+\begin{itemize}
+  \item \textbf{Equicorrelated data.} If \(\rho_{ij}=\rho_0\) for all \(i\neq j\) (and \(\rho_{ii}=1\)), then on \(\mathbf{1}^\perp\) all eigenvalues of \(\mathbf{M}\) equal \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)=\Theta(1/(rL))\), so the condition number on the mean-zero subspace is \(\kappa_\perp=1\).
+  \item \textbf{High-dimensional random data.} If the inputs \(x_1,\ldots,x_n\in\mathbb{S}^{d-1}\) are drawn i.i.d.\ uniformly from the unit sphere with \(d\to\infty\), then with high probability the pairwise cosine similarities satisfy \(\max_{i\neq j}|\rho_{ij}|=O(1/\sqrt{d})\), so the data are approximately equicorrelated. In that regime, the proxy Gram matrix has, with high probability, all eigenvalues on \(\mathbf{1}^\perp\) equal to \(\lambda_\perp=\Theta(1)(1+o(1))\), hence \(\kappa_\perp=1+o(1)\). On that high-probability event the same operator-norm bound on \(\mathbf{1}^\perp\) as in the equicorrelated case applies (Theorem~\ref{thm:equicorrelated-op-bound} with \(\rho_0=O(1/\sqrt{d})\)).
+\end{itemize}
 \end{corollary}
+\begin{proof}
+See Appendix~\ref{appendix:proof-conditioning-equicorrelated-highdim}.
+\end{proof}
 
-\paragraph{Technical remarks (appendix).}
-For any finite network, the centered empirical Gram matrix \(H\widehat{K}H\) is positive semidefinite, and the mean-kernel infinite-depth limit collapses after centering; see Appendix~\ref{appendix:lambda-min-negative} and Appendix~\ref{appendix:infinite-depth-limit}.
+\paragraph{Limited scope of exact conditioning.}
+Equicorrelated and high-dimensional i.i.d.\ spherical data are special; the general conditioning guarantee in this section is the proxy lower bound \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}).
+
+\begin{remark}[Proxy vs.\ optimization]\label{rmk:depth-conditioning-message}
+Proposition~\ref{prop:condition-number-depth} gives a \emph{lower bound} on the condition number of the \emph{proxy} Gram matrix; we do not claim that this bound governs optimization in the finite-width network. For the proxy and non-equicorrelated data, depth drives the kernel toward near-constant entries (gap \(\Theta(1/(rL))\)) and \(\kappa\ge\Omega(rL)\). The actual network uses random correlations with \(O(1/\sqrt{r})\) sub-Gaussian fluctuations (Appendix~\ref{appendix:random-correlation-chain}), so for large \(r\) the random kernel concentrates around the proxy. The condition number is relevant for kernel regression (stability and convergence speed depend on \(\lambda_{\max}/\lambda_{\min}\)); under a fixed budget \(O(LrN)\), depth and rank trade off from a conditioning perspective, and the choice of \(r\) and \(L\) is a matter of approximation power (effective depth and RKHS expressivity).
+\end{remark}
