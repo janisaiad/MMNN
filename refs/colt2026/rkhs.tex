@@ -11,27 +11,10 @@ We can now state a compact representation under a homogeneity assumption.
 \begin{lemma}[Fisher--Kibble decoupling]\label{lem:fisher-kibble}
 Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
 \begin{itemize}
-    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable,hotelling1953new}, centered at the true correlation \( \rho \).
-    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate Gamma (chi-square) law.
+    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable,hotelling1953new} (centered at \( \rho \)). For \(r>2\): \(p_{\text{Fisher}}(\rho_1)=\frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\frac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,{}_2F_1(\frac{1}{2},\frac{1}{2}; r-\frac{1}{2}; \frac{1+\rho\rho_1}{2})\).
+    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate chi-square law: \(p_{\text{Kibble}}(u,v)=\frac{(uv)^{\frac{r}{4}-\frac{1}{2}}\exp(-\frac{u+v}{2(1-\rho^2)})}{\Gamma(r/2)\,(2(1-\rho^2))^{\frac{r}{2}+1}\,\rho^{\frac{r}{4}-\frac{1}{2}}}\,I_{\frac{r}{2}-1}(\frac{\rho\sqrt{uv}}{1-\rho^2})\), \(u,v\ge 0\), where \(I_\nu\) is the modified Bessel function.
     \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
 \end{itemize}
-\paragraph{Explicit densities.}
-Fisher's density (for \(r>2\)) is
-\[
-p_{\text{Fisher}}(\rho_1)
-\;=\;
-\frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,
-{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right).
-\]
-Kibble's bivariate chi-square density for \((u,v)=(\|x_1\|^2,\|y_1\|^2)\) is
-\[
-p_{\text{Kibble}}(u,v)
-\;=\;
-\frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\,
-I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right),
-\qquad u,v\ge 0,
-\]
-where \(I_\nu\) is the modified Bessel function of the first kind.
 \end{lemma}
 
 Proof: See Appendix~\ref{appendix:fisher-kibble}, Proof~\ref{proof:fisher_kibble}.
@@ -124,25 +107,17 @@ where \(I(r)\) is as in Proposition~\ref{prop:puiseux-arccos-fisher}. In particu
 Combine the three-layer mean-kernel identity (Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}) with Proposition~\ref{prop:puiseux-arccos-fisher} and the ReLU endpoint expansion \(\arccos(1-t)=\sqrt{2t}+O(t^{3/2})\). A complete proof is given in Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}.
 \end{proof}
 
-\subsection{RKHS equivalence via endpoint behavior}\label{subsec:rkhs-bietti-bach}
-We now state the RKHS characterization result used to translate Puiseux endpoint behavior into an RKHS statement.
+\paragraph{Interpretation: \(1/r\) vs.\ \(I(r)\).}
+The \(1/r\) prefactor in \eqref{eq:puiseux-mean-ntk-main} comes from the EOC initialization and the RF-LR recursion: each bottleneck layer contributes \(1/r\) (Section~\ref{sec:network-definition}, Appendix~\ref{appendix:eoc-scaling}). With unnormalized classical NTK (no bottleneck scaling), the Puiseux coefficient would be \(\big[\frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r)\big]\) and the \(I(r)\sim 1/\sqrt{r}\) term would directly reflect the Fisher--Kibble randomness. Thus the \(1/r\) decay in the expansion is due to EOC; \(I(r)\sim 1/\sqrt{r}\) is the signature of the randomness-induced deviation from the deterministic limit.
 
-\begin{theorem}[Bietti--Bach RKHS criterion~\cite{bietti2021deepequalsshallowrelu}, Theorem~1]\label{thm:bietti-bach-rkhs-criterion}
-Let \(K_1,K_2\) be zonal kernels on \(\mathbb{S}^{d-1}\) that are \(C^\infty\) on \((-1,1)\). Suppose that as \(t\downarrow 0\),
-\[
-K_i(1-t)=K_i(1)-c_i\,t^{\alpha}+O(t^{\alpha+\eta}),\qquad c_i>0,
-\]
-for the same exponent \(\alpha\in(0,1)\) and some \(\eta>0\) (and likewise at \(\rho=-1\) if needed). Then \(K_1\) and \(K_2\) induce the same RKHS on \(\mathbb{S}^{d-1}\), with equivalent norms. In~\cite{bietti2021deepequalsshallowrelu}, Theorem~1 states that the eigenvalue decay of the associated integral operator (hence the RKHS) is determined by the differentiability of the kernel at the endpoints; matching Puiseux exponents \(\alpha\) yields the same decay and thus the same RKHS. Equivalently, the Mercer eigenvalues of the kernel integral operator on the sphere decay with a rate determined by \(\alpha\); matching \(\alpha\) therefore yields the same RKHS (same eigenvalue decay and equivalent norms).
-\end{theorem}
-\begin{proof}
-Direct consequence of~\cite[Theorem~1]{bietti2021deepequalsshallowrelu}.
-\end{proof}
+\subsection{RKHS equivalence via endpoint behavior}\label{subsec:rkhs-bietti-bach}
+By the Bietti--Bach criterion~\cite[Theorem~1]{bietti2021deepequalsshallowrelu}, matching Puiseux exponents at the endpoints yields the same RKHS; see Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous} for the statement and our application.
 
 \begin{corollary}[Low rank is enough for the NTK RKHS: three-layer mean kernel]\label{thm:no_rkhs_advantage}
 Under the RF-LR setting with ReLU nonlinearity and isotropic random features on \(\mathbb{S}^{d-1}\), the three-layer mean NTK \(\tilde{\Kop}^{(2)}\) induces the same RKHS as the shallow ReLU kernel. In particular, the corresponding RKHSs coincide as sets with equivalent norms.
 \end{corollary}
 \begin{proof}[Proof sketch]
-The mean three-layer kernel is zonal. Proposition~\ref{prop:puiseux-arccos-fisher} gives a Puiseux expansion near \(\rho=1\) with leading exponent \(t^{1/2}\); Proposition~\ref{prop:I-r-scaling-main} shows the \(r\)-dependent coefficient is an \(O(1)\) perturbation of the shallow ReLU coefficient. Since the shallow ReLU kernel has the same endpoint exponent \(1/2\), Theorem~\ref{thm:bietti-bach-rkhs-criterion} yields RKHS equivalence. See Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous} for a detailed argument.
+The mean three-layer kernel is zonal. Proposition~\ref{prop:puiseux-arccos-fisher} gives a Puiseux expansion near \(\rho=1\) with leading exponent \(t^{1/2}\); Proposition~\ref{prop:I-r-scaling-main} shows the \(r\)-dependent coefficient is an \(O(1)\) perturbation of the shallow ReLU coefficient. Since the shallow ReLU kernel has the same endpoint exponent \(1/2\), the Bietti--Bach criterion~\cite{bietti2021deepequalsshallowrelu} yields RKHS equivalence. See Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous} for a detailed argument.
 \end{proof}
 
 \paragraph{Open problem: depth \(L\ge 4\).}

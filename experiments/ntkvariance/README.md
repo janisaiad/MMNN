@@ -143,7 +143,70 @@ This illustrates the “**driven close to 0 by noise**” phenomenon discussed i
 
 - `python3 condition_number_proxy_empirical.py` (requires `numpy`, `matplotlib`).
 
-## 6) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
+## 6) High-dimensional spherical data: condition number (Corollary 13, second item)
+
+### `condition_number_highdim_spherical.py`
+**What it computes**
+
+- Same condition-number plot for **i.i.d. uniform** points on \(S^{d-1}\) with large \(d\) (e.g. \(d=256\)).
+- Validates \(\kappa_\perp = 1 + o(1)\) and concentration as \(r\) grows (Corollary 13, high-dimensional random data).
+- With high probability \(\max_{i\neq j} |\rho_{ij}| = O(1/\sqrt{d})\), so data are approximately equicorrelated.
+
+**Where it maps in the paper**
+
+- Corollary 13 (second item): `refs/colt2026/depth_scaling.tex` (high-dimensional spherical data).
+
+**Outputs**
+
+- `condition_number_highdim_spherical.png`
+
+**Run**
+
+- `python3 condition_number_highdim_spherical.py` (requires `numpy`, `matplotlib`).
+
+## 7) Kernel regression risk vs \(r\)
+
+### `kernel_regression_risk.py`
+**What it computes**
+
+- Fix a target (linear or low-degree polynomial on the sphere).
+- Fit kernel ridge regression with the empirical RF-LR NTK Gram.
+- Plots **test MSE** vs bottleneck rank \(r\) (and optionally vs \(L\)).
+- Validates that as \(r\) grows and the Gram concentrates, kernel regression improves.
+
+**Where it maps in the paper**
+
+- RKHS, concentration, and optimization implications: `refs/colt2026/rkhs.tex`, `refs/colt2026/depth_scaling.tex`.
+
+**Outputs**
+
+- `kernel_regression_risk_vs_r.png`
+
+**Run**
+
+- `python3 kernel_regression_risk.py` (requires `numpy`, `matplotlib`).
+
+## 8) Non-equicorrelated data: condition number (Proposition 6)
+
+### `condition_number_non_equicorrelated.py`
+**What it computes**
+
+- Same condition-number vs \(r\) for a **clustered** design with varying \(\rho_{ij}\) (e.g. a few clusters).
+- Illustrates that the proxy lower bound \(\kappa \geq \Omega(r \cdot L)\) can be large and that empirical \(\kappa\) need not approach 1 (contrast with equicorrelated data where \(\kappa_\perp = 1\)).
+
+**Where it maps in the paper**
+
+- Proposition 6 (condition number lower bound): `refs/colt2026/depth_scaling.tex`.
+
+**Outputs**
+
+- `condition_number_non_equicorrelated.png`
+
+**Run**
+
+- `python3 condition_number_non_equicorrelated.py` (requires `numpy`, `matplotlib`).
+
+## 9) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
 
 ### `fisher_kibble_and_decay_constants.py`
 **What it computes**
@@ -179,6 +242,22 @@ Then plots **\(r\)-dependent constants** appearing in the Puiseux coefficient an
 ## Notes and cautions (COLT-style)
 
 - Scripts in Sections 1–2 are **deterministic proxy / mean-field** computations (they illustrate Theorem 15–17 as stated in `depth_scaling.tex`).
-- Scripts in Sections 3–4 are **finite-width / finite-rank Monte Carlo** and are meant to illustrate remarks about fluctuation scales (they do not constitute proofs).
+- Scripts in Sections 3–5, 7–8 are **finite-width / finite-rank Monte Carlo** and are meant to illustrate remarks about fluctuation scales (they do not constitute proofs).
+- Section 6 (high-dim spherical) and Section 9 (Fisher/Kibble) mix proxy and analytic computations.
 - Centering removes the rank-one spike aligned with \(\mathbf{1}\), but does not “improve” the remaining spectral shape; see `refs/colt2026/spectra.tex` (“Centered vs uncentered”) and `rmk:bulk-vs-extremes`.
+
+## Quick run (all experiments)
+
+```bash
+cd experiments/ntkvariance
+python3 confirm_depth_scaling.py
+python3 scalingdepth.py
+python3 minimalvariance.py
+python3 min_eig_distribution.py
+python3 condition_number_proxy_empirical.py
+python3 condition_number_highdim_spherical.py
+python3 kernel_regression_risk.py
+python3 condition_number_non_equicorrelated.py
+python3 fisher_kibble_and_decay_constants.py   # requires scipy
+```
 

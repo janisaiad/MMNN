@@ -193,7 +193,7 @@ The RKHS of zonal kernels on the sphere is controlled by the Puiseux behavior ne
 Depth dependence is controlled by correlation propagation and by products of derivative kernels. In the bottleneck regime, the RF-LR recursion carries explicit \(1/r\) prefactors at each bottleneck layer, and for ReLU one has \(\sup_{\rho}\bar{\dot{\Sigma}}^{(\ell)}(\rho)\le 1/2\), which yields exponential suppression of early-layer contributions as depth increases (Section~\ref{sec:depth-scaling}). A refined mean-kernel statement is obtained by analyzing the deterministic proxy recursion (Theorem~\ref{thm:rflr-depth-scaling-mean}).
 
 \paragraph{Future work: quadratic random-matrix scaling.}
-Establishing bulk spectral laws for the \emph{empirical} RF-LR NTK in a quadratic scaling regime \(n\to\infty\) requires additional resolvent/local-law inputs. While such bulk laws are now available for shallow two-layer NTKs via resolvent replacement and Gaussian-equivalence machinery~\cite{benigni2025eigenvaluedistributionneuraltangent}, adapting these methods to the present low-rank random-feature structure and to depth \(L\ge 2\) is left for future work.
+Establishing bulk spectral laws for the \emph{empirical} RF-LR NTK in a quadratic scaling regime \(n\to\infty\) requires additional resolvent/local-law inputs. The Benigni--Paquette framework~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes RMT limits for Gram spectra in the extensive-width regime (\(n\sim N^2\)) with layers taken in the RMT limit, via resolvent replacement and Gaussian-equivalence machinery for shallow two-layer NTKs. Adapting these methods to the present low-rank random-feature structure and to depth \(L\ge 2\) is left for future work.
 
 \section{Proofs of NTK Recursions}
 \label{appendix:ntk-recursions}
@@ -492,12 +492,6 @@ and the inverse Fourier transform yields Kibble's density, which contains the mo
 Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = \cos\angle(x_1, y_1)\) and the norms \((\|x_1\|, \|y_1\|)\) are independent, yielding the factorization \(p(\rho_1, u, v) = p_{\text{Fisher}}(\rho_1) \cdot p_{\text{Kibble}}(u, v)\). This is the classical independence of the sample correlation from sample variances in bivariate normal data.
 \end{proof}
 
-\subsection{Proof of kernel CLT (asymptotic normality of low-rank kernel)}\label{appendix:proof-kernel-clt}
-By Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}), the angular and radial parts are independent; a joint CLT and the Delta method at \((\rho,1)\) yield the stated asymptotic normality. The variance \(\sigma_{\mathrm{tot}}^2(\rho)\) is as in the main text; details parallel the concentration argument in Appendix~\ref{appendix:proof-rkhs-rank-concentration}.
-
-\subsection{Proof of spike--bulk spectral limit}\label{appendix:proof-spike-bulk}
-Under the random-matrix scaling and data assumptions stated in the spectra section, the empirical spectrum of the Gram matrix built from \(K_\infty\) converges to a deformed Marchenko--Pastur law with a rank-one spike and bulk support as stated; the result follows from the inner-product kernel framework of~\cite{El_Karoui_2010}.
-
 \subsection{Open directions: deep mean NTK recursion and effective depth}\label{appendix:open-directions}
 The deterministic proxy (Definition~\ref{def:deterministic-proxy}) analyzes the scalar recursion along the mean path \( \rho_k = \varrho^{\circ(k-1)}(\rho_1) \). The actual network uses the \emph{random} correlation chain \( \rho_\ell \) with \( O(1/\sqrt{r}) \) per-layer fluctuations (Appendix~\ref{appendix:random-correlation-chain}). A rigorous link requires: (i)~propagating the Fisher-type concentration \( \mathbb{E}[(\rho_\ell - \varrho^{\circ(\ell-1)}(\rho_1))^2] \le C/r \) through depth to show \( \Theta^{(L)}_{\mathrm{random}} - \Theta^{(L)}_{\mathrm{proxy}} = O_P(\sqrt{L/r}) \) or similar; (ii)~a rigorous recursion for \( \tilde{\Kop}^{(\ell)} \) with explicit covariance bounds; (iii)~extension of Fisher--Kibble decoupling to nested layers to control mixed terms such as \( \mathbb{E}[\Kop^{(\ell-1)}\dot{\Sigma}^{(\ell)}] \) (where dependence through the deep GP chain prevents naive factorization). The exponential suppression of early-layer contributions suggests that very deep MMNNs may exhibit an ``effective depth'' phenomenon similar to ResNets, where only the top layers meaningfully contribute to the NTK.
 
@@ -545,15 +539,32 @@ The second-moment bound follows by integrating the tail bound: \(\mathbb{E}[(\wi
 \end{proof}
 
 \subsection{Concentration of the random Gram matrix around the proxy}\label{appendix:proxy-empirical-concentration}
-Let \(\hat{K}\) be the \(n\times n\) random Gram matrix with entries \(\hat{K}_{ij}=\hat{\Theta}^{(L)}_r(x_i,x_j)\) (the empirical RF-LR NTK over the random correlation chain), and let \(K_{\mathrm{proxy}}\) be the deterministic proxy Gram matrix with entries \((K_{\mathrm{proxy}})_{ij}=\Theta^{(L)}(\rho_{1,ij})\) (Definition~\ref{def:deterministic-proxy}). Under the same per-layer sub-Gaussian concentration as in Appendix~\ref{appendix:random-correlation-chain}, \(\mathbb{E}[(\rho_\ell-\varrho^{\circ(\ell-1)}(\rho_1))^2]\le C/r\) and \(\mathbb{P}(|\rho_\ell-\varrho^{\circ(\ell-1)}(\rho_1)|\ge t)\le 6\exp(-c r t^2)\), the kernel recursion is Lipschitz in the correlation path. Propagating the per-step bounds through \(L\) layers (e.g.\ by a union bound over the \(L\) steps and the fact that \(\Theta^{(k)}\) is Lipschitz in \(\rho\) with constant \(O(1)\)), one obtains that for each pair \((i,j)\), \(|\hat{K}_{ij}-(K_{\mathrm{proxy}})_{ij}|=O_P(\sqrt{L/r})\). A union over the \(n^2\) pairs and the inequality \(\|A\|_{\mathrm{op}}\le \|A\|_{\mathrm{F}}\le n\max_{i,j}|A_{ij}|\) yield the following. The bound in Proposition~\ref{prop:proxy-empirical-concentration} is \emph{sketch-based}; a full proof with explicit constants and rate is given only for the equicorrelated case (Theorem~\ref{thm:equicorrelated-op-bound}).
+Let \(\hat{K}\) be the \(n\times n\) random Gram matrix with entries \(\hat{K}_{ij}=\hat{\Theta}^{(L)}_r(x_i,x_j)\) (the empirical RF-LR NTK over the random correlation chain), and let \(K_{\mathrm{proxy}}\) be the deterministic proxy Gram matrix with entries \((K_{\mathrm{proxy}})_{ij}=\Theta^{(L)}(\rho_{1,ij})\) (Definition~\ref{def:deterministic-proxy}). Under the same per-layer sub-Gaussian concentration as in Appendix~\ref{appendix:random-correlation-chain},
+\[
+\mathbb{E}\bigl[(\rho_\ell-\varrho^{\circ(\ell-1)}(\rho_1))^2\bigr]\le C/r,\qquad
+\mathbb{P}\bigl(|\rho_\ell-\varrho^{\circ(\ell-1)}(\rho_1)|\ge t\bigr)\le 6\exp(-c r t^2),
+\]
+the kernel recursion is Lipschitz in the correlation path. Propagating the per-step bounds through \(L\) layers (e.g.\ by a union bound over the \(L\) steps and the fact that \(\Theta^{(k)}\) is Lipschitz in \(\rho\) with constant \(O(1)\)), one obtains that for each pair \((i,j)\),
+\[
+\bigl|\hat{K}_{ij}-(K_{\mathrm{proxy}})_{ij}\bigr|=O_P(\sqrt{L/r}).
+\]
+A union over the \(n^2\) pairs and the inequality \(\|A\|_{\mathrm{op}}\le \|A\|_{\mathrm{F}}\le n\max_{i,j}|A_{ij}|\) yield the following. The bound in Proposition~\ref{prop:proxy-empirical-concentration} is \emph{sketch-based}; a full proof with explicit constants and rate is given only for the equicorrelated case (Theorem~\ref{thm:equicorrelated-op-bound}).
 \begin{proposition}[Proxy--empirical Gram matrix concentration]\label{prop:proxy-empirical-concentration}
 Fix \(n,L\ge 1\), \(r>1\), and inputs \(x_1,\ldots,x_n\) with pairwise cosine similarities \(\rho_{1,ij}\in(-1,1)\). Let \(\hat{K}\) and \(K_{\mathrm{proxy}}\) be as above. There exist constants \(C,c>0\) (depending on \(L,n\) and the \(\rho_{1,ij}\)) such that for any \(\epsilon\in(0,1)\),
 \[
 \mathbb{P}\!\left(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}\;\ge\; \epsilon\right)\;\le\; C\,\exp\!\left(-c\,\frac{r\,\epsilon^2}{L\,n^2}\right).
 \]
-In particular, for \(r\to\infty\) with \(n,L\) fixed, \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}=o_P(1)\). If in addition the proxy Gram matrix has minimum eigenvalue \(\lambda_{\min}(K_{\mathrm{proxy}}|_{\mathbf{1}^\perp})\ge \gamma>0\), then for \(r\) large enough so that \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}<\gamma/2\) with high probability, Weyl's inequality gives \(|\lambda_{\min}(\hat{K}|_{\mathbf{1}^\perp})-\lambda_{\min}(K_{\mathrm{proxy}}|_{\mathbf{1}^\perp})|\le \gamma/2\), so the condition number of \(\hat{K}\) restricted to \(\mathbf{1}^\perp\) is within a constant factor of that of \(K_{\mathrm{proxy}}\).
+In particular, for \(r\to\infty\) with \(n,L\) fixed, \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}=o_P(1)\). If in addition the proxy Gram matrix has minimum eigenvalue \(\lambda_{\min}(K_{\mathrm{proxy}}|_{\mathbf{1}^\perp})\ge \gamma>0\), then for \(r\) large enough so that \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}<\gamma/2\) with high probability, Weyl's inequality gives
+\[
+\bigl|\lambda_{\min}(\hat{K}|_{\mathbf{1}^\perp})-\lambda_{\min}(K_{\mathrm{proxy}}|_{\mathbf{1}^\perp})\bigr|\le \gamma/2,
+\]
+so the condition number of \(\hat{K}\) restricted to \(\mathbf{1}^\perp\) is within a constant factor of that of \(K_{\mathrm{proxy}}\).
 \end{proposition}
-\paragraph{Proof sketch.} Per-layer concentration (Lemma~\ref{lem:gaussian-sample-cosine}) and Lipschitz dependence of the scalar recursion on \(\rho\) imply that each entry \(\hat{K}_{ij}\) differs from \((K_{\mathrm{proxy}})_{ij}\) by \(O_P(\sqrt{L/r})\). Union bound over \(n^2\) pairs with sub-Gaussian tails gives \(\max_{i,j}|\hat{K}_{ij}-(K_{\mathrm{proxy}})_{ij}|=O_P(\sqrt{L\log(n)/r})\). Hence \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}\le n\|\hat{K}-K_{\mathrm{proxy}}\|_{\max}=O_P(n\sqrt{L\log(n)/r})\), and the stated exponential tail follows. The condition-number comparison is by Weyl's inequality for the eigenvalues of symmetric matrices. For general (non-equicorrelated) datasets this remains a proof sketch; a rigorous operator-norm bound with explicit rate is given only for the equicorrelated case in Theorem~\ref{thm:equicorrelated-op-bound}.
+\paragraph{Proof sketch.} Per-layer concentration (Lemma~\ref{lem:gaussian-sample-cosine}) and Lipschitz dependence of the scalar recursion on \(\rho\) imply that each entry \(\hat{K}_{ij}\) differs from \((K_{\mathrm{proxy}})_{ij}\) by \(O_P(\sqrt{L/r})\). Union bound over \(n^2\) pairs with sub-Gaussian tails gives
+\[
+\max_{i,j}\bigl|\hat{K}_{ij}-(K_{\mathrm{proxy}})_{ij}\bigr|=O_P\bigl(\sqrt{L\log(n)/r}\bigr).
+\]
+Hence \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}\le n\|\hat{K}-K_{\mathrm{proxy}}\|_{\max}=O_P(n\sqrt{L\log(n)/r})\), and the stated exponential tail follows. The condition-number comparison is by Weyl's inequality for the eigenvalues of symmetric matrices. For general (non-equicorrelated) datasets this remains a proof sketch; a rigorous operator-norm bound with explicit rate is given only for the equicorrelated case in Theorem~\ref{thm:equicorrelated-op-bound}.
 
 \paragraph{Equicorrelated case: reduction to two scalars and rigorous bound on \(\mathbf{1}^\perp\).}
 In the equicorrelated case (\(\rho_{1,ij}=\rho_0\) for all \(i\neq j\), \(\rho_{1,ii}=1\)), the proxy Gram matrix has the form \(K_{\mathrm{proxy}}=\Theta^{(L)}(1)I_n+\Theta^{(L)}(\rho_0)(\mathbf{1}\mathbf{1}^\top-I_n)\). By symmetry of the data and the network, the random \(\hat{K}\) has the same structure: \(\hat{K}_{ii}=\hat{K}_{11}\) and \(\hat{K}_{ij}=\hat{K}_{12}\) for \(i\neq j\). Hence the deviation matrix \(E\coloneqq \hat{K}-K_{\mathrm{proxy}}\) is
@@ -572,10 +583,30 @@ Then \(\Phi^{(k)}\) is the same function as \(\Theta^{(k)}\) when evaluated alon
 \left|\frac{\partial\Phi^{(k)}}{\partial\rho_\ell}\right|
 \;\le\; C_\Phi\,\left(\frac{1}{r}\right)^{k-\ell}.
 \]
-In particular, \(\sum_{\ell=2}^L \bigl(\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\bigr)^2 \le C_\Phi^2\,\frac{1-(1/r)^{2(L-1)}}{1-(1/r)^2} \le \overline{C}_L\) and \(\sum_{\ell=2}^L \bigl|\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\bigr|\le C_\Phi\sum_{t=0}^{L-2}(1/r)^t\le \overline{C}_L''\) for some \(\overline{C}_L,\overline{C}_L''=O(1)\) when \(r\ge 2\).
+In particular, for \(r\ge 2\) and some \(\overline{C}_L,\overline{C}_L''=O(1)\),
+\begin{align*}
+\sum_{\ell=2}^L \left(\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\right)^{\!2} &\le C_\Phi^2\,\frac{1-(1/r)^{2(L-1)}}{1-(1/r)^2} \le \overline{C}_L, \\
+\sum_{\ell=2}^L \left|\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\right| &\le C_\Phi\sum_{t=0}^{L-2}(1/r)^t \le \overline{C}_L''.
+\end{align*}
 \end{lemma}
 \begin{proof}
-The recursion for \(\Phi^{(k)}\) coincides with \eqref{eq:rflr-scalar-mean-ntk-rec}, so \(\Theta^{(k)}(\rho_1)=\Phi^{(k)}(\rho_1,\varrho(\rho_1),\ldots,\varrho^{\circ(k-1)}(\rho_1))\). Differentiating, \(\frac{\partial\Phi^{(k)}}{\partial\rho_k}=\frac{1}{r}\,\Phi^{(k-1)}\,\dot{s}'(\rho_k)+\frac{1}{r}\,s'(\rho_k)\). On \([-1+\delta,1-\delta]\), \(|\dot{s}'|\) and \(|s'|\) are bounded by some \(C_s\). Since \(\Phi^{(k-1)}\) is bounded (the recursion yields \(\Phi^{(k)}\in[1,1+O(1)]\) on compact \(\rho\)), we have \(\bigl|\frac{\partial\Phi^{(k)}}{\partial\rho_k}\bigr|\le C_s'(1/r)\) for a constant \(C_s'\). For \(\ell<k\), \(\frac{\partial\Phi^{(k)}}{\partial\rho_\ell}=\frac{1}{r}\,\frac{\partial\Phi^{(k-1)}}{\partial\rho_\ell}\,\dot{s}(\rho_k)\). By induction, \(\bigl|\frac{\partial\Phi^{(k)}}{\partial\rho_\ell}\bigr|\le C_s'\,\prod_{j=\ell+1}^k \frac{1}{r}|\dot{s}(\rho_j)|\le C_\Phi\,(1/r)^{k-\ell}\), with \(C_\Phi=C_s'\,(\sup|\dot{s}|)^{L-1}\le C_s'/2^{L-1}\). The sum bound follows from \(\sum_{\ell=2}^L (1/r)^{2(L-\ell)}=\sum_{t=0}^{L-2}(1/r)^{2t}\le \frac{1}{1-(1/r)^2}\le 2\) for \(r\ge 2\), so \(\sum_{\ell=2}^L \bigl(\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\bigr)^2\le C_\Phi^2\cdot 2=\overline{C}_L\).
+The recursion for \(\Phi^{(k)}\) coincides with \eqref{eq:rflr-scalar-mean-ntk-rec}, so
+\[
+\Theta^{(k)}(\rho_1) \;=\; \Phi^{(k)}\bigl(\rho_1,\varrho(\rho_1),\ldots,\varrho^{\circ(k-1)}(\rho_1)\bigr).
+\]
+Differentiating in \(\rho_k\),
+\[
+\frac{\partial\Phi^{(k)}}{\partial\rho_k} \;=\; \frac{1}{r}\,\Phi^{(k-1)}\,\dot{s}'(\rho_k) \;+\; \frac{1}{r}\,s'(\rho_k).
+\]
+On \([-1+\delta,1-\delta]\), \(|\dot{s}'|\) and \(|s'|\) are bounded by some \(C_s\). Since \(\Phi^{(k-1)}\) is bounded (the recursion yields \(\Phi^{(k)}\in[1,1+O(1)]\) on compact \(\rho\)), we have \(\bigl|\frac{\partial\Phi^{(k)}}{\partial\rho_k}\bigr|\le C_s'(1/r)\) for a constant \(C_s'\). For \(\ell<k\),
+\[
+\frac{\partial\Phi^{(k)}}{\partial\rho_\ell} \;=\; \frac{1}{r}\,\frac{\partial\Phi^{(k-1)}}{\partial\rho_\ell}\,\dot{s}(\rho_k).
+\]
+By induction,
+\[
+\left|\frac{\partial\Phi^{(k)}}{\partial\rho_\ell}\right| \;\le\; C_s'\,\prod_{j=\ell+1}^k \frac{1}{r}|\dot{s}(\rho_j)| \;\le\; C_\Phi\,(1/r)^{k-\ell},
+\]
+with \(C_\Phi=C_s'\,(\sup|\dot{s}|)^{L-1}\le C_s'/2^{L-1}\). The sum bound follows from \(\sum_{\ell=2}^L (1/r)^{2(L-\ell)}=\sum_{t=0}^{L-2}(1/r)^{2t}\le \frac{1}{1-(1/r)^2}\le 2\) for \(r\ge 2\), so \(\sum_{\ell=2}^L \bigl(\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}\bigr)^2\le C_\Phi^2\cdot 2=\overline{C}_L\).
 \end{proof}
 
 \begin{lemma}[Second-order remainder]\label{lem:second-order-remainder}
@@ -583,15 +614,37 @@ Under the same setting as Lemma~\ref{lem:path-kernel-sensitivity}, let \(\rho_1=
 \[
 R_2 \;=\; \hat{\Theta}^{(L)}_r - \Theta^{(L)}(\rho_0) \;-\; \sum_{\ell=2}^L \frac{\partial\Phi^{(L)}}{\partial\rho_\ell}(\bar{\rho}_2,\ldots,\bar{\rho}_L)\,\bigl(\rho_\ell-\bar{\rho}_\ell\bigr)
 \]
-satisfies \(\mathbb{E}[|R_2|]\le B_L\,L/r\) and, for any \(u>0\), \(\mathbb{P}(|R_2|\ge u)\le 2\exp\bigl(-\min\bigl(\frac{c_0 r u}{2B_L L},\,\frac{c_0 r u^2}{2(B_L L)^2}\bigr)\bigr)\) for a constant \(B_L\) depending on \(L\) and the Hessian of \(\Phi^{(L)}\) on \([-1+\delta,1-\delta]^L\).
+satisfies \(\mathbb{E}[|R_2|]\le B_L\,L/r\) for a constant \(B_L\) depending on \(L\) and the Hessian of \(\Phi^{(L)}\) on \([-1+\delta,1-\delta]^L\), and for any \(u>0\),
+\[
+\mathbb{P}(|R_2|\ge u) \;\le\; 2\exp\!\left(-\min\!\left(\frac{c_0 r u}{2B_L L},\,\frac{c_0 r u^2}{2(B_L L)^2}\right)\right).
+\]
 \end{lemma}
 \begin{proof}
-By Taylor's theorem, \(R_2=\frac{1}{2}\sum_{\ell,m} \frac{\partial^2\Phi^{(L)}}{\partial\rho_\ell\partial\rho_m}(\xi)\,(\rho_\ell-\bar{\rho}_\ell)(\rho_m-\bar{\rho}_m)\) for some \(\xi\) on the segment between \((\rho_2,\ldots,\rho_L)\) and \((\bar{\rho}_2,\ldots,\bar{\rho}_L)\). The second derivatives of \(\Phi^{(L)}\) are bounded on compact sets (the recursion is polynomial in \(s,\dot{s}\) and those are \(C^\infty\) on \((-1,1)\)). So \(|R_2|\le \frac{1}{2}H_L \sum_{\ell=2}^L (\rho_\ell-\bar{\rho}_\ell)^2\) for a constant \(H_L\). Hence \(\mathbb{E}[|R_2|]\le \frac{1}{2}H_L\,\sum_{\ell=2}^L \mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2]\le \frac{1}{2}H_L\,(L-1)\,C_0/r\le B_L L/r\). Each \((\rho_\ell-\bar{\rho}_\ell)^2\) is sub-exponential (from the sub-Gaussian tail of \(\rho_\ell-\bar{\rho}_\ell\)). By Bernstein's inequality for sums of sub-exponential variables, \(\sum_{\ell=2}^L (\rho_\ell-\bar{\rho}_\ell)^2\) has an exponential tail with scale \(O(L/r)\); hence \(|R_2|\) has the stated tail bound.
+By Taylor's theorem, for some \(\xi\) on the segment between \((\rho_2,\ldots,\rho_L)\) and \((\bar{\rho}_2,\ldots,\bar{\rho}_L)\),
+\[
+R_2 \;=\; \frac{1}{2}\sum_{\ell,m} \frac{\partial^2\Phi^{(L)}}{\partial\rho_\ell\partial\rho_m}(\xi)\,(\rho_\ell-\bar{\rho}_\ell)(\rho_m-\bar{\rho}_m).
+\]
+The second derivatives of \(\Phi^{(L)}\) are bounded on compact sets (the recursion is polynomial in \(s,\dot{s}\) and those are \(C^\infty\) on \((-1,1)\)). Hence
+\[
+|R_2| \;\le\; \frac{1}{2}H_L \sum_{\ell=2}^L (\rho_\ell-\bar{\rho}_\ell)^2
+\]
+for a constant \(H_L\), and
+\[
+\mathbb{E}[|R_2|] \;\le\; \frac{1}{2}H_L\,\sum_{\ell=2}^L \mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2] \;\le\; \frac{1}{2}H_L\,(L-1)\,\frac{C_0}{r} \;\le\; B_L\,\frac{L}{r}.
+\]
+Each \((\rho_\ell-\bar{\rho}_\ell)^2\) is sub-exponential (from the sub-Gaussian tail of \(\rho_\ell-\bar{\rho}_\ell\)). By Bernstein's inequality for sums of sub-exponential variables, \(\sum_{\ell=2}^L (\rho_\ell-\bar{\rho}_\ell)^2\) has an exponential tail with scale \(O(L/r)\); hence \(|R_2|\) has the stated tail bound.
 \end{proof}
 
 \paragraph{Proof of Theorem~\ref{thm:equicorrelated-op-bound}.}
 \begin{proof}
-Let \(\hat{K}\) and \(K_{\mathrm{proxy}}\) be as in Proposition~\ref{prop:proxy-empirical-concentration}. Let \(E=\hat{K}-K_{\mathrm{proxy}}\). We have \(\|E|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=|\lambda_\perp|=|\hat{K}_{11}-\Theta^{(L)}(1)-(\hat{K}_{12}-\Theta^{(L)}(\rho_0))|\). For the diagonal, \(\rho_1=1\) is fixed and the random path \((1,\rho_2^{\mathrm{diag}},\ldots,\rho_L^{\mathrm{diag}})\) has the same per-layer concentration; so \(\hat{K}_{11}-\Theta^{(L)}(1)\) admits the same Taylor expansion and bounds as below with \(\rho_0\) replaced by \(1\). Thus it suffices to prove that both \(|\hat{K}_{11}-\Theta^{(L)}(1)|\) and \(|\hat{K}_{12}-\Theta^{(L)}(\rho_0)|\) are \(O_P(L/r)\); then \(|\lambda_\perp|\le |\hat{K}_{11}-\Theta^{(L)}(1)|+|\hat{K}_{12}-\Theta^{(L)}(\rho_0)|=O_P(L/r)\).
+Let \(\hat{K}\) and \(K_{\mathrm{proxy}}\) be as in Proposition~\ref{prop:proxy-empirical-concentration}. Let \(E=\hat{K}-K_{\mathrm{proxy}}\). We have
+\[
+\|E|_{\mathbf{1}^\perp}\|_{\mathrm{op}} \;=\; |\lambda_\perp| \;=\; \bigl|\hat{K}_{11}-\Theta^{(L)}(1)-\bigl(\hat{K}_{12}-\Theta^{(L)}(\rho_0)\bigr)\bigr|.
+\]
+For the diagonal, \(\rho_1=1\) is fixed and the random path \((1,\rho_2^{\mathrm{diag}},\ldots,\rho_L^{\mathrm{diag}})\) has the same per-layer concentration; so \(\hat{K}_{11}-\Theta^{(L)}(1)\) admits the same Taylor expansion and bounds as below with \(\rho_0\) replaced by \(1\). Thus it suffices to prove that both \(|\hat{K}_{11}-\Theta^{(L)}(1)|\) and \(|\hat{K}_{12}-\Theta^{(L)}(\rho_0)|\) are \(O_P(L/r)\); then
+\[
+|\lambda_\perp| \;\le\; \bigl|\hat{K}_{11}-\Theta^{(L)}(1)\bigr| + \bigl|\hat{K}_{12}-\Theta^{(L)}(\rho_0)\bigr| \;=\; O_P(L/r).
+\]
 
 \medskip
 \noindent\textbf{Off-diagonal deviation.} Write \(\hat{K}_{12}=\Phi^{(L)}(\rho_0,\rho_2,\ldots,\rho_L)\) and \(\Theta^{(L)}(\rho_0)=\Phi^{(L)}(\rho_0,\bar{\rho}_2,\ldots,\bar{\rho}_L)\) with \(\bar{\rho}_\ell=\varrho^{\circ(\ell-1)}(\rho_0)\). By Taylor expansion,
@@ -600,11 +653,33 @@ Let \(\hat{K}\) and \(K_{\mathrm{proxy}}\) be as in Proposition~\ref{prop:proxy-
 \]
 Write \(a_\ell=\frac{\partial\Phi^{(L)}}{\partial\rho_\ell}(\bar{\rho})\). By Lemma~\ref{lem:path-kernel-sensitivity}, \(\sum_{\ell=2}^L |a_\ell|\le \overline{C}_L''\) for some \(\overline{C}_L''=O(1)\).
 
-\textbf{First-order term.} For \(S_1=\sum_{\ell=2}^L a_\ell\,(\rho_\ell-\bar{\rho}_\ell)\), we bound the variance without conditioning: \(\mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2]\le C_0/r\) for all \(\ell\) by Lemma~\ref{lem:gaussian-sample-cosine}. By Cauchy--Schwarz, \(\mathrm{Var}(S_1)\le \mathbb{E}[S_1^2]\le \sum_{\ell,m} |a_\ell||a_m|\,\sqrt{\mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2]\mathbb{E}[(\rho_m-\bar{\rho}_m)^2]}\le (C_0/r)\bigl(\sum_{\ell=2}^L |a_\ell|\bigr)^2\le C_0(\overline{C}_L'')^2/r\). So \(S_1=O_P(1/\sqrt{r})\). For the exponential tail: by Lemma~\ref{lem:gaussian-sample-cosine}, \(\mathbb{P}(|\rho_\ell-\bar{\rho}_\ell|\ge t)\le 6\exp(-c_0 r t^2)\) for each \(\ell\). A union bound gives \(\mathbb{P}(\max_{2\le \ell\le L}|\rho_\ell-\bar{\rho}_\ell|\ge t)\le 6(L-1)\exp(-c_0 r t^2)\). On the event \(\{\max_\ell|\rho_\ell-\bar{\rho}_\ell|< t\}\), we have \(|S_1|\le (\sum_\ell |a_\ell|)\,t\le \overline{C}_L'' t\). So \(\mathbb{P}(|S_1|\ge \epsilon)\le 6L\exp(-c_0 r (\epsilon/\overline{C}_L'')^2)\) for \(\epsilon\) in a bounded range.
+\medskip
+\noindent\textbf{First-order term.} Let \(S_1=\sum_{\ell=2}^L a_\ell\,(\rho_\ell-\bar{\rho}_\ell)\). We bound the variance without conditioning: \(\mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2]\le C_0/r\) for all \(\ell\) by Lemma~\ref{lem:gaussian-sample-cosine}. By Cauchy--Schwarz,
+\[
+\mathrm{Var}(S_1) \;\le\; \mathbb{E}[S_1^2] \;\le\; \sum_{\ell,m} |a_\ell||a_m|\,\sqrt{\mathbb{E}[(\rho_\ell-\bar{\rho}_\ell)^2]\mathbb{E}[(\rho_m-\bar{\rho}_m)^2]} \;\le\; \frac{C_0}{r}\biggl(\sum_{\ell=2}^L |a_\ell|\biggr)^{\!2} \;\le\; \frac{C_0(\overline{C}_L'')^2}{r}.
+\]
+So \(S_1=O_P(1/\sqrt{r})\). For the exponential tail: by Lemma~\ref{lem:gaussian-sample-cosine}, \(\mathbb{P}(|\rho_\ell-\bar{\rho}_\ell|\ge t)\le 6\exp(-c_0 r t^2)\) for each \(\ell\). A union bound gives
+\[
+\mathbb{P}\!\left(\max_{2\le \ell\le L}|\rho_\ell-\bar{\rho}_\ell|\ge t\right) \;\le\; 6(L-1)\exp(-c_0 r t^2).
+\]
+On the event \(\{\max_\ell|\rho_\ell-\bar{\rho}_\ell|< t\}\), we have \(|S_1|\le (\sum_\ell |a_\ell|)\,t\le \overline{C}_L'' t\). So for \(\epsilon\) in a bounded range,
+\[
+\mathbb{P}(|S_1|\ge \epsilon) \;\le\; 6L\exp\!\left(-c_0 r\,\bigl(\epsilon/\overline{C}_L''\bigr)^2\right).
+\]
 
-\textbf{Second-order term.} By Lemma~\ref{lem:second-order-remainder}, \(\mathbb{E}[|R_2|]\le B_L L/r\) and \(|R_2|\) has an exponential tail with scale \(O(L/r)\). So \(R_2=O_P(L/r)\).
+\medskip
+\noindent\textbf{Second-order term.} By Lemma~\ref{lem:second-order-remainder}, \(\mathbb{E}[|R_2|]\le B_L L/r\) and \(|R_2|\) has an exponential tail with scale \(O(L/r)\). So \(R_2=O_P(L/r)\).
 
-\textbf{Total.} Thus \(\hat{K}_{12}-\Theta^{(L)}(\rho_0)=S_1+R_2=O_P(1/\sqrt{r})+O_P(L/r)=O_P(L/r+1/\sqrt{r})\). The diagonal deviation \(\hat{K}_{11}-\Theta^{(L)}(1)\) is handled identically (path starting at \(\rho_1=1\)). Hence \(|\lambda_\perp|\le |\hat{K}_{11}-\Theta^{(L)}(1)|+|\hat{K}_{12}-\Theta^{(L)}(\rho_0)|=O_P(L/r+1/\sqrt{r})\), and the stated probability bound follows by combining the tail bounds for \(S_1\) and \(R_2\).
+\medskip
+\noindent\textbf{Total.} Thus
+\[
+\hat{K}_{12}-\Theta^{(L)}(\rho_0) \;=\; S_1+R_2 \;=\; O_P(1/\sqrt{r})+O_P(L/r) \;=\; O_P(L/r+1/\sqrt{r}).
+\]
+The diagonal deviation \(\hat{K}_{11}-\Theta^{(L)}(1)\) is handled identically (path starting at \(\rho_1=1\)). Hence
+\[
+|\lambda_\perp| \;\le\; \bigl|\hat{K}_{11}-\Theta^{(L)}(1)\bigr| + \bigl|\hat{K}_{12}-\Theta^{(L)}(\rho_0)\bigr| \;=\; O_P(L/r+1/\sqrt{r}),
+\]
+and the stated probability bound follows by combining the tail bounds for \(S_1\) and \(R_2\).
 \end{proof}
 
 \begin{remark}[Full operator norm]\label{rmk:equicorrelated-full-op}
@@ -824,7 +899,7 @@ C_1\,\exp\!\big(-C_2\,r\,\epsilon^2\big).
 \subsection{Proof of Corollary~\ref{cor:conditional_rkhs_homogeneous}: Mean NTK over Fisher–Kibble has same RKHS}
 \label{appendix:proof-conditional-rkhs-homogeneous}
 
-\paragraph{Proof sketch.} The mean NTK \(\tilde{\Kop}^{(2)}(\rho)\) is zonal. The key step is the Puiseux expansion near \(\rho=1\): compute \(\mathbb{E}[\arccos(\hat{\rho}_r)]\) when \(\hat{\rho}_r\sim\mathrm{Fisher}(1-t,r)\) using the Fisher density and a hypergeometric connection formula. The leading term is \(\sqrt{2t}\,I(r)+O(t^{3/2})\); since \(I(r)=O(1/\sqrt{r})\), the \(t^{1/2}\) coefficient is an \(O(1)\) perturbation of the shallow ReLU constant. By the Bietti--Bach criterion (Theorem~\ref{thm:bietti-bach-rkhs-criterion}), the same endpoint exponent \(1/2\) implies RKHS equivalence.
+\paragraph{Proof sketch.} The mean NTK \(\tilde{\Kop}^{(2)}(\rho)\) is zonal. The key step is the Puiseux expansion near \(\rho=1\): compute \(\mathbb{E}[\arccos(\hat{\rho}_r)]\) when \(\hat{\rho}_r\sim\mathrm{Fisher}(1-t,r)\) using the Fisher density and a hypergeometric connection formula. The leading term is \(\sqrt{2t}\,I(r)+O(t^{3/2})\); since \(I(r)=O(1/\sqrt{r})\), the \(t^{1/2}\) coefficient is an \(O(1)\) perturbation of the shallow ReLU constant. By the Bietti--Bach criterion~\cite[Theorem~1]{bietti2021deepequalsshallowrelu}, the same endpoint exponent \(1/2\) implies RKHS equivalence.
 \begin{proof}
 We prove that under Assumption~\ref{assump:homogeneous_activation}, the mean NTK \( \tilde{\Kop}^{(2)} \) for the three-layer case (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow ReLU kernel.
 

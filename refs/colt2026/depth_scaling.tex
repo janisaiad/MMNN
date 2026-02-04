@@ -55,10 +55,17 @@ See Appendix~\ref{appendix:proxy-empirical-concentration}.
 \end{proof}
 
 \begin{corollary}[Exact conditioning for equicorrelated and high-dimensional random data]\label{cor:conditioning-equicorrelated-highdim}
-In the setting of Proposition~\ref{prop:condition-number-depth}, the following hold.
+In the setting of Proposition~\ref{prop:condition-number-depth}, let \(\kappa_\perp=\lambda_{\max}(\mathbf{M}|_{\mathbf{1}^\perp})/\lambda_{\min}(\mathbf{M}|_{\mathbf{1}^\perp})\) denote the condition number on the mean-zero subspace. The following hold.
 \begin{itemize}
-  \item \textbf{Equicorrelated data.} If \(\rho_{ij}=\rho_0\) for all \(i\neq j\) (and \(\rho_{ii}=1\)), then on \(\mathbf{1}^\perp\) all eigenvalues of \(\mathbf{M}\) equal \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)=\Theta(1/(rL))\), so the condition number on the mean-zero subspace is \(\kappa_\perp=1\).
-  \item \textbf{High-dimensional random data.} If the inputs \(x_1,\ldots,x_n\in\mathbb{S}^{d-1}\) are drawn i.i.d.\ uniformly from the unit sphere with \(d\to\infty\), then with high probability the pairwise cosine similarities satisfy \(\max_{i\neq j}|\rho_{ij}|=O(1/\sqrt{d})\), so the data are approximately equicorrelated. In that regime, the proxy Gram matrix has, with high probability, all eigenvalues on \(\mathbf{1}^\perp\) equal to \(\lambda_\perp=\Theta(1)(1+o(1))\), hence \(\kappa_\perp=1+o(1)\). On that high-probability event the same operator-norm bound on \(\mathbf{1}^\perp\) as in the equicorrelated case applies (Theorem~\ref{thm:equicorrelated-op-bound} with \(\rho_0=O(1/\sqrt{d})\)).
+  \item \textbf{Equicorrelated data.} If \(\rho_{ij}=\rho_0\) for all \(i\neq j\) (and \(\rho_{ii}=1\)), then on \(\mathbf{1}^\perp\) all \(n-1\) eigenvalues of \(\mathbf{M}\) equal \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)=\Theta(1/(rL))\). Hence
+  \[
+  \kappa_\perp \;=\; \frac{\lambda_{\max}}{\lambda_{\min}} \;=\; \frac{\lambda_\perp}{\lambda_\perp} \;=\; 1.
+  \]
+  \item \textbf{High-dimensional random data.} If the inputs \(x_1,\ldots,x_n\in\mathbb{S}^{d-1}\) are drawn i.i.d.\ uniformly from the unit sphere, then as \(d\to\infty\) (with \(n,r,L\) fixed) with high probability \(\max_{i\neq j}|\rho_{ij}|=O(1/\sqrt{d})\), so the proxy Gram matrix is approximately equicorrelated with \(\rho_0=O(1/\sqrt{d})\). On that event, all eigenvalues on \(\mathbf{1}^\perp\) are \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\bar{\rho})+o(1)=\Theta(1/(rL))(1+o(1))\) with \(\bar{\rho}=O(1/\sqrt{d})\), and they differ from each other by \(o(\lambda_\perp)\). Hence
+  \[
+  \kappa_\perp \;=\; \frac{\lambda_{\max}}{\lambda_{\min}} \;=\; 1+o(1)\qquad\text{as }d\to\infty.
+  \]
+  On that high-probability event, the empirical Gram matrix \(\hat{K}\) concentrates around the proxy: \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) (Theorem~\ref{thm:equicorrelated-op-bound} with \(\rho_0=O(1/\sqrt{d})\)).
 \end{itemize}
 \end{corollary}
 \begin{proof}
@@ -66,7 +73,12 @@ See Appendix~\ref{appendix:proof-conditioning-equicorrelated-highdim}.
 \end{proof}
 
 \paragraph{Limited scope of exact conditioning.}
-Equicorrelated and high-dimensional i.i.d.\ spherical data are special; the general conditioning guarantee in this section is the proxy lower bound \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}).
+Equicorrelated and high-dimensional i.i.d.\ spherical data are special; the general conditioning guarantee in this section is the proxy lower bound (Proposition~\ref{prop:condition-number-depth}). Summary of condition-number scaling:
+\begin{itemize}
+  \item \textbf{Equicorrelated:} \(\kappa_\perp=1\) (exact; all eigenvalues on \(\mathbf{1}^\perp\) equal \(\lambda_\perp=\Theta(1/(rL))\)).
+  \item \textbf{High-dim i.i.d.\ spherical:} \(\kappa_\perp=1+o(1)\) as \(d\to\infty\) (approximately equicorrelated).
+  \item \textbf{General (non-equicorrelated):} \(\kappa\ge\Omega(r\cdot L)\); explicit: \(\lambda_{\max}=\Theta(1)\), \(\lambda_{\min}\le O(1/(rL))\), hence \(\kappa=\lambda_{\max}/\lambda_{\min}\ge\Omega(r\cdot L)\).
+\end{itemize}
 
 \begin{remark}[Proxy vs.\ optimization]\label{rmk:depth-conditioning-message}
 Proposition~\ref{prop:condition-number-depth} gives a \emph{lower bound} on the condition number of the \emph{proxy} Gram matrix; we do not claim that this bound governs optimization in the finite-width network. For the proxy and non-equicorrelated data, depth drives the kernel toward near-constant entries (gap \(\Theta(1/(rL))\)) and \(\kappa\ge\Omega(rL)\). The actual network uses random correlations with \(O(1/\sqrt{r})\) sub-Gaussian fluctuations (Appendix~\ref{appendix:random-correlation-chain}), so for large \(r\) the random kernel concentrates around the proxy. The condition number is relevant for kernel regression (stability and convergence speed depend on \(\lambda_{\max}/\lambda_{\min}\)); under a fixed budget \(O(LrN)\), depth and rank trade off from a conditioning perspective, and the choice of \(r\) and \(L\) is a matter of approximation power (effective depth and RKHS expressivity).

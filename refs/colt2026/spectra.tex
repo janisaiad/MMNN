@@ -14,7 +14,7 @@ As the number of data points \(n\to\infty\):
 \end{itemize}
 \end{assumption}
 
-We now introduce the random-matrix theory conditions that are necessary for the asymptotic analysis. Those strong assumptions can be removed in future work using techniques from \cite{benigni2025eigenvaluedistributionneuraltangent}
+We now introduce the random-matrix theory conditions that are necessary for the asymptotic analysis. Those strong assumptions can be removed in future work using the Benigni--Paquette framework~\cite{benigni2025eigenvaluedistributionneuraltangent}, which establishes RMT limits for Gram spectra in the extensive-width regime (\(n\sim N^2\)) with layers taken in the RMT limit.
 
 \begin{assumption}[RMT Gaussian data]\label{assump:RMT-conditions}
 Following the framework of~\cite{El_Karoui_2010}, we impose the following conditions  as \( d \to \infty \):
@@ -58,7 +58,7 @@ Proof: See Appendix~\ref{appendix:proof-kernel-clt}.
 Having established the entrywise asymptotic distribution, we now turn to the macroscopic spectral properties of the kernel matrix. The eigenvalue distribution follows a deformed Marchenko–Pastur law with a characteristic spike-bulk structure.
 
 \subsection{Macroscopic spectrum: deformed Marchenko–Pastur law}
-Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes the eigenvalue distribution of the NTK in the quadratic scaling regime (\( N \sim n^2 \)) for single-layer networks, showing convergence to a deformed Marchenko–Pastur law with a spike-bulk structure. We extend this analysis to the three-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
+Benigni and Paquette~\cite{benigni2025eigenvaluedistributionneuraltangent} establish the eigenvalue distribution of the NTK in the RMT limit (extensive-width regime \(N\sim n^2\), layers in the RMT limit) for shallow two-layer networks, showing convergence to a deformed Marchenko--Pastur law with a spike-bulk structure. We extend this analysis to the three-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
 
 \paragraph{Mean-zero targets: restriction to \texorpdfstring{\(\mathbf{1}^\perp\)}{1-perp} (removing the constant mode).}
 Let \(K\in\mathbb{R}^{n\times n}\) be a symmetric Gram matrix built from a kernel evaluated on a dataset \(\{x_i\}_{i=1}^n\). For squared loss with mean-zero targets (or after removing the constant component of the labels), the dynamics depend only on the action of \(K\) on the mean-zero subspace
@@ -77,7 +77,7 @@ Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{ass
     \]
     where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel's diagonal argument).
 \end{itemize}
-Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). This theorem is stated for the deterministic inner-product kernel matrix built from the limiting kernel function \(K_\infty\); incorporating finite-\(r\) Fisher--Kibble fluctuations or finite-width effects into the limiting ESD would require BP-style resolvent/Gaussian-equivalence machinery and is left for future work.
+Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). This theorem is stated for the deterministic inner-product kernel matrix built from the limiting kernel function \(K_\infty\); incorporating finite-\(r\) Fisher--Kibble fluctuations or finite-width effects into the limiting ESD would require the Benigni--Paquette framework~\cite{benigni2025eigenvaluedistributionneuraltangent} (RMT limits, extensive-width regime, resolvent replacement and Gaussian equivalence) and is left for future work.
 \end{theorem}
 
 \begin{remark}[How to interpret the spike for learning]
