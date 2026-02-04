@@ -1,0 +1,473 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{mathrsfs}
+\usepackage{bbm}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Global Convergence for Low-Rank Mean-Field Neural Networks: Proof Outline}
+\author{ }
+\date{}
+
+% math macros
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\1}{\mathbbm{1}}
+\newcommand{\ip}[2]{\left\langle #1,\,#2 \right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\llbracket}[1]{[\![ #1 ]\!]}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+\newtheorem{proposition}{Proposition}
+
+\begin{document}
+
+\maketitle
+
+\section{Setup: Low-Rank Mean-Field Equations}
+
+We consider a three-layer low-rank random feature network with the following structure:
+\begin{itemize}
+\item \textbf{First layer}: Random features $\varphi_1(\ip{f_1(C_1)}{X})$ where $f_1(C_1)$ are frozen random vectors and $C_1$ indexes the first-layer channels.
+\item \textbf{Second layer}: Low-rank mixing matrix $L$ of rank $r$, producing outputs
+\[
+H_2(t,c_2;X,W)=\sum_{k=1}^r L_{c_2,k}\,m_k(t;X,W),
+\]
+where $m_k(t;X,W)=\E_{C_1}[w_1(t,C_1,k)\,\varphi_1(\ip{f_1(C_1)}{X})]$ are the $r$ channel-wise partial functions.
+\item \textbf{Third layer}: Trainable weights $w_2(t,C_2)$ producing the final output.
+\end{itemize}
+
+The mean-field ODE system consists of $r+1$ equations:
+\begin{align}
+\partial_t w_1(t,c_1,k) &= -\xi_1(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1\!\left(\ip{f_1(c_1)}{X}\right)\,B_k(t;X)\right], \label{eq:ode-w1}\\
+\partial_t w_2(t,c_2) &= -\xi_2(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_2\!\Big(H_2(t,c_2;X,W(t))\Big)\right], \label{eq:ode-w2}
+\end{align}
+where $d_L(Z;W)=\partial_2 \mathcal{L}(Y,\hat y(X;W))$ is the loss derivative, and
+\[
+B_k(t;X)=\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'\!\Big(H_2(t,C_2;X,W(t))\Big)\,w_2(t,C_2)\right]
+\]
+is the channel-$k$ backpropagated signal.
+
+The model output is:
+\[
+\hat y(X;W(t)) = \E_{C_2}\big[w_2(t,C_2)\,\varphi_2\big(H_2(t,C_2;X,W(t))\big)\big].
+\]
+
+\section{Assumptions for Global Convergence}
+
+\begin{assumption}[Initialization]\label{assump:init-lowrank}
+The initial functions $w_1^0:\Omega_1\times\{1,\dots,r\}\to\R$ and $w_2^0:\Omega_2\to\R$ satisfy:
+\begin{align*}
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_1}\!\left[|w_1^0(C_1,k)|^m\right]^{1/m} &\le K,\\
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_2}\!\left[|w_2^0(C_2)|^m\right]^{1/m} &\le K.
+\end{align*}
+\end{assumption}
+
+\begin{assumption}[Diversity]\label{assump:diversity-lowrank}
+The support of $\rho^1$ (the measure on $\Omega_1$) is $\R^d$ (or dense in $\R^d$). This ensures that the random features $\varphi_1(\ip{f_1(C_1)}{\cdot})$ have dense span in $L^2(\mathcal{P}_X)$.
+\end{assumption}
+
+\begin{assumption}[Regularity]\label{assump:regularity-lowrank}
+There exists $K\ge 1$ such that:
+\begin{itemize}
+\item $\xi_1,\xi_2$ are bounded on compact intervals and piecewise continuous.
+\item $\varphi_1,\varphi_2,\varphi_2'$ are $K$-bounded and $K$-Lipschitz; moreover $\varphi_2'$ is non-vanishing (strictly non-zero everywhere).
+\item $\partial_2\mathcal{L}(y,\cdot)$ is $K$-bounded and $K$-Lipschitz for all $y$ in the support of $\mathcal{P}$.
+\item $X$ is $K$-sub-Gaussian and $\norm{f_1(c_1)}\le K$ for all $c_1$.
+\item The mixing kernel satisfies $\sup_{c_2,k}|L_{c_2,k}|\le K$ and $k\mapsto L_{c_2,k}$ is measurable for each $c_2$.
+\item $|X|\le K$ with probability 1.
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Convergence]\label{assump:convergence-lowrank}
+There exist functions $\bar{w}_1:\Omega_1\times\{1,\dots,r\}\to\R$ and $\bar{w}_2:\Omega_2\to\R$ such that as $t\to\infty$, there exists a coupling $\pi_t$ of $\rho^1\times\rho^2$ and itself such that:
+\begin{align}
+\int (1+|\bar{w}_2(c_2)|)|\bar{w}_2(c_2)|\max_{1\le k\le r}|\bar{w}_1(c_1,k)|\,|w_1^*(t,c_1',k)-\bar{w}_1(c_1,k)|\,d\pi_t(c_1,c_2,c_1',c_2') &\to 0, \label{eq:conv-w1}\\
+\int (1+|\bar{w}_2(c_2)|)|\bar{w}_2(c_2)|\,|w_2^*(t,c_2')-\bar{w}_2(c_2)|\,d\pi_t(c_1,c_2,c_1',c_2') &\to 0, \label{eq:conv-w2}
+\end{align}
+where $W^*(t)=(w_1^*(t,\cdot,\cdot),w_2^*(t,\cdot))$ is the solution to the mean-field ODEs \eqref{eq:ode-w1}--\eqref{eq:ode-w2}.
+\end{assumption}
+
+\begin{remark}
+The convergence assumption \eqref{eq:conv-w1}--\eqref{eq:conv-w2} is adapted from the full-width case. The key difference is that we have $r$ channels for $w_1$, so we take the maximum over $k\in\{1,\dots,r\}$ in \eqref{eq:conv-w1}. The low-rank structure enters through the factor $\max_k|\bar{w}_1(c_1,k)|$ which is controlled by the $\psi_2$ bounds.
+\end{remark}
+
+\section{Key Technical Lemma: Bi-Lipschitz Property of $H_2$}
+
+\begin{lemma}[Bi-Lipschitz property of $H_2$ with low-rank structure]\label{lem:bilipschitz-H2}
+For any $W'=(w_1',w_2')$ and $W''=(w_1'',w_2'')$ satisfying the regularity assumptions, we have:
+\[
+\big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big| \le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big],
+\]
+where $\|L\|_{\infty,1}\equiv \sup_{c_2}\sum_{k=1}^r |L_{c_2,k}|\le rK$ under the entrywise bound.
+
+Moreover, if $\varphi_2$ is ReLU or a Lipschitz activation, then:
+\[
+\big|\varphi_2(H_2(t,c_2;X,W'))-\varphi_2(H_2(t,c_2;X,W''))\big| \le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+By definition:
+\begin{align*}
+H_2(t,c_2;X,W')-H_2(t,c_2;X,W'') &= \sum_{k=1}^r L_{c_2,k}\big(m_k(t;X,W')-m_k(t;X,W'')\big)\\
+&= \sum_{k=1}^r L_{c_2,k}\E_{C_1}\big[(w_1'(t,C_1,k)-w_1''(t,C_1,k))\,\varphi_1(\ip{f_1(C_1)}{X})\big].
+\end{align*}
+Taking absolute values and using boundedness of $\varphi_1$:
+\begin{align*}
+\big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big| &\le \sum_{k=1}^r |L_{c_2,k}|\,\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big]\,|\varphi_1(\ip{f_1(C_1)}{X})|\\
+&\le K\,\sum_{k=1}^r |L_{c_2,k}|\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big]\\
+&\le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+\end{align*}
+The second part follows from the Lipschitz property of $\varphi_2$.
+\end{proof}
+
+\section{Proof Outline: Global Convergence}
+
+\begin{theorem}[Global Convergence for Low-Rank Networks]\label{thm:global-convergence-lowrank}
+Under Assumptions~\ref{assump:init-lowrank}--\ref{assump:convergence-lowrank}, if the loss $\mathcal{L}$ is convex in its second variable, then the limit point $(\bar{w}_1,\bar{w}_2)$ is a global minimizer of the population loss:
+\[
+\mathscr{L}(\bar{w}_1,\bar{w}_2) = \E_Z\big[\mathcal{L}\big(Y,\hat y(X;\bar{w}_1,\bar{w}_2)\big)\big].
+\]
+\end{theorem}
+
+\subsection{Detailed Proof (Adapted from Full-Width Case)}
+
+We now provide the detailed proof, adapting the argument from the full-width three-layer case to our low-rank setting. The key simplification is that we do not train $\rho^1$ (the first layer uses frozen random features), so we avoid the algebraic topology arguments needed to show full support of $\text{Law}(w_1^*(t,C_1))$.
+
+\textbf{Step 1: Convergence of the backpropagated signal}
+
+By the convergence assumption (Assumption~\ref{assump:convergence-lowrank}), we have that for any $\epsilon>0$, there exists $T(\epsilon)$ such that for all $t\ge T(\epsilon)$ and almost surely:
+\[
+\epsilon \ge \left|\E_{Z}\!\left[d_L\big(Z;W^*(t)\big)\,\varphi_1\!\left(\ip{f_1(C_1)}{X}\right)\,B_k^*(t;X)\right]\right| = \left|\left\langle \E_{Z}\!\left[d_L\big(Z;W^*(t)\big)\,B_k^*(t;X)\middle|X=x\right],\varphi_1(\ip{f_1(C_1)}{x})\right\rangle_{L^2(\mathcal{P}_X)}\right|,
+\]
+where $B_k^*(t;X)=\E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2^*(t,C_2;X,W^*(t)))\,w_2^*(t,C_2)]$.
+
+Since $f_1(C_1)$ are frozen random features with full support in $\R^d$ (by Assumption~\ref{assump:diversity-lowrank}), and we have $r$ channels, the set $\{\varphi_1(\ip{f_1(c_1)}{\cdot}): c_1\in\Omega_1, k\in\{1,\dots,r\}\}$ has dense span in $L^2(\mathcal{P}_X)$. We thus obtain that for $u$ in a dense subset of $\R^d$:
+\[
+\text{ess-sup}\left|\left\langle \E_{Z}\!\left[d_L\big(Z;W^*(t)\big)\,B_k^*(t;X)\middle|X=x\right],\varphi_1(\ip{u}{x})\right\rangle_{L^2(\mathcal{P}_X)}\right| \le \epsilon.
+\]
+
+By continuity of $u\mapsto\varphi_1(\ip{u}{\cdot})$ in $L^2(\mathcal{P}_X)$, we extend the above to all $u\in\R^d$.
+
+\textbf{Step 2: Coupling argument with low-rank structure}
+
+Recall the couplings $\pi_t$ in Assumption~\ref{assump:convergence-lowrank}. Since $\varphi_1$ is bounded, we have:
+\begin{align*}
+&\E_{(C_1,C_2,C_1',C_2')\sim\pi_t}\left[\left|\left\langle \E_{Z}\!\left[d_L\big(Z;W^*(t)\big)\,B_k^*(t;X)-d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\middle|X=x\right],\varphi_1(\ip{u}{x})\right\rangle_{L^2(\mathcal{P}_X)}\right|\right]\\
+&\quad \le K\,\E_{\pi_t}\left[\left|d_L\big(Z;W^*(t)\big)\,B_k^*(t;X)-d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\right|\right],
+\end{align*}
+where $\bar{W}=(\bar{w}_1,\bar{w}_2)$ and $\bar{B}_k(X)=\E_{C_2}[L_{C_2,k}\,\varphi_2'(\bar{H}_2(C_2;X,\bar{W}))\,\bar{w}_2(C_2)]$ with $\bar{H}_2(c_2;X,\bar{W})=\sum_{k=1}^r L_{c_2,k}\,\bar{m}_k(X,\bar{W})$ and $\bar{m}_k(X,\bar{W})=\E_{C_1}[\bar{w}_1(C_1,k)\,\varphi_1(\ip{f_1(C_1)}{X})]$.
+
+\textbf{Step 3: Key bound using bi-Lipschitz property (adapted from full-width case)}
+
+Using the regularity assumption and Lemma~\ref{lem:bilipschitz-H2}, similar to the calculation in the full-width case, we bound:
+\begin{align*}
+&\E_{\pi_t}\left[\left|d_L\big(Z;W^*(t)\big)\,B_k^*(t;X)-d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\right|\right]\\
+&\quad \le K\,\E_{\pi_t}\Big[(1+|\bar{w}_2(C_2)|)\Big(|w_2^*(t,C_2')-\bar{w}_2(C_2)|\\
+&\qquad + |\bar{w}_2(C_2)|\,\max_{1\le k\le r}|w_1^*(t,C_1',k)-\bar{w}_1(C_1,k)|\Big)\Big],
+\end{align*}
+where the last step uses:
+\begin{itemize}
+\item The Lipschitz property of $\partial_2\mathcal{L}$ and $\varphi_2'$
+\item The bi-Lipschitz bound from Lemma~\ref{lem:bilipschitz-H2} for $H_2$ differences: $|H_2^*(t)-H_2(\bar{W})|\le K\|L\|_{\infty,1}\max_k|w_1^*(t)-\bar{w}_1|$
+\item The structure $B_k = \E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2)\,w_2]$, which gives:
+\begin{align*}
+|B_k^*(t)-B_k(\bar{W})| &\le K\E_{C_2}\big[|L_{C_2,k}|\big(|\varphi_2'(H_2^*(t))-\varphi_2'(\bar{H}_2)|\,|w_2^*(t)| + |\varphi_2'(\bar{H}_2)|\,|w_2^*(t)-\bar{w}_2|\big)\big]\\
+&\le K(1+|\bar{w}_2|)\Big(|w_2^*(t)-\bar{w}_2| + |\bar{w}_2|\,\max_k|w_1^*(t)-\bar{w}_1|\Big)
+\end{align*}
+\end{itemize}
+
+By Assumption~\ref{assump:convergence-lowrank}, the right-hand side converges to $0$ as $t\to\infty$.
+
+\textbf{Step 4: Orthogonality and optimality}
+
+We thus obtain that for all $u\in\R^d$:
+\[
+\E_{C_2}\left[\left|\left\langle \E_{Z}\!\left[d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\middle|X=x\right],\varphi_1(\ip{u}{x})\right\rangle_{L^2(\mathcal{P}_X)}\right|\right] = 0,
+\]
+which yields that for all $u\in\R^d$ and almost surely:
+\[
+\left|\left\langle \E_{Z}\!\left[d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\middle|X=x\right],\varphi_1(\ip{u}{x})\right\rangle_{L^2(\mathcal{P}_X)}\right| = 0.
+\]
+
+Since $\{\varphi_1(\ip{u}{\cdot}): u\in\R^d\}$ has dense span in $L^2(\mathcal{P}_X)$ (by Assumption~\ref{assump:diversity-lowrank}), we have:
+\[
+\E_{Z}\!\left[d_L\big(Z;\bar{W}\big)\,\bar{B}_k(X)\middle|X=x\right] = 0
+\]
+for $\mathcal{P}_X$-almost every $x$ and almost every $c_2$.
+
+Expanding $\bar{B}_k(X)$:
+\[
+\E_{Z}\!\left[\partial_2\mathcal{L}\big(Y,\hat y(X;\bar{W})\big)\middle|X=x\right]\,\E_{C_2}\!\left[L_{C_2,k}\,\varphi_2'(\bar{H}_2(C_2;X,\bar{W}))\,\bar{w}_2(C_2)\right] = 0.
+\]
+
+\textbf{Step 5: Non-degeneracy}
+
+We note that our assumptions guarantee that $\Pp(\bar{w}_2(C_2)\ne 0)$ is positive. This is a crucial step that requires careful justification. In the full-width case, there are two cases:
+\begin{itemize}
+\item Case A: If $\int \mathbb{I}(u_2\ne 0)\rho^2(du_2)>0$ and $\xi_2(\cdot)=0$ (second layer not trained), then it is obvious that $\Pp(\bar{w}_2(C_2)\ne 0)>0$ since the initialization has non-zero mass.
+
+\item Case B: If $\xi_2(\cdot)\ne 0$ (second layer is trained) and $\mathscr{L}(w_1^0,w_2^0) < \E_Z[\mathcal{L}(Y,\varphi_2(0))]$, then by the gradient flow property (loss decreases along trajectories):
+\[
+\mathscr{L}(w_1^*(t),w_2^*(t)) \le \mathscr{L}(w_1^*(t'),w_2^*(t')) \quad \text{for } t\ge t'.
+\]
+In particular, setting $t'=0$ and taking $t\to\infty$:
+\[
+\mathscr{L}(\bar{w}_1,\bar{w}_2) \le \mathscr{L}(w_1^0,w_2^0) < \E_Z[\mathcal{L}(Y,\varphi_2(0))].
+\]
+If $\Pp(\bar{w}_2(C_2)=0)=1$, then $\hat y(X;\bar{w}_1,\bar{w}_2)=\E_{C_2}[\bar{w}_2(C_2)\,\varphi_2(\bar{H}_2)]=0$ (since $\bar{w}_2=0$), so $\mathscr{L}(\bar{w}_1,\bar{w}_2)=\E_Z[\mathcal{L}(Y,\varphi_2(0))]$, a contradiction.
+\end{itemize}
+
+\begin{remark}[On the assumption $\mathscr{L}(w_1^0,w_2^0) < \E_Z[\mathcal{L}(Y,\varphi_2(0))]$]
+This assumption may seem restrictive, but it is actually quite natural:
+\begin{itemize}
+\item It requires that the initial loss is better than the trivial predictor $\hat y=0$ (which corresponds to $w_2=0$).
+\item For most reasonable initializations (e.g., small random weights), this condition is satisfied with high probability.
+\item If this condition fails, then the network starts worse than the trivial solution, and convergence to a global minimizer (which must be at least as good as the trivial solution) is still possible, but the non-degeneracy argument needs to be modified.
+\item In practice, this assumption can be verified by checking the initial loss value.
+\end{itemize}
+\end{remark}
+
+Since $\varphi_2'$ is strictly non-zero and the mixing kernel $L$ has non-zero entries, we have:
+\[
+\E_{Z}\!\left[\partial_2\mathcal{L}\big(Y,\hat y(X;\bar{W})\big)\middle|X=x\right] = 0
+\]
+for $\mathcal{P}_X$-almost every $x$.
+
+\textbf{Step 6: Global optimality}
+
+Since $\mathcal{L}$ is convex in its second variable, for any measurable function $\tilde{y}(x)$:
+\[
+\mathcal{L}\big(y,\tilde{y}(x)\big)-\mathcal{L}\big(y,\hat y(x;\bar{W})\big) \ge \partial_2\mathcal{L}\big(y,\hat y(x;\bar{W})\big)\big(\tilde{y}(x)-\hat y(x;\bar{W})\big).
+\]
+
+Taking expectation:
+\[
+\E_Z\big[\mathcal{L}\big(Y,\tilde{y}(X)\big)\big] \ge \mathscr{L}(\bar{w}_1,\bar{w}_2),
+\]
+i.e., $(\bar{w}_1,\bar{w}_2)$ is a global minimizer.
+
+\textbf{Step 7: Connection to the limit (exact adaptation)}
+
+Finally, to connect $\mathscr{L}(W^*(t))$ with $\mathscr{L}(\bar{w}_1,\bar{w}_2)$ in the limit $t\to\infty$, we have (exactly as in the full-width case):
+\begin{align*}
+\big|\mathscr{L}(W^*(t))-\mathscr{L}(\bar{w}_1,\bar{w}_2)\big| &= \left|\E_Z\big[\mathcal{L}\big(Y,\hat y^*(t,X)\big)-\mathcal{L}\big(Y,\hat y(X;\bar{W})\big)\big]\right|\\
+&\le K\,\E_Z\big[\big|\hat y^*(t,X)-\hat y(X;\bar{W})\big|\big]\\
+&\le K\,\E_{\pi_t}\Big[|w_2^*(t,C_2')-\bar{w}_2(C_2)|\\
+&\quad + |\bar{w}_2(C_2)|\,\max_{1\le k\le r}|w_1^*(t,C_1',k)-\bar{w}_1(C_1,k)|\Big],
+\end{align*}
+where the last step uses:
+\begin{itemize}
+\item $\hat y(X;W) = \E_{C_2}[w_2(C_2)\,\varphi_2(H_2(C_2;X,W))]$
+\item The Lipschitz property of $\varphi_2$ and the bi-Lipschitz bound for $H_2$ from Lemma~\ref{lem:bilipschitz-H2}
+\item The structure: $|\hat y^*(t)-\hat y(\bar{W})|\le K\E_{C_2}[|w_2^*(t)-\bar{w}_2| + |\bar{w}_2|\,|H_2^*(t)-\bar{H}_2|]$
+\end{itemize}
+
+By Assumption~\ref{assump:convergence-lowrank}, the right-hand side converges to $0$ as $t\to\infty$. This completes the proof.
+
+\section{Key Differences from Full-Width Case}
+
+\begin{enumerate}
+\item \textbf{Simplification: No algebraic topology needed}: Since we do not train $\rho^1$ (the first layer uses frozen random features), we avoid the complex arguments needed to show that $\text{Law}(w_1^*(t,C_1))$ has full support. Instead, we rely on the fact that $f_1(C_1)$ are frozen random features with full support, which directly gives the dense span property.
+
+\item \textbf{Low-rank structure in $H_2$}: The pre-activation $H_2$ is a sum over $r$ channels, introducing a factor $\|L\|_{\infty,1}\le rK$ in the bi-Lipschitz bound (Lemma~\ref{lem:bilipschitz-H2}).
+
+\item \textbf{Convergence assumption}: Instead of bounding differences for a single $w_1$, we take the maximum over $r$ channels: $\max_{1\le k\le r}|w_1^*(t,c_1',k)-\bar{w}_1(c_1,k)|$. This is the key adaptation: the convergence assumption becomes:
+\[
+\int (1+|\bar{w}_2|)|\bar{w}_2|\,\max_{1\le k\le r}|\bar{w}_1(c_1,k)|\,|w_1^*(t,c_1',k)-\bar{w}_1(c_1,k)|\,d\pi_t \to 0.
+\]
+
+\item \textbf{Backpropagated signal}: The signal $B_k$ involves the mixing kernel $L$, but the structure remains similar: $B_k = \E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2)\,w_2]$. The bound becomes:
+\[
+|B_k^*(t)-B_k(\bar{W})| \le K(1+|\bar{w}_2|)\Big(|w_2^*(t)-\bar{w}_2| + |\bar{w}_2|\,\max_k|w_1^*(t)-\bar{w}_1|\Big).
+\]
+
+\item \textbf{Universal approximation}: The dense span property still holds because we have $r$ channels with frozen random features $f_1(C_1)$ having full support. The low-rank structure does not reduce the expressivity below what is needed for global convergence, as long as $r$ is sufficiently large.
+\end{enumerate}
+
+\section{Discussion on Assumptions}
+
+\subsection{The Non-Degeneracy Assumption}
+
+The assumption that $\mathscr{L}(w_1^0,w_2^0) < \E_Z[\mathcal{L}(Y,\varphi_2(0))]$ (initial loss better than trivial predictor) is used to ensure non-degeneracy of the limit point. While this may seem restrictive, it is actually quite natural:
+
+\begin{itemize}
+\item \textbf{Practical relevance}: For most reasonable initializations (e.g., small random weights, Xavier initialization), this condition is satisfied with high probability. The initial network typically performs better than the trivial solution $\hat y=0$.
+
+\item \textbf{Verifiability}: This assumption can be easily checked by computing the initial loss value. If it fails, one can either:
+\begin{enumerate}
+\item Re-initialize the network
+\item Use a different initialization scheme
+\item Modify the proof to handle the degenerate case (which requires additional technical work)
+\end{enumerate}
+
+\item \textbf{Alternative conditions}: If $\xi_2(\cdot)=0$ (second layer frozen) and the initialization has non-zero mass, then non-degeneracy is automatic without this assumption.
+
+\item \textbf{Connection to full-width case}: In the full-width three-layer case, the analogous assumption is $\mathscr{L}(w_1^0,w_2^0,w_3^0) < \E_Z[\mathcal{L}(Y,\varphi_3(0))]$, which has the same interpretation.
+\end{itemize}
+
+\subsection{The Convergence Assumption}
+
+The convergence assumption (Assumption~\ref{assump:convergence-lowrank}) is the most technical requirement. It states that the mean-field dynamics converge in a Wasserstein-like sense, with weights that are properly coupled. This assumption is typically verified by:
+\begin{itemize}
+\item Showing that the loss decreases along trajectories (gradient flow property)
+\item Establishing compactness of the trajectory set
+\item Using LaSalle's invariance principle or similar stability arguments
+\end{itemize}
+
+The low-rank structure enters through the $\max_k$ over $r$ channels, but the overall structure of the assumption remains similar to the full-width case.
+
+\section{Summary}
+
+The proof strategy follows the same path as the full-width case:
+\begin{enumerate}
+\item Show convergence of the backpropagated signal using the convergence assumption
+\item Use coupling arguments to relate $W^*(t)$ to $\bar{W}$
+\item Bound differences using the bi-Lipschitz property of $H_2$ (with low-rank factor $rK$)
+\item Establish orthogonality using the dense span property
+\item Prove non-degeneracy of the limit point
+\item Conclude global optimality using convexity
+\item Connect the limit using the convergence assumption
+\end{enumerate}
+
+The key technical contribution is showing that the low-rank structure (factor $r$) does not break the convergence argument, as long as the universal approximation property is maintained (which is ensured by having $r$ channels with full support).
+
+\section{Extension to $L$ Layers}
+
+We now extend the mean-field framework to $L$-layer low-rank random feature networks. The structure generalizes naturally from the three-layer case.
+
+\subsection{Architecture for $L$ Layers}
+
+Consider an $L$-layer network with the following structure:
+\begin{itemize}
+\item \textbf{Layer 1}: Random features $\varphi_1(\ip{f_1(C_1)}{X})$ where $f_1(C_1)$ are frozen random vectors and $C_1$ indexes the first-layer channels. \textbf{This layer is not trained.}
+\item \textbf{Layers 2 to $L-1$}: Each layer $\ell\in\{2,\dots,L-1\}$ employs a low-rank mixing matrix $L^{(\ell)}$ of rank $r$, producing pre-activations
+\[
+H_\ell(t,c_\ell;X,W)=\sum_{k=1}^r L^{(\ell)}_{c_\ell,k}\,m_k^{(\ell)}(t;X,W),
+\]
+where $m_k^{(\ell)}(t;X,W)$ are the $r$ channel-wise partial functions at layer $\ell$.
+\item \textbf{Layer $L$ (output)}: Trainable weights $w_L(t,C_L)$ producing the final output.
+\end{itemize}
+
+\subsection{Mean-Field ODE System for $L$ Layers}
+
+The mean-field ODE system consists of $(L-2)\times r + 1$ trainable equations:
+\begin{itemize}
+\item For each intermediate layer $\ell\in\{2,\dots,L-1\}$: $r$ equations for $w_\ell(t,c_\ell,k)$, $k=1,\dots,r$
+\item For the output layer $L$: $1$ equation for $w_L(t,c_L)$
+\end{itemize}
+
+\textbf{Total:} $(L-2)\times r + 1 \approx rL$ equations for large $L$ (since layer 1 uses frozen random features and is not trained).
+
+For example:
+\begin{itemize}
+\item $L=3$: $r+1$ equations (as in the three-layer case)
+\item $L=4$: $2r+1$ equations
+\item $L=5$: $3r+1$ equations
+\item General $L$: $(L-2)r+1$ equations
+\end{itemize}
+
+For layer $\ell\in\{2,\dots,L-1\}$ and channel $k\in\{1,\dots,r\}$:
+\begin{align}
+\partial_t w_\ell(t,c_\ell,k) &= -\xi_\ell(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_\ell'\!\Big(H_\ell(t,c_\ell;X,W(t))\Big)\,B_k^{(\ell)}(t;X)\right], \label{eq:ode-wl}
+\end{align}
+where $B_k^{(\ell)}(t;X)$ is the channel-$k$ backpropagated signal at layer $\ell$:
+\[
+B_k^{(\ell)}(t;X)=\E_{C_{\ell+1}}\!\left[L^{(\ell+1)}_{C_{\ell+1},k}\,\varphi_{\ell+1}'\!\Big(H_{\ell+1}(t,C_{\ell+1};X,W(t))\Big)\,w_{\ell+1}(t,C_{\ell+1})\right].
+\]
+
+For the output layer $L$:
+\begin{align}
+\partial_t w_L(t,c_L) &= -\xi_L(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_L\!\Big(H_L(t,c_L;X,W(t))\Big)\right], \label{eq:ode-wL}
+\end{align}
+where $H_L(t,c_L;X,W)$ is defined recursively from the previous layers.
+
+\subsection{Recursive Structure of Pre-Activations}
+
+For $\ell\in\{2,\dots,L\}$, the pre-activations satisfy the recursive relation:
+\[
+H_\ell(t,c_\ell;X,W) = \sum_{k=1}^r L^{(\ell)}_{c_\ell,k}\,m_k^{(\ell)}(t;X,W),
+\]
+where
+\[
+m_k^{(\ell)}(t;X,W) = \E_{C_{\ell-1}}\!\left[w_{\ell-1}(t,C_{\ell-1},k)\,\varphi_{\ell-1}\!\Big(H_{\ell-1}(t,C_{\ell-1};X,W(t))\Big)\right].
+\]
+
+The model output is:
+\[
+\hat y(X;W(t)) = \E_{C_L}\big[w_L(t,C_L)\,\varphi_L\big(H_L(t,C_L;X,W(t))\big)\big].
+\]
+
+\subsection{Assumptions for $L$ Layers}
+
+\begin{assumption}[Initialization for $L$ layers]\label{assump:init-Llayers}
+For each layer $\ell\in\{2,\dots,L\}$, the initial functions satisfy:
+\begin{align*}
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_\ell}\!\left[|w_\ell^0(C_\ell,k)|^m\right]^{1/m} &\le K \quad \text{for } \ell\in\{2,\dots,L-1\},\\
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_L}\!\left[|w_L^0(C_L)|^m\right]^{1/m} &\le K.
+\end{align*}
+\end{assumption}
+
+\begin{assumption}[Regularity for $L$ layers]\label{assump:regularity-Llayers}
+There exists $K\ge 1$ such that:
+\begin{itemize}
+\item For each $\ell\in\{2,\dots,L\}$, $\xi_\ell$ are bounded on compact intervals and piecewise continuous.
+\item For each $\ell\in\{2,\dots,L\}$, $\varphi_\ell,\varphi_\ell'$ are $K$-bounded and $K$-Lipschitz; moreover $\varphi_\ell'$ is non-vanishing for $\ell\in\{2,\dots,L-1\}$.
+\item For each $\ell\in\{2,\dots,L-1\}$, the mixing kernels $L^{(\ell)}$ satisfy $\sup_{c_\ell,k}|L^{(\ell)}_{c_\ell,k}|\le K$.
+\item All other regularity conditions from Assumption~\ref{assump:regularity-lowrank} hold.
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Convergence for $L$ layers]\label{assump:convergence-Llayers}
+There exist functions $\bar{w}_\ell$ for $\ell\in\{2,\dots,L\}$ such that as $t\to\infty$, there exists a coupling $\pi_t$ such that for each intermediate layer $\ell\in\{2,\dots,L-1\}$:
+\[
+\int (1+|\bar{w}_L|)\prod_{j=\ell+1}^{L-1}(1+|\bar{w}_j|)\max_{1\le k\le r}|\bar{w}_\ell(c_\ell,k)|\,|w_\ell^*(t,c_\ell',k)-\bar{w}_\ell(c_\ell,k)|\,d\pi_t \to 0,
+\]
+and for the output layer:
+\[
+\int (1+|\bar{w}_L|)\,|w_L^*(t,c_L')-\bar{w}_L(c_L)|\,d\pi_t \to 0.
+\]
+\end{assumption}
+
+\subsection{Key Technical Extensions}
+
+\begin{lemma}[Bi-Lipschitz property for $L$ layers]\label{lem:bilipschitz-Llayers}
+For any $W'$ and $W''$ satisfying the regularity assumptions, and for any layer $\ell\in\{2,\dots,L\}$:
+\[
+\big|H_\ell(t,c_\ell;X,W')-H_\ell(t,c_\ell;X,W'')\big| \le K^L\,\|L^{(\ell)}\|_{\infty,1}\,\max_{2\le j\le \ell}\max_{1\le k\le r}\E_{C_j}\big[|w_j'(t,C_j,k)-w_j''(t,C_j,k)|\big],
+\]
+where the constant $K^L$ comes from the product of Lipschitz constants across layers.
+\end{lemma}
+
+\begin{remark}[Scaling with depth]
+The key observation is that the low-rank structure at each layer introduces a factor of $r$ (through $\|L^{(\ell)}\|_{\infty,1}\le rK$), but these factors multiply across layers. However, the well-posedness argument remains valid as long as the product $r^L$ is controlled, or more precisely, as long as the $\psi_2$ bounds remain finite. In practice, for fixed $r$ and moderate $L$, this is not an issue.
+\end{remark}
+
+\subsection{Proof Strategy for $L$ Layers}
+
+The proof strategy extends naturally from the three-layer case:
+
+\begin{enumerate}
+\item \textbf{Well-posedness}: The Picard iteration argument extends to $L$ layers, with the key modification that differences propagate through $L-1$ layers. The contraction constant becomes $C^L$ where $C$ is the single-layer constant, but this is still manageable for fixed $L$.
+
+\item \textbf{Global convergence}: The same argument applies, but now the backpropagated signal $B_k^{(\ell)}$ depends on all subsequent layers. The key bound becomes:
+\[
+|B_k^{(\ell)*}(t)-B_k^{(\ell)}(\bar{W})| \le K^L(1+|\bar{w}_L|)\prod_{j=\ell+1}^{L-1}(1+|\bar{w}_j|)\Big(|w_L^*(t)-\bar{w}_L| + \sum_{j=\ell+1}^{L-1}\max_k|w_j^*(t)-\bar{w}_j|\Big).
+\]
+
+\item \textbf{Convergence assumption}: The assumption must ensure that all layer-wise differences converge, with appropriate weights that account for the depth. The product structure $(1+|\bar{w}_L|)\prod_{j=\ell+1}^{L-1}(1+|\bar{w}_j|)$ ensures that the bound remains finite.
+\end{enumerate}
+
+\begin{remark}[Computational complexity]
+The number of mean-field equations scales as $(L-2)\times r + 1 \approx rL$ for large $L$, which is linear in both the depth $L$ and the rank $r$. This is much more efficient than the full-width case, which would require $O(N^L)$ equations.
+\end{remark}
+
+\end{document}

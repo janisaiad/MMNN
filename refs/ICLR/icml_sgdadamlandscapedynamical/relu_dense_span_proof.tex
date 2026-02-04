@@ -1,0 +1,170 @@
+\section{Proof of ReLU Dense Span Property for Frozen Random Features}
+\label{sec:relu-dense-span-proof}
+
+This section provides a rigorous proof that frozen random features with full support give dense span in $L^2(\mathcal{P}_X)$, adapting the approach from the full-width case \cite{nguyen2023rigorousframeworkmeanfield}.
+
+\subsection{Main Result}
+
+\begin{theorem}[Dense span for frozen ReLU random features]
+\label{thm:relu-dense-span}
+Let $\varphi_1$ be the ReLU activation function, and let $f_1(C_1)$ be frozen random feature vectors with $\text{supp}(f_1(C_1)) = \mathbb{R}^d$. Then the function class:
+\[
+\mathcal{F} = \{\varphi_1(\langle f_1(c_1), \cdot\rangle) : c_1 \in \Omega_1\}
+\]
+has dense span in $L^2(\mathcal{P}_X)$ (with respect to the data distribution $\mathcal{P}_X$).
+
+In other words, for any $g \in L^2(\mathcal{P}_X)$ and any $\epsilon > 0$, there exist coefficients $\alpha_1, \ldots, \alpha_n$ and feature vectors $c_1, \ldots, c_n \in \Omega_1$ such that:
+\[
+\left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle f_1(c_i), \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)} < \epsilon.
+\]
+\end{theorem}
+
+\subsection{Key Insight: Simpler Than Full-Width Case}
+
+\textbf{Advantage of frozen features:} Unlike the full-width case where we need to prove that full support is \emph{maintained} during training (using algebraic topology, Lemma~\ref{lem:full-support-3} in \cite{nguyen2023rigorousframeworkmeanfield}), in our case:
+\begin{itemize}
+\item $f_1(C_1)$ are \textbf{frozen} (not trained), so $\text{supp}(f_1(C_1)) = \mathbb{R}^d$ trivially
+\item We only need to prove that full support \textbf{implies} dense span
+\item This is a standard universal approximation result, not a dynamical property
+\end{itemize}
+
+\subsection{Proof Strategy}
+
+The proof proceeds in three steps:
+
+\begin{enumerate}
+\item \textbf{Standard universal approximation result:} Use Leshno et al. (1993) to show that $\{\varphi_1(\langle u, \cdot\rangle) : u \in \mathbb{R}^d\}$ has dense span in $L^2(\mathcal{P}_X)$.
+
+\item \textbf{Full support gives dense parameterization:} Since $\text{supp}(f_1(C_1)) = \mathbb{R}^d$, the set $\{f_1(c_1) : c_1 \in \Omega_1\}$ is dense in $\mathbb{R}^d$.
+
+\item \textbf{Continuity argument:} Use continuity of $u \mapsto \varphi_1(\langle u, \cdot\rangle)$ in $L^2(\mathcal{P}_X)$ to show that dense parameterization implies dense span.
+\end{enumerate}
+
+\subsection{Step 1: Standard Universal Approximation}
+
+\begin{lemma}[Leshno et al. 1993, adapted]
+\label{lem:leshno-relu}
+Let $\varphi_1$ be ReLU (a non-polynomial activation). Then the function class:
+\[
+\mathcal{G} = \{\varphi_1(\langle u, \cdot\rangle) : u \in \mathbb{R}^d\}
+\]
+has dense span in $L^2(\mathcal{P}_X)$.
+
+More precisely, for any $g \in L^2(\mathcal{P}_X)$ and $\epsilon > 0$, there exist $u_1, \ldots, u_n \in \mathbb{R}^d$ and coefficients $\alpha_1, \ldots, \alpha_n \in \mathbb{R}$ such that:
+\[
+\left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle u_i, \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)} < \epsilon.
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+This follows from the universal approximation theorem of Leshno et al. (1993), which states that single-hidden-layer networks with non-polynomial activations are dense in $C(\mathbb{R}^d)$ (and hence in $L^2$ for compactly supported measures).
+
+For ReLU specifically:
+\begin{itemize}
+\item ReLU is non-polynomial (it's piecewise linear but not a polynomial)
+\item The result extends to $L^2(\mathcal{P}_X)$ when $\mathcal{P}_X$ has compact support (which we assume: $|X| \le K$ with probability 1)
+\item The linear combinations $\sum_{i=1}^n \alpha_i \varphi_1(\langle u_i, \cdot\rangle)$ can approximate any function in $L^2(\mathcal{P}_X)$
+\end{itemize}
+
+For a complete proof, see Leshno et al. (1993, Theorem 1) or Cybenko (1989) adapted to ReLU.
+\end{proof}
+
+\subsection{Step 2: Full Support Implies Dense Parameterization}
+
+\begin{lemma}[Full support gives dense parameterization]
+\label{lem:dense-parameterization}
+If $\text{supp}(f_1(C_1)) = \mathbb{R}^d$, then the set $\{f_1(c_1) : c_1 \in \Omega_1\}$ is dense in $\mathbb{R}^d$.
+
+In other words, for any $u \in \mathbb{R}^d$ and any $\delta > 0$, there exists $c_1 \in \Omega_1$ such that $|f_1(c_1) - u| < \delta$.
+\end{lemma}
+
+\begin{proof}
+This is immediate from the definition of support. If $\text{supp}(f_1(C_1)) = \mathbb{R}^d$, then for any open ball $B_\delta(u) \subset \mathbb{R}^d$, we have:
+\[
+\mathbb{P}(f_1(C_1) \in B_\delta(u)) > 0.
+\]
+This means there exists at least one $c_1 \in \Omega_1$ such that $f_1(c_1) \in B_\delta(u)$, i.e., $|f_1(c_1) - u| < \delta$.
+
+Since this holds for any $u \in \mathbb{R}^d$ and any $\delta > 0$, the set $\{f_1(c_1) : c_1 \in \Omega_1\}$ is dense in $\mathbb{R}^d$.
+\end{proof}
+
+\subsection{Step 3: Continuity Argument}
+
+\begin{lemma}[Continuity of ReLU features]
+\label{lem:continuity-relu}
+The mapping $u \mapsto \varphi_1(\langle u, \cdot\rangle)$ is continuous from $\mathbb{R}^d$ to $L^2(\mathcal{P}_X)$.
+
+More precisely, for any $u, u' \in \mathbb{R}^d$:
+\[
+\|\varphi_1(\langle u, \cdot\rangle) - \varphi_1(\langle u', \cdot\rangle)\|_{L^2(\mathcal{P}_X)} \le K |u - u'|,
+\]
+where $K$ depends on the bound on $|X|$ and the Lipschitz constant of $\varphi_1$.
+\end{lemma}
+
+\begin{proof}
+Since $\varphi_1$ is ReLU (which is 1-Lipschitz) and $|X| \le K$ with probability 1, we have:
+\begin{align*}
+\|\varphi_1(\langle u, \cdot\rangle) - \varphi_1(\langle u', \cdot\rangle)\|_{L^2(\mathcal{P}_X)}^2 
+&= \mathbb{E}_X[|\varphi_1(\langle u, X\rangle) - \varphi_1(\langle u', X\rangle)|^2]\\
+&\le \mathbb{E}_X[|\langle u - u', X\rangle|^2] \quad \text{(ReLU is 1-Lipschitz)}\\
+&\le |u - u'|^2 \mathbb{E}_X[|X|^2]\\
+&\le K^2 |u - u'|^2.
+\end{align*}
+Taking square roots gives the desired bound.
+\end{proof}
+
+\subsection{Completing the Proof of Theorem~\ref{thm:relu-dense-span}}
+
+\begin{proof}[Proof of Theorem~\ref{thm:relu-dense-span}]
+By Lemma~\ref{lem:leshno-relu}, for any $g \in L^2(\mathcal{P}_X)$ and $\epsilon > 0$, there exist $u_1, \ldots, u_n \in \mathbb{R}^d$ and coefficients $\alpha_1, \ldots, \alpha_n$ such that:
+\[
+\left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle u_i, \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)} < \frac{\epsilon}{2}.
+\]
+
+By Lemma~\ref{lem:dense-parameterization}, since $\text{supp}(f_1(C_1)) = \mathbb{R}^d$, for each $u_i$ and $\delta > 0$ (to be chosen), there exists $c_i \in \Omega_1$ such that $|f_1(c_i) - u_i| < \delta$.
+
+By Lemma~\ref{lem:continuity-relu}, we have:
+\[
+\|\varphi_1(\langle f_1(c_i), \cdot\rangle) - \varphi_1(\langle u_i, \cdot\rangle)\|_{L^2(\mathcal{P}_X)} \le K |f_1(c_i) - u_i| < K\delta.
+\]
+
+Therefore:
+\begin{align*}
+\left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle f_1(c_i), \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)}
+&\le \left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle u_i, \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)}\\
+&\quad + \left\|\sum_{i=1}^n \alpha_i (\varphi_1(\langle u_i, \cdot\rangle) - \varphi_1(\langle f_1(c_i), \cdot\rangle))\right\|_{L^2(\mathcal{P}_X)}\\
+&< \frac{\epsilon}{2} + \sum_{i=1}^n |\alpha_i| K\delta.
+\end{align*}
+
+Choosing $\delta = \frac{\epsilon}{2K \sum_{i=1}^n |\alpha_i|}$ (which is finite since we can choose the $\alpha_i$ to be bounded), we get:
+\[
+\left\|g - \sum_{i=1}^n \alpha_i \varphi_1(\langle f_1(c_i), \cdot\rangle)\right\|_{L^2(\mathcal{P}_X)} < \epsilon.
+\]
+
+This proves that $\mathcal{F}$ has dense span in $L^2(\mathcal{P}_X)$.
+\end{proof}
+
+\subsection{Connection to Full-Width Proof}
+
+The full-width proof (lines 2725-2726 of \cite{nguyen2023rigorousframeworkmeanfield}) uses the same dense span property, but they need to prove that full support is \emph{maintained} during training using an algebraic topology argument (Lemma~\ref{lem:full-support-3}).
+
+In our case:
+\begin{itemize}
+\item \textbf{No algebraic topology needed:} Since $f_1(C_1)$ are frozen, full support is automatic
+\item \textbf{Direct application:} We can directly apply Leshno et al. (1993) + continuity argument
+\item \textbf{Simpler proof:} The proof is more straightforward because we don't need to track support evolution
+\end{itemize}
+
+This is a \textbf{key theoretical advantage} of the frozen random feature approach: it eliminates the need for complex support-preservation arguments while still maintaining universal approximation.
+
+\subsection{Remarks}
+
+\begin{enumerate}
+\item \textbf{Non-polynomial requirement:} The proof relies on $\varphi_1$ being non-polynomial. ReLU satisfies this (it's piecewise linear but not a polynomial).
+
+\item \textbf{Data distribution:} The result holds for any $\mathcal{P}_X$ with bounded support ($|X| \le K$). For unbounded support, additional conditions may be needed.
+
+\item \textbf{Infinite-width limit:} The proof works in the infinite-width limit where $\Omega_1$ is a continuous space, as long as $\text{supp}(f_1(C_1)) = \mathbb{R}^d$.
+
+\item \textbf{Extension to other activations:} The same argument works for any non-polynomial activation (sigmoid, tanh, etc.), not just ReLU.
+\end{enumerate}

@@ -1,0 +1,106 @@
+\section{Why ``Too Small'' $|B_{1,1}|$ Can Lead to Issues}
+\label{sec:why-B1-small-issue}
+
+\subsection{The Growth Rate Formula}
+
+From Lemma~\ref{lem:r2-logratio-criterion-main}, the log-ratio growth rate is:
+\[
+\partial_t R_{12}(t,x_0) \ge (1-\rho)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|+\varepsilon} \ge 0
+\]
+
+The key observation is that the \textbf{lower bound on the growth rate is proportional to $|B_{1,1}(t)|$}.
+
+\subsection{Why ``Too Small'' $|B_{1,1}|$ Is Problematic}
+
+\paragraph*{1. Insufficient Growth Rate}
+
+If $|B_{1,1}(t)|$ is very small (e.g., $|B_{1,1}(t)| \ll \varepsilon$), then:
+\[
+\partial_t R_{12}(t,x_0) \ge (1-\rho)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|+\varepsilon} \approx 0
+\]
+
+The growth rate becomes \textbf{extremely small}, meaning:
+\begin{itemize}
+\item The log-ratio $R_{12}$ grows very slowly (or barely at all)
+\item Dominance is established very slowly, if at all
+\item The channel might not effectively learn the target function
+\end{itemize}
+
+\paragraph*{2. Numerical Errors and Discretization}
+
+In practice, we use discrete-time updates (gradient descent with step size $\epsilon$). If the continuous-time growth rate is too small:
+\begin{itemize}
+\item \textbf{Discretization error} $O(\epsilon)$ might overwhelm the growth $O(|B_{1,1}| \cdot \epsilon)$
+\item If $|B_{1,1}| \ll 1/\epsilon$, then discretization error dominates
+\item The actual discrete-time dynamics might not preserve dominance
+\item Numerical round-off errors can cause the sign of $B_{1,1}$ to flip, violating the assumption
+\end{itemize}
+
+\paragraph*{3. Sign Coherence Violation}
+
+The lemma requires that \textbf{$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$}. If $|B_{1,1}|$ is too small:
+\begin{itemize}
+\item Small perturbations (numerical errors, noise) can flip the sign
+\item The assumption ``$B_{1,1}$ has the same sign as $f_1$'' might be violated
+\item The lower bound $\partial_t R_{12} \ge 0$ might not hold
+\item Dominance could actually \textbf{decrease} instead of increase
+\end{itemize}
+
+\paragraph*{4. Ineffective Learning}
+
+$B_{1,1}(t)$ is the backpropagated signal that drives learning for channel 1. If it's too small:
+\begin{itemize}
+\item The channel receives very weak gradient signals
+\item The update $\partial_t f_1 \propto -B_{1,1}$ is very small
+\item The channel learns very slowly or not at all
+\item The dominance might not be ``meaningful'' (the channel isn't actually learning)
+\end{itemize}
+
+\paragraph*{5. Competition from Other Channels}
+
+Even if the growth rate is positive, if it's too small:
+\begin{itemize}
+\item Other channels (with larger $|B_k|$) might catch up or overtake
+\item The stability assumption \eqref{eq:r2-stability-assumption-main} might be violated if $B_2$ grows faster
+\item Channel switching could occur, breaking the specialization
+\end{itemize}
+
+\subsection{Quantitative Threshold}
+
+A reasonable condition for ``not too small'' would be:
+\[
+|B_{1,1}(t)| \ge C \cdot \max\left(\varepsilon, \frac{\epsilon}{\xi_1(t) K_{\mu_0}(x_0,x_0) (-d_0(t))}\right)
+\]
+for some constant $C > 0$, where:
+\begin{itemize}
+\item $\varepsilon$ is the regularization parameter in the log-ratio
+\item $\epsilon$ is the discretization step size (if using discrete-time)
+\item The second term ensures discretization error doesn't dominate
+\end{itemize}
+
+\subsection{Connection to the Stability Assumption}
+
+The stability assumption \eqref{eq:r2-stability-assumption-main} requires:
+\[
+|B_{2,1}(t)| \le \rho \frac{|f_2(t,x_0)|+\varepsilon}{|f_1(t,x_0)|+\varepsilon} |B_{1,1}(t)|
+\]
+
+If $|B_{1,1}|$ is too small, then:
+\begin{itemize}
+\item $|B_{2,1}|$ is also very small (bounded by $\rho |B_{1,1}|$)
+\item Both channels receive weak signals
+\item Neither channel learns effectively
+\item Specialization might not occur
+\end{itemize}
+
+\subsection{Summary}
+
+The phrase ``whenever $|B_{1,1}|$ is not too small'' means:
+\begin{enumerate}
+\item \textbf{Growth rate is meaningful:} The log-ratio grows at a rate that's not overwhelmed by numerical errors
+\item \textbf{Sign coherence is stable:} Small perturbations don't flip the sign of $B_{1,1}$ relative to $f_1$
+\item \textbf{Effective learning:} The channel receives strong enough gradient signals to actually learn
+\item \textbf{Dominance is established:} The growth is fast enough to establish and maintain dominance before other effects interfere
+\end{enumerate}
+
+Without this condition, the lemma still guarantees $\partial_t R_{12} \ge 0$ (non-decreasing), but the growth might be so slow that it's practically ineffective, or numerical errors might cause violations of the assumptions.
