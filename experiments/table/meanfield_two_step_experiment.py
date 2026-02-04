@@ -344,7 +344,7 @@ class CouplingMetrics:
 
 
 def train_finite_width_network(X_train, y_train, mf_solver, 
-                               num_epochs=1000, lr=0.001, device="cpu"):
+                               num_epochs=1000, lr=0.001, device="cpu", optimizer_type="adam"):
     """we train a finite-width network with same architecture as mean-field"""
     n1 = mf_solver.n1
     n2 = mf_solver.n2
@@ -424,7 +424,10 @@ def train_finite_width_network(X_train, y_train, mf_solver,
         mf_solver.w2_0
     ).to(device)
     
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    if optimizer_type.lower() == "sgd":
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    else:
+        optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     
     X_tensor = torch.tensor(X_train, dtype=torch.float32, device=device)
@@ -441,7 +444,7 @@ def train_finite_width_network(X_train, y_train, mf_solver,
         optimizer.step()
         losses.append(loss.item())
         
-        if (epoch + 1) % 100 == 0:
+        if (epoch + 1) % 200 == 0 or epoch == 0:
             print(f"  Epoch {epoch+1}/{num_epochs}, Loss: {loss.item():.6f}")
     
     return model, losses
@@ -472,10 +475,10 @@ def run_experiment(output_dir):
     x_fine = np.linspace(-1, 1, 100)
     y_fine = step_func(x_fine)
     
-    # we set up parameters
+    # we set up parameters (longer training)
     n1, n2 = 1000, 1000  # we use width 1000
     r = 2  # we use 2 channels
-    t_span = (0, 1000)  # we solve for 1000 time units
+    t_span = (0, 3000)  # we solve for 3000 time units (longer)
     dt = 0.1
     
     print(f"\nNetwork Architecture:")
@@ -507,7 +510,7 @@ def run_experiment(output_dir):
     print("="*80)
     fw_model, fw_losses = train_finite_width_network(
         x_train, y_train, mf_solver,
-        num_epochs=500, lr=0.001, device=device
+        num_epochs=2000, lr=0.1, device=device, optimizer_type="sgd"
     )
     
     # we compute coupling metrics at final time
@@ -645,7 +648,7 @@ def run_experiment(output_dir):
     
     # we create a new figure for weight distributions through time
     print("\nCreating Weight Distribution Plots...")
-    time_points_for_dist = [0, 200, 400, 600, 800, 1000]  # we plot distributions at these times
+    time_points_for_dist = [0, 750, 1500, 2250, 3000]  # we plot distributions at these times
     time_indices_dist = [int(t / dt) for t in time_points_for_dist if t <= t_span[1]]
     
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
