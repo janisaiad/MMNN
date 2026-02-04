@@ -1,3 +1,190 @@
+\section{Notation and standing assumptions}\label{appendix:notation-assumptions}
+\subsection{Standing assumptions (expanded)}\label{appendix:assumptions-expanded}
+We summarize the conventions used throughout the main text.
+\begin{itemize}
+    \item \textbf{Sequential infinite width.} Widths \(\bm{n}_1,\ldots,\bm{n}_L\) tend to infinity sequentially under NTK scaling \(1/\sqrt{\bm{n}_\ell}\). Random features \(w^{(\ell)}\) are i.i.d.\ Gaussian and frozen after initialization.
+    \item \textbf{Training policy.} Only the readouts \(A^{(\ell)}\) (and layer biases \(c^{(\ell)}\)) are trained; all other parameters are frozen.
+    \item \textbf{Bottleneck regime.} For \(\ell\ge 2\), the representation dimension is \(\bm{d}_\ell=r\ll \bm{n}_\ell\). This induces an explicit \(1/r\) factor in the RF-LR NTK recursion at bottleneck layers.
+    \item \textbf{Zonal kernels.} By rotational invariance of Gaussian features, base and derivative kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). For RKHS results we typically take \(x\in\mathbb{S}^{d-1}\).
+    \item \textbf{Homogeneity.} We use Assumption~\ref{assump:homogeneous_activation} (positive 1-homogeneity) for Fisher--Kibble decoupling and for separating radial and angular components in three-layer calculations.
+\end{itemize}
+
+\begin{assumption}[Homogeneous activation]\label{assump:homogeneous_activation}
+The activation function \( \sigma \) is positively 1-homogeneous:
+\[
+\sigma(\alpha u) \,=\, \alpha\,\sigma(u)\quad\text{for all } \alpha\ge 0,\; u\in\mathbb{R}.
+\]
+In particular, \(\ReLU\) satisfies this property. This assumption is used for Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}) and for separating radial and angular fluctuations in the three-layer kernel.
+\end{assumption}
+
+\subsection{EOC scaling and the origin of \(1/r\)}\label{appendix:eoc-scaling}
+Let \(\Sigma_w=\mathrm{Cov}(w^{(\ell)}_j)\). Writing \(q^{(\ell)}=\mathbb{E}\|h^{(\ell)}(x)\|^2\) for a fixed unit-norm input, weight independence yields the variance recursion
+\[
+q^{(\ell)}=\frac{\sigma_A^2}{2}\,q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w),
+\]
+The edge-of-chaos (EOC) condition chooses \(\sigma_A\) so that the linearized coefficient equals \(1\),
+\[
+\frac{\sigma_A^2}{2}\,\mathrm{Tr}(\Sigma_w)=1,
+\]
+preventing exploding/vanishing signal propagation across depth. In particular, under \(\Sigma_w=I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\) one has \(\mathrm{Tr}(\Sigma_w)=1\) and \(\sigma_A=\sqrt{2}\).
+
+In the bottleneck regime \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), EOC prescribes \(\Sigma_w=I_r/r\). For ReLU, the (normalized) derivative kernel has the closed form
+\[
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)=\mathbb{P}(Z>0,Z'>0)=\frac{1}{2}-\frac{\arccos(\rho)}{2\pi}\in\Big[0,\frac12\Big],
+\]
+so \(\dot{\Sigma}^{(\ell)}(x,x')=\bar{\dot{\Sigma}}^{(\ell)}(\rho_\ell)\) remains \(O(1)\) under EOC and is uniformly bounded by \(1/2\).
+The RF-LR NTK recursion (Theorem~\ref{thm:ntk_recursion}) carries an explicit prefactor \(1/r\) at bottleneck layers because gradients propagate through an \(r\)-dimensional bottleneck and the corresponding Jacobian metric concentrates on an \(r\)-dimensional subspace; see Appendix~\ref{appendix:proof-ntk-recursion} for the detailed derivation.
+
+\subsection{Comparison with the classical fully-trained NTK recursion}\label{appendix:classical-ntk-comparison}
+For comparison, consider a standard fully-connected MLP where \emph{all} weights (and biases) are trained under NTK parameterization. In the sequential infinite-width limit, the classical NTK recursion takes the form~\cite{jacot2018neural}
+\begin{equation}
+\label{eq:classical_ntk_recursion}
+\Theta_{\mathrm{MLP}}^{(0)}(x,x')=0,\qquad
+\Theta_{\mathrm{MLP}}^{(\ell)}(x,x')=\Theta_{\mathrm{MLP}}^{(\ell-1)}(x,x')\,\dot{K}^{(\ell)}(x,x')+K^{(\ell)}(x,x'),\quad \ell\ge 1,
+\end{equation}
+where \(K^{(\ell)}\) is the (deterministic) NNGP kernel at layer \(\ell\) and \(\dot{K}^{(\ell)}\) the associated derivative kernel (both obtained from the signal-propagation recursion).
+Unrolling \eqref{eq:classical_ntk_recursion} yields one contribution per layer (a sum of \(L\) terms, each propagated through subsequent \(\dot{K}^{(k)}\) factors).
+
+In contrast, the RF-LR recursion of Theorem~\ref{thm:ntk_recursion} (i) carries explicit \(1/r\) prefactors at bottleneck layers, and (ii) uses conditional base/derivative kernels \(\Sigma^{(\ell)},\dot{\Sigma}^{(\ell)}\) rather than the classical NNGP kernels \(K^{(\ell)},\dot{K}^{(\ell)}\). These differences lead to the \(2L\)-term expansion in Corollary~\ref{cor:general_L_layer_ntk}, reflecting separate bias-path and fresh-basis contributions, each propagated through subsequent derivative kernels and weighted by bottleneck factors.
+
+\paragraph{Relation to fully trained MLPs at the edge of chaos.}
+For fully trained (full-width) MLPs at the edge of chaos, the limiting NTK admits a single-layer sum structure (one contribution per layer) without RF-LR bottleneck prefactors; see Proposition~\ref{prop:mlp-eoc-ntk-formula} for a reference closed form~\cite{terjek2025mlpsateoc}. In contrast, the RF-LR expansion \eqref{eq:ntk_explicit_form} contains \(2L\) terms because the recursion has both bias-path and fresh-basis-path contributions, each propagated through subsequent derivative kernels and weighted by explicit \(1/r\) factors at bottlenecks.
+
+\subsection{Probabilistic recursion, GP concatenation, and bottleneck scaling}\label{appendix:probabilistic-recursion-details}
+\paragraph{Kernel randomness and GP concatenation.}
+For \( \ell > 1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields because they depend on \( \bm{h}^{(\ell-1)} \), which is the output of a (conditional) Gaussian process. By Theorem~\ref{thm:gp-composition}, the hidden states form a composition of GPs: each layer's output is conditionally Gaussian given the previous layer, but the unconditional law is a deep GP. In the bottleneck regime, the pair \( (\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) is a \(2r\)-dimensional Gaussian conditional on lower-layer randomness, with covariance determined by \( \Sigma^{(\ell-1)} \). The base kernel \( \Sigma^{(\ell)} \) and derivative kernel \( \dot{\Sigma}^{(\ell)} \) are thus expectations over the frozen features \( \bm{w}^{(\ell)} \), conditional on this Gaussian pair, and inherit randomness through \( \Sigma^{(\ell-1)} \).
+
+\paragraph{Bottleneck scaling and explicit ReLU bounds.}
+At a bottleneck layer \( \ell \ge 2 \), the RF-LR NTK recursion carries an explicit prefactor \(1/r\) (Theorem~\ref{thm:ntk_recursion}). For ReLU and isotropic weights with \( \mathrm{Cov}(w)=I_r/r \), one has
+\[
+\dot{\Sigma}^{(\ell)}(x,x') \;=\; \mathbb{E}_w\!\Big[\dot{\sigma}\!\big(w^\top \bm{h}^{(\ell-1)}(x)\big)\,\dot{\sigma}\!\big(w^\top \bm{h}^{(\ell-1)}(x')\big)\,\|w\|^2\Big] \;=\; \bar{\dot{\Sigma}}^{(\ell)}(\rho_\ell),
+\]
+where \( \rho_\ell = \cos\angle(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) and \( \bar{\dot{\Sigma}}^{(\ell)}(\rho) \) denotes the corresponding scalar derivative kernel evaluated at cosine similarity \( \rho\in[-1,1] \).
+Under the EOC normalization \( \mathrm{Tr}(\mathrm{Cov}(w))=1 \), the ReLU derivative kernel has the explicit form
+\[
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)=\mathbb{P}(Z>0,Z'>0)=\frac{1}{2}-\frac{\arccos(\rho)}{2\pi}\in\Big[0,\frac12\Big],
+\]
+where \((Z,Z')\) is centered Gaussian with correlation \(\rho\). In particular, \(\sup_{\rho\in[-1,1]}\bar{\dot{\Sigma}}^{(\ell)}(\rho)=1/2\), uniformly in \(\ell\).
+Similarly, \( \Sigma^{(\ell)}(x,x')=\mathbb{E}_w[\sigma(w^\top \bm{h}^{(\ell-1)}(x))\,\sigma(w^\top \bm{h}^{(\ell-1)}(x'))] \) is an \(O(1)\) scalar kernel, and the \(1/r\) factors enter through the recursion.
+
+\paragraph{Probabilistic recursion (nested expectations).}
+The mean (probabilistic) NTK \( \tilde{\Kop}^{(L)}=\mathbb{E}[\Kop^{(L)}] \) satisfies a recursion involving expectations of products:
+\begin{equation}
+\label{eq:mean_ntk_recursion}
+\tilde{\Kop}^{(1)} \;=\; 1 \;+\; \mathbb{E}\!\big[\Sigma^{(1)}\big],\qquad
+\tilde{\Kop}^{(\ell)} \;=\; 1 \;+\; \frac{1}{r}\,\mathbb{E}\!\big[\Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)}\big] \;+\; \frac{1}{r}\,\mathbb{E}\!\big[\Sigma^{(\ell)}\big],\quad \ell \ge 2.
+\end{equation}
+To emphasize the nested structure, write \(\mathbb{E}_{\le \ell-1}\) for expectation over all randomness up to depth \(\ell-1\), and \(\mathbb{E}_{w^{(\ell)}}[\cdot\,|\,\bm{h}^{(\ell-1)}]\) for expectation over the frozen feature direction \(w^{(\ell)}\) at layer \(\ell\), conditional on the previous hidden states. Then the mean kernels are iterated conditional expectations:
+\[
+\mathbb{E}\!\big[\Sigma^{(\ell)}(x,x')\big]
+\;=\;
+\mathbb{E}_{\le \ell-1}\Big[
+\mathbb{E}_{w^{(\ell)}}\big[\sigma(w^{\top}\bm{h}^{(\ell-1)}(x))\,\sigma(w^{\top}\bm{h}^{(\ell-1)}(x'))\;\big|\;\bm{h}^{(\ell-1)}\big]
+\Big],
+\]
+\[
+\mathbb{E}\!\big[\Kop^{(\ell-1)}(x,x')\,\dot{\Sigma}^{(\ell)}(x,x')\big]
+\;=\;
+\mathbb{E}_{\le \ell-1}\Big[
+\Kop^{(\ell-1)}(x,x')\cdot
+\mathbb{E}_{w^{(\ell)}}\big[\dot{\sigma}(w^{\top}\bm{h}^{(\ell-1)}(x))\,\dot{\sigma}(w^{\top}\bm{h}^{(\ell-1)}(x'))\,\|w\|^2\;\big|\;\bm{h}^{(\ell-1)}\big]
+\Big].
+\]
+Since \( \Kop^{(\ell-1)} \) and \( \Sigma^{(\ell)},\dot{\Sigma}^{(\ell)} \) share the randomness of \( \bm{h}^{(\ell-1)} \), one has \( \mathbb{E}[\Kop^{(\ell-1)}\cdot\dot{\Sigma}^{(\ell)}] \neq \tilde{\Kop}^{(\ell-1)}\cdot\mathbb{E}[\dot{\Sigma}^{(\ell)}] \) in general; controlling this dependence (and the resulting nested conditional expectations) is the main technical point for a rigorous deep mean-kernel theory.
+
+\paragraph{Exponential depth suppression (ReLU, bottlenecks).}
+Assume for simplicity that all layers \(\ell\ge 2\) are bottlenecks with the same rank \(r\). For ReLU under EOC we have the explicit uniform bound
+\[
+\bar{\dot{\Sigma}}^{(\ell)}(\rho)\le c_0:=\frac12,\qquad \forall \rho\in[-1,1],\ \forall \ell\ge 2.
+\]
+From the closed form \eqref{eq:ntk_explicit_form}, the contribution from layer \(\ell\) to \(\Kop^{(L)}\) is multiplied by \(\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)}\). Writing \(\dot{\Sigma}^{(k)}=\bar{\dot{\Sigma}}^{(k)}(\rho_k)\), we obtain
+\[
+\frac{1}{r^{L-\ell}}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)}
+\;\le\;
+\frac{1}{r^{L-\ell}}\,\prod_{k=\ell+1}^{L}\bar{\dot{\Sigma}}^{(k)}(\rho_k)
+\;\le\;\frac{c_0^{L-\ell}}{r^{L-\ell}}.
+\]
+Hence, contributions from early layers (\(\ell\ll L\)) decay exponentially in \(L-\ell\) when \(c_0/r<1\), and the NTK becomes increasingly localized to the top of the network as depth grows.
+
+\begin{proposition}[Effective depth decomposition and a \(\log r\) window]\label{prop:depth_decay}
+Assume the uniform derivative-kernel bound \(\dot{\Sigma}^{(\ell)}(x,x')\le c_0\) for all \(\ell\ge 2\) and all input pairs \((x,x')\), and assume that for a given \((x,x')\) one has a uniform base-kernel bound
+\[
+|\Sigma^{(\ell)}(x,x')|\le C_\Sigma(x,x'),\qquad \forall \ell\in\{1,\dots,L\}.
+\]
+Fix \(L\ge 2\), \(r>c_0\), and an integer \(m\in\{1,\dots,L\}\). Define the \emph{top-\(m\) truncation} \(\Kop^{(L)}_{\mathrm{top},m}(x,x')\) by restricting both sums in the explicit expansion \eqref{eq:ntk_explicit_form} to indices \(\ell\in\{L-m+1,\dots,L\}\). Then
+\[
+\big|\Kop^{(L)}(x,x')-\Kop^{(L)}_{\mathrm{top},m}(x,x')\big|
+\;\le\;
+\frac{1+C_\Sigma(x,x')}{1-c_0/r}\left(\frac{c_0}{r}\right)^m.
+\]
+In particular, taking \(m=\lceil \alpha \log r\rceil\) (for any \(\alpha>0\)) yields a \(\log r\) effective-depth window: the contribution of layers \(\ell\le L-\lceil \alpha \log r\rceil\) is at most
+\[
+\big|\Kop^{(L)}(x,x')-\Kop^{(L)}_{\mathrm{top},\lceil \alpha \log r\rceil}(x,x')\big|
+\;\le\;
+\frac{1+C_\Sigma(x,x')}{1-c_0/r}\left(\frac{c_0}{r}\right)^{\lceil \alpha \log r\rceil}
+\;=\;o(r^{-p})
+\]
+for every fixed \(p>0\) as \(r\to\infty\).
+\end{proposition}
+\begin{proof}
+By definition of \(\Kop^{(L)}_{\mathrm{top},m}\), the remainder is the sum of the terms in \eqref{eq:ntk_explicit_form} with \(\ell\le L-m\). For such \(\ell\), we have \(L-\ell\ge m\), and by the derivative-kernel bound \(\dot{\Sigma}^{(k)}(x,x')\le c_0\) we obtain
+\[
+\frac{1}{r^{L-\ell}}\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)}(x,x')\;\le\;\left(\frac{c_0}{r}\right)^{L-\ell}.
+\]
+Moreover, for \(\ell\le L-m\le L-1\) the base-kernel term carries the same prefactor \(r^{-(L-\ell)}\) in \eqref{eq:ntk_explicit_form}, hence
+\[
+\frac{1}{r^{L-\ell}}\,\big|\Sigma^{(\ell)}(x,x')\big|\,\prod_{k=\ell+1}^{L}\dot{\Sigma}^{(k)}(x,x')
+\;\le\;
+C_\Sigma(x,x')\left(\frac{c_0}{r}\right)^{L-\ell}.
+\]
+Summing these bounds over \(\ell\le L-m\) and using a geometric-series tail gives
+\[
+\big|\Kop^{(L)}(x,x')-\Kop^{(L)}_{\mathrm{top},m}(x,x')\big|
+\;\le\;
+\bigl(1+C_\Sigma(x,x')\bigr)\sum_{j=m}^{\infty}\left(\frac{c_0}{r}\right)^j
+\;=\;
+\frac{1+C_\Sigma(x,x')}{1-c_0/r}\left(\frac{c_0}{r}\right)^m,
+\]
+as claimed. The \(\log r\) specialization follows by substituting \(m=\lceil \alpha \log r\rceil\) and observing that \((c_0/r)^{\lceil \alpha \log r\rceil}=o(r^{-p})\) for every fixed \(p>0\).
+\end{proof}
+
+\subsection{Comparison table: depth/rank effects in the kernel regime}\label{appendix:table-eoc-vs-rflr}
+\begin{table}[t]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+ & \textbf{Fully trained MLP at EOC}~\cite{terjek2025mlpsateoc} & \textbf{RF-LR (this work)} \\
+\hline
+Trainable parameters & all weight layers & readouts \(A^{(\ell)}\) and biases \(c^{(\ell)}\); frozen \(w^{(\ell)}\) \\
+\hline
+Key scaling parameter & depth \(L\), activation \(\Delta_\phi\) & depth \(L\), bottleneck dimension \(r\) \\
+\hline
+Depth effect (kernel magnitude) & uncentered scale can grow with \(L\) & mean recursion saturates in \(L\) (Thm.~\ref{thm:rflr-depth-scaling-mean}) \\
+\hline
+Centered scale & controlled by correlation propagation & equicorrelated model: \(\lambda_{\min}(HKH)=\Theta(1/(rL))\) (Prop.~\ref{prop:equicorrelated-gap}) \\
+\hline
+\end{tabular}
+\caption{Comparison of depth/rank effects in the kernel regime. The MLP-at-EOC column summarizes known fully trained behavior; RF-LR has an explicit \(1/r\) bottleneck factor in the recursion, leading to saturation and geometric suppression of early-layer contributions.}
+\label{tab:eoc-vs-rflr}
+\end{table}
+
+\subsection{Techniques and proof sketch}\label{appendix:techniques-proof-sketch}
+We highlight the main proof ingredients and how they combine.
+\paragraph{Recursion and closed form.}
+The RF-LR NTK recursion (Theorem~\ref{thm:ntk_recursion}) follows from a layerwise decomposition of the gradient inner product into bias, readout, and backpropagated contributions, together with conditional law of large numbers arguments under the sequential infinite-width limit~\cite{jacot2018neural}. Iterating the recursion yields the explicit \(2L\)-term expansion (Corollary~\ref{cor:general_L_layer_ntk}).
+
+\paragraph{Microscopic decoupling and concentration.}
+For three layers, the empirical kernel depends on the sample cosine and norm product of rank-\(r\) Gaussian projections. Rotational invariance yields Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}), separating angular and radial fluctuations~\cite{fisher1915probable,hotelling1953new,kibble1941two}. Concentration of Gaussian norms and sample correlations then yields sub-Gaussian deviations in \(r\) for the empirical kernel (Theorem~\ref{thm:rkhs_rank_concentration} and Corollary~\ref{cor:three_layer_ntk_concentration}).
+
+\paragraph{RKHS identification via endpoint expansions.}
+The RKHS of zonal kernels on the sphere is controlled by the Puiseux behavior near \(\rho=\pm 1\)~\cite{bietti2021deepequalsshallowrelu}. We compute the mean three-layer kernel's endpoint expansion by combining Fisher's density with a hypergeometric connection formula, showing that the leading \(t^{1/2}\) exponent is preserved after taking expectations, hence the mean kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}).
+
+\paragraph{Depth scaling and effective depth.}
+Depth dependence is controlled by correlation propagation and by products of derivative kernels. In the bottleneck regime, the RF-LR recursion carries explicit \(1/r\) prefactors at each bottleneck layer, and for ReLU one has \(\sup_{\rho}\bar{\dot{\Sigma}}^{(\ell)}(\rho)\le 1/2\), which yields exponential suppression of early-layer contributions as depth increases (Section~\ref{sec:depth-scaling}). A refined mean-kernel statement is obtained by analyzing the deterministic proxy recursion (Theorem~\ref{thm:rflr-depth-scaling-mean}).
+
+\paragraph{Future work: quadratic random-matrix scaling.}
+Establishing bulk spectral laws for the \emph{empirical} RF-LR NTK in a quadratic scaling regime \(n\to\infty\) requires additional resolvent/local-law inputs. While such bulk laws are now available for shallow two-layer NTKs via resolvent replacement and Gaussian-equivalence machinery~\cite{benigni2025eigenvaluedistributionneuraltangent}, adapting these methods to the present low-rank random-feature structure and to depth \(L\ge 2\) is left for future work.
+
 \section{Proofs of NTK Recursions}
 \label{appendix:ntk-recursions}
 
@@ -12,14 +199,14 @@ We prove the recursion by decomposing the NTK at layer \( \ell \) into contribut
 \end{align}
 
 \paragraph{Bias parameters.}
-Under the NTK parameterization with trainable biases at each layer, the gradient with respect to the bias contributes an identity kernel. Concretely, for layer \( \ell \), the bias partial derivative satisfies \( \partial f^{(\ell)}(x)/\partial b^{(\ell)} = \sigma_A/\sqrt{n_\ell} \), so the associated NTK contribution converges by LLN to a deterministic constant, which we normalize as \( 1 \) under our parameterization. This yields the additive \( +1 \) term in the recursion.
+We include a trainable layer bias \(c^{(\ell)}\) (initialized at zero). The gradient feature with respect to \(c^{(\ell)}\) is constant, so it contributes an additive constant term to the NTK; under our normalization this contribution is \(1\). This yields the additive \(+1\) term in the recursion.
 
 \paragraph{Term 2 (layer-\(\ell\) output weights \(A^{(\ell)}\)).}
-By the forward pass, \(\partial f^{(\ell)}(x)/\partial A^{(\ell)}_j = \frac{\sigma_A}{\sqrt{n_\ell}}\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)+\beta b^{(\ell)}_j\big)\). Therefore
+By the forward pass, \(\partial f^{(\ell)}(x)/\partial A^{(\ell)}_j = \frac{\sigma_A}{\sqrt{n_\ell}}\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\). Therefore
 \begin{align}
-\text{Term 2} \;=\; \frac{\sigma_A^2}{n_\ell}\sum_{j=1}^{n_\ell} \ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)+\beta b^{(\ell)}_j\big)\,\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')+\beta b^{(\ell)}_j\big).
+\text{Term 2} \;=\; \frac{\sigma_A^2}{n_\ell}\sum_{j=1}^{n_\ell} \ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')\big).
 \end{align}
-Conditionally on \(\bm{h}^{(\ell-1)}\), the summands are i.i.d. over \((\bm{w}^{(\ell)}_j,b^{(\ell)}_j)\). As \(n_\ell\to\infty\) (with lower layers already taken to their limits), LLN yields
+Conditionally on \(\bm{h}^{(\ell-1)}\), the summands are i.i.d. over \(\bm{w}^{(\ell)}_j\). As \(n_\ell\to\infty\) (with lower layers already taken to their limits), LLN yields
 \begin{align}
 \text{Term 2} \xrightarrow{p} \sigma_A^2\,\Sigma^{(\ell)}(x,x').
 \end{align}
@@ -62,10 +249,10 @@ For \( \ell=0 \), we have \( \bm{h}^{(0)}(x) = x \), which is deterministic and 
 \paragraph{Inductive step.}
 Assume that \( \bm{h}^{(\ell-1)} \) converges to a Gaussian process with covariance kernel \( \Sigma^{(\ell-1)} \). Consider the forward pass at layer \( \ell \):
 \begin{align}
-\bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x) + b^{(\ell)}_j\Big) + c.
+\bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x)\Big) + c^{(\ell)}.
 \end{align}
 
-For any finite collection of inputs \( \{x_1, \dots, x_m\} \), conditionally on \( \bm{h}^{(\ell-1)} \), the terms \( A^{(\ell)}_j\,\bm{\ReLU}\!\big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x_i) + b^{(\ell)}_j\big) \) are independent across \( j \) and identically distributed. Since \( A^{(\ell)}_j \sim \mathcal{N}(0, \sigma_A^2) \) and \( w^{(\ell)}_j, b^{(\ell)}_j \) are frozen Gaussian draws, the conditional distribution of each term is centered with finite variance.
+For any finite collection of inputs \( \{x_1, \dots, x_m\} \), conditionally on \( \bm{h}^{(\ell-1)} \), the terms \( A^{(\ell)}_j\,\bm{\ReLU}\!\big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x_i)\big) \) are independent across \( j \) and identically distributed. Since \( A^{(\ell)}_j \sim \mathcal{N}(0, \sigma_A^2) \) and \( w^{(\ell)}_j \) are frozen Gaussian draws, the conditional distribution of each term is centered with finite variance (and \(c^{(\ell)}\) is deterministic at initialization).
 
 By the multivariate Central Limit Theorem, as \( \bm{n}_\ell \to \infty \), the vector \( (\bm{h}^{(\ell)}(x_1), \dots, \bm{h}^{(\ell)}(x_m)) \) converges in distribution to a multivariate Gaussian. The covariance is given by
 \begin{align}
@@ -101,6 +288,15 @@ where the expectations are over Fisher and Kibble. As \( r\to\infty \), \( \hat{
 \subsection{Proof of General \texorpdfstring{\(L\)}{L}-layer NTK Corollary}
 \label{appendix:proof-general-L}
 
+\begin{remark}[Explicit \(2L\)-term unrolling]\label{appendix:remark-2L-expansion}
+Equivalently, expanding the recursion yields an explicit \emph{linear} number of terms (namely \(2L\)). For example, for \( L=3 \):
+\begin{align}
+\Kop^{(3)}(x,x') &= 1 + \frac{1}{r}\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\dot{\Sigma}^{(3)} \nonumber\\
+&\quad + \frac{1}{r^2}\Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(3)}.
+\end{align}
+Each bottleneck layer contributes a factor \( 1/r \); layer 1 has no such factor. In total, there are \( 2L \) terms for depth \( L \).
+\end{remark}
+
 \begin{proof}
 \label{proof:general_L_ntk}
 We prove the explicit form by induction on \( L \), accounting for the \( +1 \) bias terms in the recursion.
@@ -129,12 +325,52 @@ The first term \( 1 \) corresponds to \( \ell=L \) in the first sum (with empty 
 completing the induction. The total number of terms is \( L + L = 2L \), which grows linearly with depth.
 \end{proof}
 
+\subsection{Reference: full-width MLP limiting NTK at the edge of chaos}
+\label{appendix:mlp-eoc-ntk}
+\begin{proposition}[Closed form for full-width MLP EOC NTK]\label{prop:mlp-eoc-ntk-formula}
+Let \(l\ge 1\) and consider an infinitely wide \(l\)-layer MLP with \((a,b)\)-ReLU activation initialized at the edge of chaos as in~\cite{terjek2025mlpsateoc}. Denote by \(\varrho\) the corresponding cosine map and by \(\rho_1(x,x')\) the input cosine similarity. Then the limiting NTK satisfies
+\[
+K_\infty(x,x') \;=\; \|x\|\,\|x'\|\left(\sum_{k=1}^{l}\varrho^{\circ(k-1)}\!\big(\rho_1(x,x')\big)\prod_{k'=k}^{l-1}\varrho'\!\left(\varrho^{\circ(k'-1)}\!\big(\rho_1(x,x')\big)\right)\right)\,I_{m_l},
+\]
+with the convention that the empty product (for \(k=l\)) equals \(1\).
+\end{proposition}
+\begin{proof}
+This is~\cite{terjek2025mlpsateoc}; we include it for completeness.
+\end{proof}
+
 
 
 
 
 
 \section{Proofs of low-rank NTK RKHS}
+
+\subsection{Background and statements for Section~\ref{sec:no-rkhs-advantage}}\label{appendix:rkhs-statements}
+\paragraph{RKHS viewpoint in the NTK regime.}
+In the NTK regime, training dynamics linearize:
+\[
+f_t(x) \approx f_0(x) + \langle \nabla_\theta f_0(x),\, \theta_t-\theta_0 \rangle.
+\]
+The learned function stays in the RKHS induced by the (limiting) kernel \(\Theta\), with norm
+\[
+\|f\|_{\mathcal{H}_\Theta}^2 = \langle f, \Theta^{-1}f\rangle_{L^2}.
+\]
+For RF-LR with frozen random features, universal approximation holds due to full support of the frozen Gaussian draws \(w^{(\ell)}\), so any function in the Barron space~\cite{e2021barronspaceflowinducedfunction} can be approximated with error \(O(1/\sqrt{N})\).
+Classical NTK analysis suggests that feature weights move little during training; RF-LR enforces this by design by freezing the feature weights, which isolates kernel-regime behavior without an additional weight-deviation analysis.
+
+\paragraph{Mean RKHS and random features.}
+Each realization \(\omega\) of the random features yields a kernel \(K_\omega(x,x')=\Theta^{(2)}_\omega(x,x')\) and an induced RKHS \(\mathcal{H}_\omega\). The mean kernel \(\tilde{K}(x,x')=\mathbb{E}_\omega[K_\omega(x,x')]\) is deterministic; its RKHS \(\mathcal{H}_{\tilde{K}}\) is the RKHS of \(\tilde{K}\). It is not \(\mathbb{E}[\mathcal{H}_\omega]\) (expectation of Hilbert spaces is undefined). For each \(\omega\), the feature map \(\varphi_\omega(x)=K_\omega(\cdot,x)\in\mathcal{H}_\omega\) is random, whereas the canonical feature map of the mean kernel \(\varphi_{\tilde{K}}(x)=\tilde{K}(\cdot,x)\in\mathcal{H}_{\tilde{K}}\) is deterministic. The mean RKHS describes the typical function space obtained after averaging over random feature realizations.
+
+\paragraph{Remark (application of Bietti--Bach).}\label{appendix:rmk-bietti-bach-application}
+Once the mean kernel's Puiseux endpoint behavior is established (Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}), the RKHS equivalence in Corollary~\ref{thm:no_rkhs_advantage} follows directly from the characterization theorem of~\cite{bietti2021deepequalsshallowrelu}.
+
+\begin{corollary}[Mean NTK over Fisher--Kibble has same RKHS: three-layer case]\label{cor:conditional_rkhs_homogeneous}
+Under Assumption~\ref{assump:homogeneous_activation} and the RF-LR setting with ReLU nonlinearity and isotropic random features on \(\mathbb{S}^{d-1}\), the mean three-layer NTK \(\tilde{\Kop}^{(2)}\) (obtained by taking expectations over Fisher and Kibble distributions) is a zonal kernel that induces the same RKHS as the shallow ReLU kernel. In particular, the RKHSs coincide as sets with equivalent norms.
+\end{corollary}
+Proof: See Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous}.
+
+\paragraph{Main RKHS result (stated in the main text).}
+Corollary~\ref{thm:no_rkhs_advantage} is stated in Section~\ref{sec:no-rkhs-advantage}. It follows by combining the Puiseux endpoint analysis in Appendix~\ref{appendix:proof-conditional-rkhs-homogeneous} with the RKHS characterization of~\cite{bietti2021deepequalsshallowrelu}.
 
 
 
@@ -152,6 +388,64 @@ Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random 
 \end{itemize}
 \end{lemma}
 
+\begin{remark}[Fisher--Kibble decoupling and independence]\label{rmk:fisher-kibble-law}
+By rotational invariance, the empirical correlation and squared norms satisfy
+\[
+\rho_1 \sim \mathrm{Fisher}(\rho,r),\qquad (u,v) \sim \mathrm{Kibble}(r,\rho),
+\qquad\text{and}\qquad p(\rho_1,u,v)=p_{\mathrm{Fisher}}(\rho_1)\,p_{\mathrm{Kibble}}(u,v).
+\]
+\paragraph{Homogeneity and factorization (why angular and radial parts decouple).}\label{appendix:homogeneity-decoupling}
+For positively 1-homogeneous activations (Assumption~\ref{assump:homogeneous_activation}), the first-layer base kernel separates radial and angular dependence: for all \(x,x'\neq 0\),
+\[
+\Sigma^{(1)}(x,x')=\|x\|\,\|x'\|\,\tilde{\Sigma}^{(1)}(\rho),\qquad \rho=\frac{\langle x,x'\rangle}{\|x\|\,\|x'\|},
+\]
+where \(\tilde{\Sigma}^{(1)}\) is a scalar function on \([-1,1]\) (for ReLU it is the standard arc-cosine kernel). Under isotropic Gaussian projections, rotational invariance implies that the empirical correlation \(\rho_1=\cos\angle(x_1,y_1)\) depends only on the angular part of the projected pair, while the norms \((\|x_1\|,\|y_1\|)\) depend only on the radial part; consequently \(\rho_1\) is independent of \((u,v)=(\|x_1\|^2,\|y_1\|^2)\) and the joint law factorizes as stated above.
+The Fisher distribution density~\cite{fisher1915probable} is
+\[
+p(\rho_1 \mid \rho, r)
+=
+\frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\tfrac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,
+{}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right),
+\qquad r>2.
+\]
+For large \(r\), the inverse Gudermann function applied to the complementary angle is approximately normal:
+\[
+\mathrm{gd}^{-1}\!\left(\frac{\pi}{2}-\arccos(\rho_1)\right)
+\approx
+\mathcal{N}\!\left(\mathrm{arctanh}(\rho),\,\frac{1}{r-3}\right),
+\qquad\text{hence}\qquad \mathrm{Var}(\rho_1)=O(1/r).
+\]
+Kibble's~\cite{kibble1941two} bivariate chi-square law for \((u,v)=(\|x_1\|^2,\|y_1\|^2)\) has density
+\[
+f(u,v)
+=
+\frac{(uv)^{\frac{r/2-1}{2}}\,\exp\!\left(-\tfrac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,\big(2(1-\rho^2)\big)^{\frac{r}{2}+1}\,\rho^{\frac{r/2-1}{2}}}\,
+I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right),
+\qquad u,v\ge 0,
+\]
+where \(I_\nu\) is the modified Bessel function of the first kind. The moments are
+\[
+\mathbb{E}[u]=\mathbb{E}[v]=r,\qquad \mathrm{Var}(u)=\mathrm{Var}(v)=2r,\qquad \mathrm{Cov}(u,v)=2r\,\rho^2.
+\]
+Defining \(w_r=\sqrt{uv}/r\), concentration results imply \(\mathbb{E}[w_r]\to 1\) and \(\mathrm{Var}(w_r)=O(1/r)\).
+
+\paragraph{Compact three-layer empirical NTK representation.}
+In the three-layer low-rank setting, denote
+\[
+\rho_1=\cos\angle(\bm{h}^{(1)}(x),\bm{h}^{(1)}(x')),\qquad
+w_r=\frac{\|\bm{h}^{(1)}(x)\|\,\|\bm{h}^{(1)}(x')\|}{r}.
+\]
+Then the empirical three-layer NTK admits the compact form
+\[
+\Kop^{(2)}(x,x')
+=
+1
++\frac{1}{r}\,\Kop^{(1)}(\rho_1)\!\left(1-\frac{\arccos(\rho_1)}{\pi}\right)
++\frac{1}{r}\,w_r\,\Sigma^{(1)}(\rho_1),
+\]
+with \( \Sigma^{(1)}(u)=\frac{1}{\pi}\big(\sqrt{1-u^2}+u(1-\arccos u)\big) \).
+\end{remark}
+
 \begin{proof}
 \label{proof:fisher_kibble}
 Let \(x, y \in \mathbb{R}^d\) be fixed input vectors with correlation \(\rho = \langle x, y\rangle/(\|x\|\|y\|)\). Consider a rank-\(r\) random projection matrix \(P \in \mathbb{R}^{r \times d}\) with entries \(P_{ij} \sim \mathcal{N}(0, 1/d)\) i.i.d., so that \(x_1 = Px\) and \(y_1 = Py\) are the projected vectors.
@@ -167,7 +461,7 @@ The empirical correlation is defined as
 \begin{align}
 \rho_1 = \frac{\langle x_1, y_1 \rangle}{\|x_1\|\|y_1\|} = \frac{\sum_{i=1}^r x_{1i} y_{1i}}{\sqrt{\sum_{i=1}^r x_{1i}^2}\sqrt{\sum_{i=1}^r y_{1i}^2}}.
 \end{align}
-This is the sample correlation coefficient of \(r\) pairs of correlated Gaussian random variables. Fisher~\cite{fisher1915probable,hotelling1953new} showed that the distribution of \(\rho_1\) depends only on the true correlation \(\rho\) and the sample size \(r\), with density given in Theorem~\ref{rmk:fisher-kibble-law}. The key observation is that \(\rho_1\) is a function purely of the angles between the projected vectors, independent of their magnitudes.
+This is the sample correlation coefficient of \(r\) pairs of correlated Gaussian random variables. Fisher~\cite{fisher1915probable,hotelling1953new} showed that the distribution of \(\rho_1\) depends only on the true correlation \(\rho\) and the sample size \(r\), with density given in Remark~\ref{rmk:fisher-kibble-law}. The key observation is that \(\rho_1\) is a function purely of the angles between the projected vectors, independent of their magnitudes.
 
 \paragraph{Radial part (Kibble distribution).}
 The squared norms \(u = \|x_1\|^2 = \sum_{i=1}^r x_{1i}^2\) and \(v = \|y_1\|^2 = \sum_{i=1}^r y_{1i}^2\) are sums of correlated chi-square variables. Since \((x_{1i}, y_{1i})\) are \(\rho\)-correlated Gaussians, the bivariate distribution of \((u, v)\) follows Kibble's~\cite{kibble1941two} bivariate chi-square law. The joint density involves the modified Bessel function \(I_{\nu}(z)\), which appears because the dot product \(\langle x_1, y_1 \rangle = \sum_{i=1}^r x_{1i} y_{1i}\) can be expressed as a weighted sum of products of correlated normals, whose distribution relates to Bessel functions through the generating function of the bivariate chi-square distribution.
@@ -176,11 +470,14 @@ Specifically, the joint characteristic function of \((u, v)\) is
 \begin{align}
 \phi(s, t) = \mathbb{E}[e^{i(su + tv)}] = \left(1 - 2i(1-\rho^2)(s+t) - 4\rho^2 st\right)^{-r/2},
 \end{align}
-and the inverse Fourier transform yields Kibble's density, which contains the modified Bessel function \(I_{\frac{r}{2}-1}\) as shown in Lemma~\ref{rmk:fisher-kibble-law}. The Bessel function arises from the integral representation of the bivariate chi-square density when the correlation \(\rho \neq 0\).
+and the inverse Fourier transform yields Kibble's density, which contains the modified Bessel function \(I_{\frac{r}{2}-1}\) as stated in Remark~\ref{rmk:fisher-kibble-law}. The Bessel function arises from the integral representation of the bivariate chi-square density when the correlation \(\rho \neq 0\).
 
 \paragraph{Independence of angular and radial parts.}
 Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = \cos\angle(x_1, y_1)\) and the norms \((\|x_1\|, \|y_1\|)\) are independent, yielding the factorization \(p(\rho_1, u, v) = p_{\text{Fisher}}(\rho_1) \cdot p_{\text{Kibble}}(u, v)\). This is the classical independence of the sample correlation from sample variances in bivariate normal data.
 \end{proof}
+
+\subsection{Open directions: deep mean NTK recursion and effective depth}\label{appendix:open-directions}
+A full treatment of the deep (\(L\to\infty\)) mean NTK recursion requires: (i)~a rigorous recursion for \( \tilde{\Kop}^{(\ell)} \) with explicit covariance bounds; (ii)~verification that \( \bar{\dot{\Sigma}}^{(\ell)} \) remains uniformly bounded in \( \ell \) and \( \rho_\ell \); (iii)~extension of Fisher--Kibble decoupling to nested layers to control mixed terms such as \( \mathbb{E}[\Kop^{(\ell-1)}\dot{\Sigma}^{(\ell)}] \) (where dependence through the deep GP chain prevents naive factorization). The exponential suppression of early-layer contributions suggests that very deep MMNNs may exhibit an ``effective depth'' phenomenon similar to ResNets, where only the top layers meaningfully contribute to the NTK.
 
 \begin{lemma}[Nonasymptotic concentration of Gaussian sample cosine]\label{lem:gaussian-sample-cosine}
 Let \(r\ge 1\) and let \((X,Y)\in\mathbb{R}^r\times\mathbb{R}^r\) have i.i.d.\ coordinates \(\{(X_i,Y_i)\}_{i=1}^r\), each distributed as a centered bivariate normal with \(\mathbb{E}[X_i^2]=\mathbb{E}[Y_i^2]=1\) and \(\mathbb{E}[X_iY_i]=\rho\in(-1,1)\).
@@ -229,8 +526,24 @@ The second-moment bound follows by integrating the tail bound: \(\mathbb{E}[(\wi
 
 
 
-\subsection{Proof of Theorem~\ref{thm:rkhs_rank_concentration}: Rank-driven concentration}
+\subsection{Rank-driven concentration}
 \label{appendix:proof-rkhs-rank-concentration}
+
+\begin{theorem}[Concentration in rank for homogeneous activation]\label{thm:rkhs_rank_concentration}\label{appendix:thm-rank-concentration-statement}
+Under the homogeneous activation assumption (Assumption~\ref{assump:homogeneous_activation}), let \( x_1,y_1\in\mathbb{R}^r \) be the rank-\(r\) Gaussian projections of inputs \(x,y\), with arbitrary fixed correlation \( \rho\in[-1,1] \). Define
+\[
+W \;=\; \frac{\|x_1\|\,\|y_1\|}{r}.
+\]
+Then for any \( \epsilon\in(0,1) \),
+\[
+\mathbb{P}\!\left(\left|W-1\right|\;\ge\;\epsilon\right)\;\le\;4\,\exp\!\left(-\frac{r\,\epsilon^2}{8}\right).
+\]
+Moreover, for larger deviations \( \epsilon\ge 1 \), there exist absolute constants \(c_1,c_2>0\) such that
+\[
+\mathbb{P}\!\left(\left|W-1\right|\;\ge\;\epsilon\right)\;\le\;c_1\,\exp\!\left(-c_2\,r\,\epsilon\right).
+\]
+In particular, the radial component of the RF-LR NTK concentrates exponentially fast in \(r\), yielding high-dimensional control of RKHS fluctuations.
+\end{theorem}
 
 \begin{proof}
 Let \( x_1,y_1\in\mathbb{R}^r \) be Gaussian projections with arbitrary fixed correlation \( \rho\in[-1,1] \). Define \( U=\|x_1\|/\sqrt{r} \), \( V=\|y_1\|/\sqrt{r} \), and \( W=UV=\|x_1\|\,\|y_1\|/r \). We prove that for \( \epsilon\in(0,1) \),
@@ -258,7 +571,15 @@ Therefore,
 \end{align}
 \end{proof}
 
-\subsection{Proof of Corollary~\ref{cor:two_layer_ntk_concentration}: Concentration bound for three-layer NTK}
+\begin{corollary}[Concentration bound for three-layer NTK]\label{cor:three_layer_ntk_concentration}
+Under Assumption~\ref{assump:homogeneous_activation}, let \( \hat{\Theta}^{(2)}_r(x,x') = \Psi(\hat{\rho}_r, \hat{w}_r) \) be the empirical three-layer NTK, where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x_1\|\,\|y_1\|/r \), with \( x_1, y_1 \in \mathbb{R}^r \) being the rank-\(r\) Gaussian projections of inputs \( x, y \) with population correlation \( \rho \in [-1,1] \). Let \( K_{\infty}(\rho) = \Psi(\rho,1) \) be the deterministic kernel limit.
+Then for any \( \epsilon \in (0,1) \), there exist constants \( C_1, C_2 > 0 \) depending on \( \rho \) and the kernel smoothness such that
+\[
+\mathbb{P}\!\left(\left|\hat{\Theta}^{(2)}_r(x,x') - K_{\infty}(\rho)\right|\;\ge\;\epsilon\right)\;\le\;C_1\,\exp\!\left(-C_2\,r\,\epsilon^2\right).
+\]
+\end{corollary}
+
+\subsection{Proof of Corollary~\ref{cor:three_layer_ntk_concentration}: Concentration bound for three-layer NTK}
 \label{appendix:proof-three-layer-ntk-concentration}
 
 \begin{proof}
@@ -529,7 +850,7 @@ I(r) \;=\; \frac{(r-2)\,2^{\,r-\frac{5}{2}}}{\sqrt{2\pi}}\;
 C_1(r),\qquad
 C_1(r) \;=\; \frac{\Gamma\!\left(r-\tfrac{1}{2}\right)\Gamma\!\left(r-\tfrac{3}{2}\right)}{\Gamma(r-1)^2}.
 \end{align}
-The asymptotic scaling \( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \) is established in Proposition~\ref{prop:I-r-scaling} (Appendix~\ref{appendix:I-r-scaling}). In particular, the leading Puiseux coefficient
+The asymptotic scaling \( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \) is established in Proposition~\ref{prop:I-r-scaling-appendix} (Appendix~\ref{appendix:I-r-scaling}). In particular, the leading Puiseux coefficient
 \begin{align}
 1 - \left[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\right]\,t^{1/2} + O(t^{3/2})
 \end{align}
@@ -548,7 +869,7 @@ The extension to general depth \( L \ge 3 \) remains open. A rigorous proof woul
 \subsection{Asymptotic scaling of \( I(r) \)}\label{appendix:I-r-scaling}
 The Fisher--Kibble integral \( I(r) \) defined in \eqref{eq:I-r-closed-form} governs the \( r \)-dependent coefficient in the mean NTK's Puiseux expansion near \( \rho=1 \). The following proposition gives its scaling as \( r \to \infty \).
 
-\begin{proposition}[\( I(r) \) decays as \( 1/\sqrt{r} \)]\label{prop:I-r-scaling}
+\begin{proposition}[\( I(r) \) decays as \( 1/\sqrt{r} \)]\label{prop:I-r-scaling-appendix}
 Let \( I(r) \) be as in \eqref{eq:I-r-closed-form} with \( C_1(r) = \Gamma(r-\tfrac{1}{2})\Gamma(r-\tfrac{3}{2})/\Gamma(r-1)^2 \). Then
 \begin{equation}
 I(r) \;\sim\; \frac{C}{\sqrt{r}} \quad \text{as } r\to\infty,\qquad \text{for some } C > 0,
@@ -560,86 +881,279 @@ Using the Beta representation \( B((r-1)/2,\,r/2-1) = \Gamma((r-1)/2)\Gamma(r/2-
 \end{proof}
 
 Implications: (i)~the Puiseux coefficient \( c_1(r) = -\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \) satisfies \( c_1(r) \to -2/\pi \) as \( r\to\infty \), recovering the shallow ReLU constant; (ii)~the Fisher--Kibble correction to the mean NTK is \( O(1/(r\sqrt{r})) \) in the \( t^{1/2} \) term when \( I(r) \sim C/\sqrt{r} \).
+\section{Proofs for depth scaling}\label{appendix:depth-scaling-proofs}
 
+\subsection{Correlation propagation and inverse cosine distances}\label{appendix:inverse-cosine-background}
+For ReLU activation, the RF-LR architecture uses the same EOC parameterization as standard MLPs~\cite{hayou2018selectioninitializationactivationfunction}. The forward correlation map induced by ReLU is the same as in~\cite{terjek2025mlpsateoc}; in particular, if we define a deterministic cosine recursion \( \rho_k = \varrho(\rho_{k-1}) \) (the infinite-width/full-rank idealization), then for ReLU \( \Delta_\phi = 1/2 \) (i.e. \( a = b = 1/\sqrt{2} \) in \( (a,b) \)-ReLU notation).
 
+\begin{definition}[Cosine map for ReLU at EOC]
+For ReLU, set \( \Delta_\phi = 1/2 \). The cosine map \( \varrho : [-1,1] \to [-1,1] \) and its derivative \( \varrho' \) satisfy
+\[
+\varrho(\rho) = \rho + \Delta_\phi\,\frac{2}{\pi}\bigl( \sqrt{1-\rho^2} - \rho\arccos(\rho) \bigr),\qquad
+\varrho'(\rho) = 1 - \Delta_\phi\,\frac{2}{\pi}\arccos(\rho).
+\]
+We write \( \rho_k = \varrho(\rho_{k-1}) \) for the (deterministic) limiting correlation at layer \( k \).
+\end{definition}
 
+To a cosine \( \rho \in (-1,1) \), we associate the squared cosine distance \( z = (1-\rho)/2 \in (0,1) \) and the inverse cosine distance \( w = z^{-1/2} \in (1,\infty) \).
 
+\begin{definition}[Squared and inverse cosine distance maps]
+Define \( \zeta : [0,1] \to [0,1] \) by \( \zeta(z) = (1 - \varrho(1-2z))/2 \) and \( \omega : (1,\infty) \to (1,\infty) \) by \( \omega(w) = \zeta(w^{-2})^{-1/2} \). Then \( \omega \) is convex and satisfies
+\[
+\omega(w) = w + \Delta_\phi\,\frac{4}{3\pi} + \frac{3}{2}\Bigl(\Delta_\phi\,\frac{4}{3\pi}\Bigr)^2 w^{-1} + O(w^{-2}).
+\]
+\end{definition}
 
-
-\section{Spectrum of 3-layers Gram NTK Matrix}
-\label{appendix:spectral-theory}
-
-\subsection{Asymptotic Signal-Noise Decomposition}
-\label{appendix:signal-noise-decomposition}
-
-\begin{proof}[Proof of Theorem~\ref{thm:kernel_clt}]
-\label{appendix:proof-kernel-clt}
-We establish the asymptotic distribution of the empirical kernel \( \hat{\Theta}^{(2)}_r = \Psi(\hat{\rho}_r,\hat{w}_r) \) via a joint CLT and the multivariate Delta method. Let \( \mathbf{Z}_r = (\hat{\rho}_r,\,\hat{w}_r)^\top \). For isotropic Gaussian projections in rank \( r \), Fisher's theory~\cite{fisher1915probable,hotelling1953new} gives
-\begin{align}
-\sqrt{r}\,(\hat{\rho}_r-\rho) \;\xrightarrow{d}\; \mathcal{N}\!\left(0,\,(1-\rho^2)^2\right).
-\end{align}
-Writing \( u=\|x\|^2 \), \( v=\|y\|^2 \) and \( \hat{w}_r=\sqrt{uv}/r \), Kibble's bivariate chi-square yields
-\begin{align}
-\sqrt{r}\,(\hat{w}_r-1) \;\xrightarrow{d}\; \mathcal{N}\!\left(0,\,1+\rho^2\right).
-\end{align}
-Angular and radial components are independent for isotropic Gaussians, hence
-\begin{align}
-\sqrt{r}\,\Big(\mathbf{Z}_r - (\rho,1)^\top\Big) \;\xrightarrow{d}\; \mathcal{N}\!\Big(\mathbf{0},\ \mathbf{\Lambda}(\rho)\Big),
-\quad
-\mathbf{\Lambda}(\rho) \;=\; \begin{pmatrix}
-(1-\rho^2)^2 & 0\\[2pt]
-0 & 1+\rho^2
-\end{pmatrix}.
-\end{align}
-The map \( \Psi(u,w)=\Theta^{(1)}(u)\big(1-\arccos(u)/\pi\big) + w\,\Sigma^{(1)}(u)+1 \) is \( C^1 \) near \( (\rho,1) \). Therefore,
-\begin{align}
-\sqrt{r}\,\Big(\Psi(\mathbf{Z}_r) - \Psi(\rho,1)\Big) \;\xrightarrow{d}\; \mathcal{N}\!\Big(0,\ \nabla\Psi(\rho,1)^\top \mathbf{\Lambda}(\rho)\,\nabla\Psi(\rho,1)\Big).
-\end{align}
-We have \( \partial_u \Psi(\rho,1) = \partial_\rho K_\infty(\rho) \) and \( \partial_w \Psi(\rho,1) = \Sigma^{(1)}(\rho) \). Using the diagonal covariance, we obtain
-\begin{align}
-\sigma_{\mathrm{tot}}^2(\rho)
-\;=\; \big(\partial_\rho K_\infty(\rho)\big)^2\,(1-\rho^2)^2 \;+\; \big(\Sigma^{(1)}(\rho)\big)^2\,(1+\rho^2).
-\end{align}
-Hence
-\begin{align}
-\hat{\Theta}^{(2)}_r \;=\; K_\infty(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) \;+\; o_p(r^{-1/2}),
-\quad
-\mathcal{G}(\rho)\sim \mathcal{N}\!\big(0,\sigma_{\mathrm{tot}}^2(\rho)\big),
-\end{align}
-which proves the claim.
-\end{proof}
-
-\subsection{Proof of Theorem~\ref{thm:spike-bulk}: Deformed Marchenko–Pastur with Spike}
-\label{appendix:marchenko-pastur}
-
+\begin{proposition}[Inverse cosine distance propagation for RF-LR]\label{prop:rflr-inverse-cosine-prop}
+Given \( w \in (1,\infty) \), for \( k \in \mathbb{N} \) we have
+\[
+\bigl\vert \omega^{\circ k}(w) - \bigl( w + \Delta_\phi\,\tfrac{4}{3\pi}(k-1) + \Delta_\phi\,\tfrac{2}{\pi}\log\bigl( \Delta_\phi^{-1}\,\tfrac{3\pi}{4}\,w + k - 1 \bigr) \bigr) \bigr\vert \le O(1).
+\]
+\end{proposition}
 \begin{proof}
-\label{appendix:proof-spike-bulk}
-We prove Theorem~\ref{thm:spike-bulk} by a direct application of~\citet[Theorem~2.1]{El_Karoui_2010}, which describes the limiting spectrum of high-dimensional \emph{inner-product kernel matrices}.
+This is a statement about the iterates of the inverse cosine distance map \(\omega\), so what we must justify is that \(\omega\) is indeed the correct map governing the \emph{RF-LR} correlation recursion.
 
-\paragraph{Setting (deterministic kernel matrix).}
-Let \(x_1,\dots,x_n\in\mathbb{R}^d\) be generated as in Assumption~\ref{assump:RMT-conditions} with \(d\to\infty\) and \(n/d\to\gamma_{\mathrm{ratio}}\in(0,\infty)\). Let \(X=[x_1,\dots,x_n]\in\mathbb{R}^{d\times n}\).
-Define the (uncentered) kernel Gram matrix \(\mathbf{M}\in\mathbb{R}^{n\times n}\) by
+\paragraph{Step 1: RF-LR correlation map (idealized) equals the ReLU cosine map.}
+Fix a layer \(\ell\ge 2\) and two inputs \((x,x')\). Write the RF-LR layer as
 \[
-\mathbf{M}_{ij} \;=\; f\!\Big(\frac{x_i^\top x_j}{d}\Big),
+\bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{n_\ell}}\sum_{j=1}^{n_\ell} A^{(\ell)}_{j}\,\ReLU\!\big(w^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big),
 \qquad
-f(t)\;=\;K_\infty(t),
+\bm{h}^{(\ell)}(x') = \frac{1}{\sqrt{n_\ell}}\sum_{j=1}^{n_\ell} A^{(\ell)}_{j}\,\ReLU\!\big(w^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')\big),
 \]
-where \(K_\infty(\cdot)\) is the deterministic three-layer kernel function defined in the main text.
-By the smoothness discussion in Section~\ref{sec:depth-scaling} and the regularity conditions in Assumption~\ref{assump:RMT-conditions}, \(f\) satisfies the differentiability hypotheses required by~\cite{El_Karoui_2010}.
+where \(A^{(\ell)}_{j}\in\mathbb{R}^{r}\) is the (random) readout column and \(w^{(\ell)}_j\) is the frozen random feature direction. Assume the standard RF-LR initialization: \(\{A^{(\ell)}_{j}\}_{j=1}^{n_\ell}\) are i.i.d. centered with \(\mathbb{E}[A^{(\ell)}_{j}A^{(\ell)\top}_{j}]=\sigma_A^2 I_r\), independent of \(\{w^{(\ell)}_j\}_{j=1}^{n_\ell}\), and take the sequential infinite-width limit \(n_\ell\to\infty\) (Definition~\ref{def:base-derivative-kernels}).
 
-\paragraph{El Karoui linearization.}
-\citet[Theorem~2.1]{El_Karoui_2010} implies that \(\mathbf{M}\) is asymptotically equivalent in operator norm to a spike-plus-Wishart-plus-shift matrix of the form
+Condition on \(\bm{h}^{(\ell-1)}(x),\bm{h}^{(\ell-1)}(x')\). As \(n_\ell\to\infty\), a conditional law of large numbers yields the usual ReLU Gaussian expectations for the (normalized) inner product and norms, and the isotropic factor \(\mathbb{E}\|A^{(\ell)}_{j}\|^2\) cancels in the cosine ratio; thus the induced correlation recursion is the ReLU cosine map \(\varrho\) (for finite \(r\), fluctuations occur at scale \(O(r^{-1/2})\); see Appendix~\ref{appendix:fisher-kibble}).\iffalse
 \[
-\mathbf{K} \;=\; \alpha\,\mathbf{1}\mathbf{1}^\top \;+\; \beta\,\frac{X^\top X}{d} \;+\; \gamma\,I_n,
+\mathbb{E}\big[\bm{h}^{(\ell)}(x)\cdot \bm{h}^{(\ell)}(x') \,\big|\, \bm{h}^{(\ell-1)}\big]
+:= \frac{1}{n_\ell}\sum_{j=1}^{n_\ell}\mathbb{E}\big[\|A^{(\ell)}_{j}\|^2\big]\,
+\mathbb{E}\big[\ReLU(U_j)\ReLU(V_j)\,\big|\,\bm{h}^{(\ell-1)}\big],
 \]
-where the coefficients are determined by \(f\) and the trace limit \(\ell=\lim_{d\to\infty}\mathrm{trace}(\Sigma_d)/d\):
+where \((U_j,V_j)=(w_j^{(\ell)\top}\bm{h}^{(\ell-1)}(x),\,w_j^{(\ell)\top}\bm{h}^{(\ell-1)}(x'))\) is a centered bivariate Gaussian conditional on \(\bm{h}^{(\ell-1)}\), with correlation equal to the (random) sample cosine \(\rho_{\ell-1}(x,x')\). The same computation gives
 \[
-\alpha=f(0)=K_\infty(0),\qquad
-\beta=f'(0)=K_\infty'(0),\qquad
-\gamma=f(\ell)-f(0)-\ell f'(0)=K_\infty(\ell)-K_\infty(0)-\ell K_\infty'(0).
+\mathbb{E}\big[\|\bm{h}^{(\ell)}(x)\|^2 \,\big|\, \bm{h}^{(\ell-1)}\big]
+:= \frac{1}{n_\ell}\sum_{j=1}^{n_\ell}\mathbb{E}\big[\|A^{(\ell)}_{j}\|^2\big]\,
+\mathbb{E}\big[\ReLU(U_j)^2\,\big|\,\bm{h}^{(\ell-1)}\big],
 \]
-The rank-one term \(\alpha\,\mathbf{1}\mathbf{1}^\top\) yields a single eigenvalue of order \(n\) (the spike). The remaining \(n-1\) eigenvalues are those of the shifted sample covariance term \(\beta X^\top X/d+\gamma I_n\), whose empirical distribution converges to a (deformed) Marchenko--Pastur law with support \([\gamma+\beta(1-\sqrt{\gamma_{\mathrm{ratio}}})^2,\ \gamma+\beta(1+\sqrt{\gamma_{\mathrm{ratio}}})^2]\) under Assumption~\ref{assump:RMT-conditions}. This matches the statement of Theorem~\ref{thm:spike-bulk}.
+and similarly for \(x'\). Passing to the limit \(n_\ell\to\infty\), the empirical averages converge to the corresponding ReLU Gaussian expectations; crucially, the (isotropic) factor \(\mathbb{E}\|A^{(\ell)}_{j}\|^2\) cancels in the cosine ratio.
+Therefore, in the deterministic proxy recursion (where one replaces the random sample cosines \(\rho_{\ell-1}(x,x')\) by their correlation parameters and studies the induced map on those parameters), the RF-LR correlation recursion is governed by the same ReLU cosine map \(\varrho\) as in~\cite{terjek2025mlpsateoc}.
+For finite bottleneck dimension \(r\), \(\rho_{\ell-1}(x,x')\) remains random; justifying the deterministic recursion requires \(r\)-dependent concentration (which in this work is handled via Fisher--Kibble/Fisher-type asymptotics and leads to \(O(r^{-1/2})\)-scale fluctuations).
 
-\paragraph{Scope note.}
-The theorem concerns the deterministic kernel matrix \(f(x_i^\top x_j/d)\). Incorporating additional entrywise randomness (e.g. finite-\(r\) Fisher--Kibble fluctuations or finite-width effects) into the limiting ESD requires further resolvent/local-law inputs and is outside the scope of this appendix.
+\fi
+\paragraph{Step 2: reduce to iterates of \(\omega\).}
+With \(z_k=(1-\rho_k)/2\) and \(w_k=z_k^{-1/2}\), we have \(z_{k}=\zeta(z_{k-1})\) and therefore \(w_k=\omega(w_{k-1})\), i.e. \(w_k=\omega^{\circ(k-1)}(w_1)\).
+
+\paragraph{Step 3: asymptotics of \(\omega^{\circ k}\).}
+The iterate asymptotic is available in~\cite[Proposition~3]{terjek2025mlpsateoc}.
 \end{proof}
+
+\subsection{RF-LR NTK: recursion-driven depth scaling (not the full-MLP closed form)}
+For fully trained MLPs at the edge of chaos, the limiting NTK admits an explicit expression in terms of the cosine map and its derivative~\cite[Proposition~4]{terjek2025mlpsateoc}. This relies on training all weight layers. In RF-LR, only the readouts \(A^{(\ell)}\) (and biases \(c^{(\ell)}\)) are trained and the features \(w^{(\ell)}\) are frozen; consequently the RF-LR NTK is described by our recursion (Theorem~\ref{thm:ntk_recursion}) and its closed form (Corollary~\ref{cor:general_L_layer_ntk}, Eq.~\eqref{eq:ntk_explicit_form}) in terms of \(\Sigma^{(\ell)}\) and \(\dot{\Sigma}^{(\ell)}\).
+
+The inverse cosine distance framework is useful here at the level of controlling the depth evolution of correlations (hence of \(\Sigma^{(\ell)}\) and \(\dot{\Sigma}^{(\ell)}\)), rather than by importing the fully trained NTK identity.
+
+\subsection{Inverse cosine distance matrices and spectral bounds}
+To formulate dataset-level depth scaling, we work with the deterministic correlation recursion (the mean/infinite-width idealization). Given a dataset \( \{x_1,\ldots,x_n\} \subset \mathbb{R}^{d} \), set
+\[
+\rho_{1,ij} \;=\; \frac{\langle x_i,x_j\rangle}{\|x_i\|\,\|x_j\|}\in[-1,1],
+\qquad
+\rho_{k,ij} \;=\; \varrho(\rho_{k-1,ij}),\quad k\ge 2.
+\]
+Define the layer-\( k \) inverse cosine distance matrix \( W_k \in \mathbb{S}^n \) by
+\[
+(W_k)_{i,i} = 0,\qquad (W_k)_{i_1,i_2} = \biggl( \frac{1 - \rho_{k,i_1 i_2}}{2} \biggr)^{-1/2},\quad i_1 \neq i_2,
+\]
+so that \(W_k\) is the inverse cosine distance matrix associated to \(\rho_k\).
+
+\begin{proposition}[Spectral bounds for RF-LR inverse cosine distance matrices]\label{prop:rflr-w-spectral}
+Assume EOC initialization and a dataset with no parallel pairs. For each \( k \in [1:L] \) there exists \( \widehat{W}_k \in (1,\infty) \) with \( \widehat{W}_k = \Theta_{W_1}(1) \) such that
+\[
+\bigl\Vert W_k - \omega^{\circ(k-1)}(\widehat{W}_k)\,(\mathbf{1}_n\mathbf{1}_n^\top - I_n) \bigr\Vert \le O(\Delta_\phi\, n^{-1} k) + O(1).
+\]
+\end{proposition}
+\begin{proof}
+This follows from~\cite[Proposition~6]{terjek2025mlpsateoc} applied to the deterministic recursion \( \rho_{k,ij}=\varrho(\rho_{k-1,ij}) \). The argument relies on convexity/monotonicity of \( \omega \) and standard matrix comparison estimates.
+\end{proof}
+
+\subsection{Preliminaries and full statements for Section~\ref{subsec:rflr-terjek-generalization}}\label{appendix:mean-depth-theorem-preliminaries}
+\paragraph{Scalar ReLU kernels as functions of cosine similarity.}
+For unit-variance ReLU features, write \( \theta=\arccos(\rho) \). The normalized base and derivative kernels are
+\[
+s(\rho) \;=\; \frac{1}{2\pi}\bigl((\pi-\theta)\cos\theta + \sin\theta\bigr),
+\qquad
+\dot{s}(\rho) \;=\; \frac{1}{2}-\frac{\theta}{2\pi}.
+\]
+Near \( \rho=1 \), parameterize by the inverse cosine distance \( w=((1-\rho)/2)^{-1/2} \), so that \( \rho = 1-2w^{-2} \) and \( \theta = 2w^{-1}+O(w^{-3}) \). Then
+\begin{equation}\label{eq:relu-kernel-expansions-w}
+\dot{s}(\rho) \;=\; \frac{1}{2}-\frac{1}{\pi w}+O(w^{-3}),
+\qquad
+s(\rho)\;=\;\frac{1}{2}-\frac{1}{w^{2}}+O(w^{-3}).
+\end{equation}
+
+\paragraph{Deterministic proxy RF-LR entrywise recursion.}
+Fix an input pair \((x,x')\) with input cosine similarity \(\rho_1\in(-1,1)\). Define a deterministic correlation recursion \(\rho_{k}=\varrho(\rho_{k-1})\) and \(w_k=((1-\rho_k)/2)^{-1/2}\). Define the scalar deterministic proxy RF-LR NTK by
+\begin{equation}\label{eq:rflr-scalar-mean-ntk-rec}
+\Theta^{(1)}(\rho_1) \;=\; 1 + s(\rho_1),
+\qquad
+\Theta^{(k)}(\rho_1) \;=\; 1 + \frac{1}{r}\,\Theta^{(k-1)}(\rho_1)\,\dot{s}(\rho_k) + \frac{1}{r}\,s(\rho_k),\quad k\ge 2.
+\end{equation}
+This recursion should be viewed as a deterministic proxy: it is obtained from Theorem~\ref{thm:ntk_recursion} by replacing the random fields \(\Sigma^{(k)},\dot{\Sigma}^{(k)}\) with their scalar ReLU dual functions \(s(\cdot),\dot{s}(\cdot)\) evaluated along the deterministic correlation coefficients \(\rho_k\).
+
+\paragraph{Full statement of Proposition~\ref{prop:equicorrelated-gap}.}
+Fix \(L\ge 2\) and \(r>1\). Consider a dataset \(\{x_i\}_{i=1}^n\) with \(\|x_i\|=1\) and \(\rho_{1,ij}=\rho_0\in(-1,1)\) for all \(i\neq j\). Let
+\[
+K^{(L)}_{ij} := \Theta^{(L)}(\rho_{1,ij}),
+\qquad
+H := I_n-\frac{1}{n}\mathbf{1}\mathbf{1}^\top,
+\qquad
+K^{(L)}_c := HK^{(L)}H.
+\]
+Then \(K^{(L)} = \Theta^{(L)}(1)\,I_n + \Theta^{(L)}(\rho_0)\,(\mathbf{1}\mathbf{1}^\top-I_n)\). In particular, the nonzero eigenvalues of \(K^{(L)}_c\) are all equal to
+\[
+\lambda_\perp(K^{(L)}) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0),
+\]
+with multiplicity \(n-1\). Moreover, by Theorem~\ref{thm:rflr-depth-scaling-mean}, there exist constants \(0<c_\Delta<C_\Delta<\infty\) (depending on \(r,\rho_0\)) such that for all sufficiently large \(L\),
+\[
+\frac{c_\Delta}{r\,L} \;\le\; \lambda_\perp(K^{(L)}) \;\le\; \frac{C_\Delta}{r\,L}.
+\]
+
+\paragraph{Full statement of Proposition~\ref{prop:equicorrelated-spectrum}.}
+Under the assumptions above, the eigenvalues of the uncentered Gram matrix \(K^{(L)}\) are explicit:
+\[
+\lambda_1\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1) + (n-1)\Theta^{(L)}(\rho_0),
+\qquad
+\lambda_2\!\bigl(K^{(L)}\bigr)=\cdots=\lambda_n\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0).
+\]
+In particular, \(\lambda_1(K^{(L)})\) is a rank-one spike aligned with \(\mathbf{1}\), while the spectrum on \(\mathbf{1}^\perp\) equals \(\lambda_\perp(K^{(L)})\).
+Moreover, as \(L\to\infty\) (with \(r\) fixed) the spike saturates:
+\[
+\lambda_1\!\bigl(K^{(L)}\bigr)
+\;=\;
+n\,\Theta_\star(r) \;+\; O\!\Big(\frac{n}{L}\Big),
+\qquad
+\Theta_\star(r)=\frac{2r+1}{2r-1}=1+O\!\Big(\frac{1}{r}\Big),
+\]
+and \(\lambda_\perp(K^{(L)})=\Theta(1/(rL))\). Thus, in this model the depth/rank scaling is
+\[
+\lambda_{\max}(K^{(L)}) \asymp n\Bigl(1+\frac{1}{r}\Bigr),\qquad
+\lambda_{\min}\!\bigl(HK^{(L)}H\bigr) \asymp \frac{1}{rL}.
+\]
+
+\subsection{Proof of Theorem~\ref{thm:rflr-depth-scaling-mean}}\label{appendix:proof-rflr-depth-scaling-mean}
+\begin{proof}
+\paragraph{Step 1: correlation alignment.}
+By Proposition~\ref{prop:rflr-inverse-cosine-prop}, there exists a constant \(C_w<\infty\) such that for all \(k\ge 1\),
+\[
+w_k=\omega^{\circ(k-1)}(w_1)
+:= w_1 + c_0 (k-1) + c_1 \log\!\bigl(c_2 w_1 + k - 1\bigr) + \varepsilon_k,
+\qquad |\varepsilon_k|\le C_w,
+\]
+where \(c_0=\Delta_\phi\,\frac{4}{3\pi}>0\), \(c_1=\Delta_\phi\,\frac{2}{\pi}\), \(c_2=\Delta_\phi^{-1}\frac{3\pi}{4}\). In particular, \(w_k\ge w_1+c_0(k-1)-C_w\), so choosing \(k_0\) large enough gives \(w_k\ge \frac{c_0}{2}k\) for all \(k\ge k_0\). Similarly \(w_k\le c_+k\) for some \(c_+<\infty\) and all \(k\ge k_0\). Thus \(c_-k\le w_k\le c_+k\) for \(k\ge k_0\), and \(1-\rho_k=2w_k^{-2}=O(k^{-2})\).
+
+\paragraph{Step 2: kernel saturation.}
+Write \(\Theta_k=\Theta^{(k)}(\rho_1)\) and rewrite \eqref{eq:rflr-scalar-mean-ntk-rec} as
+\[
+\Theta_k=b_k+a_k\Theta_{k-1},\qquad a_k=\frac{1}{r}\dot{s}(\rho_k),\qquad b_k=1+\frac{1}{r}s(\rho_k).
+\]
+For the limiting constant-coefficient recursion (corresponding to \(\rho_k\to 1\)), we have \(a=\frac{1}{r}\dot{s}(1)=\frac{1}{2r}\), \(b=1+\frac{1}{r}s(1)=1+\frac{1}{2r}\), hence \(\Theta_\star(r)=b/(1-a)=(2r+1)/(2r-1)\).
+
+Set \(e_k=\Theta_k-\Theta_\star(r)\). Then
+\[
+e_k=a_k e_{k-1} + (b_k-b) + (a_k-a)\Theta_\star(r).
+\]
+Using \eqref{eq:relu-kernel-expansions-w} and \(w_k\ge c_-k\) for \(k\ge k_0\), there exists \(C<\infty\) such that for all \(k\ge k_0\),
+\[
+|a_k-a|
+:=\frac{1}{r}\Bigl|\dot{s}(\rho_k)-\frac12\Bigr|
+\le \frac{C}{r}\frac{1}{w_k}
+\le \frac{C}{r}\frac{1}{k},
+\qquad
+|b_k-b|
+:=\frac{1}{r}\Bigl|s(\rho_k)-\frac12\Bigr|
+\le \frac{C}{r}\frac{1}{w_k^2}
+\le \frac{C}{r}\frac{1}{k^2}.
+\]
+Moreover \(0\le a_k\le a=1/(2r)<1\). Hence for all \(k\ge k_0\),
+\[
+|e_k|\le a\,|e_{k-1}|+\frac{C'}{k}
+\]
+for some \(C'<\infty\). A standard induction (discrete Grönwall) yields \(|e_k|\le C_\Theta/k\) for all \(k\ge 1\), in particular \(e_k\to 0\) and \(\Theta_k\to\Theta_\star(r)\).
+
+To make the \(O(1/k)\) rate explicit, fix \(k\ge k_0\) and iterate the one-step inequality:
+\[
+|e_k|
+\le a^{k-k_0}|e_{k_0}| + \sum_{j=k_0+1}^{k} a^{k-j}\frac{C'}{j}.
+\]
+Since \(j\ge k_0+1\) implies \(1/j\le 1/k_0\) and also \(j\le k\) implies \(1/j\le 1/k\), we can bound
+\[
+\sum_{j=k_0+1}^{k} a^{k-j}\frac{1}{j}
+\le \frac{1}{k}\sum_{t=0}^{k-k_0-1} a^{t}
+\le \frac{1}{k}\cdot\frac{1}{1-a}.
+\]
+Also \(a^{k-k_0}|e_{k_0}|\le |e_{k_0}|\le (k_0|e_{k_0}|)/k\). Therefore for all \(k\ge k_0\),
+\[
+|e_k|\le \frac{1}{k}\Bigl(k_0|e_{k_0}|+\frac{C'}{1-a}\Bigr).
+\]
+Absorbing the finitely many values \(k<k_0\) into the constant gives \(|e_k|\le C_\Theta/k\) for all \(k\ge 1\), as claimed.
+
+\paragraph{Step 3: diagonal--off-diagonal gap.}
+Let \(\Theta^{\mathrm{diag}}_k=\Theta^{(k)}(1)\) and \(\Theta^{\mathrm{off}}_k=\Theta^{(k)}(\rho_1)\), and set \(\Delta_k=\Theta^{\mathrm{diag}}_k-\Theta^{\mathrm{off}}_k\ge 0\). The diagonal recursion is \(\Theta^{\mathrm{diag}}_k=b+a\,\Theta^{\mathrm{diag}}_{k-1}\), while the off-diagonal recursion is \(\Theta^{\mathrm{off}}_k=b_k+a_k\Theta^{\mathrm{off}}_{k-1}\). Subtracting gives the exact identity
+\[
+\Delta_k
+:=a\,\Delta_{k-1} + (a-a_k)\Theta^{\mathrm{off}}_{k-1} + (b-b_k).
+\]
+For \(k\) large, \(\Theta^{\mathrm{off}}_{k-1}\) is bounded above and below by positive constants (since \(\Theta^{\mathrm{off}}_k\to\Theta_\star(r)\in(1,\infty)\)). Also by \eqref{eq:relu-kernel-expansions-w} and \(w_k\asymp k\),
+\[
+a-a_k=\frac{1}{r}\Bigl(\frac12-\dot{s}(\rho_k)\Bigr)=\Theta\!\Big(\frac{1}{r\,w_k}\Big)=\Theta\!\Big(\frac{1}{r\,k}\Big),
+\qquad
+b-b_k=\frac{1}{r}\Bigl(\frac12-s(\rho_k)\Bigr)=O\!\Big(\frac{1}{r\,w_k^2}\Big)=O\!\Big(\frac{1}{r\,k^2}\Big).
+\]
+Thus there exist \(k_1\) and constants \(0<c<C<\infty\) such that for all \(k\ge k_1\),
+\[
+a\,\Delta_{k-1}+\frac{c}{r\,k}\le \Delta_k\le a\,\Delta_{k-1}+\frac{C}{r\,k}.
+\]
+Iterating these comparison recursions yields \(c_\Delta/(rk)\le \Delta_k\le C_\Delta/(rk)\) for all \(k\ge k_1\), completing the proof.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:equicorrelated-gap}}\label{appendix:proof-equicorrelated-gap}
+\begin{proof}
+The explicit form of \(K^{(L)}\) follows from \(\rho_{1,ii}=1\) and \(\rho_{1,ij}=\rho_0\) for \(i\neq j\). The matrix \(\mathbf{1}\mathbf{1}^\top-I_n\) has eigenvalue \(n-1\) along \(\mathbf{1}\) and eigenvalue \(-1\) on \(\mathbf{1}^\perp\). Therefore \(K^{(L)}\) has eigenvalue \(\Theta^{(L)}(1)+(n-1)\Theta^{(L)}(\rho_0)\) along \(\mathbf{1}\) and eigenvalue \(\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\) on \(\mathbf{1}^\perp\). Since \(H\) is the orthogonal projection onto \(\mathbf{1}^\perp\), the nonzero eigenvalues of \(K^{(L)}_c=HK^{(L)}H\) are exactly the \(\mathbf{1}^\perp\) eigenvalues of \(K^{(L)}\), with multiplicity \(n-1\). The \(1/(rL)\) bounds then follow from Theorem~\ref{thm:rflr-depth-scaling-mean} applied to \(\rho_1=\rho_0\).
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:equicorrelated-spectrum}}\label{appendix:proof-equicorrelated-spectrum}
+\begin{proof}
+The eigenvalue identities are the \(\mathbf{1}\) and \(\mathbf{1}^\perp\) eigenvalues established in the proof of Proposition~\ref{prop:equicorrelated-gap}. The constant-mode saturation follows from Theorem~\ref{thm:rflr-depth-scaling-mean}: both \(\Theta^{(L)}(1)\) and \(\Theta^{(L)}(\rho_0)\) converge to \(\Theta_\star(r)\) at rate \(O(1/L)\), hence
+\[
+\bigl|\lambda_1(K^{(L)})-n\Theta_\star(r)\bigr|
+\le \bigl|\Theta^{(L)}(1)-\Theta_\star(r)\bigr| + (n-1)\bigl|\Theta^{(L)}(\rho_0)-\Theta_\star(r)\bigr|
+:= O\!\Big(\frac{n}{L}\Big).
+\]
+Finally, \(\lambda_{\max}(K^{(L)})\asymp n(1+1/r)\) follows from \(\lambda_1(K^{(L)})\sim n\Theta_\star(r)\) and \(\Theta_\star(r)=(2r+1)/(2r-1)=1+O(1/r)\), while \(\lambda_{\min}(HK^{(L)}H)=\lambda_\perp(K^{(L)})\asymp 1/(rL)\) follows from Proposition~\ref{prop:equicorrelated-gap}.
+\end{proof}
+
+\subsection{Remark: proxy lower bounds vs positivity (smallest eigenvalue)}\label{appendix:lambda-min-negative}
+\begin{remark}[Can the smallest eigenvalue become negative?]\label{rmk:lambda-min-negative-appendix}
+No: for any finite network, the empirical NTK Gram matrix \(\widehat{K}\) at initialization is a Gram matrix of gradients,
+\(\widehat{K}_{ij}=\langle \nabla_\theta f(x_i),\nabla_\theta f(x_j)\rangle\), hence \(\widehat{K}\succeq 0\) deterministically and all its eigenvalues are \(\ge 0\).
+Moreover, centering preserves positive semidefiniteness: \(H\widehat{K}H\succeq 0\) since \(H\) is an orthogonal projection.
+
+What \emph{can} happen is that the deterministic proxy lower bound (e.g. \(\lambda_{\min}(HK^{(L)}H)\asymp 1/(rL)\) in Proposition~\ref{prop:equicorrelated-gap}) is smaller than the magnitude of random fluctuations.
+In general, Weyl's inequality gives
+\[
+\lambda_{\min}(H\widehat{K}H)\;\ge\;\lambda_{\min}(HKH)\;-\;\|H(\widehat{K}-K)H\|,
+\]
+so if \(\|H(\widehat{K}-K)H\|\) is larger than \(1/(rL)\), this bound becomes vacuous (it may be negative), but the true eigenvalue still satisfies \(\lambda_{\min}(H\widehat{K}H)\ge 0\).
+Thus, the relevant concern is not ``going below zero'' but rather ``being driven close to zero'' when the \(1/(rL)\) signal is swamped by noise.
+\end{remark}
+
+\subsection{Remark: infinite-depth limit after centering}\label{appendix:infinite-depth-limit}
+\begin{remark}[Infinite-depth limit: existence and degeneracy after centering]\label{rmk:infinite-depth-limit-appendix}
+The correlation recursion satisfies \(1-\rho_k=O(k^{-2})\) as in full-width MLPs at the EOC~\cite{terjek2025mlpsateoc,pmlr-v163-hayou22a}, so deep features become increasingly aligned.
+For the \emph{mean} RF-LR NTK recursion \eqref{eq:rflr-scalar-mean-ntk-rec}, Theorem~\ref{thm:rflr-depth-scaling-mean} implies that for any fixed \(\rho_1\in(-1,1)\),
+\[
+\Theta^{(L)}(\rho_1)\to \Theta_\star(r)\qquad\text{and}\qquad
+\Theta^{(L)}(1)\to \Theta_\star(r),
+\]
+so the entrywise infinite-depth limit of the (mean) Gram matrix is a constant kernel: \(K^{(L)}\to \Theta_\star(r)\,\mathbf{1}\mathbf{1}^\top\).
+Consequently, after centering one has \(HK^{(L)}H\to 0\), and the relevant spectrum on \(\mathbf{1}^\perp\) collapses.
+In particular, in the equicorrelated model Proposition~\ref{prop:equicorrelated-gap} gives \(\lambda_{\min}(HK^{(L)}H)=\Theta(1/(rL))\), so a \emph{non-degenerate} deep limit on \(\mathbf{1}^\perp\) can only hold under a joint scaling (e.g. \(r\) growing with \(L\)) or after an explicit rescaling, such as considering \(rL\,HK^{(L)}H\), whose nonzero eigenvalues are \(rL\,\lambda_\perp(K^{(L)})\in[c_\Delta,C_\Delta]\) for all large \(L\).
+\end{remark}

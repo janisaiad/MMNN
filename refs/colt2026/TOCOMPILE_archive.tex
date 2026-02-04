@@ -187,7 +187,7 @@ The considered architecture is:
     \node[red] at (6,-2.8) {\textbf{Component}};
     
     \end{tikzpicture}
-    \caption{Architecture of a Multi-component Multi-layer Neural Network (MMNN) with a low-rank intermediate layer. The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons.
+    \caption{Architecture of a low-rank random-feature network (RF-LR) with a low-rank intermediate layer. The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons.
     We only train the output weights $\bm{A}^{(1)}$ and $\bm{A}^{(2)}$.}
     \label{fig:mmnn_architecture}
 \end{figure}
@@ -944,7 +944,7 @@ We compare a low-rank MMNN with rank \( r \) bottleneck and parameter budget \( 
 
 \paragraph{NTK spectrum comparison (TO BE COMPLETED).}
 \textbf{Experiment 10:} NTK eigenvalue spectrum at initialization for MMNN vs. MLP.
-Theory predicts improved concentration for MMNN with \( O(1/r^2) \) decay (doubly-random Gram regime) versus MLP's \( O(1/N) \) decay; at matched parameter budgets, MMNN should therefore reach the deterministic kernel limit faster. Both architectures are expected to exhibit a single dominant outlier governing early training (Terjék-style), but the MMNN outlier should be better conditioned due to the low-rank structure, while the bulk should follow a Marchenko–Pastur law with tighter concentration for MMNN and a broader bulk for MLP.
+Theory predicts improved concentration for MMNN with \( O(1/r^2) \) decay (doubly-random Gram regime) versus MLP's \( O(1/N) \) decay; at matched parameter budgets, MMNN should therefore reach the deterministic kernel limit faster. Both architectures are expected to exhibit a single dominant outlier governing early training, but the MMNN outlier should be better conditioned due to the low-rank structure, while the bulk should follow a Marchenko–Pastur law with tighter concentration for MMNN and a broader bulk for MLP.
 \textbf{Results (TO BE ADDED):} Plots comparing NTK eigenvalue distributions, confirming \( 1/r^2 \) vs. \( 1/N \) concentration rates.
 
 \paragraph{Stepwise loss dynamics comparison (TO BE COMPLETED).}

@@ -16,7 +16,7 @@
 
 \newtheorem{assumption}{Assumption}
 
-\title[Low-rank random features and NTK]{Low-rank neural networks preserve the MLPs Neural Tangent Kernel}
+\title[Low-rank random features and NTK]{Low-rank random-feature networks: depth--rank scaling and conditioning in the NTK regime}
 
 \coltauthor{%
   \Name{Janis (Heran) Aiad}\thanks{This work was completed by J.H-A. during an undergraduate internship at University of Maryland.}\\
@@ -34,11 +34,15 @@
 \maketitle
 
 \begin{abstract}
-We develop a Neural Tangent Kernel (NTK) theory for low-rank random feature networks (RF-LR) that provides a principled, computationally efficient route to the kernel regime. Assuming fixed weights as classical NTK theory predicts, we prove that RF-LR preserves the same reproducing kernel Hilbert space (RKHS) as the shallow ReLU kernel; low-rank weight matrices do not lose expressivity. Combining Fisher--Kibble decoupling of Gaussian process outputs with a hypergeometric analysis of the mean NTK near \( \rho=1 \), we establish the Puiseux expansion and RKHS equivalence. We link the \( I(r) \sim 1/\sqrt{r} \) decay to tighter concentration as \( r \) grows. The empirical three-layer NTK concentrates around its deterministic limit with sub-Gaussian tails in \( r \). At the spectral level, the NTK Gram matrix exhibits a spiked and shifted Marchenko--Pastur law. We give an explicit NTK recursion and closed-form depth expansion. Taken together, these results establish that RF-LR preserves expressivity and gives optimization guarantees while lowering the parameter cost from \( O(N^2) \) to \( O(rN) \).
+We study low-rank random-feature networks (RF-LR), where each layer is a frozen random feature map followed by a trainable readout into a bottleneck of dimension \(r\ll N\).
+We focus on a finite-sample kernel regime: we take a sequential infinite-width limit \(N\to\infty\) at fixed dataset size \(n\), and then study how the remaining bottleneck randomness concentrates as \(r\to\infty\).
+
+Our main results quantify how depth \(L\) and rank \(r\) control conditioning and optimization scales in kernel regression. In an exactly solvable equicorrelated dataset model we obtain an explicit Gram spectrum, with a nontrivial scale \(\Theta(1/(rL))\) on \(\mathbf{1}^\perp\), yielding a kernel time scale \(\Theta(P/n)\) under \(P\asymp LrN\) and \(N\asymp n^2\). We also derive an explicit RF-LR NTK recursion and show, as a secondary consequence, that the mean three-layer kernel induces the same RKHS as the shallow ReLU kernel via an endpoint (Puiseux) expansion.
+We do not analyze the empirical RF-LR NTK in the quadratic random-matrix scaling \(n\to\infty\); adapting resolvent-based bulk-law techniques developed for shallow two-layer NTKs~\cite{benigni2025eigenvaluedistributionneuraltangent} to low-rank RF-LR and deeper architectures is left for future work.
 \end{abstract}
 
 \begin{keywords}
-Neural Tangent Kernel, Random Features, Low Rank, Scaling Laws, Infinite Width, Marchenko–Pastur
+Neural Tangent Kernel, Random Features, Low Rank, Depth Scaling, Conditioning
 \end{keywords}
 
 \input{introduction}
@@ -46,7 +50,6 @@ Neural Tangent Kernel, Random Features, Low Rank, Scaling Laws, Infinite Width, 
 \input{recursion}
 \input{depth_scaling}
 \input{rkhs}
-\input{spectra}
 \input{conclusion}
 
 \bibliography{references}

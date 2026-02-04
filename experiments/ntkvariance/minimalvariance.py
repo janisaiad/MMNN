@@ -1,7 +1,34 @@
 import math
+import sys
+from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+plt.rcParams["figure.figsize"] = [6, 6]
+plt.rcParams["font.size"] = 18
+plt.rcParams["font.weight"] = "normal"
+mpl.rcParams["mathtext.fontset"] = "cm"
+mpl.rcParams["mathtext.rm"] = "serif"
+mpl.rcParams["savefig.dpi"] = 300
+mpl.rcParams["font.size"] = 22
+mpl.rcParams["axes.formatter.limits"] = (-6, 6)
+mpl.rcParams["axes.formatter.use_mathtext"] = True
+mpl.rcParams["font.family"] = "STIXGeneral"
+mpl.rcParams["mathtext.rm"] = "Bitstream Vera Sans"
+mpl.rcParams["mathtext.it"] = "Bitstream Vera Sans:italic"
+mpl.rcParams["mathtext.bf"] = "Bitstream Vera Sans:bold"
+mpl.rcParams["xtick.minor.visible"] = True
+mpl.rcParams["ytick.minor.visible"] = True
+plt.rcParams["ytick.right"] = True
+plt.rcParams["xtick.top"] = True
 
 
 def relu(x: np.ndarray) -> np.ndarray:
@@ -49,8 +76,8 @@ def main() -> None:
     xp = 1.0
     seed = 0
 
-    variances: list[float] = []
-    means: list[float] = []
+    variances = []
+    means = []
 
     for r in ranks:
         values = np.empty((n_trials,), dtype=np.float64)
@@ -67,7 +94,8 @@ def main() -> None:
     plt.title(f"3-layer (2-ReLU) low-rank NTK variance, width={width}, trials={n_trials}")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.tight_layout()
-    plt.savefig("/home/janis/STG3A/MMNN/experiments/ntkvariance/variance_vs_r.png", dpi=200)
+    out_path = Path(__file__).resolve().parent / "variance_vs_r.png"
+    plt.savefig(out_path, dpi=200)
 
     for r, m, v in zip(ranks, means, variances):
         print(f"r={r:>3d}  mean={m:.6e}  var={v:.6e}")

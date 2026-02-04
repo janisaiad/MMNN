@@ -1,29 +1,29 @@
 \section{Conclusion}
 
 This work develops an NTK analysis for low-rank random-feature architectures (RF-LR/MMNN) under explicit assumptions. 
-\textbf{Expressivity (RKHS).} In the NTK regime, the three-layer RF-LR mean kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}), so depth does not enlarge the RKHS in this setting.
-\textbf{Concentration in the bottleneck dimension.} For the two-layer low-rank step, the empirical kernel concentrates around its deterministic limit \(K_\infty(\rho)\) with tails controlled by the bottleneck dimension \(r\) (Theorem~\ref{thm:rkhs_rank_concentration}, Corollary~\ref{cor:two_layer_ntk_concentration}).
-\textbf{Spectrum (three-layer case).} Under random-matrix scaling assumptions, the Gram matrix exhibits a spike--bulk structure and a deformed Marchenko--Pastur limit (Theorem~\ref{thm:spike-bulk}), while the entrywise fluctuations satisfy a CLT with separate angular (Fisher) and radial (Kibble) contributions (Theorem~\ref{thm:kernel_clt}).
+\textbf{Expressivity (RKHS; secondary consequence).} In the NTK regime, the three-layer RF-LR mean kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}), so depth does not enlarge the RKHS in this setting.
+\textbf{Concentration in the bottleneck dimension.} For the three-layer case, the empirical kernel concentrates around its deterministic limit \(K_\infty(\rho)\) with tails controlled by the bottleneck dimension \(r\) (Theorem~\ref{thm:rkhs_rank_concentration}, Corollary~\ref{cor:three_layer_ntk_concentration}).
+\textbf{Centered conditioning and optimization scales.} In an equicorrelated model, the centered Gram matrix \(HKH\) has flat spectrum on \(\mathbf{1}^\perp\) (condition number \(1\)), and its nontrivial eigenvalue scale is \(\lambda_\perp=\Theta(1/(rL))\) (Section~\ref{sec:depth-scaling}), yielding the budget-driven kernel time scale \(\Theta(P/n)\) under \(P\asymp LrN\) and \(N\asymp n^2\).
 \textbf{Recursion.} We provide an explicit NTK recursion for arbitrary depth in RF-LR and a closed-form expansion (Theorem~\ref{thm:ntk_recursion}, Corollary~\ref{cor:general_L_layer_ntk}), which can be used as a starting point for finite-width corrections.
 
 \section{Discussion}
 
-This work leaves several natural directions open. We emphasize that our current scope is the lazy/NTK regime under explicit simplifying assumptions; extending beyond this setting requires additional ideas.
+This work leaves several natural directions open. We emphasize that our current scope is the lazy/NTK regime under explicit standard assumptions; extending beyond this setting requires additional ideas.
 
-A technical feature of our setup is that freezing the random features removes some cross-layer dependencies that appear in fully trained networks. Combined with Fisher--Kibble decoupling~\cite{fisher1915probable,hotelling1953new}, this makes certain calculations more explicit and suggests a path toward relaxing some of our random-matrix assumptions using techniques in~\cite{benigni2025eigenvaluedistributionneuraltangent}.
+A recurring qualitative message, shared with depth analyses for fully trained MLPs at the edge of chaos~\cite{terjek2025mlpsateoc,pmlr-v163-hayou22a}, is that increasing depth tends to drive correlations toward \(1\), so layerwise kernels become nearly constant and the deep kernel approaches a rank-one structure. In RF-LR, this effect is compounded by the explicit \(1/r\) bottleneck factors in the recursion, which geometrically suppress early-layer contributions (Section~\ref{sec:depth-scaling}); consequently, after centering the relevant spectrum on \(\mathbf{1}^\perp\) collapses unless one rescales time/learning rate (Remark~\ref{rmk:infinite-depth-limit-appendix} in Appendix~\ref{appendix:infinite-depth-limit}).
+
+A technical feature of our setup is that freezing the random features removes some cross-layer dependencies that appear in fully trained networks. Combined with Fisher--Kibble decoupling~\cite{fisher1915probable,hotelling1953new}, this makes certain calculations more explicit and suggests a path toward extending the analysis to joint large-\(n\) regimes using resolvent replacement and Gaussian-equivalence methods developed for shallow two-layer NTKs~\cite{benigni2025eigenvaluedistributionneuraltangent}.
 
 
 The recursion (Theorem~\ref{thm:ntk_recursion}) suggests organizing finite-width corrections as an expansion in the bottleneck dimension \(r\). Making this program rigorous for general depth would require controlling the growth of cross-terms produced by the recursion and propagating concentration through the composed Gaussian-process layers.
 
-On the theoretical front, several important questions remain open and constitute an immediate research agenda. The extension of the exponential concentration bounds 
+On the theoretical front, several important questions remain open and constitute an immediate research agenda. Extending the exponential concentration bounds 
 to general depth \( L \) layers requires controlling nested conditional means through \( L \) layers and managing a quadratic number \( O(L^2) \) of cross-terms arising
- from the recursive NTK structure (Remark after Corollary~\ref{cor:two_layer_ntk_concentration}). The technical challenge lies in tracking how the random correlations 
- \( \rho_\ell \) and norm products \( \|h^{(\ell)}(x)\|\|h^{(\ell)}(x')\| \) propagate through layers while maintaining exponential concentration rates. 
+from the recursive NTK structure. The technical challenge lies in tracking how the random correlations 
+\( \rho_\ell \) and norm products \( \|h^{(\ell)}(x)\|\|h^{(\ell)}(x')\| \) propagate through layers while maintaining exponential concentration rates. 
  A \textbf{non-Gaussian process propagation analysis} distinct from NNGP fits would provide complementary insights beyond the kernel regime, potentially revealing 
- how feature learning emerges from deviations from Gaussianity. An \textbf{explicit bulk formula} with normalization scaled by \textbf{\( r^2 \)} would complete the 
- spectral picture and enable direct comparisons with Marchenko–Pastur predictions. Relaxing the strong assumptions in Assumptions~\ref{assump:RMT}
-  and~\ref{assump:RMT-conditions} (Gaussian data, specific scaling relationships) using techniques from~\cite{benigni2025eigenvaluedistributionneuraltangent}
-   would extend the applicability of our spectral results to more realistic data distributions.
+ how feature learning emerges from deviations from Gaussianity.
+An important future direction is to establish \textbf{bulk spectral laws} for the empirical RF-LR NTK Gram matrix in a quadratic scaling regime \(n\to\infty\), adapting the Benigni--Paquette framework beyond shallow two-layer kernels to the present low-rank random-feature structure and to depth \(L\ge 2\)~\cite{benigni2025eigenvaluedistributionneuraltangent}.
 
 Additional theoretical extensions hold particular promise. The current analysis focuses on the three-layer case for tractability; extending to arbitrary depth \( L \) 
 while maintaining explicit formulas remains an open challenge. Investigating how the edge-of-chaos (EOC) parameterization affects finite-width corrections and the \( Nr \) scaling mentioned in the architecture definition would provide concrete quantitative bounds. Understanding how the curse of dimensionality impacts normalization choices (unit norm weights vs. biases) depending on data geometry (hypercube vs. spherical) would provide principled guidance for practitioners.
@@ -31,63 +31,9 @@ while maintaining explicit formulas remains an open challenge. Investigating how
 The experimental validation of our theoretical predictions constitutes an equally important and concrete next step. We envision a comprehensive program that
  includes \textbf{confirming lazy-kernel predictions} and precisely mapping the boundary of lazy training in practice; conducting systematic
   \textbf{three-layer width sweeps} to test the \( O(1/n)+O(1/r) \) finite-width corrections suggested by the expansion and identify minimal \( (n,r) \)
-   configurations where kernel predictions become accurate; and a detailed \textbf{comparison suite with MLPs} that probes NTK eigenvalue distributions, 
-   validates the spike-bulk structure, and measures task accuracy at matched parameter counts. These studies would verify the \textbf{exponential concentration}
-    rates (Theorem~\ref{thm:rkhs_rank_concentration}), validate the \textbf{single-outlier structure} (Theorem~\ref{thm:spike-bulk}), and demonstrate the 
-    \textbf{practical accessibility of the kernel regime} for low-rank random features.
+   configurations where kernel predictions become accurate; and a detailed \textbf{comparison suite with MLPs} that probes centered conditioning and optimization time scales at matched parameter counts. These studies would verify the \textbf{exponential concentration}
+    rates (Theorem~\ref{thm:rkhs_rank_concentration}) and demonstrate the \textbf{practical accessibility of the kernel regime} for low-rank random features.
 
 Finally, it would be valuable to connect the low-rank random-feature recursion studied here with broader frameworks for infinite-width limits (e.g. tensor programs~\cite{yang2020tensorprogramsiineural}) and with depth-dependent NTK spectral analyses for MLPs at the edge of chaos~\cite{terjek2025mlpsateoc}, while maintaining explicit control of the bottleneck scaling.
 
-Our present scope is deliberately focused on the \textbf{lazy/NTK regime}, where analytical tractability is greatest and the advantages of low-rank
- structure are most clearly visible. We believe that completing the pending finite-width formulas, spectrum characterizations, and experimental validations 
- will turn this into a comprehensive NTK account of RF-LR networks and establish a solid foundation for analyses beyond the lazy regime.
-
-\subsection*{Comparison to full-width MLPs at the EOC (Terjék--González-Sánchez, 2025)}
-To emphasize what is specific to low-rank random-feature training, we contrast our depth/rank scalings with the full-width MLP-at-EOC results of~\cite{terjek2025mlpsateoc}. The main structural difference is that in RF-LR only \(A^{(\ell)}\) is trained and the NTK recursion carries an explicit \(1/r\) factor at bottlenecks (Theorem~\ref{thm:ntk_recursion}); in full-width MLPs, all layers are trained and the limiting EOC NTK grows linearly with depth in the uncentered spectrum.
-
-\begin{center}
-\begin{tabular}{|l|c|c|}
-\hline
- & \textbf{Full-width MLP at EOC}~\cite{terjek2025mlpsateoc} & \textbf{RF-LR (this work)} \\
-\hline
-Trainable parameters & all weight layers & readouts \(A^{(\ell)}\) only; frozen \(w^{(\ell)}\) \\
-\hline
-Key scaling parameter & depth \(L\), activation \(\Delta_\phi\) & depth \(L\), bottleneck dimension \(r\) \\
-\hline
-Depth effect (kernel magnitude) & \(\lambda_{\max}(K_{\mathrm{EOC}})=\Theta(L)\) (Thm.~4.1) & mean recursion saturates in \(L\) (Thm.~\ref{thm:rflr-depth-scaling-mean}) \\
-\hline
-Centered spectrum & bounds on \(\mathbf{1}^\perp\) via inverse-cosine matrices & equicorrelated model: \(\lambda_{\min}(HKH)=\Theta(1/(rL))\) (Prop.~\ref{prop:equicorrelated-gap}) \\
-\hline
-Uncentered spike & rank-one component present; grows with \(L\) and \(n\) & rank-one spike aligns with \(\mathbf{1}\); saturates in \(L\) and depends on \(r\) (Prop.~\ref{prop:equicorrelated-spectrum}) \\
-\hline
-\end{tabular}
-\end{center}
-
-\paragraph{Advantages and limitations.}
-Relative to full-width EOC MLPs, the RF-LR recursion introduces a rank--depth tradeoff: for fixed \(r\), depth can improve correlation alignment but the centered gap can decay as \(1/(rL)\) in simple models (Prop.~\ref{prop:equicorrelated-gap}), suggesting that maintaining a uniform spectral gap with depth may require \(r\) to grow with \(L\). Conversely, RF-LR offers a reduced trainable parameter budget (\(O(rN)\)) and rank-driven concentration effects, and yields explicit recursion-based formulas for depth dependence that are not available in the same form for fully trained MLPs.
-
-\paragraph{Optimization interpretation in the lazy/NTK regime (stability vs speed).}
-In kernel gradient descent on squared loss, the stability (no oscillatory divergence) constraint is controlled by the \emph{largest} eigenvalue on the relevant invariant subspace: for the centered operator \(K_c=HKH\) one needs \(0<\eta<2/\lambda_{\max}(K_c)\), while the convergence speed is governed by \(\lambda_{\min}(K_c)\) (or by the condition number on \(\mathbf{1}^\perp\)).
-This highlights the qualitative RF-LR vs full-width difference with depth: in full-width EOC MLPs, the limiting kernel magnitude typically grows with depth \(L\)~\cite{terjek2025mlpsateoc}, forcing the stable step size to shrink with \(L\), whereas in RF-LR the mean recursion saturates (Theorem~\ref{thm:rflr-depth-scaling-mean}), so \(\lambda_{\max}\) does not grow linearly with \(L\) in the same way.
-At the same time, RF-LR can exhibit a small centered scale \(\lambda_{\min}(HKH)\asymp 1/(rL)\) in simple proxy models (Proposition~\ref{prop:equicorrelated-gap}), which slows convergence unless one rescales \(\eta\) accordingly; finite-\(r\) fluctuations can further reduce the effective gap (Remark~\ref{rmk:lambda-min-negative}).
-
-\paragraph{Learning-rate/conditioning compromise (standard kernel GD bound).}
-To make the tradeoff explicit, consider the centered kernel least-squares iteration on \(\mathbf{1}^\perp\),
-\[
-e_{t+1}=(I-\eta K_c)e_t,
-\]
-where \(K_c\succeq 0\) has eigenvalues in \([\mu,L]\) with \(0<\mu=\lambda_{\min}(K_c)\le \lambda_{\max}(K_c)=L\). Then:
-\begin{itemize}
-  \item \textbf{Stability:} \(0<\eta<2/L\) is necessary and sufficient for \(\|e_t\|\to 0\) for all initial errors \(e_0\).
-  \item \textbf{Best linear rate (fixed step size):} choosing \(\eta^\star=2/(L+\mu)\) yields
-  \[
-  \|e_t\|\le \Big(\frac{\kappa-1}{\kappa+1}\Big)^t\|e_0\|,
-  \qquad \kappa=\frac{L}{\mu}.
-  \]
-\end{itemize}
-Thus, a smaller \(L=\lambda_{\max}(K_c)\) permits a larger stable learning rate, but the achievable convergence rate still depends on the condition number \(\kappa\): improving stability by controlling \(\lambda_{\max}\) does not by itself remove slow directions when \(\lambda_{\min}\) is small. In RF-LR depth scalings, saturation of \(\lambda_{\max}\) with \(L\) can prevent learning-rate shrinkage with depth, while a decay \(\mu\asymp 1/(rL)\) would imply \(\kappa\) growing like \(rL\) in simple proxy models (and hence iteration counts scaling accordingly) unless additional structure or preconditioning is exploited.
-
-\paragraph{When a small \(\lambda_{\min}\) does not hurt (pure rescaling).}
-If changing architectural parameters \((r,L)\) predominantly \emph{rescales} the centered kernel, i.e. \(K_c^{(r,L)} \approx s_{r,L}\,\widetilde{K}_c\) for some scalar \(s_{r,L}>0\) and a shape matrix \(\widetilde{K}_c\) with comparable condition number across \((r,L)\), then the optimization behavior at initialization depends mainly on \(\kappa(\widetilde{K}_c)\), because the stable learning-rate range scales as \(\eta\in(0,2/(s_{r,L}\lambda_{\max}(\widetilde{K}_c)))\).
-In the equicorrelated proxy model, \(K_c=\lambda_\perp(L,r)\,H\) has \(\kappa=1\) on \(\mathbf{1}^\perp\) and \(\lambda_\perp(L,r)\asymp 1/(rL)\), so the dependence on the product \(rL\) is purely a \emph{scale} effect that can be absorbed by choosing \(\eta\propto rL\) (up to the stability limit).
-Departures from this scale-only picture (heterogeneous data geometry, non-flat spectra, and finite-width/finite-\(r\) fluctuations) are precisely where rank/depth tradeoffs become substantive.
+Our present scope is deliberately focused on the \textbf{lazy/NTK regime}, where analytical tractability is greatest and the advantages of low-rank structure are most clearly visible. Completing finite-width formulas, spectrum characterizations, and experimental validations would strengthen the connection between the asymptotic theory and practical regimes.

@@ -1,30 +1,35 @@
 
 \section{Introduction}
 
-Multi-Component and Multi-Layer Neural Networks (MMNNs), also called low-rank random-feature networks (RF-LR), are architectures where each layer is implemented as a random feature map followed by a trainable linear combination with a low-dimensional bottleneck~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. Concretely, for each layer we sample frozen random feature directions \(w^{(\ell)}\) and train only the readout weights \(A^{(\ell)}\), which map the feature vector into a bottleneck of dimension \(r\). This reduces the trainable parameter count from \(O(N^2)\) (dense layers) to \(O(rN)\) while keeping the random-feature geometry explicit.
+Low-rank random-feature networks (RF-LR) are architectures where each layer is implemented as a random feature map followed by a trainable linear readout into a low-dimensional bottleneck~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. Concretely, for each layer we sample frozen random feature directions \(w^{(\ell)}\) and train the readouts \(A^{(\ell)}\) (and biases), which map the feature vector into a bottleneck of dimension \(r\). This reduces the trainable parameter count from \(O(N^2)\) (dense layers) to \(O(rN)\) while keeping the random-feature geometry explicit.
+
+Low-rank parameterizations and factorizations have long been used to reduce memory and computation in neural networks, and to tailor optimization under explicit parameter budgets~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization,kamalakara2022exploringlowranktraining}. In such models one can often separate an upstream representation map from a downstream linear predictor, and the choice of which component is learned can materially affect both optimization and generalization. Recent information-theoretic generalization bounds based on conditional mutual information suggest that stochastic projection/quantization combined with learning a downstream predictor can yield tighter guarantees, providing further motivation for architectures that keep the ``left'' projection map fixed (or randomized) while training the ``right'' readout map~\cite{sefidgaran2025tightercmibasedgeneralizationbounds}.
 Recent empirical work by 
  \textit{Zhang et al.}~\cite{zhang2025structuredbalancedmulticomponentmultilayer} has demonstrated that 
  RF-LRs achieve global strong-convergence across a wide range of tasks, including neural-network based PDE solving with and without Physics-Informed losses~\cite{raissi2017physicsinformeddeeplearning}. 
-Empirically, training can display stepwise dynamics (plateaus separated by sharp drops) in some regimes~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. This paper does not aim to explain these phenomena beyond the kernel regime; instead we develop an NTK-level theory for RF-LR at initialization and in the lazy/NTK regime, focusing on the induced RKHS, concentration in the bottleneck dimension \(r\), and spectral predictions for the Gram matrix.
+Empirically, training can display stepwise dynamics (plateaus separated by sharp drops) in some regimes~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. This paper does not aim to explain these phenomena beyond the kernel regime; instead we develop an NTK-level theory for RF-LR at initialization and in the lazy/NTK regime, focusing on conditioning/optimization scales and on concentration in the bottleneck dimension \(r\).
 
 The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} provides the natural lens 
 for analyzing the early training stage. This perspective has been extended to finite width \cite{huang2019dynamicsdeepneuralnetworks,dyer2019asymptoticswidenetworksfeynman} and large-depth \cite{guillen2025finitewidthneuraltangentkernels,yang2023tensorprogramsvifeature,terjek2022depth}, 
 revealing how the Laplacian kernel structure governs the gradient descent (GD) training dynamics and generalization. 
-Applying NTK theory to RF-LR raises specific technical questions: the kernel recursion differs from the standard MLP recursion because only \(A^{(\ell)}\) is trained, and the bottleneck dimension \(r\) induces additional concentration and scaling effects.
+Applying NTK theory to RF-LR raises specific technical questions: the kernel recursion differs from the standard MLP recursion because only the readouts (and biases) are trained, and the bottleneck dimension \(r\) induces additional concentration and scaling effects.
 
-We show that, in the three-layer RF-LR setting under homogeneity and isotropy assumptions, the \emph{mean} NTK induces the same RKHS as the shallow ReLU kernel (hence depth does not enlarge the RKHS in this regime), while requiring only \(O(rN)\) trainable parameters.
-
-To keep the analysis explicit, we work under standard simplifying assumptions (ReLU homogeneity, isotropic Gaussian features, and a sequential infinite-width limit). In the NTK regime, the kernel is (approximately) constant along training~\cite{jacot2018neural}; accordingly, we analyze the induced kernel at initialization and its deterministic limits.
-
-\paragraph{Scope and guarantees (what we analyze and what we do not claim).}
+\paragraph{Main results (informal).}
+\begin{theorem}[Main results in the NTK regime (informal)]\label{thm:main-results-informal}
+Consider RF-LR with ReLU features under sequential infinite width \(N\to\infty\) and bottleneck dimension \(r\).
+In the lazy/NTK regime, gradient flow reduces to kernel regression with an (approximately) fixed kernel~\cite{jacot2018neural}.
+Our main results are:
 \begin{itemize}
-    \item \textbf{Objects analyzed.} We study (i) the RF-LR NTK recursion in the sequential infinite-width limit (Theorem~\ref{thm:ntk_recursion}); (ii) the deterministic/mean kernels that arise at initialization (including the three-layer mean kernel used for the RKHS analysis); and (iii) the empirical Gram matrix at initialization in a random-matrix scaling regime, including its spike--bulk spectral limit (Section~\ref{sec:rf-lr-gram-marchenko-pastur-spectrum-for-three-layer-case}).
-    \item \textbf{Optimization in-scope.} In the lazy/NTK regime, gradient flow reduces to kernel regression with a fixed kernel (Theorem~\ref{thm:ntk_recursion}). Convergence rates are governed by the spectrum of the (centered) Gram matrix on the training set; our contribution is to provide explicit kernel formulas/limits and spectral predictions in the RF-LR setting.
-    \item \textbf{Not claimed.} We do not analyze feature learning (time evolution of the NTK), adaptive optimizers, or continual-learning/forgetting phenomena. Any references to such effects are purely motivational and are not used as claims or evidence.
+    \item \textbf{Recursion.} The RF-LR NTK satisfies an explicit infinite-width recursion with an explicit \(1/r\) bottleneck factor, yielding a closed-form expansion (Theorem~\ref{thm:ntk_recursion} and Corollary~\ref{cor:general_L_layer_ntk}).
+    \item \textbf{Main: depth--rank scaling and optimization scale.} In an equicorrelated dataset model, the Gram spectrum is explicit and the nontrivial spectrum on \(\mathbf{1}^\perp\) has scale \(\lambda_\perp=\Theta(1/(rL))\) (Proposition~\ref{prop:equicorrelated-spectrum}); for centered targets and \(1/n\)-normalized square loss this yields an optimization time scale \(\Theta(n/\lambda_\perp)=\Theta(nrL)\), which becomes \(\Theta(P/n)\) under the budget scaling \(P\asymp LrN\) and \(N\asymp n^2\) (Corollary~\ref{cor:np-optimization-scale}).
+    \item \textbf{RKHS (three layers; secondary consequence).} The mean three-layer kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}).
 \end{itemize}
+\end{theorem}
+
+We adopt the standard NTK setup (ReLU activation, isotropic Gaussian initialization, and a sequential infinite-width limit). Accordingly, we analyze the induced kernel at initialization and its deterministic limits.
 
 
-\subsection*{Low rank architecture }
+\subsection{Architecture}
 The considered architecture is a stacking of high then low width layers:
 \begin{figure}[htbp]
     \centering
@@ -103,16 +108,16 @@ The considered architecture is a stacking of high then low width layers:
     \node at (12,-2) {$d_L = k$};
     % Mathematical notation
     \node at (1.5,3) {$\bm{W}^{(1)}$};
-    \node at (4.5,2) {$\bm{A}^{(1)}$};
+    \node[yshift=2cm] at (4.5,2) {$\bm{A}^{(1)}$};
     \node at (7.5,2) {$\bm{W}^{(2)}$};
-    \node at (10.5,1.5) {$\bm{A}^{(2)}$};
+    \node[yshift=2cm] at (10.5,1.5) {$\bm{A}^{(2)}$};
     % Highlight low rank structure
     \draw[red, thick, dashed] (5.5,1.5) rectangle (6.5,-0.75);
     \node[red] at (6,-2.5) {\textbf{Low Rank}};
     \node[red] at (6,-2.8) {\textbf{Component}};
     \end{tikzpicture}
-    \caption{Architecture of a Multi-component Multi-layer Neural Network (RF-LR). The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons.
-    We \textbf{only train the output weights} $\bm{A}^{(1)}$ and $\bm{A}^{(2)}$.}
+    \caption{Architecture of a low-rank random-feature network (RF-LR). The red dashed connections indicate the low-rank component that reduces dimensionality from $n_1$ to $r \ll n_1$ neurons.
+    We train the readouts (and biases) while keeping the feature directions frozen.}
     \label{fig:RF-LR_architecture}
 \end{figure}
 
@@ -123,87 +128,46 @@ The loss landscape of neural networks is closely related to generalization and t
 
 
 
-  Our approach develops an NTK theory specialized to intra-layers random variables output arising after large-layer acting as gaussian processes, 
+Our analysis views intermediate-layer random variables as outputs of a composition of (conditional) Gaussian processes in the sequential infinite-width limit, which enables explicit computations of mean kernels and fluctuations.
 
+\paragraph{Guiding question.}
+\begin{center}
+\emph{Is low rank all we need, and how does optimization in neural networks interact with the curse of dimensionality?}
+\end{center}
+This question is closely related to recent discussions of high-dimensional obstacles in neural network optimization~\cite{na2025cursedimensionalityneuralnetwork}. In the NTK regime, the relevant function class is the RKHS induced by the limiting kernel; in particular, low-rank structure does not remove the high-dimensional spectral decay inherent to ReLU kernels on the sphere (Corollary~\ref{thm:no_rkhs_advantage}).
 
+\paragraph{Progress on the open question.}
+Recent work has begun to clarify which aspects of optimization degrade with dimension and which admit dimension-robust descriptions. On the negative side, explicit high-dimensional obstruction results indicate that optimization can become increasingly constrained as the ambient dimension grows, even under benign data models~\cite{na2025cursedimensionalityneuralnetwork}. On the positive side, particle and optimal-transport viewpoints provide regimes where the loss landscape and dynamics admit tractable characterizations, including asymptotic convexity phenomena and dimension-free bounds in two-layer settings~\cite{rotskoff2018neural,mei2018mean,mei2019mean,chizat2018global}. In the kernel regime, recent quantitative bounds on the smallest NTK eigenvalue for deep ReLU networks connect data/width scaling to optimization rates~\cite{nguyen2022tightboundssmallesteigenvalue}. Complementary perspectives based on dynamical invariants and ``central flow'' structure further suggest organizing principles for optimization in deep models beyond the strictly kernel setting~\cite{cohen2025understandingoptimizationdeeplearning}.
 
-\vspace{1em}
-
-\noindent
-\textbf{This work addresses the following fundamental questions :}
-
-\vspace{0.3em}
-
-\noindent
-\begin{itemize}
-\item \emph{How Low-Rank preserves MLPs expressivity and how random features simplify NTK analysis ?}
-\end{itemize}
-\vspace{0.5em}
-
-This question is closely related to the open question of the curse of dimensionality in deep learning optimization \cite{na2025cursedimensionalityneuralnetwork}.
-In particular we show that the curse of dimensionality occuring in the NTK exponential-in-dim spectral decay is not mitigated by low-rank structure.
-
-By exploiting particularities from Fisher and Kibble distributions~\cite{fisher1915probable,hotelling1953new} and manipulation
-of non-integer Puiseux polynomials series of correlation-kernels inside expectations, we are able to derive 
-the RKHS structure inherent in frozen weights using a characterization from \cite{bietti2021deepequalsshallowrelu}. We focus specifically on the NTK regime where analytical tractability is greatest and the advantages of the 
-low-rank random feature structure are most clearly visible.
-
-
-Our setup also clarifies which parts of finite-width NTK corrections simplify when feature weights are frozen: cross-layer dependencies arising from jointly trained weights are absent, so one can isolate the remaining sources of randomness (notably, the rank-\(r\) bottleneck). We do not develop a full finite-width correction theory here, but the explicit recursion we derive provides a starting point for such analyses.
-
- 
-By characterizing the NTK recursion, RKHS geometry, and Gram-matrix spectrum under explicit assumptions, we provide kernel-regime predictions for RF-LR that can be compared to empirical behavior. Extensions beyond the lazy regime (e.g., mean-field or feature-learning analyses) are left for future work.
+\paragraph{Optimization message and technical approach.}
+The conditioning/optimization scaling law and the RKHS identification are summarized in Theorem~\ref{thm:main-results-informal}; the technical ingredients are outlined in Appendix~\ref{appendix:techniques-proof-sketch}.
 
  
 
 \vspace{1em}
 \subsection{Related work}
+The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} characterizes infinitely wide neural networks trained by gradient descent as kernel methods with a fixed kernel. Extensions cover finite-width corrections~\cite{arora2019exact,dyer2019asymptoticswidenetworksfeynman}, depth scaling~\cite{yang2019scaling,terjek2022depth}, and random-matrix limits for Gram spectra in quadratic regimes~\cite{benigni2025eigenvaluedistributionneuraltangent}.
+
+Low-rank and factorized architectures reduce trainable parameters and can change optimization dynamics~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization}. In RF-LR/MMNN, freezing the feature directions and training only readouts (and biases) isolates the bottleneck dimension \(r\) as a natural control parameter for kernel concentration and depth scaling.
+
+From the standpoint of generalization, stochastic projections and compression mechanisms can be beneficial when combined with learning a final predictor; see, e.g., the conditional mutual information analysis of~\cite{sefidgaran2025tightercmibasedgeneralizationbounds}. This supports studying regimes where upstream random feature maps are kept fixed and the downstream readout is trained.
+
+Low-rank adaptation (LoRA) is a widely used parameter-efficient fine-tuning method for foundation models, where training is restricted to a low-rank update of a pre-trained weight matrix. Recent theory begins to locate LoRA between the kernel/lazy regime and full feature learning: in a student--teacher setting,~\cite{dayi2024gradientdynamicslowrankfinetuning} shows that low-rank fine-tuning can exhibit nonlinear dynamics beyond linearized kernels while remaining efficiently learnable under online gradient descent. Complementarily, in the NTK regime,~\cite{jang2024loratrainingntkregime} establishes that sufficiently large LoRA rank can eliminate spurious local minima and enables gradient descent to find low-rank solutions. These results reinforce the broader motivation for understanding which parts of a factorized parameterization should be trained and how low-rank constraints shape optimization and generalization.
+
+For rotation-invariant ReLU kernels, the ``deep equals shallow'' phenomenon and RKHS characterization via endpoint expansions were established in~\cite{bietti2021deepequalsshallowrelu}. We leverage this framework in the RF-LR setting by combining Fisher--Kibble decoupling~\cite{fisher1915probable,hotelling1953new} with a hypergeometric/Puiseux analysis of the mean kernel near \(\rho=1\).
 
 
-The Neural Tangent Kernel (NTK) framework~\cite{jacot2018neural} characterizes infinitely wide neural networks trained by gradient descent as kernel methods 
-with a fixed kernel. This framework has been extended to finite width~\cite{arora2019exact}, convolutional architectures~\cite{arora2019harnessing}, and
- depth~\cite{yang2019scaling,terjek2022depth}, establishing a comprehensive theoretical foundation for understanding wide network training. Recent work
-  by~\cite{benigni2025eigenvaluedistributionneuraltangent} characterizes the eigenvalue distribution of the NTK in the quadratic scaling regime (width \( N \sim d^2 \)) 
-  for single-layer networks, establishing deformed Marchenko–Pastur laws with spike-bulk structure. Their analysis requires careful tracking of correlation diagrams and
-   moment calculations. We extend this spectral analysis to the three-layer case with random features, where the rank-\( r \) bottleneck and frozen feature weights 
-   fundamentally alter the kernel's spectral properties. A key technical advantage of our approach is that we \textbf{avoid computing correlation diagrams} by
-    leveraging the decoupling properties of Fisher–Kibble distributions and the independence structure inherent in frozen random features, which simplifies the 
-    analysis while maintaining rigor. Parallel to this, random feature approximations~\cite{rahimi2007random,rahimi2008weighted} provide a practical route to kernel
-     approximation by sampling features from suitable distributions, with rigorous guarantees for generalization~\cite{bach2017breaking,rudi2017generalization} and
-      approximation~\cite{sriperumbudur2015optimal}. Notably, freezing random features ensures full support for the Barron-space limit in the mean-field regime throughout training, so universal approximation persists 
-      at all finite times—a property stronger than classical kernel ridge assumptions. NTK spectrum dependence with depth at the edge of chaos has been analyzed for MLPs in~\cite{terjek2025mlpsateoc}. Our RF-LR setting has a different recursion and, in particular, the bottleneck scaling can lead to kernel saturation and gap decay with depth (Section~\ref{sec:depth-scaling}).
+\subsection{Our contributions}
+Theorem~\ref{thm:main-results-informal} summarizes our main contributions; the formal statements are Theorem~\ref{thm:ntk_recursion}, Theorem~\ref{thm:rflr-depth-scaling-mean}, Proposition~\ref{prop:equicorrelated-spectrum}, Corollary~\ref{cor:np-optimization-scale}, and Corollary~\ref{thm:no_rkhs_advantage}.
+Our main techniques and proof sketch are summarized in Appendix~\ref{appendix:techniques-proof-sketch}.
 
-Low-rank and factorized architectures~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization} substantially reduce parameter counts in neural networks. 
-However, the training dynamics of factorized weights can differ from unfactorized gradient descent due to implicit regularization effects. When only output weights 
-are trained while feature weights remain frozen, the architecture avoids Riemannian geometry complications while achieving linear parameter scaling \( O(rN) \),
- representing an extreme case of factorization that enables clean theoretical analysis.
-
-Neural networks exhibit a well-documented spectral bias toward low frequencies~\cite{rahaman2019spectral,xu2019training}, where low-frequency components are learned
- before high-frequency ones. This bias has been quantified via NTK analysis~\cite{basri2020frequency} and Fourier methods~\cite{tancik2020fourier}, revealing how kernel 
- structure shapes learning dynamics. The "deep equals shallow" result for ReLU kernels in the NTK regime~\cite{bietti2021deepequalsshallowrelu} establishes that the RKHS
-  induced by deep networks coincides with that of a shallow ReLU kernel, providing formal NTK spectrum decay rates. The same work characterizes the eigenvalue decay of 
-  rotation-invariant kernels on the sphere via endpoint expansions of the kernel \( \kappa(\rho) \) near \( \rho=\pm 1 \), relating the smoothness properties of the kernel at the endpoints to the decay rate of spherical-harmonic eigenvalues. This connection between kernel smoothness and spectral decay provides a principled framework for understanding how RKHS structure, kernel spectra, and training behavior interact.
-
-Multi-index approaches~\cite{benarous2021online,damian2022neural,abbe2023sgd} learn functions of the form \( f(x)=\sum_{j=1}^r g_j(\langle v_j,x\rangle) \) by 
-discovering latent directions sequentially, with training displaying staircase dynamics featuring plateaus for inactive directions. In extensive-rank regimes 
-\( r\asymp d^\beta \), these works derive scaling laws~\cite{damian2022neural} that connect rank, dimension, and sample complexity. three-layer RF-LR sees their mid layer
-acting as having \(r\) independent functions (approximated by the random features basis) forming a multi-index model in function space. Those functions only 
-interact through reconstructing output functions in next layers. This point of view is a novel way to understand low rank weight matrices provided
-that you do not train the random features to ensure approximation of dictionary - reconstruction - approxim .. etc ..
-
-From a data-dependent scaling perspective, achieving and maintaining NTK behavior in fully-trainable deep networks can impose stringent width–data 
-requirements, often quoted in the literature as polynomial \( O(N^p) \) in the width \( N \), with worst-case exponents \( p = 4\), and best-case exponents \( p = 1\) \cite{nguyen2022tightboundssmallesteigenvalue}
-for quadratic scaling. To ensure the NTK has a positive smallest eigenvalue—crucial for optimization 
- convergence—at least one layer must scale with the number of data samples \( n \), while other layers can scale arbitrarily up to logarithmic
- factors for deep networks, motivating architectures that achieve NTK regime behavior with tractable computational requirements for large scale applications.
-
-
-\subsection*{Our Contributions}
-Our contributions are: (i) an NTK recursion specialized to RF-LR together with rank-driven concentration bounds, (ii) a three-layer spectral theory yielding a signal--noise decomposition of the empirical kernel and a deformed Marchenko--Pastur law with a spike for the uncentered Gram matrix spectrum, and (iii) a rigorous proof—grounded in~\cite{bietti2021deepequalsshallowrelu}—that the three-layer mean NTK induces the same RKHS as the shallow ReLU kernel (extension to general depth is stated as an open problem/conjecture).
-
-More specifically:
+\paragraph{Scope and guarantees (what we analyze and what we do not claim).}
 \begin{itemize}
-    \item \textbf{NTK recursion} We derive the new NTK recursion expansion for RF-LR (\( \sigma_A, \sigma_c, \beta = 1 \)), yielding clean expressions for three-layer and general \( L \)-layer networks.
-    \item \textbf{RKHS Preserved (three-layer case)} In the NTK regime \( f_t(x)\!\approx\! f_0(x)+\langle\nabla_\theta f_0(x),\,\theta_t-\theta_0\rangle \) and \( f_t\in\mathcal{H}_\Theta \) with \( \|f\|_{\mathcal{H}_\Theta}^2=\langle f,\Theta^{-1}f\rangle_{L^2} \). For the three-layer RF‑LR, we prove that the mean NTK induces the same RKHS as the shallow ReLU kernel (same spectral decay rate); RF‑LR preserves universal approximation (frozen Gaussian \( w^{(\ell)} \)), the rank‑\(r\) bottleneck acts as a spectral filter, and the NTK‑RKHS uses \(O(rN)\) rather than \(O(N^2)\) parameters. The extension to general depth \( L \ge 3 \) is conjectured.
-    \item \textbf{Marcheko-Pastur like Gram spectrum (three-layer case).} We state and analyze Fisher–Kibble decoupling~\cite{fisher1915probable,hotelling1953new}, a signal–noise decomposition of the empirical NTK, and a deformed Marchenko–Pastur law (with spike) for the kernel matrix spectrum under standard random matrix scaling.
+    \item \textbf{Objects analyzed.} We study (i) the RF-LR NTK recursion in the sequential infinite-width limit (Theorem~\ref{thm:ntk_recursion}); (ii) an exact depth--rank scaling theorem for the Gram spectrum in an equicorrelated dataset model (Section~\ref{sec:depth-scaling}); and (iii) rank-driven concentration and mean-kernel consequences in the three-layer case (Section~\ref{sec:no-rkhs-advantage} and Appendix~\ref{appendix:techniques-proof-sketch}).
+    \item \textbf{Optimization in-scope.} In the lazy/NTK regime, gradient flow reduces to kernel regression with an (approximately) fixed kernel (Theorem~\ref{thm:ntk_recursion}). Convergence rates are governed by the training-set Gram spectrum; our contribution is to give explicit depth--rank scaling predictions for this spectrum in RF-LR.
+    \item \textbf{Not claimed.} We do not analyze feature learning (time evolution of the NTK), adaptive optimizers, or continual-learning/forgetting phenomena. Any references to such effects are purely motivational and are not used as claims or evidence.
 \end{itemize}
+
+\paragraph{Regimes.}
+We work in a finite-sample kernel regime (\emph{Regime 1}): we fix a dataset of size \(n\), take a sequential infinite-width limit \(N\to\infty\), and then study how the remaining bottleneck randomness concentrates as \(r\to\infty\).
+We \emph{do not} pursue the quadratic random-matrix regime \(n\to\infty\) and bulk spectral laws for the \emph{empirical} RF-LR NTK here (\emph{Regime 2}). Bulk laws in this scaling have recently been established for (shallow) two-layer NTKs via resolvent replacement and Gaussian-equivalence methods~\cite{benigni2025eigenvaluedistributionneuraltangent}; extending such techniques to the RF-LR low-rank setting and to depth \(L\ge 2\) is left for future work.
