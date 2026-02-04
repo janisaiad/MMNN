@@ -122,65 +122,68 @@ def proxy_gram_from_rho(r: int, L: int, rho_mat: np.ndarray) -> np.ndarray:
 def main() -> None:
     width = 16000
     n = 32
-    d = 256
     L_val = 2
     n_trials = 30
     seed_data = 123
     seed_init = 200
 
-    ranks = [5, 10, 15, 20, 30, 50, 75, 100]
-
-    rng_data = np.random.default_rng(seed_data)
-    x = sample_unit_sphere(n=n, d=d, rng=rng_data)
-    rho_mat = x.T @ x
-    np.fill_diagonal(rho_mat, 1.0)
-    max_off = float(np.max(np.abs(rho_mat - np.eye(n))))
-    print(f"high-dim spherical: d={d}, n={n}, max_{{|rho_ij|}} (i!=j) = {max_off:.4f} (expect O(1/sqrt(d)) ~ {1/math.sqrt(d):.4f})")
-
-    proxy_kappas = []
-    for r in ranks:
-        M = proxy_gram_from_rho(r=r, L=L_val, rho_mat=rho_mat)
-        kappa = condition_number_centered(M)
-        proxy_kappas.append(kappa)
-
-    emp_means = []
-    emp_stds = []
-    for r in ranks:
-        kappas = np.empty((n_trials,), dtype=np.float64)
-        for t in range(n_trials):
-            rng = np.random.default_rng(seed_init + 1000 * r + t)
-            K = empirical_ntk_gram_3layer(width=width, r=r, x=x, rng=rng)
-            kappas[t] = condition_number_centered(K)
-        emp_means.append(float(kappas.mean()))
-        emp_stds.append(float(kappas.std(ddof=1)))
+    ranks = [10, 15, 20, 30, 50, 75, 100, 200]
+    dims = [(256, "C0", "C0"), (128, "red", "red")]  # (d, proxy_color, empirical_color); d=256 both blue
 
     fig, ax = plt.subplots(1, 1, figsize=(6, 5))
     ax.axhline(1.0, color="gray", linestyle="--", linewidth=1.5, label=r"$\kappa_\perp=1$ (equicorrelated limit)")
-    ax.plot(ranks, proxy_kappas, marker="s", color="C0", label="proxy (from sampled $\\rho_{ij}$)")
-    ax.errorbar(
-        ranks,
-        emp_means,
-        yerr=emp_stds,
-        marker="o",
-        capsize=3,
-        color="C1",
-        label="empirical (mean $\\pm$ std)",
-    )
-    ax.set_xlabel("bottleneck rank $r$")
-    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$")
-    ax.set_title(f"High-dim spherical: i.i.d. uniform on $S^{{d-1}}$, $d$={d}, $n$={n}, $L$={L_val}")
+
+    for d, proxy_color, emp_color in dims:
+        rng_data = np.random.default_rng(seed_data + d)
+        x = sample_unit_sphere(n=n, d=d, rng=rng_data)
+        rho_mat = x.T @ x
+        np.fill_diagonal(rho_mat, 1.0)
+        max_off = float(np.max(np.abs(rho_mat - np.eye(n))))
+        print(f"high-dim spherical: d={d}, n={n}, max_{{|rho_ij|}} (i!=j) = {max_off:.4f} (expect O(1/sqrt(d)) ~ {1/math.sqrt(d):.4f})")
+
+        proxy_kappas = []
+        for r in ranks:
+            M = proxy_gram_from_rho(r=r, L=L_val, rho_mat=rho_mat)
+            kappa = condition_number_centered(M)
+            proxy_kappas.append(kappa)
+
+        emp_means = []
+        emp_stds = []
+        for r in ranks:
+            kappas = np.empty((n_trials,), dtype=np.float64)
+            for t in range(n_trials):
+                rng = np.random.default_rng(seed_init + 1000 * r + t + d * 10000)
+                K = empirical_ntk_gram_3layer(width=width, r=r, x=x, rng=rng)
+                kappas[t] = condition_number_centered(K)
+            emp_means.append(float(kappas.mean()))
+            emp_stds.append(float(kappas.std(ddof=1)))
+
+        ax.plot(ranks, proxy_kappas, marker="s", color=proxy_color, label=f"proxy, d={d}")
+        ax.errorbar(
+            ranks,
+            emp_means,
+            yerr=emp_stds,
+            marker="o",
+            capsize=3,
+            color=emp_color,
+            label=f"empirical d={d} (mean ± std)",
+        )
+        for i, r in enumerate(ranks):
+            print(f"d={d} r={r:>3d}  proxy_kappa={proxy_kappas[i]:.4f}  emp_mean={emp_means[i]:.4f}  emp_std={emp_stds[i]:.4f}")
+
+    ax.set_xlabel("bottleneck rank $r$", fontsize=10)
+    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$", fontsize=10)
+    ax.set_title(f"High-dim spherical: i.i.d. uniform on $S^{{d-1}}$, $n$={n}, $L$={L_val}", fontsize=10)
+    ax.tick_params(axis="both", labelsize=9)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    ax.legend(loc="upper right", fontsize=10)
+    ax.legend(loc="upper right", fontsize=9)
     ax.set_ylim(bottom=0.5)
     plt.tight_layout()
     out_dir = Path(__file__).resolve().parent
     plt.savefig(out_dir / "condition_number_highdim_spherical.png", dpi=300)
     plt.close()
-
-    for i, r in enumerate(ranks):
-        print(f"r={r:>3d}  proxy_kappa={proxy_kappas[i]:.4f}  emp_mean={emp_means[i]:.4f}  emp_std={emp_stds[i]:.4f}")
 
 
 if __name__ == "__main__":

@@ -111,7 +111,7 @@ def clustered_sphere_data(
 
 
 def main() -> None:
-    width = 16000
+    width = 20000  # 2e4 for slower convergence (non-equicorrelated)
     n = 48
     d = 64
     n_clusters = 4
@@ -120,7 +120,7 @@ def main() -> None:
     seed_data = 444
     seed_init = 555
 
-    ranks = [5, 10, 15, 20, 30, 50, 75, 100]
+    ranks = [10, 15, 20, 30, 50, 75, 100, 200, 1000, 2000, 5000, 10000, 100000]  # up to e4, e5
 
     rng_data = np.random.default_rng(seed_data)
     x = clustered_sphere_data(
@@ -151,6 +151,7 @@ def main() -> None:
         emp_stds.append(float(kappas.std(ddof=1)))
 
     fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    ax.axhline(1.0, color="gray", linestyle="--", linewidth=1.5, label=r"$\kappa_\perp=1$ (equicorrelated)")
     ax.errorbar(
         ranks,
         emp_means,
@@ -159,12 +160,14 @@ def main() -> None:
         capsize=3,
         label="empirical (mean $\\pm$ std)",
     )
-    ax.set_xlabel("bottleneck rank $r$")
-    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$")
+    ax.set_xlabel("bottleneck rank $r$", fontsize=11)
+    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$", fontsize=11)
     ax.set_title(
         f"Non-equicorrelated (clustered) data: $n$={n}, $d$={d}, "
-        f"$L$=2, {n_clusters} clusters, $\\sigma$={within_sd}"
+        f"$L$=2, {n_clusters} clusters, $\\sigma$={within_sd}",
+        fontsize=11,
     )
+    ax.tick_params(axis="both", labelsize=10)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)

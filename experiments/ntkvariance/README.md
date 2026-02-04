@@ -16,6 +16,25 @@ which includes (in order):
 
 All scripts here are **headless** (matplotlib `"Agg"` backend) and save figures next to the script.
 
+## Experimental setups (depth, width, ranks, etc.)
+
+| Script | Depth \(L\) | Width | \(n\) | \(d\) | Ranks \(r\) | Trials / notes |
+|--------|-------------|--------|-------|-------|-------------|----------------|
+| `confirm_depth_scaling.py` | \(k_{\max}=4000\) (proxy recursion) | — | 64 (Prop 17) | — | [5, 10, 20, 50] | deterministic |
+| `scalingdepth.py` | \(L=200\) | — | — | — | [5, 10, 20, 50] | deterministic, \(c_0=1/2\) |
+| `minimalvariance.py` | 2 (3-layer, 2 ReLU) | 16000 | 2 pts \(x=-1,x'=1\) | 1 (scalar) | [5, 10, 20, 50] | 100 |
+| `min_eig_distribution.py` | 2 | 16000 | 64 | 16 | [5, 10, 20, 50] | 50 |
+| `condition_number_proxy_empirical.py` | 2 | 20000 | 32 | 64 | [10,…,1e4] | 40, equicorrelated \(\rho_0=0\) |
+| `condition_number_highdim_spherical.py` | 2 | 16000 | 32 | 256, 128 | [10,…,200] | 30 per \(d\) |
+| `condition_number_non_equicorrelated.py` | 2 | 20000 | 48 | 64 | [10,…,1e4,1e5] | 30, 4 clusters (slower conv.) |
+| `kernel_regression_risk.py` | 2 | 12000 | 64 train, 256 test | 32 | [5,…,100] | 20 |
+| `fisher_kibble_and_decay_constants.py` | — | — | — | — | \(r\in[3,200]\) (grid) | analytic (no MC) |
+
+- **Depth:** All finite-width NTK scripts use a **3-layer (2 ReLU)** RF-LR architecture, i.e. \(L=2\) hidden ReLU layers and one output layer; the proxy/deterministic scripts iterate the recursion to large \(k\) (e.g. \(k_{\max}=4000\) or \(L=200\)).
+- **Width:** Hidden layer width is 12000 or 16000 in Monte Carlo scripts so that finite-width variance is small and the proxy limit is visible.
+- **Ranks:** Bottleneck rank \(r\) is swept as listed; equicorrelated proxy–empirical goes to \(10^4\), non-equicorrelated to \(10^4\) and \(10^5\) (with width \(2\times 10^4\)) to show slower convergence toward \(\kappa_\perp=1\).
+- **Data:** \(n\) = number of inputs, \(d\) = input dimension; equicorrelated/high-dim spherical use unit-sphere or equicorrelated design; kernel regression uses train/test split on the sphere.
+
 ## 1) Deterministic mean-field / proxy depth scaling (Theorem 15, Props 16–17)
 
 ### `confirm_depth_scaling.py`
@@ -43,8 +62,8 @@ All scripts here are **headless** (matplotlib `"Agg"` backend) and save figures 
 
 **Outputs**
 
-- `confirm_thm15.png`
-- `confirm_prop17.png`
+- **`confirm_thm15.png`** — Four panels (Theorem 15): (1) \(w_k/k\) vs \(k\) (should stabilize); (2) \(1-\rho_k\) vs \(k\) on log–log with \(k^{-2}\) reference; (3) \(k|\Theta^{(k)}(\rho_1)-\Theta_\star(r)|\) vs \(k\) (bounded); (4) \(rk(\Theta_{\rm diag}^{(k)}-\Theta_{\rm off}^{(k)})\) vs \(k\) (stabilizes). One curve per rank \(r\in\{5,10,20,50\}\).
+- **`confirm_prop17.png`** — Two panels (Proposition 17, equicorrelated \(n=64\), \(\rho_0=0\)): (1) spike saturation \(L|\lambda_1/n-\Theta_\star(r)|/n\) vs \(L\) (log–log); (2) gap scaling \(rL\lambda_\perp\) vs \(L\) (log–log). One curve per \(r\).
 
 ## 2) Exponential depth suppression factor (closed form product bound)
 

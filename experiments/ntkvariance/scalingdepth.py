@@ -79,12 +79,12 @@ def main() -> None:
     plt.figure(figsize=(7, 5))
     for r in ranks:
         products, bounds = compute_top_products(rhos=rhos, r=r, c0=c0)
-        plt.semilogy(j_values[1:], products[1:], marker=".", linewidth=1.5, label=f"r={r} (mean-field)")
+        plt.semilogy(j_values[1:], products[1:], marker=".", linewidth=1.5, label=f"r={r}")
         plt.semilogy(j_values[1:], bounds[1:], linestyle="--", linewidth=1.0, label=f"(c0/r)^j, r={r}")
 
     plt.xlabel("j = L - ℓ (layers above ℓ)")
     plt.ylabel(r"$\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}$")
-    plt.title(f"exponential depth suppression, ReLU EOC, x={x}, x'={xp}, L={depth}, c0={c0}")
+    plt.title(f"exponential depth suppression, ReLU EOC, x={x}, x'={xp}, L={depth}, c0={c0}", fontsize=11)
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.legend(fontsize=10, ncol=2)
     plt.tight_layout()

@@ -138,7 +138,7 @@ def condition_number_centered(K: np.ndarray) -> float:
 
 
 def main() -> None:
-    width = 16000
+    width = 20000  # 2e4
     n = 32
     d = 64
     rho0 = 0.0
@@ -147,7 +147,7 @@ def main() -> None:
     seed_data = 42
     seed_init = 100
 
-    ranks = [5, 10, 15, 20, 30, 50, 75, 100]
+    ranks = [10, 15, 20, 30, 50, 75, 100, 200, 1000, 2000, 5000, 10000]  # up to e4
 
     rng_data = np.random.default_rng(seed_data)
     x_equi = equicorrelated_data(n=n, d=d, rho0=rho0, rng=rng_data)
@@ -178,15 +178,17 @@ def main() -> None:
         capsize=3,
         label="empirical (mean $\\pm$ std)",
     )
-    ax.set_xlabel("bottleneck rank $r$")
-    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$")
+    ax.set_xlabel("bottleneck rank $r$", fontsize=11)
+    ax.set_ylabel(r"condition number $\kappa$ on $\mathbf{1}^\perp$", fontsize=11)
     ax.set_title(
-        f"Equicorrelated data: proxy vs empirical RF-LR NTK, $n$={n}, $L$={L_proxy}, $\\rho_0$={rho0}"
+        f"Equicorrelated data: proxy vs empirical RF-LR NTK, $n$={n}, $L$={L_proxy}, $\\rho_0$={rho0}",
+        fontsize=11,
     )
+    ax.tick_params(axis="both", labelsize=10)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    ax.legend(loc="upper right", fontsize=11)
+    ax.legend(loc="upper right", fontsize=10)
     ax.set_ylim(bottom=0.5)
     plt.tight_layout()
     out_dir = Path(__file__).resolve().parent
