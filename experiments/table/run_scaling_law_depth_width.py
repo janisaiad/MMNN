@@ -40,6 +40,7 @@ _TABLE = _REPO_ROOT / "experiments" / "table"
 RESULTS_DIR = _TABLE / "results_frequency_layer_scaling"
 RESULTS_BASELINE_DIR = _TABLE / "results_stable_baseline"
 RESULTS_BASELINE_SWEEP_DIR = _TABLE / "results_baseline_sweep_sumcos"
+RESULTS_BASELINE_SWEEP_SUMCOS_RANK5_DIR = _TABLE / "results_baseline_sweep_sumcos_rank5"
 RESULTS_BASELINE_SWEEP_EXPCOS_DIR = _TABLE / "results_baseline_sweep_expcos"
 ANALYSIS_CSV = _TABLE / "frequency_layer_scaling_analysis.csv"
 SUMMARY_TXT = _TABLE / "frequency_layer_scaling_summary.txt"
@@ -766,17 +767,19 @@ def train_baseline_sweep_one(config, output_dir):
     return losses_payload
 
 
-def run_baseline_sweep():
-    """we run sweep: target = sum_{k=1}^{factor} cos(2 pi k x); factor 1..5, N = base*factor, batch_size [1,2,4,8,16], layers 1..2*factor; epochs until 10K or lr < 1e-6; save losses.json and params at min_loss/1.2^k"""
-    RESULTS_BASELINE_SWEEP_DIR.mkdir(parents=True, exist_ok=True)
-    for f in RESULTS_BASELINE_SWEEP_DIR.rglob("epoch_info.json"):
+def run_baseline_sweep(sweep_rank=None, results_dir=None):
+    """we run sweep: target = sum_{k=1}^{factor} cos(2 pi k x); factor 1..5, N = base*factor, batch_size [1,2,4,8,16], layers 1..2*factor; epochs until 10K or lr < 1e-6; save losses.json and params at min_loss/1.2^k. If sweep_rank is set (e.g. 5), use that hidden_rank and results_dir (e.g. results_baseline_sweep_sumcos_rank5)."""
+    out_dir = results_dir if results_dir is not None else RESULTS_BASELINE_SWEEP_DIR
+    rank = sweep_rank if sweep_rank is not None else SWEEP_RANK
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for f in out_dir.rglob("epoch_info.json"):
         try:
             f.unlink()
         except FileNotFoundError:
             pass
     lr_seq = _sweep_lr_sequence()
-    print(f"BASELINE SWEEP: factors {SWEEP_FACTORS}, N = {SWEEP_BASE_N} * factor, batch_size {SWEEP_BATCH_SIZES}, layers 1..2*factor, max_epochs {SWEEP_NUM_EPOCHS_MAX}, stop if lr < {SWEEP_LR_STOP_BELOW}")
-    print(f"Output: {RESULTS_BASELINE_SWEEP_DIR}")
+    print(f"BASELINE SWEEP (rank={rank}): factors {SWEEP_FACTORS}, N = {SWEEP_BASE_N} * factor, batch_size {SWEEP_BATCH_SIZES}, layers 1..2*factor, max_epochs {SWEEP_NUM_EPOCHS_MAX}, stop if lr < {SWEEP_LR_STOP_BELOW}")
+    print(f"Output: {out_dir}")
 
     configs = []
     for factor in SWEEP_FACTORS:
@@ -793,7 +796,7 @@ def run_baseline_sweep():
                         "n_train": n_train,
                         "batch_size": batch_size,
                         "hidden_width": SWEEP_WIDTH,
-                        "hidden_rank": SWEEP_RANK,
+                        "hidden_rank": rank,
                         "num_layers": num_layers,
                         "num_epochs": SWEEP_NUM_EPOCHS_MAX,
                         "lr_sequence": lr_seq,
@@ -816,8 +819,8 @@ def run_baseline_sweep():
 
     for i, cfg in enumerate(configs, 1):
         out_name = cfg["name"]
-        out_dir = RESULTS_BASELINE_SWEEP_DIR / out_name
-        if (out_dir / "losses.json").exists() and out_name not in rerun_set:
+        run_out_dir = out_dir / out_name
+        if (run_out_dir / "losses.json").exists() and out_name not in rerun_set:
             print(f"[{i}/{len(configs)}] skip (done): {out_name}")
             continue
         if out_name in rerun_set:
@@ -825,7 +828,7 @@ def run_baseline_sweep():
         else:
             print(f"[{i}/{len(configs)}] {out_name}")
         try:
-            train_baseline_sweep_one(cfg, out_dir)
+            train_baseline_sweep_one(cfg, run_out_dir)
         except Exception as e:
             print(f"  error: {e}")
             import traceback
@@ -1010,7 +1013,9 @@ def main():
         description="Main experiments: stable baseline (cos 2pi x) and scaling law (depth/width/freq)."
     )
     parser.add_argument("--baseline", action="store_true", help="run stable baseline only (N=width=1024, SGD+AdaptiveStagnation)")
-    parser.add_argument("--baseline-sweep", action="store_true", help="sweep sumcos: sum_{k=1}^{f} cos(2 pi k x), factor 1..5; N = base*factor")
+    parser.add_argument("--baseline-sweep", action="store_true", help="sweep sumcos: sum_{k=1}^{f} cos(2 pi k x), factor 1..5; N = base*factor; rank=10")
+    parser.add_argument("--baseline-sweep-rank5", action="store_true", help="same sumcos sweep as --baseline-sweep but hidden_rank=5; output to results_baseline_sweep_sumcos_rank5")
+    parser.add_argument("--baseline-sweep-rank", type=int, metavar="N", default=None, help="same sumcos sweep with hidden_rank=N; output to results_baseline_sweep_sumcos_rank{N} (e.g. --baseline-sweep-rank 20)")
     parser.add_argument("--baseline-sweep-expcos", action="store_true", help="sweep expcos: sum_{k=0}^{f} cos(2^k pi x), factor 3 and 4 only; N = mult*2^factor (Nyquist)")
     parser.add_argument("--train", action="store_true", help="run scaling-law training only")
     parser.add_argument("--analyze", action="store_true", help="run scaling-law analysis only")
@@ -1018,8 +1023,13 @@ def main():
 
     if args.baseline:
         run_baseline()
+    elif args.baseline_sweep_rank is not None:
+        out_dir = _TABLE / f"results_baseline_sweep_sumcos_rank{args.baseline_sweep_rank}"
+        run_baseline_sweep(sweep_rank=args.baseline_sweep_rank, results_dir=out_dir)
     elif args.baseline_sweep:
         run_baseline_sweep()
+    elif getattr(args, "baseline_sweep_rank5", False):
+        run_baseline_sweep(sweep_rank=5, results_dir=RESULTS_BASELINE_SWEEP_SUMCOS_RANK5_DIR)
     elif args.baseline_sweep_expcos:
         run_baseline_sweep_expcos()
     elif args.train:
