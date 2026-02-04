@@ -1,4 +1,4 @@
-\section{Network definition and EOC parameterization}
+\section{Network definition and EOC parameterization}\label{sec:network-definition}
 
 \vspace{1em}
 \subsection{RF-LR architecture}
@@ -7,48 +7,49 @@ Let \( \bm{h}^{(0)}(x)=x\in\mathbb{R}^{\bm{d}_0} \). For \( \ell=1,\dots,L \),
 \label{eq:RF-LR}
 \bm{h}^{(\ell)}(x)
 = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,
-\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x) + b^{(\ell)}_j\Big) \;+\; c.
+\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x)\Big) \;+\; c^{(\ell)}.
 \end{equation}
-\textbf{Training policy:} \( A^{(\ell)} \) and the scalar output bias \( c \) are trained; \( w^{(\ell)} \) and activation biases \( b^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{\bm{n}_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit. Low-rank bottlenecks (intermediate dimension \( r\ll \bm{n}_\ell \)) compress correlations, reduce parameter budget from \( O(n^2) \) to \( O(rn) \), and improve conditioning.
+\textbf{Training policy:} The readouts \( A^{(\ell)} \) and layer biases \( c^{(\ell)}\in\mathbb{R}^{\bm{d}_\ell} \) are trained; the feature directions \( w^{(\ell)} \) are frozen random draws (i.i.d. Gaussian). The \( 1/\sqrt{\bm{n}_\ell} \) scaling (NTK parameterization) ensures a well-defined infinite-width limit.
+\paragraph{Width vs bottleneck dimension.}
+We distinguish the feature width \(\bm{n}_\ell\) (number of random features) from the output dimension \(\bm{d}_\ell=\dim(\bm{h}^{(\ell)})\). The trainable matrix \(A^{(\ell)}\in\mathbb{R}^{\bm{d}_\ell\times \bm{n}_\ell}\) has columns \(A^{(\ell)}_j\in\mathbb{R}^{\bm{d}_\ell}\). A \emph{bottleneck} layer corresponds to \(\bm{d}_\ell=r\ll \bm{n}_\ell\), yielding \(O(r\bm{n}_\ell)\) trainable parameters and \(\mathrm{rank}(A^{(\ell)})\le r\) automatically.
 
 \paragraph{Training parameters, biases, and initialization.}
 Initialization is
 \[
 w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\big),\quad
-b^{(\ell)}_j \sim \mathcal{N}(0, \beta^2),\quad
 A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, \sigma_A^2),\quad
-c \sim \mathcal{N}(0, \sigma_c^2),
+c^{(\ell)} = 0,
 \]
 We use the \emph{edge-of-chaos (EOC)} scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
-The low-rank constraint is enforced as \( \mathrm{rank}\!\big(A^{(\ell)}\big)\le r_\ell \ll \bm{n}_\ell \).
+In our bottleneck regime we take \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), so \(w^{(\ell)}_j\in\mathbb{R}^r\) with covariance \(I_r/r\).
 
-We include an activation bias \( b^{(\ell)} \) and a scalar output bias \( c \) for completeness, but we avoid introducing extra scaling parameters for them. Output scaling can be absorbed into the learning rate; the mean-field and NTK structures remain qualitatively identical, and the Fourier-space interpretation and stepwise loss phenomenon depend on kernel geometry, not absolute scales.
+We include a layer bias \(c^{(\ell)}\) for completeness, but we avoid introducing extra scaling parameters for it. Bias scaling can be absorbed into the learning rate; the infinite-width and NTK structures remain qualitatively identical, and the kernel-regime predictions depend on kernel geometry, not absolute scales.
 
-With this setup in place, we now recall a minimal assumption on the activation that we will use throughout.
+With this setup in place, we record the standing assumptions and conventions used throughout the paper.
 
-\paragraph{Activation homogeneity.}\label{assump:homogeneous_activation}
-We only assume a positively 1-homogeneous nonlinearity \(\bm{\ReLU}\) for Fisher–Kibble decoupling (see Lemma~\ref{lem:fisher-kibble}):
-\[
-\ReLU(\alpha u) \,=\, \alpha\,\ReLU(u) \quad \text{for } \alpha \ge 0,\; u \in \mathbb{R}.
-\]
-This yields the scaling relation \(\ReLU(\alpha\, w^\top h) = \alpha\,\ReLU(w^\top h)\) and, away from zero, \(\dot{\ReLU}(\alpha u)=\dot{\ReLU}(u)\).
+\subsection{Assumptions}\label{subsec:assumptions}
+\noindent
+We collect the standing assumptions and conventions used throughout the paper; expanded discussion is in Appendix~\ref{appendix:notation-assumptions}.
+\begin{itemize}
+    \item \textbf{Sequential infinite width.} We take \( \bm{n}_1\to\infty,\dots,\bm{n}_L\to\infty \) with i.i.d.\ Gaussian random features, frozen after initialization, under NTK scaling \(1/\sqrt{\bm{n}_\ell}\)~\cite{jacot2018neural} (Appendix~\ref{appendix:assumptions-expanded}).
+    \item \textbf{Bottleneck regime and scaling.} For \(\ell\ge 2\), \(\bm{d}_\ell=r\ll \bm{n}_\ell\), and we use edge-of-chaos scaling \( \mathrm{Cov}(w^{(\ell)}_j)=I_r/r \) (Appendix~\ref{appendix:eoc-scaling}).
+    \item \textbf{Input normalization.} For RKHS statements we focus on normalized inputs (typically \(x\in\mathbb{S}^{d-1}\)), so kernels are zonal functions of the cosine similarity \(\rho\); concentration statements keep explicit \(\|x\|\|x'\|\) factors when needed.
+\end{itemize}
+
+\paragraph{Homogeneous activation.}
+We work under the positive 1-homogeneity assumption (satisfied by \(\ReLU\)); see Assumption~\ref{assump:homogeneous_activation} in Appendix~\ref{appendix:notation-assumptions}. This condition is used for Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}) and for separating radial and angular fluctuations in the three-layer kernel.
 
 \subsection{Parameterization, signal propagation, and kernels}
 
-With the model and initialization fixed, we can now examine parameterization choices, signal propagation at initialization, and the kernel quantities driving our analysis. We begin by tracking the layer-wise variance at initialization.
+We briefly record the scaling conventions used in the kernel calculations; details are in Appendix~\ref{appendix:notation-assumptions}.
+\paragraph{EOC scaling.}
+We choose the variance \(\sigma_A\) so that the forward variance remains stable across depth (edge of chaos); the resulting recursion for the layerwise variance \(q^{(\ell)}\) and the condition on \(\sigma_A\) are given in Appendix~\ref{appendix:eoc-scaling}.
+\paragraph{Bottleneck scaling and the \(1/r\) factor.}
+In the bottleneck regime \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), the EOC scaling uses \( \mathrm{Cov}(w)=I_r/r \), which keeps base and derivative kernels \(O(1)\). The RF-LR NTK recursion carries an explicit prefactor \(1/r\) at bottleneck layers; see Appendix~\ref{appendix:eoc-scaling} and Appendix~\ref{appendix:proof-ntk-recursion}.
 
-For general weight variance \(\Sigma_w\ = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), define the per-layer variance \( q^{(\ell)} \), by weight independance we derive it's recursion:
-\[
-q^{(\ell)} = \sigma_c^2 + \frac{\sigma_A^2}{2} q^{(\ell-1)}\,\mathrm{Tr}(\Sigma_w), \]
-This leads to the \emph{(EOC)} condition: 
-\[ \frac{\sigma_A^2}{2}\mathrm{Tr}(\Sigma_w)=1. \]
+\vspace{0.5em}
+With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel.
 
-it is chosen to prevent activations (forward) and gradients (backward) from exploding or vanishing as they propagate through the layers. By tuning the initialization so that the update satisfies this fixed point, both the signal and its derivative maintain stable variance at each layer. For example, under \(\Sigma_w = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), the EOC choice gives \(\sigma_A = \sqrt{2}\) and typically \(\sigma_c^2 = 1\).
-
-
-With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel. We emphasize that these are not the NNGP kernel and the derivative kernel, but the base kernel and the derivative kernel of the Gaussian process \( \bm{h}^{(\ell)} \) conditional on \( \bm{h}^{(\ell-1)} \).
-By rotation invariance of Gaussian weights, these kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). We will therefore write \(\Sigma^{(\ell)}(\rho)\) and \(\dot{\Sigma}^{(\ell)}(\rho)\). When no confusion arises (e.g., for \(\ell=1\)), we will also abuse notation and write \(\sigma(\rho)\) for the scalar kernel function; this \(\sigma\) denotes the kernel-as-a-function-of-\(\rho\), not the activation \(\bm{\ReLU}\).
-We can now state the base and derivative kernels precisely.
 \begin{definition}[Base and derivative kernels]\label{def:base-derivative-kernels}
 \vspace{0.3cm}
 In the sequential infinite-width limit, the layer-\( \ell \) base kernel is
@@ -66,6 +67,12 @@ For \( \ell=1 \) and centered Gaussian \( w \), \( \Sigma^{(1)} \) is rotation-i
 \Sigma^{(1)}(x,x') = \frac{\|x\|\|x'\|}{2\pi}\big((\pi-\theta)\cos\theta + \sin\theta\big), \quad \theta = \arccos(\rho).
 \]
 \end{definition}
+\textbf{We emphasize that these are not the NNGP kernel and the classical derivative kernel appearing in the NTK formulation.}
+Rather, they are the base kernel and the derivative kernel of the Gaussian process \( \bm{h}^{(\ell)} \) conditional on \( \bm{h}^{(\ell-1)} \).
+By rotation invariance of Gaussian weights, these kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). We will therefore write \(\Sigma^{(\ell)}(\rho)\) and \(\dot{\Sigma}^{(\ell)}(\rho)\). When no confusion arises (e.g., for \(\ell=1\)), we will also abuse notation and write \(\sigma(\rho)\) for the scalar kernel function; this \(\sigma\) denotes the kernel-as-a-function-of-\(\rho\), not the activation \(\bm{\ReLU}\).
+We can now state the base and derivative kernels precisely.
+
+
 
 Given these definitions, we can now state the following composition result.
 \begin{theorem}[Gaussian process composition]\label{thm:gp-composition}
@@ -81,5 +88,5 @@ See Appendix~\ref{appendix:proof-gp-composition}.
 \end{proof}
 
 
-\paragraph{Composition of Gaussian processes} We highlight the main difference between the base kernel and the NNGP kernel arising in classical NTK analysis : Since \( \bm{h}^{(\ell-1)} \) itself is a (conditional) Gaussian process, the overall distribution is a composition of Gaussian processes, not a single Gaussian process.
+
 

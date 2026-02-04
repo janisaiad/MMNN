@@ -1,0 +1,673 @@
+\section{Feynman rules} 
+\label{app:feynman_rules}
+In this appendix, we provide the complete list of Feynman rules, including those described in the summary in Section~\ref{sec:feynman-rules} above.
+
+\begin{enumerate}[label=(\roman*)]
+\item External vertices (which correspond to the quantities which appear in the expectation value) are represented by filled dots.
+
+  \begin{enumerate}[label=(\alph*)]
+  \item \emph{Solid external lines} represent preactivations~\cite{banta2024}
+    \begin{align}
+      &z_{\alpha} \equiv
+      \begin{tikzpicture}[baseline=-0.1cm]
+        \begin{feynman}
+          \vertex (l) {};
+          \vertex[right = 0pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha^{}$}}] (x1) {};
+          \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+          \diagram*{
+            (x1),
+            (x1) -- [inner sep = 4pt] (b) 
+          };
+        \end{feynman}
+      \end{tikzpicture}
+    \end{align}
+  \item \emph{Dotted} external lines represent NTK fluctuations
+    \begin{align}
+      \widehat{\Delta \Theta}_{\textcolor{color1}{\alpha\beta}} \equiv
+      \begin{tikzpicture}[baseline=0.05cm]
+        \begin{feynman}
+          \vertex (l) {};
+          \vertex[right = 0pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+          \vertex[above = 8pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+          \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+          \vertex[right = 30pt of x2, dot, minimum size=0pt] (bb) {};
+          \diagram*{
+            (x1), (x2),
+            (x1) -- [color1, ghost, inner sep = 4pt] (b),
+            (x2) -- [color1, ghost, inner sep = 4pt] (bb)
+          };
+        \end{feynman}
+      \end{tikzpicture}
+    \end{align}
+    We will use different colors for external dotted lines corresponding to different NTKs.
+  \item dNTKs, $\widehat{\mathrm{d} \Theta}_{\delta_0\delta_1\delta_2}
+    =\sum_{\mu\nu}\frac{d^2 z_{\delta_0}}{d\theta_{\mu}d\theta_{\nu}}\frac{d z_{\delta_1}}{d\theta_\mu}\frac{d z_{\delta_2}}{d\theta_\nu}$ as defined in~\eqref{eq:12}, are represented by one dotted double line and two dotted single lines. They carry the sample indices of the dNTK according to
+    \begin{equation}
+      \widehat{\mathrm{d} \Theta}_{\textcolor{color3}{\delta_0}\textcolor{color1}{\delta_1}\textcolor{color2}{\delta_2}} \equiv \begin{tikzpicture}[baseline=(bb)]
+        \begin{feynman}
+          \vertex (l) {};
+          \vertex[above = 12pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\delta_1^{}}$}}] (x1) {};
+          \vertex[above = 24pt of l, color2, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\delta_2^{}}$}}] (x2) {};
+          \vertex[above = 0pt of l, color3, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color3}{\delta_0}^{}$}}] (x3) {};
+          \vertex[right = 30pt of x1, dot, minimum size=0pt] (bb) {};
+          \vertex[right = 30pt of x2, dot, minimum size=0pt] (bbb) {};
+          \vertex[right = 30pt of x3, dot, minimum size=0pt] (b) {};
+          \diagram*{
+            (x1), (x2), (x3),
+            (x3) -- [color1color2dntknew, inner sep = 4pt] (b),
+            (x1) -- [color1, ghost, inner sep = 4pt] (bb),
+            (x2) -- [color2, ghost, inner sep = 4pt] (bbb)    
+          };
+        \end{feynman}
+      \end{tikzpicture}
+    \end{equation}
+    Here, the colors of the dotted lines again correspond to the $\theta$ in the definition of the dNTK. Since now, there are two different $\theta$ (the four $\theta$ appearing in the definition are contracted in pairs), there are two different colors. The double line corresponds to the second derivative, the two single lines correspond to the first derivatives. The colors indicate the contraction pattern between the $\theta$.
+
+  \item The dd$_{\text{I}}$NTK, $
+    \widehat{\mathrm{dd_I} \Theta}_{\delta_0\delta_1\delta_2\delta_3}
+    =\sum_{\mu\nu\rho}\frac{d^3 z_{\delta_0}}{d\theta_{\mu}d\theta_{\nu}d\theta_\rho}\frac{d z_{\delta_1}}{d\theta_\mu}\frac{d z_{\delta_2}}{d\theta_\nu}\frac{d z_{\delta_3}}{d\theta_\rho}
+    $, defined by~\eqref{eq:13} is represented by
+    \begin{equation}
+      \widehat{\mathrm{dd_I} \Theta}_{\textcolor{color4}{\delta_0}\textcolor{color2}{\delta_1}\textcolor{color1}{\delta_2}\textcolor{color6}{\delta_3}} \equiv \begin{tikzpicture}[baseline=(b)]
+        \begin{feynman}
+          \vertex (l) {};
+          \vertex[above = 12pt of l, color2, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\delta_1^{}}$}}] (x1) {};
+          \vertex[above = 24pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\delta_2^{}}$}}] (x2) {};
+          \vertex[above = 36pt of l, color6, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color6}{\delta_3^{}}$}}] (x3) {};
+          \vertex[right = 0pt of l, color4, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color4}{\delta_0^{}}$}}] (x4) {};
+          \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+          \vertex[right = 30pt of x2, dot, minimum size=0pt] (bb) {};
+          \vertex[right = 30pt of x3, dot, minimum size=0pt] (bbb) {};
+          \vertex[right = 30pt of x4, dot, minimum size=0pt] (bbbb) {};
+          \diagram*{
+            (x1), (x2), (x3), (x4),
+            (x1) -- [color2, ghost, inner sep = 4pt] (b),
+            (x2) -- [color1, ghost, inner sep = 4pt] (bb),
+            (x3) -- [color6, ghost, inner sep = 4pt] (bbb),
+            (x4) -- [color6color1color2ddntknew, inner sep = 4pt] (bbbb)
+          };
+        \end{feynman}
+      \end{tikzpicture}
+    \end{equation}
+    As before, we use three colored dotted lines due to the presence of three types of $\theta$. The triple line denotes the third derivative, and the three single lines represent the first derivatives. The colors indicate the contraction pattern among the $\theta$.
+
+
+  \item dd$_{\text{II}}$NTKs, $\widehat{\mathrm{dd_{II}} \Theta}_{\delta_1\delta_2\delta_3\delta_4}
+    =\sum_{\mu\nu\rho}\frac{d^2 z_{\delta_1}}{d\theta_{\mu}d\theta_{\nu}}\frac{d^2 z_{\delta_2}}{d\theta_{\rho}d\theta_{\nu}}\frac{d z_{\delta_3}}{d\theta_\mu}\frac{d z_{\delta_4}}{d\theta_\rho}
+    $, as defined in~\eqref{eq:14}, are denoted by
+    \begin{equation}
+      \widehat{\mathrm{dd_{II}} \Theta}_{\textcolor{color5}{\delta_1}\textcolor{color7}{\delta_2}\textcolor{color1}{\delta_3}\textcolor{color2}{\delta_4}} \equiv \begin{tikzpicture}[baseline=(bbbb)]
+        \begin{feynman}
+          \vertex (l) {};
+          \vertex[above = 24pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\delta_3^{}}$}}] (x1) {};
+          \vertex[above = 36pt of l, color2, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\delta_4^{}}$}}] (x2) {};
+          \vertex[right = 0pt of l, color5, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color5}{\delta_1^{}}$}}] (x3) {};
+          \vertex[above = 12pt of l, color7, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color7}{\delta_2^{}}$}}] (x4) {};
+          \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+          \vertex[right = 30pt of x2, dot, minimum size=0pt] (bb) {};
+          \vertex[right = 30pt of x3, dot, minimum size=0pt] (bbb) {};
+          \vertex[right = 30pt of x4, dot, minimum size=0pt] (bbbb) {};
+          \diagram*{
+            (x1), (x2), (x3), (x4),
+            (x1) -- [color1, ghost, inner sep = 4pt] (b),
+            (x2) -- [color2, ghost, inner sep = 4pt] (bb),
+            (x3) -- [color6color1ddntknew, inner sep = 4pt] (bbb),
+            (x4) -- [color6color2ddntknew, inner sep = 4pt] (bbbb)
+          };
+        \end{feynman}
+      \end{tikzpicture}
+    \end{equation}
+    Here we use again three colored lines for the three types of $\theta$. The two double lines correspond to the second derivatives, and the two single lines represent the first derivatives. The colors indicate the contraction pattern among the $\theta$.
+  \end{enumerate}
+
+\item The external lines are attached to \emph{cubic vertices}, which are vertices connected to two external lines and one \emph{internal line}. Two external preactivations are joined in the vertex~\cite{banta2024}
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha^{}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\beta^{}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  (v12) --  (x2),
+          (v12) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta G}^{(\ell)}_{i,\alpha\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} \sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}
+  \end{align}
+  The line without dot is the internal line. We discuss its decoration in the next Feynman rule. For cubic interactions involving external NTK lines, we introduce the following Feynman rules
+  \begingroup
+  \allowdisplaybreaks
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color1, ghost] (x2),
+          (v12) -- [black, photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{i,\alpha\beta}^{(\ell+1)}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.1cm} &\sim \frac{1}{n_{\ell}} &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha^{}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  (v12) --  [color1, ghost] (x2),
+          (v12) -- [color1blackghost, edge label = {\scriptsize \;$\sigma^{(\ell)}_{i,\alpha}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.1cm} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}\nonumber\\
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color1, ghost] (x2),
+          (v12) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color1}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}  &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color2, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color2, ghost] (x2),
+          (v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color1}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color2}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}\label{feynmanrulescubic}
+  \end{align}
+  \endgroup
+  where $\widehat{\Delta \Omega}^{(\ell+1)}_{i,\alpha\beta} = \sigma^{(\ell)}_{i,\alpha}\sigma^{(\ell)}_{i,\alpha} + C^{(\ell+1)}_{W}\Theta_{\alpha\beta}^{(\ell)}\sigma'^{(\ell)}_{i,\alpha}\sigma'^{(\ell)}_{i,\beta}$. For the remaining external lines due to the higher-derivative tensors, we introduce the following cubic vertices
+  \begingroup
+  \allowdisplaybreaks
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $\beta$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color2color1dntknew] (v12) -- (x2),
+          (v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma''^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} 
+    & \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {above: {\footnotesize $\beta$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color2color1dntknew] (v12) -- (x2),
+          (v12) -- [blackcolor1color2ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} 
+    &  \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha}^{}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+          (v12) -- [blackcolor2ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color2}{\alpha}}\sigma^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{1}{n_{\ell}}  
+    \nonumber\\
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+          (v12) -- [blackcolor2ghost, edge label = {\scriptsize \hspace{2mm} \;$\Theta^{(\ell)}_{\textcolor{color1}{\alpha\beta}}\sigma''^{(\ell)}_{i,\textcolor{color2}{\alpha}}\sigma'^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}     
+    & \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color3, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color2color1dntknew] (v12) -- [color1, ghost] (x2),
+          (v12) -- [ntkdntkcolor1color2, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color2ddntknew] (v12) -- [color1, ghost] (x2),
+          (v12) -- [ntkdntkblackcolor1color2color6, edge label = {\scriptsize \;$\sigma''^{(\ell)}_{i,\textcolor{color7}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}    
+    \nonumber\\ \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color2ddntknew] (v12) -- [color1, ghost] (x2),
+          (v12) -- [ntkdntkcolor1color2color6, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color7}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}     
+    & \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+          (v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color2}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{1}{n_{\ell}} 
+    & \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+          (v12) -- [color1color2ghost, edge label = {\scriptsize \hspace{2mm} \;$\Theta^{(\ell)}_{\textcolor{color6}{\alpha\beta}}\sigma''^{(\ell)}_{i,\textcolor{color2}{\alpha}}\sigma''^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} 
+    \nonumber\\
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color2ddntknew] (v12) -- [color6color1ddntknew] (x2),
+          (v12) -- [ddntkddntkcolor1color2ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color7}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color5}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} & 
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+          (v12) -- [color1color2ghost, edge label = {\scriptsize \;$\sigma''^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{1}{n_{\ell}} & 
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+          (v12) -- [color1color2ghost, edge label = {\scriptsize \hspace{2mm} \;$\Theta^{(\ell)}_{\textcolor{color6}{\alpha\beta}}\sigma'''^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma'^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}    
+    \nonumber\\
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+          (v12) -- [blackcolor1color2ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{1}{n_{\ell}} 
+    & \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color4, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color6color1color2ddntknew] (v12) -- [color6, ghost] (x2),
+          (v12) -- [blackcolor1color2ghost, edge label = {\scriptsize \hspace{1mm}\;$\Theta^{(\ell)}_{\textcolor{color6}{\alpha\beta}}\sigma''^{(\ell)}_{i,\textcolor{color3}{\alpha}}\sigma'^{(\ell)}_{i,\beta}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture} &\sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}} &
+  \end{align}
+  \endgroup
+  
+\item The internal lines from the vertices \eqref{feynmanrulescubic} are connected to a \emph{propagator} which will be represented by a white blob
+  \begin{equation}
+    \langle\hspace{3mm}\rangle_{K^{(\ell)}} \equiv
+    \begin{tikzpicture}[baseline=-0.1cm]
+      \begin{feynman}
+        \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+        \vertex (l) {};
+        \vertex[above = 0pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[above = 0pt of v12, blob] (b) {};
+        \vertex[above = 0pt of b, dot, minimum size=0pt] (v34) {};
+        \diagram*{
+          (v12) -- (b) -- (v34), 
+        };
+      \end{feynman}
+    \end{tikzpicture}   
+  \end{equation}
+  where $\langle \hspace{3mm}\rangle_{K^{(\ell)}}$ stands for a Gaussian expectation value with mean zero and covariance given by the Gram matrix of the NNGP, as in~\eqref{eq:F}. We take the expectation value over the decorations of the internal lines attached to the propagator, for instance
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 40pt of v12, propblob] (b) {};
+        \vertex[right = 40pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \diagram*{
+          (v12) -- [black, photon, edge label = {\scriptsize $\widehat{\Delta\Omega}_{i,\alpha\beta}$}, inner sep = 4pt] (b) -- [black, photon, edge label = {\scriptsize $\widehat{\Delta\Omega}_{i,\gamma\delta}$}, inner sep = 4pt] (v34)
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm}
+    \sim \langle \widehat{\Delta\Omega}_{i,\alpha\beta} \widehat{\Delta\Omega}_{i,\gamma\delta}\rangle_{K^{(\ell)}}\,.
+  \end{align}
+  Propagators obey the following \emph{selection rules}:
+  \begin{enumerate}[label=(\alph*)]
+  \item Propagators are only connected to internal lines emanating from the cubic vertices or the internal quartic vetrices introduced below. In particular, propagators cannot be directly connected to other propagators.
+  \item Dotted lines attached to a propagator do not appear in the Gaussian expectation value, since they are not decorated.
+  \item Each preactivation line decorated with $z_{i}$ acts as a derivative with respect to $z_{i}$ on the argument of the Gaussian expectation value.
+  \item The neural indices of all internal lines connected to the propagator have to be equal.
+  \item If both dotted and dashed lines of the same color are connected to the propagator, these have to appear in pairs with the same sample index. The lines in a pair will be attached to different vertices. Furthermore, if both vertices connected with one color to the propagator are drawn in the orientation in which they are presented in the Feynman rules, the ordering from top to bottom of the sample indices (and therefore colors) of the lines connected to both vertices have to be the same.
+  \item Pairs of dashed lines of the same color connected to the propagator add a factor of $\Theta_{\alpha\beta}$ if they are connected to different vertices. Here, $\alpha$ and $\beta$ are the sample indices of the two lines in the pair.
+  \end{enumerate}
+\item The 10 rank-four tensors into which we decompose the cumulants will be represented by \emph{quartic interactions} with four external lines. For preactivations, we use the vertex $V_{4}$~\cite{banta2024}
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $1$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $2$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}V_{1234}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $3$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $4$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- (x2), 
+          (x3) -- (b) -- (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+  \end{align}
+  We introduce the following quartic vertices containing NTK and preactivation lines
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{1}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{2}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}D_{\alpha_{1}\alpha_{2}\textcolor{color1}{\alpha_{3}\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- (x2), 
+          (x3) -- [color1, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{1}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color1, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}F_{\alpha_{1}\textcolor{color1}{\alpha_{3}}\alpha_{2}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $\alpha_{2}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- [color1, ghost] (x2), 
+          (x3) -- (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{1}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{2}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}A_{\textcolor{color2}{\alpha_{1}}\textcolor{color2}{\alpha_{2}}\textcolor{color1}{\alpha_{3}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color2, ghost] (b) -- [color2, ghost] (x2), 
+          (x3) -- [color1, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{1}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color1, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}B_{\textcolor{color2}{\alpha_{1}}\textcolor{color1}{\alpha_{3}}\textcolor{color2}{\alpha_{2}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color2, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color2}{\alpha_{2}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color2, ghost] (b) -- [color1, ghost] (x2), 
+          (x3) -- [color2, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+  \end{align}
+  For the higher-derivative tensors, we introduce
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l,color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{\alpha_2^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color3, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color3}{\alpha_3^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $\alpha_4^{}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color1, ghost] (b) -- [color2, ghost] (x2), 
+          (x3) -- [color1color2dntknew, ghost] (b) -- (x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}P_{\textcolor{color3}{\alpha_{3}}\textcolor{color1}{\alpha_{1}}\textcolor{color2}{\alpha_{2}}\alpha_{4}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture}
+    & &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l, color1!40!color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color3}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\alpha_3^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{\alpha_2^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, dot, minimum size=3pt, label = {below: {\footnotesize $\alpha_4^{}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color2color1dntknew] (b) -- [color1, ghost] (x2), 
+          (x3) -- [color2, ghost] (b) -- (x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}Q_{\textcolor{color3}{\alpha_{1}}\textcolor{color2}{\alpha_{2}}\textcolor{color1}{\alpha_{3}}\alpha_{4}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture}
+    & &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l,brown, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color4}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color6, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color6}{\alpha_2^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{\alpha_3^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{\alpha_4^{}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color6color1color2ddntknew] (b) -- [color6, ghost] (x2), 
+          (x3) -- [color2, ghost] (b) -- [color1, ghost](x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}R_{\textcolor{color4}{\alpha_{1}}\textcolor{color6}{\alpha_{2}}\textcolor{color2}{\alpha_{3}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture} 
+    \nonumber\\
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l,color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\alpha_2^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{\alpha_3^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{\alpha_4^{}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color6color2ddntknew] (b) -- [color6color1ddntknew] (x2), 
+          (x3) -- [color2, ghost] (b) -- [color1, ghost] (x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}S_{\textcolor{color7}{\alpha_{1}}\textcolor{color5}{\alpha_{2}}\textcolor{color2}{\alpha_{3}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture}
+    & &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color2, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color2}{\alpha_3^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\alpha_2^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, color1, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{\alpha_4^{}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color6color2ddntk2new] (b) -- [color2, ghost] (x2), 
+          (x3) -- [color6color1ddntk2new, ghost] (b) -- [color1, ghost] (x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}T_{\textcolor{color7}{\alpha_{1}}\textcolor{color2}{\alpha_{3}}\textcolor{color1}{\alpha_{4}}\textcolor{color5}{\alpha_{2}}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture} 
+    & &
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 16pt of l, color7, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color7}{\alpha_1^{}}$}}] (x1) {};
+        \vertex[above = 16pt of l, color1, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color1}{\alpha_4^{}}$}}] (x2) {};
+        \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[below = 25pt of v12, dot, minimum size=0pt] (v12d) {};
+        \vertex[right = 8pt of v12d, dot, minimum size=0pt] (v12dd) {};
+        \vertex[right = 20pt of v12, quarticblob] (b) {};
+        \vertex[right = 20pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[below = 25pt of v34, dot, minimum size=0pt] (v34d) {};
+        \vertex[left = 8pt of v34d, dot, minimum size=0pt] (v34dd) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \vertex[above = 16pt of r, color5, dot, minimum size=3pt, label = {above: {\footnotesize $\textcolor{color5}{\alpha_2^{}}$}}] (x3) {};
+        \vertex[below = 16pt of r, color2, dot, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color2}{\alpha_3^{}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color6color2ddntk2new] (b) -- [color1, ghost] (x2), 
+          (x3) -- [color6color1ddntk2new, ghost] (b) -- [color2, ghost] (x4)
+        };
+        \draw [decoration={brace}, decorate] (v12dd) -- (v34dd)
+        node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell}\*}U_{\textcolor{color7}{\alpha_{1}}\textcolor{color1}{\alpha_{4}}\textcolor{color5}{\alpha_{2}}\textcolor{color2}{\alpha_{3}}}^{(\ell+1)}$};
+      \end{feynman}
+    \end{tikzpicture} 
+  \end{align}
+  The quartic vertices can also appear with four internal lines instead. In this case, they correspond to tensors in layer $\ell$ instead of $\ell+1$ and are connected to propagators. Further quartic tensors for the remaining tensors involving preactivations, the dNTK and ddNTK are introduced in Appendix~\ref{app:defin-all-tens}. For the mean NNGP and NTK corrections $K^{\{1\}}$ and $\Theta^{\{1\}}$, we similarly introduce \emph{quadratic vertices} of valence two.
+\item Internal lines attached to cubic or internal quartic vertices have unassigned neural indices (e.g.\ $i$ in the vertices in~\eqref{feynmanrulescubic}). Similarly, internal (solid) preactivation lines have unassigned sample indices. To assemble the term corresponding to a certain diagram, multiply the expressions corresponding to vertices and propagators and sum over all unassigned neural and sample indices. The complete expression for a cumulant is given by summing over all Feynman diagrams with the correct external lines and order in $1/n$.
+\end{enumerate}  
+
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

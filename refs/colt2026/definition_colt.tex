@@ -1,0 +1,16 @@
+\section{Model and EOC}\label{sec:network-definition}
+
+For \( \ell=1,\dots,L \), \( \bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j \ReLU(w^{(\ell)\top}_j \bm{h}^{(\ell-1)}(x) + b^{(\ell)}_j) + c \). We train \( A^{(\ell)} \) and \( c \); \( w^{(\ell)}, b^{(\ell)} \) are frozen. EOC: \( \mathrm{Cov}(w^{(\ell)}_j) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \), \( \frac{\sigma_A^2}{2}\mathrm{Tr}(\Sigma_w)=1 \)~\cite{hayou2018selectioninitializationactivationfunction}. For bottlenecks \( \ell\ge 2 \), \( \bm{d}_{\ell-1}=r \), so \( \Sigma_w = I_r/r \). The \( 1/r \) in the NTK recursion comes from the finite bottleneck width: the forward pass has \( 1/\sqrt{r} \), hence gradient products give \( 1/r \).
+
+\begin{definition}[Base and derivative kernels]\label{def:base-derivative-kernels}
+\( \Sigma^{(\ell)}(x,x') = \mathbb{E}_w[\ReLU(w^\top h)\,\ReLU(w^\top h')] \), \( \dot{\Sigma}^{(\ell)}(x,x') = \mathbb{E}_w[\dot{\ReLU}(w^\top h)\,\dot{\ReLU}(w^\top h')\,\|w\|^2] \).
+\end{definition}
+
+\begin{lemma}[Fisher–Kibble decoupling]\label{lem:fisher-kibble}
+\( \rho_1 = \cos\angle(x_1,y_1) \sim \text{Fisher}(\rho,r) \), \( (\|x_1\|^2,\|y_1\|^2) \sim \text{Kibble} \); angular and radial parts are independent.
+\end{lemma}
+
+\begin{theorem}[GP composition]\label{thm:gp-composition}
+In the sequential limit, \( \bm{h}^{(\ell)} \) form a composition of GPs: conditionally on \( \bm{h}^{(\ell-1)} \), \( (\bm{h}^{(\ell)}(x_1),\dots,\bm{h}^{(\ell)}(x_m)) \) converges to a zero-mean Gaussian with covariance \( [\Sigma^{(\ell)}(x_i,x_j)] \).
+\end{theorem}
+Proofs: Appendix~\ref{appendix:fisher-kibble},~\ref{appendix:proof-gp-composition}.

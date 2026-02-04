@@ -1,0 +1,321 @@
+\section{Feynman diagrams for NTKs}
+\label{feynman-diagrams-NTKs}
+
+Feynman diagrams are a standard tool to compute cumulants of quantum fields in theoretical particle physics. The probability distributions of these fields are Gaussians (corresponding to non-interacting particles) plus small, non-Gaussian corrections (corresponding to interactions). Feynman diagrams are graphs which symbolize these interactions. The set of \emph{Feynman rules} defines the vertices and edges which can appear in the graphs, what order in the expansion parameter (here: $1/n$) they carry and explains how to translate a given diagram into a mathematical term. The \emph{external vertices} correspond to the variables over which we take the expectation value and the computation proceeds by drawing all diagrams compatible with the given external vertices and the desired order according to the Feynman rules. The final result is obtained by summing up all the terms corresponding to the admissible Feynman diagrams.
+
+%The diagrams we are interested in are connected graphs. 
+
+%. The Feynman diagrams we are interested in are connected graphs 
+
+%Feynman diagrams are graphs which if they are connected,
+
+%are connected as graphs directly compute the non-Gaussian terms, the \emph{cumulants} introduced in~\eqref{eq:5}. Since the infinite-width limit yields Gaussian statistics, we are interested in exactly these non-Gaussian terms when computing finite-width corrections to the NTK.
+
+%\subsection{Computing mixed moments using Feynman diagrams}
+%Feynman diagrams are graphs which are associated to the terms in the computation of cumulants. The set of \emph{Feynman rules} defines the vertices and edges which can appear in the diagrams, what order in $1/n$ they carry and explains how to translate a given diagram into a mathematical term. The \emph{external vertices} correspond to the variables over which we take the expectation value and the computation proceeds by drawing all diagrams compatible with the given external vertices and the desired order in $1/n$ according to the Feynman rules. The final result is obtained by summing up all the terms corresponding to the admissible Feynman diagrams.
+
+\subsection{The Feynman rules for NTK statistics}\label{sec:feynman-rules}
+The set of Feynman rules for computing cumulants of preactivations was explicitly derived in \cite{banta2024} from first principles. This approach relied heavily on the Gaussian nature of the conditional probability distribution $P(z^{(\ell+1)}|z^{(\ell)})$. Since the NTK is quadratic in the weights, their method is no longer admissible for evaluating cumulants involving the NTK. For this reason, we will adopt an alternative strategy based on the decomposition of the cumulants into rank-four tensors as described below~\eqref{eq:3}. In the following, we give an overview of the most important Feynman rules to provide a general idea of how Feynman diagrams are constructed in this context and translated into algebraic expressions. The full set of rules is provided in Appendix~\ref{app:feynman_rules}.
+
+% Due to the symmetry $\delta_{ij}=\delta_{ji}$ of the Kronecker delta, there are $(n-1)!!$ different possible pairings of $n$ channels, resluting in the same number of terms in the decomposition.
+%Our Feynman rules can be used to find the algebraic expressions at order $1/n$ for the recursive relations of all these tensors.
+% any expectation value involving preactivations, NTKs and the higher-derivative tensors relevant for training dynamics, called \emph{dNTK} and \emph{ddNTK} in~\cite{roberts2022}.
+
+
+%In the following, we provide our Feynman rules for the 10 tensors which appear in this decomposition at order $1/n$. These can then be used to find the algebraic expressions for the recursive relations of any expectation value involving preactivations, NTKs and the higher-derivative tensors relevant for training dynamics, called dNTK and ddNTK in~\cite{roberts2022}.
+%
+%For the 10 tensors which appear in this decomposition of any cumulant at order $1/n$, we provide Feynman rules and check that they correctly reproduce the algebraic expressions for their recursive relations, such as~\eqref{eq:F}.% defining the expectation values under consideration. For completeness, we also mention the Feynman rules relevant to preactivations. 
+%
+%Our Feynman rules are:
+\begin{enumerate}[label=(\roman*),leftmargin=*,widest=iii]
+  \item External vertices (which correspond to the quantities which appear in the expectation value) are represented by filled dots. \emph{Solid} and \emph{dotted external lines} represent preactivations and NTK fluctuations, respectively
+  \vspace{-0.2cm}
+  \begin{align}
+    &z_{\alpha} \equiv
+    \begin{tikzpicture}[baseline=-0.1cm]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 0pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha^{}$}}] (x1) {};
+        \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1),
+          (x1) -- [inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \qquad\widehat{\Delta \Theta}_{\textcolor{color1}{\alpha\beta}} \equiv
+    \begin{tikzpicture}[baseline=0.05cm]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 0pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 8pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 30pt of x1, dot, minimum size=0pt] (b) {};
+        \vertex[right = 30pt of x2, dot, minimum size=0pt] (bb) {};
+        \diagram*{
+          (x1), (x2),
+          (x1) -- [color1, ghost, inner sep = 4pt] (b),
+          (x2) -- [color1, ghost, inner sep = 4pt] (bb)
+        };
+      \end{feynman}
+    \end{tikzpicture}\label{eq:6}
+  \end{align}
+  We will use different colors for external dotted lines corresponding to different NTKs. As detailed in Appendix~\ref{app:feynman_rules}, additional lines represent the higher derivative terms inside the dNTK and ddNTK.
+
+\item The external lines from \eqref{eq:6} are attached to \emph{cubic interactions}, which are vertices connected to two external lines and one \emph{internal line}. For cubic interactions involving external NTK lines, we introduce the following Feynman rules
+  % \vspace{-0.2cm}
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color1, ghost] (x2),
+          (v12) -- [black, photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{i,\alpha\beta}^{(\ell+1)}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.1cm} \sim \frac{1}{n_{\ell}} 
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha^{}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 33pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  (v12) --  [color1, ghost] (x2),
+          (v12) -- [color1blackghost, edge label = {\scriptsize \;$\sigma^{(\ell)}_{i,\alpha}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.1cm} \sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color1, ghost] (x2),
+          (v12) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color1}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color1}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm} \sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}  
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha^{}}$}}] (x1) {};
+        \vertex[above = 15pt of l, color2, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\beta^{}}$}}] (x2) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 30pt of v12, dot, minimum size=0pt] (b) {};
+        \diagram*{
+          (x1) --  [color1, ghost] (v12) --  [color2, ghost] (x2),
+          (v12) -- [color2color1ghost, edge label = {\scriptsize \;$\sigma'^{(\ell)}_{i,\textcolor{color1}{\alpha}}\sigma'^{(\ell)}_{i,\textcolor{color2}{\beta}}$}, inner sep = 4pt] (b) 
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm} \sim \frac{C^{(\ell+1)}_{W}}{n_{\ell}}\label{feynmanrulescubic}
+  \end{align}
+  where $\widehat{\Delta \Omega}^{(\ell+1)}_{i,\alpha\beta} = \sigma^{(\ell)}_{i,\alpha}\sigma^{(\ell)}_{i,\alpha} + C^{(\ell+1)}_{W}\Theta_{\alpha\beta}^{(\ell)}\sigma'^{(\ell)}_{i,\alpha}\sigma'^{(\ell)}_{i,\beta}$. The line without dot is the internal line. We discuss its decoration in the next Feynman rule.  Additional cubic vertices for preactivation, dNTK and ddNTK lines are provided in Appendix~\ref{app:feynman_rules}.
+\item The internal lines from the vertices \eqref{feynmanrulescubic} are connected to a \emph{propagator} which will be represented by a white blob
+  \begin{equation}
+    \langle\hspace{3mm}\rangle_{K^{(\ell)}} \equiv
+    \begin{tikzpicture}[baseline=-0.1cm]
+      \begin{feynman}
+        \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+        \vertex (l) {};
+        \vertex[above = 0pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[above = 0pt of v12, blob] (b) {};
+        \vertex[above = 0pt of b, dot, minimum size=0pt] (v34) {};
+        \diagram*{
+          (v12) -- (b) -- (v34), 
+        };
+      \end{feynman}
+    \end{tikzpicture}   
+  \end{equation}
+  where $\langle \hspace{3mm}\rangle_{K^{(\ell)}}$ stands for a Gaussian expectation value with mean zero and covariance given by the Gram matrix of the NNGP, as in~\eqref{eq:F}. We take the expectation value over the decorations of the internal lines attached to the propagator, for instance
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 10pt of l, dot, minimum size=0pt] (v12) {};
+        \vertex[right = 40pt of v12, propblob] (b) {};
+        \vertex[right = 40pt of b, dot, minimum size=0pt] (v34) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \diagram*{
+          (v12) -- [black, photon, edge label = {\scriptsize $\widehat{\Delta\Omega}_{i,\alpha\beta}$}, inner sep = 4pt] (b) -- [black, photon, edge label = {\scriptsize $\widehat{\Delta\Omega}_{i,\gamma\delta}$}, inner sep = 4pt] (v34)
+        };
+      \end{feynman}
+    \end{tikzpicture}\hspace{-0.2cm}
+    \sim \langle \widehat{\Delta\Omega}_{i,\alpha\beta} \widehat{\Delta\Omega}_{i,\gamma\delta}\rangle_{K^{(\ell)}}\,.
+  \end{align}
+  Propagators obey \emph{selection rules}, special properties regarding how lines are allowed to connect to them, see Appendix~\ref{app:feynman_rules} for details.
+\item The 10 rank-four tensors into which we decompose the cumulants will be represented by \emph{quartic interactions} with four external lines. We introduce the following quartic vertices containing NTK and preactivation lines
+  \begin{align}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{1}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{2}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}D_{\alpha_{1}\alpha_{2}\textcolor{color1}{\alpha_{3}\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- (x2), 
+          (x3) -- [color1, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $\alpha_{1}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color1, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}F_{\alpha_{1}\textcolor{color1}{\alpha_{3}}\alpha_{2}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $\alpha_{2}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- [color1, ghost] (x2), 
+          (x3) -- (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{1}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{2}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}A_{\textcolor{color2}{\alpha_{1}}\textcolor{color2}{\alpha_{2}}\textcolor{color1}{\alpha_{3}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color2, ghost] (b) -- [color2, ghost] (x2), 
+          (x3) -- [color1, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \hspace{0.5cm}
+    \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, color2, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color2}{\alpha_{1}}$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color1, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{\alpha_{3}}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        \vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}B_{\textcolor{color2}{\alpha_{1}}\textcolor{color1}{\alpha_{3}}\textcolor{color2}{\alpha_{2}}\textcolor{color1}{\alpha_{4}}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, color2, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color2}{\alpha_{2}}$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{\alpha_{4}}$}}] (x4) {};
+        \diagram*{
+          (x1) -- [color2, ghost] (b) -- [color1, ghost] (x2), 
+          (x3) -- [color2, ghost] (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+    \label{feynmanrulesquartic}
+  \end{align}
+  The quartic vertices can also appear with four internal lines instead. In this case, they correspond to tensors in layer $\ell$ instead of $\ell+1$ and are connected to propagators. Further quartic tensors for the remaining tensors involving preactivations, the dNTK and ddNTK are introduced in Appendix~\ref{app:defin-all-tens}. For the mean NNGP and NTK corrections $K^{\{1\}}$ and $\Theta^{\{1\}}$, we similarly introduce \emph{quadratic vertices} of valence two.
+\item Internal lines attached to cubic or internal quartic vertices have unassigned neural indices (e.g.\ $i$ in the vertices in~\eqref{feynmanrulescubic}). Similarly, internal (solid) preactivation lines have unassigned sample indices. To assemble the term corresponding to a certain diagram, multiply the expressions corresponding to vertices and propagators and sum over all unassigned neural and sample indices. The complete expression for a cumulant is given by summing over all Feynman diagrams with the correct external lines and order in $1/n$.
+\end{enumerate}
+In Appendix~\ref{app:feynman_rules}, we provide extensive comparisons of recursion relations computed from these rules and show that our Feynman rules indeed yield the correct results.
+
+\subsection{Recursion relation for $F$}
+To illustrate how to use our Feynman rules, we will reproduce the recursion relation~\eqref{eq:F} from Feynman diagrams in this section.
+
+The layer-($\ell+1$) tensor on the LHS of \eqref{eq:F} is given by the second quartic vertex in~\eqref{feynmanrulesquartic}. We will now proceed to draw all Feynman diagrams which have the same external lines as this quartic vertex and are of order $1/n$. First, we notice that the only way to combine a dotted (NTK) line with a solid (preactivation) line in a cubic vertex is to use the second vertex in~\eqref{feynmanrulescubic}. We use this vertex twice (for inputs 1, 3 and 2, 4, respectively). One then obtains two internal solid-dashed lines, each decorated with ${\sigma}_{i}^{(\ell)}{\sigma'}_{i}^{(\ell)}$. This, in turn, gives rise to two possibilities: The input channels for both lines can either be equal or different. If the input channels are equal, they can be connected directly by a propagator. If they are different, they can be connected by introducing two propagators and an internal $F$-tensor in layer $\ell$. The diagrams corresponding to the expression~\eqref{eq:F} are therefore
+%
+%Since there is only a single color in the diagram, the only possible cubic interaction is that involving the single-dashed line. One then can draw two internal lines, each carrying a factor ${\sigma'}_{i}^{(\ell)}{\sigma'}_{i}^{(\ell)}$, and a multiplicative constant $\frac{sigma_{W}}{n_{\ell}}$. This, in turn, gives rise to two possibilities: When the input channels are the same, and when they are different. In the former case, the propagator connects the two single-dashed lines through a factor of $\Theta_{\textcolor{color1}{34}}^{(\ell)}$. In the latter case, one uses the property \emph{(d)} to introduce the tensor $F$ in the previous layer. From a diagrammatic approach, one thus finds two contributions which explicitly take the form
+%\vspace{-0.5cm}
+\begin{align}
+  \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $1$}}] (x1) {};
+        \vertex[above = 15pt of l, dot, color1, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{3}$}}] (x2) {};
+        \vertex[right = 20pt of l, quarticblob] (b) {};
+        %\vertex[below = 25pt of b] {\scriptsize $\frac{1}{n_{\ell}\*}F_{1\textcolor{color1}{3}2\textcolor{color1}{4}}^{(\ell+1)}$}; 
+        \vertex[right = 20pt of b] (r) {};
+        \vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $2$}}] (x3) {};
+        \vertex[below = 15pt of r, dot, color1, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+        \diagram*{
+          (x1) -- (b) -- [color1, ghost] (x2), 
+          (x3) -- (b) -- [color1, ghost] (x4)
+        };
+      \end{feynman}
+    \end{tikzpicture}
+\!\!&=& 
+\!\!\sum_{j}\!\!
+\begin{tikzpicture}[baseline=(b)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex (l) {};
+\vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $1$}}] (x1) {};
+\vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{3}$}}] (x2) {};
+\vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+\vertex[right = 30pt of v12, blob] (b) {};
+\vertex[right = 30pt of b, dot, minimum size=0pt] (v34) {};
+\vertex[right = 8pt of v34] (r) {};
+\vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $2$}}] (x3) {};
+\vertex[below = 15pt of r, color1, dot, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- [color1, ghost] (x2),
+	(v12) -- [color1blackghost, edge label = {\scriptsize \;$\sigma_{j}\sigma'_{j}$}, inner sep = 4pt] (b) -- [blackcolor1ghost, edge label = {\scriptsize \,$\sigma_{j}\sigma'_{j}$}, inner sep = 4pt] (v34), 
+	 (x3) -- (v34) -- [color1, ghost] (x4)
+};
+\end{feynman}
+\end{tikzpicture}
+\!\!\!\!+
+\sum_{j_1, j_2}\!
+%
+\begin{tikzpicture}[baseline=(b)]
+  \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+  \begin{feynman}
+    \vertex (l) {};
+    \vertex[below = 15pt of l, dot, minimum size=3pt, label = {left: {\footnotesize $1$}}] (x1) {};
+    \vertex[above = 15pt of l, color1, dot, minimum size=3pt, label = {left: {\footnotesize $\textcolor{color1}{3}$}}] (x2) {};
+    \vertex[right = 8pt of l, dot, minimum size=0pt] (v12) {};
+    \vertex[right = 35pt of v12, blob] (b12) {};
+    \vertex[right = 16pt of b12, dot, minimum size=0pt] (w12) {};
+    \vertex[above = 1pt of w12, label = {above: {\scriptsize \hspace{-10pt} $z_{j_1}$}}] (w12u) {};
+    \vertex[below = 8pt of w12] (w12d) {};
+    \vertex[left = 10pt of w12d] (w12dl) {};
+    \tikzfeynmanset{every blob = {/tikz/fill=gray!50, /tikz/minimum size=15pt}}
+    \vertex[right = 3pt of w12, blob , minimum size = 6pt] (b) {};
+    %\vertex[below = 17pt of b] {\scriptsize $\frac{1}{n_{l-1}\*}F_4^{(\ell)}$};
+    \vertex[right = 3pt of b, dot, minimum size=0pt] (w34) {};
+    \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+    \vertex[right = 16pt of w34, blob] (b34) {};
+    \vertex[above = 1pt of w34, label = {above: {\scriptsize \hspace{10pt} $z_{j_2}$}}] (w34u) {};
+    \vertex[below = 8pt of w34] (w34d) {};
+    \vertex[right = 10pt of w34d] (w34dr) {};
+    \vertex[right = 35pt of b34, dot, minimum size=0pt] (v34) {};
+    \vertex[right = 8pt of v34] (r) {};
+    \vertex[above = 15pt of r, dot, minimum size=3pt, label = {right: {\footnotesize $2$}}] (x3) {};
+    \vertex[below = 15pt of r, color1, dot, minimum size=3pt, label = {right: {\footnotesize $\textcolor{color1}{4}$}}] (x4) {};
+    \diagram*{
+      (x1) -- (v12) -- [color1, ghost] (x2),
+      (v12) -- [color1blackghost, edge label = {\scriptsize \;$\sigma_{j_{1}}\sigma'_{j_{1}}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [quarter left] (b12),
+      (b34) -- [color1, ghost, quarter left] (w34) -- [quarter left] (b34) -- [blackcolor1ghost, edge label = {\scriptsize \,$\sigma_{j_{2}}\sigma'_{j_{2}}$}, inner sep = 4pt] (v34),
+      (x3) --  (v34) -- [color1, ghost] (x4)
+    };
+    \draw [decoration={brace}, decorate] (w34dr) -- (w12dl) node [pos=0.5, below = 1pt] {\scriptsize $\frac{1}{n_{\ell-1}\*}F_4^{(\ell)}$};
+  \end{feynman}
+\end{tikzpicture}%\nonumber\\
+\label{ftensorfeynmandiagram}
+%&&
+\end{align}
+Here, we have added the necessary sums over unassigned neural indices. No more diagrams can be constructed because these would either be at higher order in $1/n$ or be ruled out by the selection rules of the propagator detailed in Appendix~\ref{app:feynman_rules}. With these rules, one can check that the first and second diagrams on the RHS of~\eqref{ftensorfeynmandiagram} correspond to the first and second terms in~\eqref{eq:F}, respectively.
+
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

@@ -1,0 +1,124 @@
+\section{Depth scaling of the RF-LR NTK}\label{sec:depth-scaling}
+
+\subsection{Main results}\label{subsec:rflr-terjek-generalization}
+
+We now state our main depth--rank scaling results for the mean RF-LR NTK and their dataset-level consequences. The recursion contains an explicit \(1/r\) bottleneck factor, which leads to saturation of the kernel magnitude as depth grows, while the diagonal--off-diagonal gap decays with depth in the mean recursion; a principal consequence is an explicit spectrum formula in an equicorrelated Gram model (Proposition~\ref{prop:equicorrelated-spectrum}).
+\paragraph{Preliminaries (appendix).}
+The scalar ReLU kernel expansions and the deterministic proxy recursion used below are collected in Appendix~\ref{appendix:mean-depth-theorem-preliminaries}.
+
+\begin{theorem}[Depth scaling for the mean RF-LR NTK]\label{thm:rflr-depth-scaling-mean}
+Fix \(r>1\) and \(\rho_1\in(-1,1)\). Let \(\Theta^{(k)}(\rho_1)\) be defined by~\eqref{eq:rflr-scalar-mean-ntk-rec}. Then:
+\begin{itemize}
+  \item (\textbf{Correlation alignment}) There exist \(k_0\in\mathbb{N}\) and constants \(0<c_-<c_+<\infty\) (depending only on \(\rho_1\)) such that for all \(k\ge k_0\),
+  \[
+  c_-\,k \;\le\; w_k \;\le\; c_+\,k,
+  \qquad\text{hence}\qquad
+  1-\rho_k \;=\; 2 w_k^{-2} \;=\; O(k^{-2}).
+  \]
+  \item (\textbf{Kernel saturation}) \(\Theta^{(k)}(\rho_1)\to \Theta_\star(r)\) as \(k\to\infty\), where \(\Theta_\star(r)\) is the fixed point of the limiting recursion obtained by setting \(\dot{s}=s=1/2\), namely
+  \[
+  \Theta_\star(r) \;=\; \frac{2r+1}{2r-1}.
+  \]
+  Moreover, there exists \(C_\Theta<\infty\) (depending on \(r,\rho_1\)) such that for all \(k\ge 1\),
+  \[
+  \bigl|\Theta^{(k)}(\rho_1)-\Theta_\star(r)\bigr| \;\le\; \frac{C_\Theta}{k}.
+  \]
+  \item (\textbf{Depth-induced gap decay}) Let \(\Theta^{(k)}_{\mathrm{diag}}=\Theta^{(k)}(1)\) and \(\Theta^{(k)}_{\mathrm{off}}=\Theta^{(k)}(\rho_1)\). Then
+  \[
+  \Theta^{(k)}_{\mathrm{diag}}-\Theta^{(k)}_{\mathrm{off}} \;=\; \Theta\!\Big(\frac{1}{r\,k}\Big),
+  \]
+  i.e. there exist \(k_1\in\mathbb{N}\) and constants \(0<c_\Delta<C_\Delta<\infty\) (depending on \(r,\rho_1\)) such that for all \(k\ge k_1\),
+  \[
+  \frac{c_\Delta}{r\,k} \;\le\; \Theta^{(k)}_{\mathrm{diag}}-\Theta^{(k)}_{\mathrm{off}} \;\le\; \frac{C_\Delta}{r\,k}.
+  \]
+\end{itemize}
+\end{theorem}
+
+\begin{proof}
+See Appendix~\ref{appendix:proof-rflr-depth-scaling-mean}.
+\end{proof}
+
+\begin{proposition}[Centered eigenvalue in an equicorrelated model]\label{prop:equicorrelated-gap}
+Fix \(L\ge 2\) and \(r>1\). Consider a dataset \(\{x_i\}_{i=1}^n\) with \(\|x_i\|=1\) and \(\rho_{1,ij}=\rho_0\in(-1,1)\) for all \(i\neq j\). Let
+\[
+K^{(L)}_{ij} := \Theta^{(L)}(\rho_{1,ij}),
+\qquad
+H := I_n-\frac{1}{n}\mathbf{1}\mathbf{1}^\top,
+\qquad
+K^{(L)}_c := HK^{(L)}H.
+\]
+Then \(K^{(L)}\) has the explicit form \(K^{(L)} = \Theta^{(L)}(1)\,I_n + \Theta^{(L)}(\rho_0)\,(\mathbf{1}\mathbf{1}^\top-I_n)\). In particular, the nonzero eigenvalues of \(K^{(L)}_c\) are all equal to
+\[
+\lambda_\perp(K^{(L)}) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0),
+\]
+with multiplicity \(n-1\). Moreover, by Theorem~\ref{thm:rflr-depth-scaling-mean}, there exist constants \(0<c_\Delta<C_\Delta<\infty\) (depending on \(r,\rho_0\)) such that for all sufficiently large \(L\),
+\[
+\frac{c_\Delta}{r\,L} \;\le\; \lambda_\perp(K^{(L)}) \;\le\; \frac{C_\Delta}{r\,L}.
+\]
+\end{proposition}
+\begin{proof}
+See Appendix~\ref{appendix:proof-equicorrelated-gap}.
+\end{proof}
+
+\begin{proposition}[Main result: uncentered spectrum in the equicorrelated model]\label{prop:equicorrelated-spectrum}
+Under the assumptions of Proposition~\ref{prop:equicorrelated-gap}, the eigenvalues of the uncentered Gram matrix \(K^{(L)}\) are explicit:
+\[
+\lambda_1\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1) + (n-1)\Theta^{(L)}(\rho_0),
+\qquad
+\lambda_2\!\bigl(K^{(L)}\bigr)=\cdots=\lambda_n\!\bigl(K^{(L)}\bigr) \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_0).
+\]
+In particular, \(\lambda_1(K^{(L)})\) corresponds to the constant mode aligned with \(\mathbf{1}\), while the spectrum on \(\mathbf{1}^\perp\) equals \(\lambda_\perp(K^{(L)})\).
+Moreover, as \(L\to\infty\) (with \(r\) fixed) this constant-mode eigenvalue saturates:
+\[
+\lambda_1\!\bigl(K^{(L)}\bigr)
+\;=\;
+n\,\Theta_\star(r) \;+\; O\!\Big(\frac{n}{L}\Big),
+\qquad
+\Theta_\star(r)=\frac{2r+1}{2r-1}=1+O\!\Big(\frac{1}{r}\Big),
+\]
+and \(\lambda_\perp(K^{(L)})=\Theta(1/(rL))\) by Proposition~\ref{prop:equicorrelated-gap}. Thus, in this model the depth/rank scaling is
+\[
+\lambda_{\max}(K^{(L)}) \asymp n\Bigl(1+\frac{1}{r}\Bigr),\qquad
+\lambda_{\min}\!\bigl(HK^{(L)}H\bigr) \asymp \frac{1}{rL}.
+\]
+\end{proposition}
+\begin{proof}
+See Appendix~\ref{appendix:proof-equicorrelated-spectrum}.
+\end{proof}
+
+\begin{remark}[Conditioning and time scales in the equicorrelated model]\label{rmk:conditioning-centered}
+In the equicorrelated model, the (uncentered) Gram matrix \(K^{(L)}\) has eigenvalues \(\lambda_1(K^{(L)})\asymp n\) and \(\lambda_\perp(K^{(L)})\asymp 1/(rL)\) (Proposition~\ref{prop:equicorrelated-spectrum}). For the \(1/n\)-normalized square loss, the relevant operator is \((1/n)K^{(L)}\), whose largest eigenvalue is \(\lambda_1(K^{(L)})/n=\Theta(1)\) while its smallest eigenvalue is \(\lambda_\perp(K^{(L)})/n=\Theta(1/(nrL))\). Therefore the condition number of \((1/n)K^{(L)}\) scales as
+\[
+\kappa\!\left(\frac{1}{n}K^{(L)}\right)
+\;=\;
+\frac{\lambda_1(K^{(L)})/n}{\lambda_\perp(K^{(L)})/n}
+\;=\;
+\Theta(nrL).
+\]
+Under the parameter budget scaling \(P\asymp LrN\) and the NTK width scaling \(N\asymp n^2\), this becomes \(\kappa((1/n)K^{(L)})=\Theta(P/n)\).
+
+If the targets are mean-zero (or labels are centered), the constant mode decouples and one may restrict to \(\mathbf{1}^\perp\), where in the equicorrelated model \((1/n)HK^{(L)}H\) has \emph{flat} spectrum (condition number \(1\)) with eigenvalue \(\lambda_\perp(K^{(L)})/n=\Theta(1/(nrL))\). Equivalently, the optimization time scale is \(\Theta(n/\lambda_\perp(K^{(L)}))=\Theta(nrL)\), which becomes \(\Theta(P/n)\) under \(P\asymp LrN\) and \(N\asymp n^2\).
+
+\paragraph{Comparison to fully trained MLPs at the edge of chaos.}
+For fully trained MLPs at the EOC, dataset-level spectral control is commonly phrased in terms of the centered operator \((1/n)HKH\), and inverse-cosine-distance matrix bounds yield worst-case lower bounds on the smallest nontrivial eigenvalue of order \(1/n\) under generic non-degeneracy assumptions on the dataset~\cite{terjek2025mlpsateoc}. Since \(\lambda_{\max}((1/n)HKH)=O(1)\) for bounded kernels, these bounds correspond to a condition number scaling \(\kappa((1/n)HKH)=\Theta(n)\). In contrast, in the RF-LR equicorrelated model, the full operator \((1/n)K^{(L)}\) has condition number \(\Theta(P/n)\), while on \(\mathbf{1}^\perp\) the spectrum is flat and the slow time scale is \(\Theta(P/n)\).
+\end{remark}
+
+\begin{corollary}[Optimization time scale and \(P/n\) law in the equicorrelated model]\label{cor:np-optimization-scale}
+Under the assumptions of Proposition~\ref{prop:equicorrelated-gap}, consider kernel gradient flow for the \(1/n\)-normalized square loss with centered targets (equivalently, restrict to \(\mathbf{1}^\perp\)). Then the operator \((1/n)HK^{(L)}H\) has nonzero eigenvalue \(\lambda_\perp(K^{(L)})/n\) with multiplicity \(n-1\), hence the natural optimization time scale is set by \(n/\lambda_\perp(K^{(L)})\).
+Moreover, for large \(L\) one has
+\[
+\frac{\lambda_\perp(K^{(L)})}{n}=\Theta\!\left(\frac{1}{nrL}\right)
+\]
+by Proposition~\ref{prop:equicorrelated-gap}.
+If additionally the per-layer feature widths satisfy \(n_\ell\asymp N\) and the trainable parameter budget scales as \(P\asymp LrN\), then
+\[
+\frac{n}{\lambda_\perp(K^{(L)})}=\Theta\!\left(\frac{nP}{N}\right).
+\]
+Under the standard kernel-regime scaling \(N\asymp n^2\), this simplifies to
+\[
+\frac{n}{\lambda_\perp(K^{(L)})}=\Theta\!\left(\frac{P}{n}\right).
+\]
+\end{corollary}
+
+\paragraph{Technical remarks (appendix).}
+For any finite network, the centered empirical Gram matrix \(H\widehat{K}H\) is positive semidefinite, and the mean-kernel infinite-depth limit collapses after centering; see Appendix~\ref{appendix:lambda-min-negative} and Appendix~\ref{appendix:infinite-depth-limit}.

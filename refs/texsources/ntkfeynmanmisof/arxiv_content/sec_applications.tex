@@ -1,0 +1,327 @@
+\section{Applications}\label{sec:applications}
+In this section, we will describe three applications of our Feynman rules to problems in deep learning.
+
+\subsection{Recursion relation for the NTK mean}
+\label{sec:recurs-relat-ntk}
+Using our Feynman rules, it is straightforward to compute even complicated recursion relations. To demonstrate this, we will compute the recursion relation for the first-order correction in $1/n$ of the NTK mean $\Theta^{\{1\}}$, which, to the best of our knowledge, has not been derived before. Starting from the quadratic vertex
+\begin{tikzpicture}[baseline=(ref)]
+\begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 0pt of l, dot, color1, label = {left: {\textcolor{color1}{$1$}}}] (v12) {};
+        \vertex[right = 15pt of v12, quarticblob, minimum size=10pt] (b) {};
+        \vertex[below=3pt of b, minimum size=0pt] (ref) {};
+        \vertex[right = 15pt of b, dot, color1, label = {right: {\textcolor{color1}{$2$}}}] (v34) {};
+        \diagram*{
+          (v12) -- [color1, ghost] (b) -- [color1, ghost] (v34)
+        };
+      \end{feynman}
+\end{tikzpicture}      
+representing $\Theta^{\{1\}}_{\textcolor{color1}{12}}/n_{\ell}$, we draw all Feynman diagrams with two external NTK lines at order $1/n$. The Feynman rules \eqref{feynmanrulescubic} and \eqref{feynmanrulesquartic} as well as the selection rules of the propagator imply the existence of five diagrams for such a tensor $\Theta^{\{1\}(\ell+1)}_{\textcolor{color1}{12}}$: Two diagrams contain the quadratic vertices of $K^{\{1\}}$ and $\Theta^{\{1\}}$ at layer $\ell$, the other three diagrams contain the quartic vertices for $D$, $F$ and $V_{4}$. Explicitly,
+\begin{align}
+  %\frac{1}{n_{\ell}}\Theta_{\textcolor{color1}{12}}^{\{1\}(\ell+1)}
+  \begin{tikzpicture}[baseline=(b)]
+      \begin{feynman}
+        \vertex (l) {};
+        \vertex[right = 0pt of l, dot, color1, label = {above: {\textcolor{color1}{$1$}}}] (v12) {};
+        \vertex[right = 22pt of v12, quarticblob] (b) {};
+        \vertex[right = 22pt of b, dot, color1, label = {above: {\textcolor{color1}{$2$}}}] (v34) {};
+        \vertex[right = 8pt of v34] (r) {};
+        \diagram*{
+          (v12) -- [color1, ghost] (b) -- [color1, ghost] (v34)
+        };
+        \vertex[below = 15pt of b] {{\scriptsize $\frac{1}{n_{\ell}}\Theta^{\{1\}(\ell+1)}_{\textcolor{color1}{12}}$}};
+      \end{feynman}
+    \end{tikzpicture}
+  \hspace{-0.1cm} = \hspace{-0.2cm}
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!\*{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[above = 22pt of v, dot, minimum size = 0pt] (g) {};
+      \vertex[above = 20pt of g, dot, minimum size = 0pt] (w) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (g) -- [color1, ghost, half left] (w) -- [color1, ghost, half left] (g)
+      };
+      \vertex[above = 0pt of G, blob] (K0){};
+      \vertex[above = 20pt of g, smallblob] (K1) {};
+      \vertex[above = 10pt of w] (K1) {{\scriptsize $\frac{1}{n_{\ell-1}} \Theta^{\{1\}(\ell)}$}};
+      \vertex[right = 15pt of G, label = {}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  \hspace{-0.1cm} + \hspace{-0.1cm}
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size=3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!\*{\scriptsize $\widehat{\Delta \Omega}_{j,12}$}}] (j){};
+      \vertex[above = 16pt of v, propblob] (G) {};
+      \vertex[above = 22pt of v, dot, minimum size = 0pt] (g) {};
+      \vertex[above = 20pt of g, dot, minimum size = 0pt] (w) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [photon] (G) -- (g) -- [half left] (w) -- [half left] (g)
+      };
+      \vertex[above = 0pt of G, propblob] (K0){};
+      \vertex[above = 20pt of g, smallblob] (K1) {};
+      \vertex[above = 10pt of w] (K1) {{\scriptsize $\frac{1}{n_{\ell-1}} K^{\{1\}(\ell)}$}};
+      \vertex[right = 15pt of G, label = {\scriptsize $z_j$}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  \hspace{-0.1cm} + \hspace{-0.1cm}
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\widehat{\Delta \Omega}_{j,12}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [photon] (G) -- (Gl) -- [half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [quarter right] (V4r) -- [half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} V_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  \hspace{-0.1cm} + \hspace{-0.1cm}
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (Gl) -- [color1, ghost, half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [quarter right] (V4r) -- [color1, ghost, half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} D_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}
+  \hspace{-0.1cm} + \hspace{-0.1cm}
+  \begin{tikzpicture}[baseline=(b)]
+    \begin{feynman}
+      \vertex[dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{1}$}}] (x1) {};
+      \vertex[right = 20pt of x1] (v);
+      \vertex[right = 20pt of v, dot, color1, minimum size = 3pt, label = {below: {\footnotesize $\textcolor{color1}{2}$}}] (x2) {};
+      \vertex[above = 9pt of v] (b) {};
+      \vertex[above = 4pt of v, label = {right: \!{\scriptsize $\sigma'_{j}\sigma'_{j}$}}] (j){};
+      \tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+      \vertex[above = 16pt of v, blob] (G) {};
+      \vertex[left = 2pt of G, dot, minimum size = 0pt] (Gl) {};
+      \vertex[right = 2pt of G, dot, minimum size = 0pt] (Gr) {};
+      \vertex[above = 4pt of G, dot, minimum size = 0pt] (Gu) {};
+      \vertex[left = 2pt of Gu, dot, minimum size = 0pt] (Gul) {};
+      \vertex[right = 2pt of Gu, dot, minimum size = 0pt] (Gur) {};
+      \vertex[above = 20pt of G, smallblob] (V4) {};
+      \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+      \vertex[left = 3pt of V4, dot, minimum size = 0pt] (V4l) {};
+      \vertex[right = 3pt of V4, dot, minimum size = 0pt] (V4r) {};
+      \diagram*{
+        (x1) -- [color1, ghost] (v) -- [color1, ghost] (x2),
+        (v) -- [color1, doubghost] (G) -- (Gl) -- [color1, ghost, half left] (V4l) -- [quarter right] (Gul) -- (Gur) -- [color1, ghost, quarter right] (V4r) -- [half left] (Gr),
+      };
+      \vertex[above = 0pt of G, blob] (K0) {};
+      \vertex[above = 10pt of V4] (VV4) {{\scriptsize $\frac{1}{n_{\ell-1}} F_4^{(\ell)}$}};
+      \vertex[right = 18pt of G, label = {above: {\scriptsize $z_j$}}] (Gr) {};
+    \end{feynman}
+  \end{tikzpicture}\label{firstcorrectionntk}
+\end{align}
+The algebraic expression corresponding to~\eqref{firstcorrectionntk} is given in Appendix~\ref{app:NLO_ntk_mean}.
+
+\subsection{Gradient stability at finite width}\label{sec:stability}
+Stabilizing against exploding or vanishing preactivations and gradients is of central importance in deep learning~\cite{glorot2010, he2015a}. Analyzing the \emph{susceptibility} $\chi$, the growth factor of the NNGP~\cite{poole2016} and NTK~\cite{xiao2020} from layer to layer, at infinite width yields an activation-function dependent phase diagram for the initialization variances of weights and biases. At criticality, when gradients and preactivations neither grow nor vanish exponentially, $\chi=1$.
+%Stabilizing the forward- and backward pass of the training process against exponential growth or decay of preactivations and gradients with depth is of central importance to be able to train deep models. Classical analyses such as~\cite{glorot2010, he2015a}, which resulted in the $1/\sqrt{\text{fan in}}$-scaling of the initialization distribution and correction factors for nonlinearities only take the second moments of the initialization- and gradient distribution into account and rely on heuristic assumptions. A more refined analysis studying the growth of the NNGP~\cite{poole2016} (forward pass) and NTK~\cite{xiao2020} (backward pass) with depth at infinite width yields an activation-function dependent phase diagram in the $\sigma_{W},\sigma_{b}$-plane ($\sigma_{b}^{2}$ being the initialization variance for the biases). Here, the \emph{susceptibility} $\chi$ was studied, which is the growth factor of the NNGP and NTK from layer to layer. At criticality, when gradients and preactivations neither grow nor vanish exponentially, $\chi=1$.
+Recently, the analysis of preactivation stability has been expanded to finite-width. In particular, \cite{banta2024} could show that all higher-order statistics of preactivations at finite width are at criticality if the infinite width is at criticality. Therefore, the forward pass is also stable at finite width. In this section, we will extend this result to statistics involving the NTK, i.e.\ to the backward pass.%, showing that it too shares the same criticality conditions at finite width.
+
+%Next, we argue that any higher-order correlator involving the NTK is tuned to criticality once the susceptibility tensor $\chi$, introduced in \cite{banta2023}, is set to unity. This can be seen as a generalization of the results presented in \cite{banta2023}, which restricts its study to the stastistics of preactivations.
+
+The criticality of a tensor can be analyzed by computing how variations of the tensors in layer $\ell$ lead to variations at layer $\ell+1$~\cite{roberts2022, banta2024}.
+% For the preactivations, it was sufficient to consider only the variations produced by the same tensor in the previous layer~\cite{banta2024}.
+We will therefore use our Feynman rules to study the variations of tensors involving the NTK. Indeed, the variation of such tensors can be deduced from the fact that NTK external lines always flow through the diagram via dashed internal lines, which connect to the propagator. These yield dotted NTK lines inside the diagram, thus giving rise to susceptibility factors fixed by criticality at infinite width.
+
+% For example, assuming the preactivation statistics has been set to criticality, the stability of the NTK mean\mgnote{Add the recursion relation of the NTK mean in the first part of the paper} can be computed from 
+% \begin{eqnarray}\label{variationntkmean}
+% \delta \Theta_{\textcolor{color1}{12}}^{(\ell+1)} &=& \sigma_{W}^{(\ell+1)}\langle \sigma'^{(\ell)}_{\textcolor{color1}{1}}\sigma'^{(\ell)}_{\textcolor{color1}{2}}\rangle_{K^{(\ell)}}\delta \Theta_{\textcolor{color1}{12}}^{(\ell)}
+% \end{eqnarray}
+% In order to avoid exponential growing or supression, one then needs to set the numerical factor in \eqref{variationntkmean} to unity. This is consistent with the criticality condition presented in \cite{banta2024}, which requires the susceptibility tensor $\chi^{(\ell+1)}_{\alpha\beta,\epsilon\lambda} \equiv \frac{\sigma_{W}^{(\ell+1)}}{2}\langle \frac{\delta^{2}\widehat{\Delta G}^{(\ell)}_{\alpha\beta}}{\delta z_{\epsilon}^{(\ell)}\delta z_{\lambda}^{(\ell)}}\rangle_{K^{(\ell)}}$, to satisfy
+% \begin{eqnarray}\label{criticalityconditionbanta}
+% \chi^{(\ell+1)}_{\alpha\beta,\epsilon\lambda} = \frac{1}{2}\bigg(\delta_{\alpha\epsilon}\delta_{\beta\lambda} + \delta_{\alpha\lambda}\delta_{\beta\epsilon}\bigg) 
+% \end{eqnarray}
+
+Imposing criticality at infinite width (i.e. $\chi=1$ at the critical point), results in the conditions~\cite{banta2024}
+\begin{align}\label{criticalityconstraintsequiv}
+    (\chi^{(\ell+1)}_{\perp})_{\alpha\beta} \equiv C_{W}^{(\ell+1)}\langle \sigma'^{(\ell)}_{\alpha}\sigma'^{(\ell)}_{\beta}\rangle_{K^{(\ell)}} &= 1 &,
+    && (\chi^{(\ell+1)}_{\bowtie})_{\alpha\beta} \equiv C_{W}^{(\ell+1)}\langle \sigma''^{(\ell)}_{\alpha}\sigma^{(\ell)}_{\beta}\rangle_{K^{(\ell)}} &= 0 \,.
+\end{align}
+We will now proceed to show that the tensor $F_{1\textcolor{color1}{3}2\textcolor{color1}{4}}^{(\ell+1)}$ studied in the previous section is at criticality if~\eqref{criticalityconstraintsequiv} is satisfied. To this end, consider the variation of the second term in~\eqref{eq:F} at criticality (the infinite-width NTK $\Theta$ in the first term will not lead to exponential behavior and can hence be ignored),
+\begin{align}\label{variationftensor}
+    \frac{1}{n_{l}}\delta F_{1\textcolor{color1}{3}2\textcolor{color1}{4}}^{(\ell+1)} = \frac{(C_{W}^{(\ell+1)})^{2}}{n_{\ell-1}}\sum_{\alpha,\beta,\gamma,\delta=1}^{4}\langle \sigma^{(\ell)}_{1}\sigma'^{(\ell)}_{\textcolor{color1}{3}}z_{\alpha}^{(\ell)}\rangle_{K^{(\ell)}}\langle \sigma^{(\ell)}_{2}\sigma'^{(\ell)}_{\textcolor{color1}{4}}z_{\beta}^{(\ell)}\rangle_{K^{(\ell)}}K_{(\ell)}^{\alpha\gamma}K_{(\ell)}^{\beta\delta}\delta F^{(\ell)}_{\gamma\textcolor{color1}{3}\delta\textcolor{color1}{4}}\,.
+\end{align}
+To prevent exponential behavior, the multiplicative factor on the RHS of~\eqref{variationftensor} should be set to unity. Using integration by parts in the Gaussian expectation value, we find
+\begin{align}
+    \sum_{\alpha=1}^{4}\langle \sigma^{(\ell)}_{\epsilon}\sigma'^{(\ell)}_{\lambda}z^{(\ell)}_{\alpha} \rangle_{K^{(\ell)}} K^{\alpha\gamma}_{(\ell)} = \left\langle \frac{\mathrm{d}(\sigma^{(\ell)}_{\epsilon}\sigma'^{(\ell)}_{\lambda})}{\mathrm{d} z^{(\ell)}_{\gamma}}\right\rangle_{K^{(\ell)}}\hspace{-0.3cm}= \bigg[\delta_{\epsilon\gamma}\langle\sigma'^{(\ell)}_{\epsilon}\sigma'^{(\ell)}_{\lambda}\rangle_{K^{(\ell)}} + \delta_{\gamma\lambda}\langle \sigma_{\epsilon}\sigma''_{\lambda}\rangle_{K^{(\ell)}}\bigg] \,.
+\end{align}
+According to~\eqref{criticalityconstraintsequiv}, at criticality we hence find
+\begin{align}\label{criticalityconditionchicirc}
+   (\chi^{(\ell+1)}_{\circ})_{\epsilon\lambda,\gamma} \equiv C_{W}^{(\ell+1)} \sum_{\alpha=1}^{4}\langle \sigma^{(\ell)}_{\epsilon}\sigma'^{(\ell)}_{\lambda}z^{(\ell)}_{\alpha} \rangle_{K^{(\ell)}} K^{\alpha\gamma}_{(\ell)} = \delta_{\epsilon\gamma}\
+ \end{align}
+ and therefore $F$ is stable as well. Therefore, the criticality condition found by setting the NTK and NNGP to criticality at infinite width is sufficient to set $F$ to criticality at order $1/n$ as well.
+
+ This argument can be generalized to higher-rank tensors corresponding to cumulants of more preactivations together with the NTK by using the Feynman rules introduced in the previous section. For instance, we define higher-rank versions of the $D$ and $F$ tensors from~\eqref{eq:3} via
+\begin{align}\label{higher-order-tensors}
+     &\mathbb{E}^{c}_{\theta}[ z^{(\ell+1)}_{i_{1},1},z^{(\ell+1)}_{i_{2},2}, z^{(\ell+1)}_{i_{3},3},z^{(\ell+1)}_{i_{4},4},\ldots, \widehat{\Delta \Theta}^{(\ell+1)}_{i_{m-1}i_{m},\textcolor{color1}{(m-1)}\textcolor{color1}{m}}] \nonumber\\ 
+      &{=} \frac{1}{n_{\ell}^{\frac{m}{2}-1}}\!\bigg[\delta_{i_{1}i_{2}}\delta_{i_{3}i_{4}}\ldots \delta_{i_{m-1}i_{m}}D^{(\ell+1)}_{1234\ldots \textcolor{color1}{(m-1)m}} {+} \delta_{i_{1}i_{2}}\delta_{i_{3}i_{(m-1)}}\ldots \delta_{i_{4}i_{m}}F^{(\ell+1)}_{123\textcolor{color1}{(m-1)}\ldots 4\textcolor{color1}{m}} {+} \ldots\!\bigg]
+\end{align}
+
+
+ %For instance, the correlator $\mathbb{E}^{c}_{\theta}[z^{(\ell+1)}_{i_{1},1}z^{(\ell+1)}_{i_{2},2} z^{(\ell+1)}_{i_{3},3}z^{(\ell+1)}_{i_{4},4}\ldots \widehat{\Delta \Theta}^{(\ell+1)}_{i_{m-1}i_{m},\textcolor{color1}{(m-1)}\textcolor{color1}{m}}]$ with one single NTK, defines the generalized versions of the $D$- and $F$-tensors considered in the previous sections, namely $D^{(\ell+1)}_{1234\ldots \textcolor{color1}{(m-1)}\textcolor{color1}{m}}$, $F^{(\ell+1)}_{123\textcolor{color1}{(m-1)}\ldots 4\textcolor{color1}{m}}$, etc. Explicitly,
+
+
+ Assuming that lower-order tensors have been set to criticality, the criticality of the tensor $F^{(\ell+1)}_{123\textcolor{color1}{(m-1)}\ldots 4\textcolor{color1}{m}}$ can easily be deduced from the diagram
+\begin{eqnarray}
+    \begin{tikzpicture}[baseline=(d.base)]
+        \begin{feynman}
+        \vertex (d) {};
+        \vertex[left = 4pt of d, dot, minimum size = 0pt] (v12) {};
+        \vertex[left = 16pt of v12] (l) {};
+        \vertex[below = 8pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $3$}}] (x1) {};
+        \vertex[above = 8pt of l, dot, color1, minimum size = 3pt, label = {left: {\footnotesize $\textcolor{color1}{m-1}$}}] (x2) {};
+        \vertex[below = 4pt of d, dot, minimum size = 0pt] (v34) {};
+        \vertex[below = 16pt of v34] (u) {};
+        \vertex[left = 8pt of u, dot, minimum size = 3pt, label = {below: {\footnotesize $2$}}] (x3) {};
+        \vertex[right = 8pt of u, dot, minimum size = 3pt, label = {below: {\footnotesize $1$}}] (x4) {};
+        \vertex[right = 4pt of d, dot, minimum size = 0pt] (v56) {};
+        \vertex[right = 16pt of v56, dot, minimum size = 0pt] (r) {};
+        \vertex[above = 8pt of r, dot, minimum size = 3pt, label = {right: {\footnotesize $4$}}] (x5) {};
+        \vertex[below = 8pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{m}$}}] (x6) {};
+        \diagram*{
+            (x1) -- (v12) --[color1, ghost] (x2),
+            (x3) -- (v34) -- (x4),
+            (x5) -- (v56) -- [color1, ghost] (x6)
+        };
+        \tikzfeynmanset{every blob = {/tikz/fill=white!70!black, /tikz/minimum size=15pt}}
+        \vertex[right = 0pt of d, blob, minimum size = 8pt] (dd) {{\scriptsize $\delta$}};
+        \vertex[above = 15pt of d, dot, minimum size = 1pt] (d2) {};
+        \vertex[left = 8pt of d2] (d2l) {};
+        \vertex[below = 2pt of d2l, dot, minimum size = 1pt] (d1) {};
+        \vertex[right = 8pt of d2] (d2r) {};
+        \vertex[below = 2pt of d2r, dot, minimum size = 1pt] (d3) {};
+        \end{feynman}
+        \end{tikzpicture}
+        %
+        \;\;\,=\; \sum_{j_1, \dots, j_k}
+        %
+        \begin{tikzpicture}[baseline=(d.base)]
+        \begin{feynman}
+        \vertex (d) {};
+        \vertex[left = 4pt of d, dot, minimum size = 0pt] (w12) {};
+        \vertex[below = 11pt of w12, label = {above: {\scriptsize \hspace{-22pt} $z_{j_2}$}}] (w12d) {};
+        \tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+        \vertex[left = 25pt of w12, blob] (b12) {};
+        \vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+        \vertex[left = 8pt of v12] (l) {};
+        \vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $3$}}] (x1) {};
+        \vertex[above = 16pt of l, dot, color1, minimum size = 3pt, label = {left: {\footnotesize $\textcolor{color1}{m-1}$}}] (x2) {};
+        \vertex[below = 4pt of d, dot, minimum size = 0pt] (w34) {};
+        \vertex[right = 13pt of w34, label = {above: {\scriptsize $ $}}, inner sep = -1pt] (w34r) {};
+        \vertex[below = 25pt of w34, propblob] (b34) {};
+        \vertex[below = 25pt of b34, dot, minimum size = 0pt] (v34) {};
+        \vertex[below = 8pt of v34] (u) {};
+        \vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $2$}}] (x3) {};
+        \vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $1$}}] (x4) {};
+        \vertex[right = 4pt of d, dot, minimum size = 0pt] (w56) {};
+        \vertex[below = 1pt of w56, label = {below: {\scriptsize \hspace{18pt} $z_{j_1}$}}] (w56d) {};
+        \vertex[right = 25pt of w56, propblob] (b56) {};
+        \vertex[above = 2pt of w56, label = {above: {\scriptsize \hspace{22pt} $z_{j_k}$}}] (w56dd) {};
+        \vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+        \vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+        \vertex[above = 16pt of r, dot, minimum size = 3pt, label = {right: {\footnotesize $4$}}] (x5) {};
+        \vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{m}$}}] (x6) {};
+        \diagram*{
+            (x1) -- (v12) -- [color1, ghost] (x2),
+            (x3) -- (v34) -- (x4),
+            (x5) -- (v56) -- [color1, ghost] (x6),
+            (v12) -- [color1blackghost, edge label' = {\scriptsize \;$\sigma_{j_2}\sigma'_{j_2}$}, inner sep = 4pt] (b12) -- [color1, ghost, quarter left] (w12) -- [quarter left] (b12),
+            (v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_1}$}, inner sep = 2pt] (b34) -- [quarter left] (w34) -- [quarter left] (b34),
+            (v56) -- [blackcolor1ghost, edge label = {\scriptsize \,$\sigma_{j_k}\sigma'_{j_k}$}, inner sep = 4pt] (b56) -- [color1, ghost, quarter left] (w56) -- [quarter left] (b56)
+        };
+        \tikzfeynmanset{every blob = {/tikz/fill=white!70!black, /tikz/minimum size=15pt}}
+        \vertex[right = 0pt of d, blob, minimum size = 8pt] (dd) {{\scriptsize $\delta$}};
+        \vertex[above = 22pt of d, dot, minimum size = 1pt] (d2) {};
+        \vertex[left = 10pt of d2] (d2l) {};
+        \vertex[below = 3pt of d2l, dot, minimum size = 1pt] (d1) {};
+        \vertex[right = 10pt of d2] (d2r) {};
+        \vertex[below = 3pt of d2r, dot, minimum size = 1pt] (d3) {};
+        \end{feynman}
+      \end{tikzpicture}
+      \label{eq:1}
+\end{eqnarray}
+where the $\delta$-blob denotes $\delta F$ and we used the notation $\widehat{\Delta G}_{j,\alpha\beta}=\sigma_{j,\alpha}\sigma_{j,\beta}-\langle \sigma_{j,\alpha}\sigma_{j,\beta} \rangle$ from~\cite{banta2024}. Algebraically, this diagram evaluates to
+\begin{align}
+  \delta F^{(\ell+1)}_{123\textcolor{color1}{(m-1)}\ldots 4\textcolor{color1}{m}} {=} \sum_{\beta_{k}}(\chi^{(\ell+1)}_{\parallel})_{12,\beta_{1}\beta_{2}}(\chi^{(\ell+1)}_{\circ})_{3 \textcolor{color1}{(m-1)},\beta_{3}}\ldots (\chi^{(\ell+1)}_{\circ})_{4\textcolor{color1}{m},\beta_{4}}\delta F^{(\ell)}_{\beta_{1}\beta_{2}\beta_{3}\textcolor{color1}{(m-1)}\ldots \beta_{4}\textcolor{color1}{m}}\,,\label{eq:8}
+\end{align}
+where $(\chi^{(\ell+1)}_{\parallel})_{\alpha\beta,\gamma\delta}=\frac{C_{W}^{(\ell+1)}}{2}\langle \frac{\mathrm{d}^{2}(\sigma_{\alpha}\sigma_{\beta})}{\mathrm{d} z_{\gamma}\mathrm{d} z_{\delta}} \rangle_{K^{(\ell)}}=\delta_{\alpha\gamma}\delta_{\beta\delta}$ at criticality~\cite{banta2024}, setting the prefactor in~\eqref{eq:8} to 1. Once more, one finds that the criticality conditions entirely determine the stability of the higher-rank $F$ tensor. A similar argument for the higher-rank $D$-tensors can be found in Appendix~\ref{app:criticality_analysis}.
+
+The leading-order contributions to the rank-$k$ contributions are $\mathcal{O}(1/n^{(k-2)/2})$. However, since the internal lines and propagators at leading order already exhaust all possible contributions to the variations and these were set to 1 by the infinite-width criticality conditions, we conclude that all higher order contributions to the tensors discussed here are stabilized as well. A similar analysis for the tensors $A$ and $B$ and their higher-rank generalizations can be found in Appendix~\ref{app:criticality_analysis}. Therefore, all preactivation- and NTK statistics are stabilized to all orders in $1/n$. This analysis demonstrates how the NTK Feynman rules can be used to arrive at powerful all-order results.% For instance, in \eqref{eq:1} the pattern of the general algebraic relation can be straightforwardly read off from the diagram. In this way, one can use the NTK Feynman rules to argue that the criticality conditions at infinite width are also sufficient to guarantee the stability of the higher-order generalizations of the tensors $A$ and $B$ (see Appendix~\ref{app:criticality_analysis} for details).\jgnote{Mention that we get all order results for all of these tensors}
+
+\subsection{Absence of NTK-corrections for ReLU}\label{absence-NTK-corrections-ReLU}
+Scale-invariant nonlinearities satisfy $\sigma(\lambda z)=\lambda\sigma(z)$ for $\lambda>0$. Important examples include ReLU and LeakyReLU. Remarkably, these activation functions have the property that their NNGP does not receive finite-width corrections for equal inputs, so the infinite-width result is valid for finite-width networks as well, $\widehat K(x,x)=K(x,x)$~\cite{roberts2022}.
+
+In this section, we will establish a similar result for the finite-width correction of the NTK mean for MLPs with scale-invariant nonlinearities. For the special case of ReLU, this fact was proven before, using different techniques~\cite{hanin2019,seleznova2022}. To obtain the same result for all scale-invariant activation functions using Feynman diagrams, we will separately evaluate the algebraic expressions of the last four diagrams in~\eqref{firstcorrectionntk} to show that they all vanish for the case under discussion: The first of those does not contribute since $K^{\{1\}(\ell)}=0$ for scale-invariant activation functions. The second diagram vanishes due to the property
+\begin{align}
+    2K^{2}\frac{d}{dK}\bigg[2K^{2}\frac{d}{dK}\langle \widehat{\Delta \Omega}(z)\rangle_{K}\bigg] - 8K^{3}\frac{d}{dK}\langle \widehat{\Delta \Omega}(z)\rangle_{K} &= 0\label{eq:11}
+\end{align}
+satisfied by the kernel $K=K(x,x)$ of scale-invariant activation functions, see Appendix~\ref{app:proof-identity-relu} for a proof. Finally, the third and fourth diagrams in~\eqref{firstcorrectionntk} vanish as a consequence of
+\begin{align}
+\langle \sigma'(z) \sigma'(z) (z^{2} - K)\rangle_{K} &=2K^{2} \frac{d}{dK}\langle \sigma'(z) \sigma'(z)\rangle_{K}\label{eq:9}
+\end{align}
+and the fact that $\langle \sigma'(z) \sigma'(z)\rangle_{K}$ is a constant for scale-invariant nonlinearities, see Appendix~\ref{app:proof-identity-relu} for a proof. Therefore, the only diagram which contributes on the RHS of~\eqref{eq:9} is that proportional to $\Theta^{\{1\}}$. Since the first-layer NTK mean does not develop any finite-width correction, one concludes by induction that the NTK mean does not receive finite-width corrections for scale-invariant nonlinearities.
+ 
+
+% \subsection{Data augmentation at finite width}
+% \jginline{Since this isn't done yet, treat this as a goal of what we would like to be able to write}
+% \begin{itemize}
+% \item It was noticed previously, that data augmentation leads to exact equivariance of the prediction-distribution at infinite width~\cite{gerken2024} using NTKs
+% \item Later, it was shown that the same is true at finite width \cite{nordenfors2024}\jgnote{Check: Do they only do the mean or the full distribution?}
+% \item Using our techniques, we can show that the first-order correction is also equivariant, confirming these results
+% \end{itemize}
+
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "../main_arxiv"
+%%% End:

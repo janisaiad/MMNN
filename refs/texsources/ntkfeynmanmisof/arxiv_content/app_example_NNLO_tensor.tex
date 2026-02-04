@@ -1,0 +1,370 @@
+\section{$D$ tensor at next-to-next-to leading order from Feynman diagrams}
+\label{app:example_NNLO_tensor}
+\begingroup
+\allowdisplaybreaks
+
+In this Appendix we display all the possible diagrams that can be built out of the Feynman rules defined in \ref{app:feynman_rules}, for the specific case of the tensor D in the expectation value
+ \begin{align}\label{higher-order-D-F}
+     \mathbb{E}^{c}_{\theta}[z^{(\ell+1)}_{i_{1},1},&\,z^{(\ell+1)}_{i_{2},2},z^{(\ell+1)}_{i_{3},3},z^{(\ell+1)}_{i_{4},4}, \widehat{\Delta \Theta}^{(\ell+1)}_{i_{5}i_{6},\textcolor{color1}{5}\textcolor{color1}{6}}] \nonumber\\ 
+      &{=} \frac{1}{n_{\ell}^{2}}\!\bigg[\delta_{i_{1}i_{2}}\delta_{i_{3}i_{4}}\delta_{i_{5}i_{6}}D^{(\ell+1)}_{1234\textcolor{color1}{56}} {+} \delta_{i_{1}i_{2}}\delta_{i_{3}i_{5}}\delta_{i_{4}i_{6}}F^{(\ell+1)}_{123\textcolor{color1}{5}4\textcolor{color1}{6}} {+} \ldots\!\bigg]
+\end{align}
+
+The diagrams describing the tensor $D$ at layer $\ell + 1$ are then given by 
+\begin{align}
+\frac{1}{n_{\ell}}& D^{(\ell + 1)}_{1234\textcolor{color1}{56}} =    \sum_j
+\begin{tikzpicture}[baseline=(b.base)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex[blob] (b) {};
+\vertex[left = 25pt of b, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 25pt of b, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\vertex[right = 25pt of b, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize $\widehat{\Delta G}_j$}] (b) -- [photon, edge label' = {\scriptsize $\widehat{\Delta G}_j$}] (v34),
+	(v56) -- [photon, edge label = {\scriptsize $\widehat{\Delta \Omega}_j$}] (b)
+};
+\end{feynman}
+\end{tikzpicture}
++
+\left( \sum_{j_1, j_2} \begin{tikzpicture}[baseline=(K0.base)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex[blob] (K0) {};
+\vertex[left = 25pt of K0, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[right = 25pt of K0, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of K0, blob, minimum size = 6pt] (V4) {};
+\vertex[above = 3pt of V4, dot, minimum size = 0pt] (V4u) {};
+\vertex[below = 3pt of V4, dot, minimum size = 0pt] (V4d) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of V4, blob] (K0t) {};
+\vertex[above = 25pt of K0t, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (K0) -- [quarter left] (V4d) -- [quarter left] (K0) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta \Omega}_{j_1}$}] (v56),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (K0t) -- [quarter left] (V4u) -- [quarter left] (K0t)
+};
+\vertex[right = 14pt of K0, label = {above: {\scriptsize $\phi_{j_1}$}}] (K0r) {};
+\vertex[right = 14pt of K0t, label = {below: {\scriptsize $\phi_{j_2}$}}] (K0tr) {};
+\end{feynman}
+\end{tikzpicture}
++\; P(12,34,56) \right)\, \nonumber \\
+& +
+\left(\sum_{j_1, j_2, j_3} 
+%
+\begin{tikzpicture}[baseline=(b12.base)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[blob] (b) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[left = 18pt of b, blob, minimum size = 6pt] (V4a) {};
+\vertex[left = 3pt of V4a, dot, minimum size = 0pt] (w12) {};
+\vertex[right = 3pt of V4a, dot, minimum size = 0pt] (u12) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[left = 18pt of V4a, blob] (b12) {};
+\vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 25pt of b, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of b, blob, minimum size = 6pt] (V4b) {};
+\vertex[right = 3pt of V4b, dot, minimum size = 0pt] (w56) {};
+\vertex[left = 3pt of V4b, dot, minimum size = 0pt] (u56) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of V4b, blob] (b56) {};
+\vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (b),
+	(v56) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{j_3}$}] (b56) -- [quarter left] (w56) -- [quarter left] (b56),
+	(b) -- [quarter left] (u12) -- [quarter left] (b) -- [quarter left] (u56) -- [quarter left] (b)
+};
+\vertex[right = 13pt of b12, label = {below: {\scriptsize $\phi_{j_1}$}}] (b12r) {};
+\vertex[left = 8pt of b, label = {below: {\scriptsize $\phi_{j_2}$}}] (bl) {};
+\vertex[right = 13pt of b, label = {below: {\scriptsize $\phi_{j_2}$}}] (br) {};
+\vertex[left = 8pt of b56, label = {below: {\scriptsize $\phi_{j_3}$}}] (b56l) {};
+\end{feynman}
+\end{tikzpicture}
+%
++\; P(12,34,56) \, \right)\nonumber \\
+& + \sum_{j_1, j_2, j_3}
+\begin{tikzpicture}[baseline=(b12.base)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[blob, minimum size = 6pt] (d) {};
+\vertex[left = 3pt of d, dot, minimum size = 0pt] (w12) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[left = 20pt of d, blob] (b12) {};
+\vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 3pt of d, dot, minimum size = 0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[above = 20pt of d, blob] (b34) {};
+\vertex[above = 25pt of b34, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\vertex[right = 3pt of d, dot, minimum size = 0pt] (w56) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 20pt of d, blob] (b56) {};
+\vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (b34) -- [quarter left] (w34) -- [quarter left] (b34),
+	(v56) -- [photon, edge label = {\scriptsize \;$\widehat{\Delta \Omega}_{j_3}$}] (b56) -- [quarter left] (w56) -- [quarter left] (b56)
+};
+\vertex[right = 14pt of b12, label = {below: {\scriptsize $\phi_{j_1}$}}] (b12r) {};
+\vertex[below = 8pt of b34, label = {right: {\scriptsize $\phi_{j_2}$}}] (b12r) {};
+\vertex[left = 10pt of b56, label = {below: {\scriptsize $\phi_{j_3}$}}] (b12r) {};
+\end{feynman}
+\end{tikzpicture} + \sum_{j_1, j_2, j_3}
+\begin{tikzpicture}[baseline=(b12.base)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[blob, minimum size = 6pt] (d) {};
+\vertex[left = 3pt of d, dot, minimum size = 0pt] (w12) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[left = 20pt of d, blob] (b12) {};
+\vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 3pt of d, dot, minimum size = 0pt] (w34) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[above = 20pt of d, blob] (b34) {};
+\vertex[above = 25pt of b34, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\vertex[right = 3pt of d, dot, minimum size = 0pt] (w56) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 20pt of d, blob] (b56) {};
+\vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (b34) -- [quarter left] (w34) -- [quarter left] (b34),
+	(v56) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'_{j_3}\sigma'_{j_3}$}] (b56) -- [color1, ghost, quarter left] (w56) -- [color1, ghost, quarter left] (b56)
+};
+\vertex[right = 14pt of b12, label = {below: {\scriptsize $\phi_{j_1}$}}] (b12r) {};
+\vertex[below = 8pt of b34, label = {right: {\scriptsize $\phi_{j_2}$}}] (b12r) {};
+\vertex[left = 10pt of b56, label = {below: {\scriptsize $ $}}] (b12r) {};
+\end{feynman}
+\end{tikzpicture}\nonumber \\
+ & + \left(
+\sum_{j_1, j_2, j_3} 
+%
+\begin{tikzpicture}[baseline=(b12.base)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[blob] (b) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[left = 18pt of b, blob, minimum size = 6pt] (V4a) {};
+\vertex[left = 3pt of V4a, dot, minimum size = 0pt] (w12) {};
+\vertex[right = 3pt of V4a, dot, minimum size = 0pt] (u12) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[left = 18pt of V4a, blob] (b12) {};
+\vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 25pt of b, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of b, blob, minimum size = 6pt] (V4b) {};
+\vertex[right = 3pt of V4b, dot, minimum size = 0pt] (w56) {};
+\vertex[left = 3pt of V4b, dot, minimum size = 0pt] (u56) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of V4b, blob] (b56) {};
+\vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (b12) -- [quarter left] (w12) -- [quarter left] (b12),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (b),
+	(v56) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'_{j_3}\sigma'_{j_3}$}] (b56) -- [color1, ghost, quarter left] (w56) -- [color1, ghost, quarter left] (b56),
+	(b) -- [quarter left] (u12) -- [quarter left] (b) -- [quarter left] (u56) -- [quarter left] (b)
+};
+\vertex[right = 13pt of b12, label = {below: {\scriptsize $\phi_{j_1}$}}] (b12r) {};
+\vertex[left = 8pt of b, label = {below: {\scriptsize $\phi_{j_2}$}}] (bl) {};
+\vertex[right = 13pt of b, label = {below: {\scriptsize $\phi_{j_2}$}}] (br) {};
+\vertex[left = 8pt of b56, label = {below: {\scriptsize $ $}}] (b56l) {};
+\end{feynman}
+\end{tikzpicture} + P(12,34) \right) \nonumber\\
+& + \left( \sum_{j_1, j_2}
+\begin{tikzpicture}[baseline=(K0.base)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex[blob] (K0) {};
+\vertex[left = 25pt of K0, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[right = 25pt of K0, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of K0, blob, minimum size = 6pt] (V4) {};
+\vertex[above = 3pt of V4, dot, minimum size = 0pt] (V4u) {};
+\vertex[below = 3pt of V4, dot, minimum size = 0pt] (V4d) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of V4, blob] (K0t) {};
+\vertex[above = 25pt of K0t, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (K0) -- [color1, ghost, quarter left] (V4d) -- [color1, ghost, quarter left] (K0) -- [color1doubghost, edge label' = {\scriptsize \;$\sigma'_{j_1}\sigma'_{j_1}$}] (v56),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (K0t) -- [quarter left] (V4u) -- [quarter left] (K0t)
+};
+\vertex[right = 14pt of K0, label = {above: {\scriptsize $ $}}] (K0r) {};
+\vertex[right = 14pt of K0t, label = {below: {\scriptsize $\phi_{j_2}$}}] (K0tr) {};
+\end{feynman}
+\end{tikzpicture} 
++ P(12,34)\right) 
++
+\sum_{j_{2}, j_{3}} 
+%
+\begin{tikzpicture}[baseline=(b.base)]
+\begin{feynman}
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[blob] (b) {};
+\vertex[left = 25pt of b, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[above = 25pt of b, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of b, blob, minimum size = 6pt] (V4b) {};
+\vertex[right = 3pt of V4b, dot, minimum size = 0pt] (w56) {};
+\vertex[left = 3pt of V4b, dot, minimum size = 0pt] (u56) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[right = 18pt of V4b, blob] (b56) {};
+\vertex[right = 25pt of b56, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8 pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_2}$}] (b),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (b),
+	(v56) -- [color1doubghost, edge label = {\scriptsize \;$\sigma'_{j_3}\sigma'_{j_3}$}] (b56) -- [color1, ghost, quarter left] (w56) -- [color1, ghost, quarter left] (b56),
+	(b) -- [quarter left] (u56) -- [quarter left] (b)
+};
+\vertex[right = 13pt of b, label = {below: {\scriptsize $ $}}] (b12r) {};
+\vertex[left = 8pt of b, label = {below: {\scriptsize $ $}}] (bl) {};
+\vertex[right = 13pt of b, label = {below: {\scriptsize $\phi_{j_2}$}}] (br) {};
+\vertex[left = 8pt of b56, label = {below: {\scriptsize $ $}}] (b56l) {};
+\end{feynman}
+\end{tikzpicture} \nonumber \\
+ & +
+\sum_{j_1,j_2} \begin{tikzpicture}[baseline=(K0.base)]
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\begin{feynman}
+\vertex[blob] (K0) {};
+\vertex[left = 18pt of K0, smallblob, minimum size = 6pt] (V4a) {};
+\vertex[left = 3pt of V4a, dot, minimum size = 0pt] (w12) {};
+\vertex[right = 3pt of V4a, dot, minimum size = 0pt] (u12) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[left = 18pt of V4a, blob] (b12) {};
+\vertex[left = 25pt of b12, dot, minimum size = 0pt] (v12) {};
+\vertex[left = 8pt of v12] (l) {};
+\vertex[below = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $1^{}$}}] (x1) {};
+\vertex[above = 16pt of l, dot, minimum size = 3pt, label = {left: {\footnotesize $2^{}$}}] (x2) {};
+\vertex[right = 25pt of K0, dot, minimum size = 0pt] (v56) {};
+\vertex[right = 8pt of v56, dot, minimum size = 0pt] (r) {};
+\vertex[above = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{5}^{}$}}] (x5) {};
+\vertex[below = 16pt of r, dot, color1, minimum size = 3pt, label = {right: {\footnotesize $\textcolor{color1}{6}^{}$}}] (x6) {};
+\tikzfeynmanset{every blob = {/tikz/fill=black!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of K0, smallblob, minimum size = 6pt] (V4) {};
+\vertex[above = 3pt of V4, dot, minimum size = 0pt] (V4u) {};
+\vertex[below = 3pt of V4, dot, minimum size = 0pt] (V4d) {};
+\tikzfeynmanset{every blob = {/tikz/fill=white!50, /tikz/minimum size=15pt}}
+\vertex[above = 18pt of V4, blob] (K0t) {};
+\vertex[above = 25pt of K0t, dot, minimum size = 0pt] (v34) {};
+\vertex[above = 8pt of v34] (u) {};
+\vertex[left = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $3^{}$}}] (x3) {};
+\vertex[right = 16pt of u, dot, minimum size = 3pt, label = {above: {\footnotesize $4^{}$}}] (x4) {};
+\diagram*{
+	(x1) -- (v12) -- (x2),
+	(x3) -- (v34) -- (x4),
+	(x5) -- [color1, ghost] (v56) -- [color1, ghost] (x6),
+	(v12) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta G}_{j_1}$}] (b12) -- [quarter left] (w12) -- [quarter left] (b12), (K0)
+    -- [out=125,in=180] (V4d) -- [in=55,out=0] (K0) -- [photon, edge label' = {\scriptsize \;$\widehat{\Delta \Omega}_{j_1}$}] (v56),
+	(v34) -- [photon, edge label = {\scriptsize $\widehat{\Delta G}_{j_2}$}] (K0t) -- [quarter left] (V4u) -- [quarter left] (K0t),
+    (K0) -- [quarter left] (u12) -- [quarter left] (K0)
+};
+\vertex[right = 14pt of K0, label = {above: {\scriptsize $\phi_{j_1}$}}] (K0r) {};
+\vertex[right = 14pt of K0t, label = {below: {\scriptsize $\phi_{j_2}$}}] (K0tr) {};
+\end{feynman}
+\end{tikzpicture}
+\end{align}
+\endgroup
+where $P(a_{1}a_{2},a_{3}a_{4},\ldots,a_{2k-1}a_{2k})$ denotes the complement of the set of permutations generated by the pairs $(a_{1}a_{2}),(a_{3}a_{4}),\ldots, (a_{2k-1}a_{2k})$, e.g. $P(12,34) = \{(34,12)\}$.
+
+We have checked that these diagrams sucessfully reproduce the formulae obtained from perturbation theory and functional integration when applied to the study of the statistics of the NTK at order $\frac{1}{n^{2}}$. 
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "../main_arxiv"
+%%% End:

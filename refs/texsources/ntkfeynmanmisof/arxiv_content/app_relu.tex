@@ -1,0 +1,41 @@
+\section{Proof of identities for scale-invariant nonlinearities}
+\label{app:proof-identity-relu}
+Scale-invariant activations functions are defined by
+\begin{eqnarray}
+    \sigma(z) =  \left\{
+\begin{array}{ll}
+      a_{+}z \, ,& z \geq 0 \\
+      a_{-}z \, ,& z < 0 \\
+\end{array} 
+\right. 
+\end{eqnarray}
+Due to its simplicity, one can evaluate Gaussian expectation values containing polynomials of these functions. For instance, the Gaussians $\langle \sigma(z)\sigma(z)\rangle_{K}$, $\langle \sigma'(z)\sigma'(z)\rangle_{K}$, which define the tensor $\widehat{\Delta \Omega}$ in \ref{absence-NTK-corrections-ReLU}, can be exactly computed through the use of ordinary algebraic manipulations. The former takes the form
+\begin{eqnarray}
+    \langle\sigma(z)\sigma(z)\rangle_{K} &=& \frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}e^{-\frac{z^{2}}{2K}}\sigma^{2}(z)dz  = \left(\frac{a_{+}^{2} + a_{-}^{2}}{2}\right)\frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}e^{-\frac{z^{2}}{2K}}z^{2}dz\nonumber\\
+    &=& A\, K
+\end{eqnarray}
+where $A = \left(\frac{a_{+}^{2} + a_{-}^{2}}{2}\right)$, while the latter results in
+\begin{eqnarray}
+    \langle\sigma'(z)\sigma'(z)\rangle_{K} &=& \frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}e^{-\frac{z^{2}}{2K}}\sigma'^{2}(z)dz  = \left(\frac{a_{+}^{2} - a_{-}^{2}}{2}\right)\frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}e^{-\frac{z^{2}}{2K}}dz\nonumber\\
+    &=& \tilde{A}
+\end{eqnarray} 
+with $\tilde{A} = \left(\frac{a_{+}^{2} - a_{-}^{2}}{2}\right)$. 
+
+Now it is straightforward to see that the Gaussian expectation value of the tensor $\widehat{\Delta \Omega}(z) = \sigma(z)\sigma(z) + C_{W} \Theta^{(l)} \sigma'(z)\sigma'(z)$ is given by
+\begin{eqnarray}
+\langle \widehat{\Delta \Omega}(z)\rangle_{K} &=& A K + C_{W}\tilde{A} \Theta
+\end{eqnarray}
+which implies $\frac{d}{dK}\langle \widehat{\Delta \Omega}(z)\rangle = A$. This shows the validity of \eqref{eq:11}.
+
+The equality \eqref{eq:9} follows from ordinary integration techniques. Indeed,
+\begin{eqnarray}
+    2K^{2}\frac{d}{dK}\langle \sigma'(z)\sigma'(z)\rangle_{K} &=& 2K^{2}\frac{d}{dK}\left( \frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}e^{-\frac{z^{2}}{2K}}\sigma'^{2}(z)dz\right)\nonumber\\
+    &=& \int_{-\infty}^{+\infty}\frac{2K^{2}}{\sqrt{2\pi K}}\left(-\frac{1}{2K} + \frac{z^{2}}{2K^{2}}\right)\sigma'(z)^{2}dz\nonumber\\
+    % &=& \frac{1}{\sqrt{2\pi K}}\int_{-\infty}^{+\infty}(z^{2} - K)\sigma'(z)^{2}dz \nonumber\\
+    &=& \langle (z^{2} - K)\sigma'(z)\sigma'(z)\rangle_{K}
+\end{eqnarray}
+Thus, the Gaussian $\langle (z^{2} - K)\sigma'(z)\sigma'(z)\rangle_{K}$ vanishes for scale-invariant nonlinearities, as discussed in \ref{absence-NTK-corrections-ReLU}.
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:

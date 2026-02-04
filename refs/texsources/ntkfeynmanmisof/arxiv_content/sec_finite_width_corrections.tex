@@ -1,0 +1,57 @@
+\section{Finite-width corrections to the NTK}
+\label{sec-finitewidth-corrections-NTK}
+
+For an $L$-layer neural network $\mathcal{N}:\RR^{\nin}\rightarrow\RR^{\nout}$ with parameters $\theta$, the layer-$\ell$-\emph{empirical NTK} is defined by
+\begin{align}
+  \widehat\Theta_{ij}^{(\ell)}(x,x')=\sum_{\mu}\frac{\partial z^{(\ell)}_{i}(x)}{\partial\theta_{\mu}}\frac{\partial z^{(\ell)}_{j}(x')}{\partial\theta_{\mu}}\,,\label{eq:10}
+\end{align}
+where $z_{i}^{(\ell)}$ are the channel-$i$ preactivations of layer $\ell$ and we sum over all parameters in the layers $\ell'\leq \ell$. We will refer to channel indices $i,j,\dots$ as \emph{neural indices}. The NTK of the entire network is given by $\widehat\Theta=\widehat\Theta^{(L)}$.
+This kernel is highly non-linear, evolves during training and is a stochastic variable due to its dependence on the initialization. To first order in the learning rate, the training dynamics of the neural network are completely specified by the NTK. Therefore, understanding the NTK is key to understanding the training dynamics of neural networks.
+
+While the NTK captures the correlations of the gradients of the network, the \emph{neural network Gaussian process (NNGP) kernel}, defined by
+\begin{align}
+  \widehat K^{(\ell)}_{ij}(x,x')=z_{i}^{(\ell)}(x)z_{j}^{(\ell)}(x')\,,\label{eq:4}
+\end{align}
+captures the correlations of the preactivations. The NNGP also is a random variable due to initialization. Both kernels evolve during training, but we will consider them at initialization. Their functional forms depend on the architecture and we will restrict to MLPs for the remainder of this article.
+
+To describe the statistics of the NTK, we introduce the \emph{NTK fluctuations} $\widehat{\Delta\Theta}_{ij}^{(\ell)}=\widehat\Theta^{(\ell)}_{ij}-\EE_{\theta}[\widehat\Theta^{(\ell)}_{ij}]$, where the expectation value is over initializations. In the infinite-width limit, in which the number $n$ of hidden channels in $\mathcal{N}$ goes to infinity, the NTK becomes constant in training time and collapses onto its mean~\cite{jacot2018}\footnote{This requires an appropriate parametrization of the neural network layers, for instance the so-called neural-tangent parametrization.}. Therefore, at infinite width, the NTK fluctuations vanish, $\widehat{\Delta\Theta}=0$. The constant, deterministic NTK at infinite width, the \emph{frozen} NTK, can be computed by layer-wise recursion relations for which efficient implementations exist~\cite{novak2020a}. 
+
+%In general, due to the stochasticity and evolution of the NTK, \eqref{eq:1} is hard to understand analytically. However, in the infinite-width limit, in which the number $n$ of hidden channels in $\mathcal{N}$ goes to infinity, the NTK becomes constant in training time and collapses onto its mean~\cite{jacot2018}\footnote{This requires an appropriate parametrization of the neural network layers, for instance the so-called neural-tangents parametrization.}. The resulting quantity $\Theta^{0}$, the \emph{frozen} NTK, can be computed by layer-wise recursion relations for which efficient implementations exist~\cite{novak2020a}. In this limit, the dynamics~\eqref{eq:1} can be solved analytically and the distribution of network outputs becomes a Gaussian process with mean- and covariance function given in terms of $\Theta^{0}$.
+
+%Although the infinite width limit allows for complete analytic control over the training dynamics, it has a number of important drawbacks. Most importantly, it linearizes the network in the parameters and freezes the features (the outputs of the penultimate layer), on top of which a linear classifier is learned. There is an ongoing debate in the literature about the question how closely the dynamics of finite-width networks follow the infinite width dynamics\jgnote{add refs}.
+
+To go beyond the infinite-width limit, one can consider a Taylor expansion of the neural network dynamics in $1/n$~\cite{yaida2020, roberts2022}. In this setting, the leading contribution corresponds to the Gaussian process behavior at $n\rightarrow\infty$ and higher-order corrections in $1/n$ introduce non-linear effects and feature evolution. The corrections to the NTK at higher orders are neither constant nor deterministic. The neural network statistics are then characterized by computing mixed moments of the NTK and preactivations in a given layer, for instance
+\begin{align}
+  \EE_{\theta}[z^{(\ell)}_{i_{1}}(x_{1})z^{(\ell)}_{i_{2}}(x_{2})\widehat{\Delta\Theta}^{(\ell)}_{i_{3}i_{4}}(x_{3},x_{4})]\,.\label{eq:2}
+\end{align}
+Since $\widehat{\Delta\Theta}=0$ at infinite width, \eqref{eq:2} is of order $1/n$. Because higher-order moments correspond to higher orders in $1/n$, by computing finitely many mixed moments, the statistics of the relevant quantities can be described completely to a certain order in $1/n$. Instead of computing mixed moments of the form \eqref{eq:2} directly, we will instead work with so-called \emph{joint cumulants} (\emph{connected correlators} in physics), denoted by $\EE^{c}$. Intuitively, a joint cumulant is the corresponding mixed moment with all factorizations of the expectation value subtracted. A more detailed description is provided in Appendix~\ref{app:cumulants}.
+
+In order to extract the building blocks of the cumulants at a certain order in $1/n$, we decompose the cumulants according to their dependence on the neural indices. For instance, we introduce the tensors $D$ and $F$ by decomposing the cumulant of~\eqref{eq:2} as~\cite{roberts2022}
+\begin{align}
+  &\EE^{c}_{\theta}[z^{(\ell+1)}_{i_{1}}(x_{1}),z^{(\ell+1)}_{i_{2}}(x_{2}),\widehat{\Delta\Theta}^{(\ell+1)}_{i_{3}i_{4}}(\textcolor{color1}{x_{3}},\textcolor{color1}{x_{4}})]\nonumber\\
+  &\qquad=\frac{1}{n_{\ell}}\!\!\left(\! D^{(\ell+1)}_{12\textcolor{color1}{34}}\delta_{i_{1}i_{2}}\delta_{i_{3}i_{4}}{+}F^{(\ell+1)}_{1\textcolor{color1}{3}2\textcolor{color1}{4}}\delta_{i_{1}i_{3}}\delta_{i_{2}i_{4}}{+}F^{(\ell+1)}_{1\textcolor{color1}{4}2\textcolor{color1}{3}}\delta_{i_{1}i_{4}}\delta_{i_{2}i_{3}} \!\right)\,.\label{eq:3}
+\end{align}
+Here, we have highlighted the inputs $x_{2}$, $x_{3}$ appearing in the NTK in blue and $D_{\alpha\beta\gamma\delta}$ is the Gram tensor of a function $D$ evaluated on the four inputs appearing in the cumulant, $D_{\alpha\beta\gamma\delta}=D(x_{\alpha},x_{\beta},x_{\gamma},x_{\delta})$ and similarly for $F$. We refer to $\alpha,\beta,\dots$ as \emph{sample indices}. We will decompose all cumulants (and therefore moments) into such tensors according to their neural indices, as exemplified in~\eqref{eq:3}. In particular, the rank-four tensors $A$, $B$, $D$ and $F$ together with the four-point cumulant of preactivations $V_{4}$ and the leading mean NNGP and NTK corrections $K^{\{1\}}$ and $\Theta^{\{1\}}$ completely specify the statistics of preactivations and the NTK at order $1/n$~\cite{roberts2022}. We provide definitions of these objects in Appendix~\ref{app:defin-all-tens}. In order to compute $1/n$ corrections to the training dynamics, the higher-derivative tensors \emph{dNTK} and \emph{ddNTK} are necessary. These will be decomposed into the tensors $P$, $Q$, $R$, $S$, $T$ and $U$~\cite{roberts2022}, also defined in Appendix~\ref{app:defin-all-tens}.
+
+%Our Feynman rules also include the tensors $P$, $Q$, $R$, $S$, $T$ and $U$ associated to the dNTK and ddNTK and can be used to find the algebraic expressions at order $1/n$ for the recursive relations of all these tensors.
+
+%All cumulants (and therefore moments) of preactivations and derivatives at order $1/n$ can be written in terms tensors like $D$ and $F$. 
+
+%which are necessary to describe the complete training dynamics at order $1/n$ can be written in terms of 10 such tensors.
+
+ %The tensors $A$, $B$, $D$ and $F$ together with the four-point cumulant of preactivations $V_{4}$ and the leading mean NNGP- and NTK corrections $K^{\{1\}}$ and $\Theta^{\{1\}}$ completely specify the statistics of preactivations and the NTK~\cite{roberts2022} at order $1/n$. In order to compute $1/n$ corrections to the training dynamics, higher-derivative tensors, called \emph{dNTK} and \emph{ddNTK}~\cite{roberts2022}, are necessary. Our Feynman rules also include the tensors $P$, $Q$, $R$, $S$, $T$ and $U$ associated to the dNTK and ddNTK and can be used to find the algebraic expressions at order $1/n$ for the recursive relations of all these tensors.
+
+For a given neural network, these tensors can be computed from layer-wise recursive relations, for instance $F$ satisfies the relation~\cite{roberts2022}
+\begin{align}
+  F^{(\ell+1)}_{1\textcolor{color1}{3}2\textcolor{color1}{4}} &=(C_{W}^{(\ell+1)})^{2}\langle \sigma^{(\ell)}_{1}\sigma^{(\ell)}_{2}\sigma'^{(\ell)}_{\textcolor{color1}{3}}\sigma'^{(\ell)}_{\textcolor{color1}{4}} \rangle_{K^{(\ell)}}\Theta^{(\ell)}_{\textcolor{color1}{3}\textcolor{color1}{4}}\nonumber\\
+  &\hspace{-0.5cm}+\frac{n_{\ell}}{n_{\ell-1}}(C_{W}^{(\ell+1)})^{2}\!\!\!\sum_{\alpha,\beta,\gamma,\delta=1}^{4}\langle \sigma^{(\ell)}_{1}\sigma'^{(\ell)}_{\textcolor{color1}{3}}z^{(\ell)}_{\alpha} \rangle_{K^{(\ell)}}\langle \sigma_{2}^{(\ell)}\sigma'^{(\ell)}_{\textcolor{color1}{4}}z^{(\ell)}_{\beta} \rangle_{K^{(\ell)}} K^{\alpha\gamma}_{(\ell)}K^{\beta\delta}_{(\ell)}F^{(\ell)}_{\gamma\textcolor{color1}{3}\delta\textcolor{color1}{4}}+\mathcal{O}\left( \frac{1}{n} \right) \label{eq:F}
+\end{align}
+where the right-hand side only involves expectation values at layer $\ell$. Here,  $C_{W}^{(\ell)}$ is the variance of the initialization distribution of the weights in layer $\ell$ and $K^{(\ell)}_{\alpha\beta}=K^{(\ell)}(x_{\alpha},x_{\beta})=\EE_{\theta}[\widehat K^{(\ell)}(x_{\alpha},x_{\beta})]$ is the Gram matrix of the mean of the NNGP (similarly for $\Theta$). $K$ with upper indices denotes the inverse of the matrix $K_{\alpha\beta}$, i.e.\ $\sum_{\beta=1}^{4}K^{\alpha\beta}_{(\ell)}K^{(\ell)}_{\beta\gamma}=\delta_{\alpha\gamma}$. By $\langle \cdot \rangle_{K^{(\ell)}}$ we denote the Gaussian expectation value with mean zero and covariance given by the matrix $K^{(\ell)}_{\alpha\beta}$. We used the shorthands $z_{\alpha}=z(x_{\alpha})$ and $\sigma_{\alpha}=\sigma(z(x_{\alpha}))$. The prime designates the derivative of the activation function.
+
+Unfortunately, arriving at such recursions is algebraically very laborious, hindering adoption of these expansions for machine-learning research. In this work, we introduce a framework for substantially simplifying these computations by using a graphical approach based on Feynman diagrams, allowing for the straightforward derivation of known and novel recursions such as the one discussed in Section~\ref{sec:recurs-relat-ntk}.
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "ntk_feynman"
+%%% End:
+

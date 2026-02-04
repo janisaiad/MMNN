@@ -1,0 +1,443 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\geometry{margin=1.2in}
+
+\title{\textbf{Extending Quadratic Scaling Laws to Deep NTKs}\\ \large{Via Finite-Width Correction Tensors}}
+\author{Research Strategy Note}
+\date{\today}
+
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Id}{\mathrm{Id}}
+\newcommand{\Diag}{\mathrm{Diag}}
+\newcommand{\tr}{\mathrm{Tr}}
+\newcommand{\od}{\odot}
+\newcommand{\ip}[2]{\left\langle #1,#2\right\rangle}
+\newcommand{\Norm}[1]{\left\|#1\right\|}
+\newcommand{\Cplus}{\{z\in\CC:\Im z>0\}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    This document outlines a rigorous strategy to extend the spectral analysis of the Neural Tangent Kernel (NTK) in the quadratic scaling regime ($n \asymp d^2$) from two-layer networks (Benigni-Paquette, 2025) to multi-layer networks. The core technical mechanism relies on the \textbf{Gaussian Equivalence Principle (GEP)}. We verify GEP by mapping the \textit{Tensor $T$} in the Benigni-Paquette framework to the $O(1/p)$ connected four-point functions (cumulants) established in finite-width network literature.
+\end{abstract}
+
+\section{The Setting and The Challenge}
+
+\subsection{Scaling Regime}
+We consider a fully-connected deep network with layers $\ell=0,1,\dots,L$ and widths $d_\ell$.
+The data matrix is $X^{(0)}\in\RR^{n\times d_0}$ with i.i.d.\ entries (centered, unit variance, finite fourth moment).
+For $\ell\geq 1$ we define the pre-activations and activations
+\begin{equation}
+  Z^{(\ell)} \coloneqq \frac{1}{\sqrt{d_{\ell-1}}}X^{(\ell-1)}W^{(\ell)}\in\RR^{n\times d_\ell},
+  \qquad
+  X^{(\ell)} \coloneqq \sigma(Z^{(\ell)})\in\RR^{n\times d_\ell},
+\end{equation}
+where $W^{(\ell)}\in\RR^{d_{\ell-1}\times d_\ell}$ has i.i.d.\ $\mathcal{N}(0,1)$ entries, independent across layers.
+
+The quadratic scaling regime is:
+\begin{align*}
+    n &\to \infty, \quad d_l \to \infty \\
+    \frac{n}{d_0 d_1} &\to \gamma_1 \in (0, \infty) \quad \text{(Quadratic Samples)} \\
+    \frac{d_l}{d_{l-1}} &\to \gamma_{2,l} \in (0, \infty) \quad \text{(Linear Width Ratios)}
+\end{align*}
+In particular $n\asymp d_0^2$ and every width is only \emph{linear} in $d_0$.
+Every single Gram matrix of the form $\frac{1}{d_\ell}X^{(\ell)}X^{(\ell)\top}$ is low-rank (rank at most $d_\ell\asymp d_0$), but Hadamard products of such low-rank factors can have rank up to the product of ranks, which is of order $n$ in this regime.
+
+\subsection{The Recursive Challenge}
+The NTK at layer $L$, denoted $\Theta^{(L)}$, follows the recursion:
+\begin{equation}
+    \Theta^{(L)} = \Theta^{(L-1)} \odot \dot{\Sigma}^{(L)} + \Sigma^{(L)}
+\end{equation}
+The Benigni-Paquette (BP) result characterizes the spectrum of matrices of the form $K = (XX^\top) \odot M$.
+To apply this recursively, we must treat the hidden layer activations $X^{(l)}$ as the ``input data'' for layer $l+1$.
+\textbf{Problem:} $X^{(l)}$ is not i.i.d. Gaussian. Its columns are correlated.
+
+\subsection{What we keep from BP (the proof spine)}
+The BP proof has three reusable steps.
+\begin{enumerate}
+  \item A replacement argument that turns a nonlinear feature matrix into ``linear + independent noise'' without changing the ESD.
+  \item A tensorization step that rewrites a Hadamard product of Gram matrices as an ordinary Gram matrix of tensor-product features.
+  \item A Bai--Zhou type theorem: if the row features are independent and their covariance tensor has a deterministic limit, then the ESD is given by a Marchenko--Pastur map (free multiplicative convolution with MP).
+\end{enumerate}
+To extend BP to deep networks, we need a version of Step 1 that works for the deep feature maps $X^{(\ell)}$, and a way to control the covariance tensor in Step 3 through known finite-width cumulant formulas.
+
+\section{Deep scalar-output NTK at initialization}
+\label{sec:deep-model}
+
+\subsection{Model}
+Fix a depth $L\geq 1$.
+Let $X^{(0)}\in\RR^{n\times d_0}$ be the data matrix with i.i.d.\ entries.
+For each layer $\ell=1,\dots,L$, let $W^{(\ell)}\in\RR^{d_{\ell-1}\times d_\ell}$ have i.i.d.\ $\mathcal{N}(0,1)$ entries, independent across layers and independent of $X^{(0)}$.
+Let $a\in\RR^{d_L}$ have i.i.d.\ entries, centered, bounded, and independent of all $W^{(\ell)}$.
+Define
+\[
+  Z^{(\ell)} \coloneqq \frac{1}{\sqrt{d_{\ell-1}}}X^{(\ell-1)}W^{(\ell)},\qquad
+  X^{(\ell)} \coloneqq \sigma(Z^{(\ell)}),
+\]
+where $\sigma$ is applied entrywise.
+We consider the scalar-output network
+\begin{equation}\label{eq:scalar-output}
+  f(X^{(0)}) \coloneqq \frac{1}{\sqrt{d_L}}X^{(L)}a\in\RR^n.
+\end{equation}
+
+\subsection{Backpropagation features}
+Let $\phi\coloneqq \sigma'$ (defined Lebesgue-a.e. and applied entrywise).
+Define the backpropagated signals $\Delta^{(\ell)}\in\RR^{n\times d_\ell}$ by the recursion
+\begin{align}
+  \Delta^{(L)} &\coloneqq \phi(Z^{(L)})\odot (\mathbf{1}\, a^\top),\label{eq:delta-last}\\
+  \Delta^{(\ell)} &\coloneqq \phi(Z^{(\ell)})\odot \frac{1}{\sqrt{d_\ell}}\Delta^{(\ell+1)}W^{(\ell+1)\top},
+  \qquad \ell=L-1,\dots,1,\label{eq:delta-rec}
+\end{align}
+where $\mathbf{1}\in\RR^{n}$ is the all-ones vector and $\odot$ is the Hadamard product.
+
+\subsection{Decomposition of the empirical NTK}
+Let $\Theta^{(L)}\in\RR^{n\times n}$ be the empirical NTK at initialization,
+\[
+  \Theta^{(L)}\coloneqq \nabla_\theta f(X^{(0)})\,\nabla_\theta f(X^{(0)})^\top,
+\]
+where $\theta$ collects all weights $\{W^{(\ell)}\}_{\ell=1}^L$ and the output weights $a$.
+Then $\Theta^{(L)}$ splits as a sum of a conjugate-kernel term and $L$ Hadamard terms:
+\begin{equation}\label{eq:ntk-decomp}
+  \Theta^{(L)} = K^{\mathrm{CK}} + \sum_{\ell=1}^L K^{(\ell)},
+\end{equation}
+where
+\begin{equation}\label{eq:ck-def}
+  K^{\mathrm{CK}}\coloneqq \frac{1}{d_L}X^{(L)}X^{(L)\top},
+\end{equation}
+and for $\ell=1,\dots,L$,
+\begin{equation}\label{eq:layer-def}
+  K^{(\ell)} \coloneqq
+  \frac{1}{d_{\ell-1}}X^{(\ell-1)}X^{(\ell-1)\top}
+  \odot
+  \frac{1}{d_\ell}\Delta^{(\ell)}\Delta^{(\ell)\top}.
+\end{equation}
+
+\begin{remark}[Low rank of the conjugate kernel]
+We have $\mathrm{rank}(K^{\mathrm{CK}})\leq d_L$.
+Under the quadratic scaling, $d_L/n\to 0$, hence $K^{\mathrm{CK}}$ does not affect the bulk ESD.
+\end{remark}
+
+\section{Deep NTK as a sample covariance in a tensor-product feature space}
+\label{sec:deep-gram}
+
+\subsection{Layerwise Jacobian factorization}
+For a standard scalar-output MLP in NTK parametrization, the Jacobian with respect to the weights in layer $\ell$ has the outer-product form
+\[
+  \nabla_{W^{(\ell)}} f(x_i)
+  \propto
+  \delta^{(\ell)}(x_i)\otimes x_i^{(\ell-1)},
+\]
+where $x_i^{(\ell-1)}\in\RR^{d_{\ell-1}}$ is the $(\ell-1)$-st layer activation vector for sample $i$, and $\delta^{(\ell)}(x_i)\in\RR^{d_\ell}$ is the backpropagated ``error'' at layer $\ell$ (a product of upper-layer weights and derivatives).
+Consequently, the layer-$\ell$ contribution to the NTK has the Hadamard form
+\begin{equation}\label{eq:layer-hadamard}
+  K^{(\ell)}
+  =
+  \frac{1}{d_{\ell-1}}X^{(\ell-1)}X^{(\ell-1)\top}
+  \odot
+  \frac{1}{d_{\ell}} \Delta^{(\ell)}\Delta^{(\ell)\top},
+\end{equation}
+where $\Delta^{(\ell)}\in\RR^{n\times d_\ell}$ is the matrix whose $i$-th row is $\delta^{(\ell)}(x_i)^\top$.
+
+\begin{remark}[What matches BP exactly, and what is new in depth]
+For $\ell=L$ (the last hidden layer in the scalar-output model), the backprop signal has the \emph{BP form}.
+Indeed, from \eqref{eq:delta-last} we have
+\[
+  \Delta^{(L)}=\phi(Z^{(L)})\,\mathrm{Diag}(a),
+\]
+so
+\[
+  \frac{1}{d_L}\Delta^{(L)}\Delta^{(L)\top}
+  =
+  \frac{1}{d_L}\phi(Z^{(L)})\,\mathrm{Diag}(a)^2\,\phi(Z^{(L)})^\top,
+\]
+which is exactly the ``derivative Gram with a fixed diagonal weight'' appearing in the two-layer BP model.
+
+For intermediate layers $\ell<L$, the factor multiplying $\phi(Z^{(\ell)})$ is \emph{sample-dependent}:
+\[
+  \Delta^{(\ell)} = \phi(Z^{(\ell)})\odot U^{(\ell)},\qquad
+  U^{(\ell)}\coloneqq \frac{1}{\sqrt{d_\ell}}\Delta^{(\ell+1)}W^{(\ell+1)\top}.
+\]
+Hence $\Delta^{(\ell)}\Delta^{(\ell)\top}$ is not of the simple form $Y D^2 Y^\top$ with a fixed diagonal $D$.
+This sample-dependence is the main new obstacle in extending BP to depth: one must control the joint fluctuations of the pair $(X^{(\ell-1)},\Delta^{(\ell)})$ beyond the two-layer setting.
+\end{remark}
+
+\begin{remark}[Low rank versus full rank]
+Each factor in \eqref{eq:layer-hadamard} has rank at most $d_{\ell-1}$ or $d_\ell$.
+In the quadratic scaling $n\asymp d_{\ell-1}d_\ell$, their Hadamard product can have a nontrivial bulk ESD (this is exactly the BP phenomenon).
+\end{remark}
+
+\subsection{Tensorization (Hadamard vs Gram)}
+Define the tensor-product features
+\begin{equation}\label{eq:omega-def}
+  \omega_i^{(\ell)} \coloneqq x_i^{(\ell-1)}\otimes \delta^{(\ell)}(x_i)\in \RR^{d_{\ell-1}}\otimes \RR^{d_\ell}\simeq \RR^{d_{\ell-1}d_\ell}.
+\end{equation}
+Then \eqref{eq:layer-hadamard} is exactly the Gram matrix
+\begin{equation}\label{eq:layer-gram}
+  K^{(\ell)}_{ij}=\frac{1}{d_{\ell-1}d_\ell}\,\ip{\omega_i^{(\ell)}}{\omega_j^{(\ell)}}.
+\end{equation}
+If we concatenate features across layers,
+\[
+  \omega_i \coloneqq \bigl(\omega_i^{(1)},\dots,\omega_i^{(L)}\bigr)\in \bigoplus_{\ell=1}^L \RR^{d_{\ell-1}d_\ell},
+\]
+then (up to deterministic layerwise constants that depend on the parametrization) the full NTK is a single sample covariance matrix:
+\begin{equation}\label{eq:full-gram}
+  \Theta^{(L)}_{ij}
+  \approx
+  \ip{\omega_i}{\omega_j}.
+\end{equation}
+Thus the deep problem is reduced to a \emph{single} Bai--Zhou/Bai--Silverstein type theorem for the i.i.d.\ row vectors $\omega_i$.
+
+\subsection{Why this matches the BP framework}
+In BP, the core object is the covariance tensor of $\omega_i$ (in our notation, $\EE[\omega_i\otimes \omega_i]$ or its centered version).
+In the deep setting, the only new ingredient is that $\omega_i^{(\ell)}$ is built from deep features $x_i^{(\ell-1)}$ and deep backprop signals $\delta^{(\ell)}(x_i)$.
+The proof goals become:
+\begin{enumerate}
+  \item show $\{\omega_i\}_{i=1}^n$ are independent across $i$ and satisfy the quadratic-form concentration required by Bai--Zhou,
+  \item identify the limiting spectral law of the covariance operator of $\omega_i$,
+  \item apply the Marchenko--Pastur map with aspect ratio $n/\sum_{\ell} d_{\ell-1}d_\ell$.
+\end{enumerate}
+
+\section{Main theorem (deep quadratic scaling)}
+\label{sec:main}
+
+\begin{assumption}[Quadratic scaling]\label{ass:scaling}
+There exist constants $\gamma_1>0$ and $\gamma_{2,\ell}>0$ such that as $n\to\infty$,
+\[
+  \frac{n}{d_0d_1}\to \gamma_1,
+  \qquad
+  \frac{d_\ell}{d_{\ell-1}}\to \gamma_{2,\ell},
+  \qquad \ell=1,\dots,L.
+\]
+Set $m\coloneqq \sum_{\ell=1}^L d_{\ell-1}d_\ell$ and assume $n/m\to \gamma\in(0,\infty)$.
+\end{assumption}
+
+\begin{assumption}[Data assumptions]\label{ass:data}
+The entries of $X^{(0)}$ are i.i.d.\ centered with variance $1$ and finite fourth moment.
+Moreover, for every $\varepsilon,\theta>0$,
+\[
+  \PP\Bigl(\Bigl|\frac{1}{d_0}\|x_i^{(0)}\|_2^2-1\Bigr|\geq \frac{d_0^\varepsilon}{\sqrt{d_0}}\Bigr)\leq n^{-\theta},
+\]
+where $x_i^{(0)}$ is the $i$-th row of $X^{(0)}$.
+\end{assumption}
+
+\begin{assumption}[Activation assumptions]\label{ass:activation}
+The activation $\sigma$ is locally Lipschitz and differentiable Lebesgue-a.e.
+Its derivative $\phi=\sigma'$ is pseudo-Lipschitz (in the sense used in BP) and has finite moments under $\mathcal{N}(0,1)$.
+In particular, this covers smooth activations and can be extended to ReLU by approximation since the Gaussian mass at the kink is zero.
+\end{assumption}
+
+\begin{lemma}[Deep covariance tensor limit (main lemma)]\label{lem:deep-gep}
+Assume \Cref{ass:scaling}, \Cref{ass:data}, and \Cref{ass:activation}.
+Let $\omega=\omega(x)\in\RR^m$ be the concatenated tensorized feature vector defined in \eqref{eq:omega-def}--\eqref{eq:full-gram}, and let $T$ be its conditional covariance operator defined in \Cref{sec:gep}.
+Then, as $n\to\infty$:
+\begin{enumerate}
+  \item for every deterministic operator $B$ on $\RR^m$ with $\|B\|_{\mathrm{op}}\lesssim 1$,
+  \[
+    \EE\Bigl[\bigl(\omega^\top B\omega-\tr(BT)\bigr)^2\Bigr]=o(1)\cdot n^2,
+  \]
+  \item the empirical eigenvalue distribution of $T$ converges in probability to a deterministic probability measure $\mu_{\mathrm{deep}}$ on $[0,\infty)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{theorem}[Deep quadratic-scaling NTK bulk law]\label{thm:deep-main}
+Assume \Cref{ass:scaling}, \Cref{ass:data}, and \Cref{ass:activation}.
+Assume further that \Cref{lem:deep-gep} holds.
+Then there exists a deterministic probability measure $\mu_{\mathrm{deep}}$ on $[0,\infty)$ such that the empirical spectral distribution of the empirical NTK $\Theta^{(L)}$ converges weakly in probability to
+\[
+  \mu_{\mathrm{MP}}^{\gamma}\boxtimes \mu_{\mathrm{deep}},
+\]
+where $\mu_{\mathrm{MP}}^{\gamma}$ is the Marchenko--Pastur law of shape $\gamma$ and $\boxtimes$ is free multiplicative convolution.
+\end{theorem}
+
+\subsection{Two standard tools from BP: rank bounds and the MP map}
+
+\begin{lemma}[Stieltjes transform rank bound]\label{lem:stieltjes-rank}
+Let $A,B$ be real symmetric $n\times n$ matrices.
+Then for any $z\in\Cplus$,
+\[
+  \left|
+  \frac{1}{n}\tr(A-z\Id)^{-1}-\frac{1}{n}\tr(B-z\Id)^{-1}
+  \right|
+  \leq \frac{\pi}{n\,\Im z}\,\mathrm{rank}(A-B).
+\]
+\end{lemma}
+\begin{proof}
+This is the standard bound obtained by comparing the empirical distribution functions of $A$ and $B$ and representing the Stieltjes transform by Lebesgue--Stieltjes integration by parts (see, e.g., Bai--Silverstein, Appendix A).
+\end{proof}
+
+\begin{definition}[Marchenko--Pastur map]\label{def:mp-map}
+Let $\nu$ be a probability measure on $[0,\infty)$ and $\gamma>0$.
+The \emph{Marchenko--Pastur map} $\mu_{\mathrm{MP}}^{\gamma}\boxtimes \nu$ is the free multiplicative convolution of $\nu$ with the Marchenko--Pastur law of shape $\gamma$.
+\end{definition}
+
+\begin{theorem}[Bai--Zhou principle for Gram matrices, informal]\label{thm:baizhou-informal}
+Let $\Omega\in\RR^{n\times m}$ have i.i.d.\ rows with conditional covariance operator $T$ (possibly random).
+Assume that for every deterministic $m\times m$ matrix $B$ with $\|B\|_{\mathrm{op}}\lesssim 1$, the quadratic form $\Omega_i^\top B\Omega_i$ concentrates around $\tr(BT)$ at the scale $o_{\PP}(n)$, and that the empirical eigenvalue distribution of $T$ converges to a deterministic limit $\mu_T$.
+If additionally $n/m\to\gamma\in(0,\infty)$, then the empirical spectral distribution of $\frac{1}{m}\Omega\Omega^\top$ converges weakly to $\mu_{\mathrm{MP}}^{\gamma}\boxtimes \mu_T$.
+\end{theorem}
+
+\subsection*{Proof of \Cref{thm:deep-main}}
+We follow the BP proof spine with minimal modifications.
+
+\paragraph{Step 0: discard low-rank terms.}
+By \eqref{eq:ntk-decomp}, $\Theta^{(L)}=K^{\mathrm{CK}}+\sum_{\ell=1}^L K^{(\ell)}$.
+Since $\mathrm{rank}(K^{\mathrm{CK}})\le d_L$ and $d_L/n\to 0$, the rank bound for Stieltjes transforms (as in BP) implies $K^{\mathrm{CK}}$ does not affect the limiting ESD.
+Hence it suffices to study $\sum_{\ell=1}^L K^{(\ell)}$.
+
+\paragraph{Step 1: tensorization.}
+Define $\omega_i^{(\ell)}$ by \eqref{eq:omega-def} with $\delta^{(\ell)}(x_i)$ the $i$-th row of $\Delta^{(\ell)}$.
+Then \eqref{eq:layer-gram} holds and by concatenation \eqref{eq:full-gram} gives a Gram representation of the full Hadamard part.
+Thus we may write
+\[
+  \sum_{\ell=1}^L K^{(\ell)} \;=\; \frac{1}{m}\Omega\Omega^\top,
+\]
+where $\Omega\in\RR^{n\times m}$ has rows $\omega_i$.
+
+\paragraph{Step 2: conditional Bai--Zhou (MP map).}
+Conditioning on all weights $\{W^{(\ell)}\}_{\ell=1}^L$ and $a$, the rows $\omega_1,\dots,\omega_n$ are i.i.d.\ (as functions of the i.i.d.\ input rows).
+Let $T$ be their conditional covariance operator on $\RR^{m}$.
+Under the quadratic-form concentration condition of Bai--Zhou, the ESD of $\frac{1}{m}\Omega\Omega^\top$ converges (conditionally) to $\mu_{\mathrm{MP}}^{\gamma}\boxtimes \pi$, where $\pi$ is the limiting ESD of $T$.
+
+\paragraph{Step 3: identification of the limiting covariance law.}
+\Cref{lem:deep-gep} provides the quadratic-form concentration required by Bai--Zhou and the convergence of the empirical eigenvalue distribution of the covariance operator $T$ to $\mu_{\mathrm{deep}}$.
+
+\paragraph{Conclusion.}
+Combining Steps 0--3 yields the claimed limit $\mu_{\mathrm{MP}}^{\gamma}\boxtimes \mu_{\mathrm{deep}}$ for the ESD of $\Theta^{(L)}$.
+\qed
+
+\section{Deep Gaussian equivalence and the covariance tensor}
+\label{sec:gep}
+
+The two-layer BP analysis reduces the bulk law to the limiting spectral distribution of a \emph{conditional covariance operator} (a tensor $T$), and then applies a Marchenko--Pastur map.
+In depth, the same reduction holds, but the tensor $T$ is now built from the deep feature map $x\mapsto \omega(x)$.
+The new task is therefore to control the \emph{fourth-order} fluctuations of this deep feature map in the quadratic scaling.
+
+\subsection{Conditional i.i.d.\ structure}
+Fix all weights $\{W^{(\ell)}\}_{\ell=1}^L$ and $a$.
+Since the input rows $x_i^{(0)}$ are i.i.d.\ and $\omega_i$ is a measurable function of $x_i^{(0)}$ and the fixed weights, the vectors $\omega_1,\dots,\omega_n$ are i.i.d.\ conditionally on the weights.
+This is the correct setting for the Bai--Zhou theorem, and it is exactly the conditional viewpoint used in BP for the two-layer model.
+
+\subsection{The deep covariance operator}
+Let $m=\sum_{\ell=1}^L d_{\ell-1}d_\ell$ and let $\omega(x)\in\RR^{m}$ denote the concatenated tensor-product feature vector.
+Define the conditional mean and covariance (operators on $\RR^m$)
+\[
+  \mathbf{E}[\omega]\coloneqq \EE[\omega(x_1^{(0)})\mid \{W^{(\ell)}\},a],
+  \qquad
+  T\coloneqq \mathbf{E}\bigl[(\omega-\mathbf{E}[\omega])\otimes (\omega-\mathbf{E}[\omega])\bigr].
+\]
+To apply Bai--Zhou, we need:
+\begin{enumerate}
+  \item a quadratic-form concentration estimate for $\omega$ against deterministic test operators,
+  \item convergence of the empirical eigenvalue distribution of $T$ to a deterministic law.
+\end{enumerate}
+
+\subsection{Where finite-width cumulants enter (precisely)}
+At this point the deep proof diverges from BP: for $\ell<L$, the backprop factor $U^{(\ell)}$ is sample-dependent, so $T$ is not an explicit quadratic function of a single Wishart matrix as in the two-layer case.
+The required control is exactly a \emph{connected four-point function} bound for the deep feature map (a fourth cumulant scaling as $O(1/d_{\ell-1})$ with a pairing structure in neural indices).
+This is the quantity computed recursively in the finite-width cumulant literature via diagrammatics.
+
+\subsection{A modular route to proving \Cref{lem:deep-gep}}
+\label{subsec:deep-gep-modular}
+The ``deep upgrade'' can be organized so that the BP engine (tensorization, resolvents, MP map) is unchanged.
+Only the \emph{input module} (concentration properties of deep features) and the \emph{tensor module} (the limiting covariance tensor) require new work.
+
+\paragraph{A. Input module: preservation of concentration.}
+The first step is to propagate concentration from $X^{(\ell-1)}$ to $X^{(\ell)}=\sigma(Z^{(\ell)})$.
+Conditionally on $X^{(\ell-1)}$, the columns of $Z^{(\ell)}$ are i.i.d.\ Gaussian, so empirical averages over neurons in layer $\ell$ concentrate at an exponential rate in $d_\ell$.
+Since in the quadratic scaling $n\asymp d_0 d_1$ is only polynomial in the widths, a union bound over all samples (and all sample pairs) is compatible with these exponential tails.
+
+\paragraph{B. Tensor module: fourth cumulants and pairing tensors.}
+The second step is to identify the leading conditional covariance operator $T$ of $\omega$.
+In BP, this identification is obtained by explicit Gaussian integration by parts, producing a tensor $Q$ with a pairing structure and a deterministic $O(1/d)$ correction.
+In depth, the corresponding object is the connected four-point function of the deep feature map $x\mapsto \omega(x)$.
+The finite-width NTK literature computes these connected four-point functions and shows they scale as $1/d_{\ell-1}$ with the same pairing structure in the neural indices.
+This is precisely the deformation size tolerated by the Bai--Zhou mechanism.
+
+\paragraph{C. Tensor reduction (BP Theorem 4.2 style).}
+Once the limiting tensor exists, the spectral bulk depends only on the limiting eigenvalue distribution of $T$.
+This step is universality-ready: deterministic $O(1/d)$ deformations of $T$ do not change the limiting MP-map output beyond the order already absorbed by the BP error bookkeeping.
+
+\paragraph{D. Resolvent/leave-one-out stability.}
+One potential concern is that deep features are correlated across samples due to the shared weights.
+However, the BP/Bai--Zhou analysis is naturally formulated \emph{conditionally on the weights}:
+given $\{W^{(\ell)}\}$ and $a$, the rows $\omega_i$ are i.i.d.\ because the input rows $x_i^{(0)}$ are i.i.d.
+Thus the leave-one-out expansions and martingale decompositions in the resolvent method run exactly as in the two-layer case, without requiring any additional ``decay of correlation across samples'' assumption.
+
+\begin{remark}[Status of \Cref{lem:deep-gep}]\label{rmk:status-deep-gep}
+In this note, \Cref{lem:deep-gep} isolates the only genuinely new analytic input beyond BP.
+The modular route above shows that the remaining work is \emph{entirely} in Steps A--B:
+prove concentration propagation for the deep forward/backward features at polynomial sample size $n\asymp d_0d_1$, and import (or re-derive) the $1/d$ pairing structure for the connected four-point functions in a form that is uniform over such polynomially many inputs.
+\end{remark}
+
+\begin{lemma}[Forward concentration by neuron averaging, informal]\label{lem:forward-neuron-conc}
+Fix a layer $\ell\ge 1$ and condition on $X^{(\ell-1)}$.
+For $i,j\in\{1,\dots,n\}$ define the empirical forward Gram entry
+\[
+  \widehat{\Sigma}^{(\ell)}_{ij}\coloneqq \frac{1}{d_\ell}\ip{x_i^{(\ell)}}{x_j^{(\ell)}}=\frac{1}{d_\ell}\sum_{k=1}^{d_\ell}\sigma(Z^{(\ell)}_{ik})\sigma(Z^{(\ell)}_{jk}).
+\]
+Then, for each fixed pair $(i,j)$,
+\[
+  \widehat{\Sigma}^{(\ell)}_{ij}-\EE\!\left[\sigma(G_1)\sigma(G_2)\,\middle|\,X^{(\ell-1)}\right]
+  =
+  O_{\PP}\!\left(d_\ell^{-1/2}\right),
+\]
+where $(G_1,G_2)$ is a centered Gaussian vector with
+\[
+  \EE[G_1^2\mid X^{(\ell-1)}]=\frac{1}{d_{\ell-1}}\Norm{x_i^{(\ell-1)}}^2,\quad
+  \EE[G_2^2\mid X^{(\ell-1)}]=\frac{1}{d_{\ell-1}}\Norm{x_j^{(\ell-1)}}^2,\quad
+  \EE[G_1G_2\mid X^{(\ell-1)}]=\frac{1}{d_{\ell-1}}\ip{x_i^{(\ell-1)}}{x_j^{(\ell-1)}}.
+\]
+\end{lemma}
+\begin{proof}
+Conditionally on $X^{(\ell-1)}$, the columns of $Z^{(\ell)}$ are i.i.d.\ Gaussian, hence the summands $\sigma(Z^{(\ell)}_{ik})\sigma(Z^{(\ell)}_{jk})$ are i.i.d.\ across $k$ with finite variance under \Cref{ass:activation}.
+The claim follows from a standard concentration inequality for averages of i.i.d.\ square-integrable random variables (e.g.\ Bernstein under sub-exponential tails, or Chebyshev under fourth moments).
+\end{proof}
+
+\begin{lemma}[Backward concentration by neuron averaging, informal]\label{lem:backward-neuron-conc}
+Fix a layer $\ell\le L-1$ and condition on $X^{(\ell-1)}$ and $\Delta^{(\ell+1)}$.
+For $i,j\in\{1,\dots,n\}$ define the empirical backward Gram entry
+\[
+  \widehat{\Pi}^{(\ell)}_{ij}\coloneqq \frac{1}{d_\ell}\ip{\delta^{(\ell)}(x_i)}{\delta^{(\ell)}(x_j)}=\frac{1}{d_\ell}\sum_{k=1}^{d_\ell}\Delta^{(\ell)}_{ik}\Delta^{(\ell)}_{jk}.
+\]
+Then, for each fixed $(i,j)$,
+\[
+  \widehat{\Pi}^{(\ell)}_{ij}-\EE\!\left[\phi(G_1)\phi(G_2)\,\middle|\,X^{(\ell-1)}\right]\cdot \widehat{\Pi}^{(\ell+1)}_{ij}
+  =
+  O_{\PP}\!\left(d_\ell^{-1/2}\right),
+\]
+with $(G_1,G_2)$ as in \Cref{lem:forward-neuron-conc}, and where $\widehat{\Pi}^{(\ell+1)}_{ij}\coloneqq d_{\ell+1}^{-1}\ip{\delta^{(\ell+1)}(x_i)}{\delta^{(\ell+1)}(x_j)}$.
+\end{lemma}
+\begin{proof}
+Under \eqref{eq:delta-rec} we can write $\Delta^{(\ell)}=\phi(Z^{(\ell)})\odot U^{(\ell)}$ with $U^{(\ell)}=\frac{1}{\sqrt{d_\ell}}\Delta^{(\ell+1)}W^{(\ell+1)\top}$.
+Conditionally on $(X^{(\ell-1)},\Delta^{(\ell+1)})$, the columns of $\phi(Z^{(\ell)})$ are i.i.d.\ (since the columns of $Z^{(\ell)}$ are i.i.d.\ Gaussian) and the columns of $U^{(\ell)}$ are i.i.d.\ centered Gaussian with conditional covariance proportional to $\Delta^{(\ell+1)}\Delta^{(\ell+1)\top}/d_{\ell+1}$, and these two objects are independent because $W^{(\ell)}$ and $W^{(\ell+1)}$ are independent.
+Thus the summands in $\widehat{\Pi}^{(\ell)}_{ij}$ are i.i.d.\ across $k$ with conditional mean $\EE[\phi(G_1)\phi(G_2)\mid X^{(\ell-1)}]\cdot \widehat{\Pi}^{(\ell+1)}_{ij}$, and the same concentration argument as in \Cref{lem:forward-neuron-conc} applies.
+\end{proof}
+
+\subsection*{Completion of the proof under \Cref{lem:deep-gep}}
+Assuming \Cref{lem:deep-gep}, the Bai--Zhou theorem applies conditionally on the weights and yields the limiting ESD
+\[
+  \mu_{\mathrm{MP}}^{\gamma}\boxtimes \mu_{\mathrm{deep}}
+\]
+for the Hadamard part of the NTK.
+The low-rank conjugate kernel is negligible by \Cref{lem:stieltjes-rank}, which completes the proof of \Cref{thm:deep-main}.
+
+\end{document}

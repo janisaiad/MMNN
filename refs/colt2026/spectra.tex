@@ -1,7 +1,7 @@
-\section{RF-LR Gram Marchenko–Pastur spectrum for three-layer case}
+\section{RF-LR Gram Marchenko–Pastur spectrum for three-layer case}\label{sec:rf-lr-gram-marchenko-pastur-spectrum-for-three-layer-case}
 
-Now that we have established RKHS properties to clarify that random features hold frozen through training has same effect as letting them free to move,  in a more applicative way we give NTK gram matrix spectrum asymptotic behavior.
-We hold strong data assumptions but could release them in future work.
+We now study the spectrum of the RF-LR NTK Gram matrix at initialization in a random-matrix scaling regime. This section concerns the \emph{uncentered} Gram matrix and its spike--bulk limit; we also explain how centering removes the rank-one spike and isolates the spectrum on \( \mathbf{1}^\perp \), which is the relevant subspace after centering targets (or for mean-zero targets).
+We work under strong scaling and data assumptions for tractability.
 
 \subsection{General setup and scaling}
 
@@ -40,7 +40,7 @@ Let \(x, y \in \mathbb{R}^r\) be rank-\(r\) Gaussian projections with population
 \[
 \Psi(u,w) \;=\; \Theta^{(1)}(u)\!\left(1-\frac{\arccos(u)}{\pi}\right) \;+\; w\,\Sigma^{(1)}(u) \;+\; 1,
 \]
-and the empirical kernel \( \hat{\Theta}^{(2)}_r \;=\; \Psi(\hat{\rho}_r, \hat{w}_r) \), where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x\|\,\|y\|/r \). Under Assumption~\ref{assump:RMT}, as \( r\to\infty \),
+so that \( \hat{\Theta}^{(2)}_r = 1 + \frac{1}{r}\big(\Psi(\hat{\rho}_r, \hat{w}_r) - 1\big) \) from the \( 1/r \) recursion, where \( \hat{\rho}_r \) is the sample correlation and \( \hat{w}_r = \|x\|\,\|y\|/r \). Define the deterministic limit \( K_{\infty}(\rho) = \Psi(\rho,1) \). Under Assumption~\ref{assump:RMT}, as \( r\to\infty \),
 \[
 \hat{\Theta}^{(2)}_r \;=\; \Theta^{(2)}_{\mathrm{obs}}(\rho) \;\xrightarrow{d}\; K_{\infty}(\rho) \;+\; \frac{1}{\sqrt{r}}\,\mathcal{G}(\rho) + o(r^{-1/2}),
 \]
@@ -60,6 +60,13 @@ Having established the entrywise asymptotic distribution, we now turn to the mac
 \subsection{Macroscopic spectrum: deformed Marchenko–Pastur law}
 Recent work by~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes the eigenvalue distribution of the NTK in the quadratic scaling regime (\( N \sim n^2 \)) for single-layer networks, showing convergence to a deformed Marchenko–Pastur law with a spike-bulk structure. We extend this analysis to the three-layer case with random features and rank-\( r \) bottlenecks, where the frozen feature weights and low-rank structure modify both the spike location and bulk support.
 
+\paragraph{Centered vs uncentered Gram matrices (removing the rank-one spike).}
+Let \(K\in\mathbb{R}^{n\times n}\) be a symmetric Gram matrix built from a kernel evaluated on a dataset \(\{x_i\}_{i=1}^n\). Define the centering matrix \(H = I_n - \frac{1}{n}\mathbf{1}\mathbf{1}^\top\) and the centered Gram matrix \(K_c = HKH\). Then for any \(v\perp \mathbf{1}\) we have \(Hv=v\) and therefore
+\[
+v^\top K_c v = v^\top HKH v = v^\top K v.
+\]
+Consequently, the eigenvalues of \(K\) restricted to the subspace \(\mathbf{1}^\perp\) coincide with the (nonzero) eigenvalues of \(K_c\). In particular, if \(K\) contains a rank-one component aligned with \(\mathbf{1}\) (e.g. arising from an additive constant term in the kernel), this produces a large top eigenvalue in the uncentered spectrum but is removed by centering. For kernel regression with mean-zero targets (or after centering labels), convergence rates are governed by the spectrum on \(\mathbf{1}^\perp\).
+
 \begin{theorem}[Spike + bulk spectral limit]\label{thm:spike-bulk}
 Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{assump:RMT} and~\ref{assump:RMT-conditions}, as \( n\to\infty \), the empirical spectrum of \( \mathbf{M} \) converges to a deformed Marchenko–Pastur law with:
 \begin{itemize}
@@ -70,8 +77,20 @@ Let \( \mathbf{M} = [\Theta^{(2)}_{ij}]_{i,j=1}^n \). Under Assumptions~\ref{ass
     \]
     where \( \beta = K_{\infty}'(0) \) and \( \gamma = K_{\infty}(\ell) - \alpha - \ell\,\beta \) (diagonal shift; \(\ell\) denotes the kernel's diagonal argument).
 \end{itemize}
-Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). The extension to two layers with random features follows the framework of~\cite{benigni2025eigenvaluedistributionneuraltangent} but incorporates the additional randomness from rank-\( r \) projections and frozen feature weights.
+Proof: See Appendix~\ref{appendix:proof-spike-bulk} (via~\cite{El_Karoui_2010}). This theorem is stated for the deterministic inner-product kernel matrix built from the limiting kernel function \(K_\infty\); incorporating finite-\(r\) Fisher--Kibble fluctuations or finite-width effects into the limiting ESD would require BP-style resolvent/Gaussian-equivalence machinery and is left for future work.
 \end{theorem}
+
+\begin{remark}[How to interpret the spike for learning]
+The spike in Theorem~\ref{thm:spike-bulk} is a statement about the \emph{uncentered} Gram matrix. When the kernel includes an additive constant term (here the \(+1\) in \(K_\infty\)), the associated rank-one component aligns with \(\mathbf{1}\) and yields \(\lambda_{\max}(\mathbf{M})=\Theta(n)\). This does not by itself imply poor conditioning of the learning problem: after centering (or for mean-zero labels), the relevant spectrum is that of \(H\mathbf{M}H\) on \(\mathbf{1}^\perp\), i.e. the bulk/shifted spectrum.
+\end{remark}
+
+\begin{remark}[Bulk laws vs extreme eigenvalues]\label{rmk:bulk-vs-extremes}
+Theorem~\ref{thm:spike-bulk} is a statement about the \emph{empirical spectral distribution} (a bulk law) under strong random-matrix assumptions. Even when a limiting bulk measure exists and has compact support, this does not automatically control the \emph{extreme} eigenvalues at finite \(n\): the smallest eigenvalue can be sensitive to (i) finite-size edge fluctuations; (ii) deviations from the independence/isotropy assumptions; and (iii) additional structured components beyond the rank-one spike (e.g. heteroskedastic norms, anisotropic covariance \(\Sigma_d\), or higher-order kernel terms).
+
+Centering removes only the rank-one component aligned with \(\mathbf{1}\) and leaves the spectrum on \(\mathbf{1}^\perp\) unchanged (paragraph ``Centered vs uncentered''); it does not make the remaining eigenvalue distribution ``less skewed''. In particular, in depth-scaling regimes where the relevant centered scale becomes small (e.g. \(\lambda_{\min}(HK^{(L)}H)\asymp 1/(rL)\) in the equicorrelated proxy of Section~\ref{sec:depth-scaling}), random fluctuations can drive \(\lambda_{\min}(H\widehat{K}H)\) very close to \(0\) even though \(\widehat{K}\succeq 0\) always holds (Remark~\ref{rmk:lambda-min-negative-appendix} in Appendix~\ref{appendix:lambda-min-negative}).
+
+Controlling the smallest eigenvalue beyond bulk limits typically requires separate ``local law'' or edge universality inputs, which are outside the scope of the present random-matrix section.
+\end{remark}
 
 We can summarize the three-layer results as follows.
 
