@@ -3,7 +3,7 @@
 
 \section{Summary of main results}\label{appendix:summary}
 
-This work develops an NTK analysis for low-rank random-feature architectures (RF-LR/MMNN) under explicit assumptions. Appendix~\ref{sec:experiments} reports numerical illustrations that accompany the theory.
+This work develops an NTK analysis for low-rank random-feature architectures (RF-LR) under explicit assumptions. Appendix~\ref{sec:experiments} reports numerical illustrations that accompany the theory.
 
 \textbf{Main: depth/rank scaling and condition number.} The trainable parameter budget scales as \(O(NLr)\). In the deterministic proxy mean recursion, depth drives correlations toward \(1\) with \(1-\rho_k=\Theta(k^{-2})\) (the same correlation alignment as for full-width MLPs at the edge of chaos~\cite{terjek2025mlpsateoc,pmlr-v163-hayou22a}), the kernel magnitude saturates, and the diagonal--off-diagonal gap decays as \(\asymp 1/(rk)\) (Theorem~\ref{thm:rflr-depth-scaling-mean}). We prove a lower bound on the condition number of the \emph{proxy} Gram matrix, \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}), and exact conditioning \(\kappa_\perp=1\) or \(\kappa_\perp=1+o(1)\) for equicorrelated or high-dimensional random data (Corollary~\ref{cor:conditioning-equicorrelated-highdim}). Under a fixed budget \(O(NLr)\), depth and rank trade off from a conditioning perspective; the choice of \(r\) and \(L\) is a matter of approximation power (e.g.\ effective depth and RKHS expressivity).
 
@@ -58,6 +58,161 @@ In the bottleneck regime \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), EOC prescribes
 \]
 so \(\dot{\Sigma}^{(\ell)}(x,x')=\bar{\dot{\Sigma}}^{(\ell)}(\rho_\ell)\) remains \(O(1)\) under EOC and is uniformly bounded by \(1/2\).
 The RF-LR NTK recursion (Theorem~\ref{thm:ntk_recursion}) carries an explicit prefactor \(1/r\) at bottleneck layers because gradients propagate through an \(r\)-dimensional bottleneck and the corresponding Jacobian metric concentrates on an \(r\)-dimensional subspace; see Appendix~\ref{appendix:proof-ntk-recursion} for the detailed derivation.
+
+\subsection{Finite-width effects}\label{appendix:finite-width-effects}
+Beyond the infinite-width limit, one can in principle study finite-width corrections to the kernel via cumulant/resolvent expansions or diagrammatic methods; see~\cite{dyer2019asymptoticswidenetworksfeynman} for a Feynman-diagram approach in wide-network asymptotics. These corrections are deferred to future work.
+
+\subsection{Proofs of NTK Recursions}\label{appendix:ntk-recursions}
+\subsubsection{Proof of Theorem~\ref{thm:ntk_recursion}: Infinite-width NTK recursion}
+\label{appendix:proof-ntk-recursion}
+
+\paragraph{Proof sketch.} Decompose the NTK at layer \(\ell\) into (i)~a bias contribution (constant \(+1\)), (ii)~Term 2: gradient inner products for the layer-\(\ell\) readouts \(A^{(\ell)}\), and (iii)~Term 1: backpropagated NTK from previous layers times the Jacobian metric. Apply the Law of Large Numbers conditionally on \(\bm{h}^{(\ell-1)}\) as \(n_\ell\to\infty\); the sequential limit ensures lower layers have already converged.
+\begin{proof}
+\label{proof:ntk_recursion}
+We prove the recursion by decomposing the NTK at layer \( \ell \) into contributions of the trainable parameters up to layer \( \ell \), and invoking the Law of Large Numbers (LLN) under the sequential infinite-width limit. Let \( f^{(\ell)} \) denote the network output truncated at layer \( \ell \). For finite width, the (random) NTK reads
+\begin{align}
+\Theta^{(\ell)}_{\mathrm{rand}}(x,x') \;=\; \underbrace{\big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x)\big)^\top \big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x')\big)}_{\text{Term 1}} \;+\; \underbrace{\sum_{j=1}^{n_\ell}\frac{\partial f^{(\ell)}(x)}{\partial A^{(\ell)}_j}\frac{\partial f^{(\ell)}(x')}{\partial A^{(\ell)}_j}}_{\text{Term 2}}.
+\end{align}
+
+\paragraph{Bias parameters.}
+We include a trainable layer bias \(c^{(\ell)}\) (initialized at zero). The gradient feature with respect to \(c^{(\ell)}\) is constant, so it contributes an additive constant term to the NTK; under our normalization this contribution is \(1\). This yields the additive \(+1\) term in the recursion.
+
+\paragraph{Term 2 (layer-\(\ell\) output weights \(A^{(\ell)}\)).}
+By the forward pass, \(\partial f^{(\ell)}(x)/\partial A^{(\ell)}_j = \frac{\sigma_A}{\sqrt{n_\ell}}\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\). Therefore
+\begin{align}
+\text{Term 2} \;=\; \frac{\sigma_A^2}{n_\ell}\sum_{j=1}^{n_\ell} \ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')\big).
+\end{align}
+Conditionally on \(\bm{h}^{(\ell-1)}\), the summands are i.i.d. over \(\bm{w}^{(\ell)}_j\). As \(n_\ell\to\infty\) (with lower layers already taken to their limits), LLN yields
+\begin{align}
+\text{Term 2} \xrightarrow{p} \sigma_A^2\,\Sigma^{(\ell)}(x,x').
+\end{align}
+
+\paragraph{Term 1 (previous layers).}
+By the chain rule,
+\begin{align}
+\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x) \;=\; \Big(\frac{\partial f^{(\ell)}(x)}{\partial \bm{h}^{(\ell-1)}(x)}\Big)\,\nabla_{\theta^{(\ell-1)}} \bm{h}^{(\ell-1)}(x).
+\end{align}
+Hence Term 1 factorizes as \(\Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')\) multiplied by a Jacobian metric:
+\begin{align}
+\text{Term 1} \;=\; \Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')\;\cdot\;\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle.
+\end{align}
+Taking the inner product and applying LLN as \(n_\ell\to\infty\) yields
+\begin{align}
+\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle \xrightarrow{p} \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
+\end{align}
+Therefore,
+\begin{align}
+\text{Term 1} \xrightarrow{p} \Theta^{(\ell-1)}(x,x')\cdot \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
+\end{align}
+
+Combining the bias contribution with the two limits completes the recursion. For bottleneck layers \( \ell \ge 2 \), the Jacobian and output contributions scale with \( 1/r \) (from the \( r \)-dimensional bottleneck); we absorb \( \sigma_A^2 \) into the normalization. Thus
+\begin{align}
+\Theta^{(1)}(x,x') &\;=\; 1 \;+\; \Sigma^{(1)}(x,x'),\\
+\Theta^{(\ell)}(x,x') &\;=\; 1 \;+\; \frac{1}{r}\,\Theta^{(\ell-1)}(x,x')\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x') \;+\; \frac{1}{r}\,\sigma_A^2\,\Sigma^{(\ell)}(x,x')\quad (\ell\ge2).
+\end{align}
+The sequential limit assumption ensures that lower-layer random objects have already converged when taking the next-layer limit, justifying the conditional LLN applications.
+\end{proof}
+
+\subsubsection{Proof of Theorem~\ref{thm:gp-composition}: Gaussian process composition}
+\label{appendix:proof-gp-composition}
+
+\paragraph{Proof sketch.} By induction on \(\ell\): for \(\ell=0\) the output is deterministic; for \(\ell\ge 1\), conditionally on \(\bm{h}^{(\ell-1)}\) the forward pass is a sum of i.i.d.\ terms over \(j\), so the multivariate CLT yields Gaussian convergence. The covariance matches the base kernel \(\Sigma^{(\ell)}\) by definition.
+\begin{proof}
+We prove by induction on \( \ell \) that \( \bm{h}^{(\ell)} \) converges to a Gaussian process with covariance kernel \( \Sigma^{(\ell)} \).
+
+\paragraph{Base case \( \ell=0 \).}
+For \( \ell=0 \), we have \( \bm{h}^{(0)}(x) = x \), which is deterministic and trivially a Gaussian process.
+
+\paragraph{Inductive step.}
+Assume that \( \bm{h}^{(\ell-1)} \) converges to a Gaussian process with covariance kernel \( \Sigma^{(\ell-1)} \). Consider the forward pass at layer \( \ell \):
+\begin{align}
+\bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x)\Big) + c^{(\ell)}.
+\end{align}
+
+For any finite collection of inputs \( \{x_1, \dots, x_m\} \), conditionally on \( \bm{h}^{(\ell-1)} \), the terms \( A^{(\ell)}_j\,\bm{\ReLU}\!\big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x_i)\big) \) are independent across \( j \) and identically distributed. Since \( A^{(\ell)}_j \sim \mathcal{N}(0, \sigma_A^2) \) and \( w^{(\ell)}_j \) are frozen Gaussian draws, the conditional distribution of each term is centered with finite variance (and \(c^{(\ell)}\) is deterministic at initialization).
+
+By the multivariate Central Limit Theorem, as \( \bm{n}_\ell \to \infty \), the vector \( (\bm{h}^{(\ell)}(x_1), \dots, \bm{h}^{(\ell)}(x_m)) \) converges in distribution to a multivariate Gaussian. The covariance is given by
+\begin{align}
+\mathbb{E}\Big[\bm{h}^{(\ell)}(x_i)\,\bm{h}^{(\ell)}(x_j)\Big] = \mathbb{E}_{w}\Big[\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x_i)\big)\,\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x_j)\big)\Big] = \Sigma^{(\ell)}(x_i, x_j),
+\end{align}
+where the expectation is taken over the frozen weights \( w \) and the limiting Gaussian process \( \bm{h}^{(\ell-1)} \). The last equality follows from the definition of the base kernel in Definition~\ref{def:base-derivative-kernels}.
+
+The sequential infinite-width limit ensures that \( \bm{h}^{(\ell-1)} \) has already converged to its Gaussian process limit when taking the limit for layer \( \ell \), justifying the application of the CLT conditionally on \( \bm{h}^{(\ell-1)} \).
+\end{proof}
+
+\subsubsection{Proof of three-layer NTK Corollary}
+\label{appendix:proof-2layer}
+
+\paragraph{Proof sketch.} Apply the recursion (Theorem~\ref{thm:ntk_recursion}) for \(\ell=1\) and \(\ell=2\); for \(\ell=1\) use \(\Kop^{(0)}=0\); for \(\ell=2\) substitute \(\Kop^{(1)}=1+\Sigma^{(1)}\). Under homogeneity, the mean form involves expectations over Fisher (angular) and Kibble (radial); as \(r\to\infty\) these concentrate, recovering \(K_\infty\).
+\begin{proof}
+\label{proof:two_layer_ntk}
+Apply Theorem~\ref{thm:ntk_recursion} for \( \ell=1 \) and \( \ell=2 \). For \( \ell=1 \), since \( \Kop^{(0)}=0 \), the recursion gives:
+\begin{align}
+\Kop^{(1)}(x,x') = 1 + \Kop^{(0)}(x,x')\cdot\dot{\Sigma}^{(1)}(x,x') + \Sigma^{(1)}(x,x') = 1 + \Sigma^{(1)}(x,x').
+\end{align}
+For \( \ell=2 \), substitute \( \Kop^{(1)} = 1 + \Sigma^{(1)} \) into the recursion:
+\begin{align}
+\Kop^{(2)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') + \frac{1}{r}\,\Sigma^{(2)}(x,x').
+\end{align}
+This is the stated three-layer recursion with the bias contribution.
+\paragraph{Mean explicit form (low-rank).}
+Under the homogeneous ReLU setting on the sphere, the mean three-layer NTK (with \( 1/r \) factors) is
+\begin{align}
+\tilde{\Kop}^{(2)}(\rho) \;=\; 1 \;+\; \frac{1}{r}\,\Kop^{(1)}(\rho)\,\mathbb{E}\!\left[1-\frac{\arccos(\hat{\rho}_r)}{\pi}\right] \;+\; \frac{1}{r}\,\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r)\,\|x_1\|\|y_1\|\right],
+\end{align}
+where the expectations are over Fisher and Kibble. As \( r\to\infty \), \( \hat{\rho}_r\to\rho \) and \( \|x_1\|\|y_1\|/r\to 1 \), so the limit \( K_\infty(\rho) = \Theta^{(1)}(\rho)(1-\arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) is recovered (without the \( 1/r \) prefactors, since the low-rank scaling is absorbed in the limit).
+\end{proof}
+
+\subsubsection{Proof of General \texorpdfstring{\(L\)}{L}-layer NTK Corollary}
+\label{appendix:proof-general-L}
+
+\begin{remark}[Explicit \(2L\)-term unrolling]\label{appendix:remark-2L-expansion}
+Equivalently, expanding the recursion yields an explicit \emph{linear} number of terms (namely \(2L\)). For example, for \( L=3 \):
+\begin{align}
+\Kop^{(3)}(x,x') &= 1 + \frac{1}{r}\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\dot{\Sigma}^{(3)} \nonumber\\
+&\quad + \frac{1}{r^2}\Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(3)}.
+\end{align}
+Each bottleneck layer contributes a factor \( 1/r \); layer 1 has no such factor. In total, there are \( 2L \) terms for depth \( L \).
+\end{remark}
+
+\paragraph{Proof sketch.} By induction on \(L\): for \(L=1\) the recursion gives \(\Kop^{(1)}=1+\Sigma^{(1)}\). For \(L\ge 2\), expand \(\Kop^{(L)}\) via the recursion into a bias term and two paths (derivative-propagated and fresh-base); each path contributes \(L\) terms with the appropriate \(1/r\) factors, yielding \(2L\) terms in total.
+\begin{proof}
+\label{proof:general_L_ntk}
+We prove the explicit form by induction on \( L \), accounting for the \( +1 \) bias terms in the recursion.
+
+\paragraph{Base case \( L=1 \).}
+From Theorem~\ref{thm:ntk_recursion}, \( \Kop^{(1)} = 1 + \Sigma^{(1)} \). The formula with \( L=1 \) gives:
+\begin{align}
+\Kop^{(1)}(x,x') = \sum_{\ell=1}^{1} \left(\prod_{k=\ell+1}^{1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{1} \dot{\Sigma}^{(k)}(x,x').
+\end{align}
+For the first sum: when \( \ell=1 \), \( \prod_{k=2}^{1} \dot{\Sigma}^{(k)} = 1 \) (empty product). For the second sum: when \( \ell=1 \), \( \Sigma^{(1)}\cdot\prod_{k=2}^{1} \dot{\Sigma}^{(k)} = \Sigma^{(1)}\cdot 1 = \Sigma^{(1)} \). Therefore, \( \Kop^{(1)} = 1 + \Sigma^{(1)} \), which matches the recursion.
+
+\paragraph{Inductive step.}
+Assume the formula holds for depth \( L-1 \):
+\begin{align}
+\Kop^{(L-1)}(x,x') = \sum_{\ell=1}^{L-1} \left(\prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L-1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x').
+\end{align}
+By Theorem~\ref{thm:ntk_recursion}, for \( L \ge 2 \),
+\begin{align}
+\Kop^{(L)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') + \frac{1}{r}\,\Sigma^{(L)}(x,x').
+\end{align}
+Substituting the inductive hypothesis and distributing the \( 1/r \) factor yields the stated closed form; the first sum gains a new term \( 1 \) (from \( \ell=L \)) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \), while the second sum gains \( (1/r)\Sigma^{(L)} \) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \).
+The first term \( 1 \) corresponds to \( \ell=L \) in the first sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). The last term \( \Sigma^{(L)} \) corresponds to \( \ell=L \) in the second sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). Therefore:
+\begin{align}
+\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
+\end{align}
+completing the induction. The total number of terms is \( L + L = 2L \), which grows linearly with depth.
+\end{proof}
+
+\subsubsection{Reference: full-width MLP limiting NTK at the edge of chaos}
+\label{appendix:mlp-eoc-ntk}
+\begin{proposition}[Closed form for full-width MLP EOC NTK]\label{prop:mlp-eoc-ntk-formula}
+Let \(l\ge 1\) and consider an infinitely wide \(l\)-layer MLP with \((a,b)\)-ReLU activation initialized at the edge of chaos as in~\cite{terjek2025mlpsateoc}. Denote by \(\varrho\) the corresponding cosine map and by \(\rho_1(x,x')\) the input cosine similarity. Then the limiting NTK satisfies
+\[
+K_\infty(x,x') \;=\; \|x\|\,\|x'\|\left(\sum_{k=1}^{l}\varrho^{\circ(k-1)}\!\big(\rho_1(x,x')\big)\prod_{k'=k}^{l-1}\varrho'\!\left(\varrho^{\circ(k'-1)}\!\big(\rho_1(x,x')\big)\right)\right)\,I_{m_l},
+\]
+with the convention that the empty product (for \(k=l\)) equals \(1\). See~\cite{terjek2025mlpsateoc} for the derivation.
+\end{proposition}
 
 \subsection{Comparison with the classical fully-trained NTK recursion}\label{appendix:classical-ntk-comparison}
 For comparison, consider a standard fully-connected MLP where \emph{all} weights (and biases) are trained under NTK parameterization. In the sequential infinite-width limit, the classical NTK recursion takes the form~\cite{jacot2018neural}
@@ -181,7 +336,7 @@ as claimed. The \(\log r\) specialization follows by substituting \(m=\lceil \al
 \end{proof}
 
 \subsection{Comparison table: depth/rank effects in the kernel regime}\label{appendix:table-eoc-vs-rflr}
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{@{}p{0.18\linewidth}p{0.40\linewidth}p{0.38\linewidth}@{}}
@@ -218,162 +373,6 @@ Depth dependence is controlled by correlation propagation and by products of der
 
 \paragraph{Future work: quadratic random-matrix scaling.}
 Establishing bulk spectral laws for the \emph{empirical} RF-LR NTK in a quadratic scaling regime \(n\to\infty\) requires additional resolvent/local-law inputs. The Benigni--Paquette framework~\cite{benigni2025eigenvaluedistributionneuraltangent} establishes RMT limits for Gram spectra in the extensive-width regime (\(n\sim N^2\)) with layers taken in the RMT limit, via resolvent replacement and Gaussian-equivalence machinery for shallow two-layer NTKs. Adapting these methods to the present low-rank random-feature structure and to depth \(L\ge 2\) is left for future work.
-
-\section{Proofs of NTK Recursions}
-\label{appendix:ntk-recursions}
-
-\subsection{Proof of Theorem~\ref{thm:ntk_recursion}: Infinite-width NTK recursion}
-\label{appendix:proof-ntk-recursion}
-
-\paragraph{Proof sketch.} Decompose the NTK at layer \(\ell\) into (i)~a bias contribution (constant \(+1\)), (ii)~Term 2: gradient inner products for the layer-\(\ell\) readouts \(A^{(\ell)}\), and (iii)~Term 1: backpropagated NTK from previous layers times the Jacobian metric. Apply the Law of Large Numbers conditionally on \(\bm{h}^{(\ell-1)}\) as \(n_\ell\to\infty\); the sequential limit ensures lower layers have already converged.
-\begin{proof}
-\label{proof:ntk_recursion}
-We prove the recursion by decomposing the NTK at layer \( \ell \) into contributions of the trainable parameters up to layer \( \ell \), and invoking the Law of Large Numbers (LLN) under the sequential infinite-width limit. Let \( f^{(\ell)} \) denote the network output truncated at layer \( \ell \). For finite width, the (random) NTK reads
-\begin{align}
-\Theta^{(\ell)}_{\mathrm{rand}}(x,x') \;=\; \underbrace{\big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x)\big)^\top \big(\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x')\big)}_{\text{Term 1}} \;+\; \underbrace{\sum_{j=1}^{n_\ell}\frac{\partial f^{(\ell)}(x)}{\partial A^{(\ell)}_j}\frac{\partial f^{(\ell)}(x')}{\partial A^{(\ell)}_j}}_{\text{Term 2}}.
-\end{align}
-
-\paragraph{Bias parameters.}
-We include a trainable layer bias \(c^{(\ell)}\) (initialized at zero). The gradient feature with respect to \(c^{(\ell)}\) is constant, so it contributes an additive constant term to the NTK; under our normalization this contribution is \(1\). This yields the additive \(+1\) term in the recursion.
-
-\paragraph{Term 2 (layer-\(\ell\) output weights \(A^{(\ell)}\)).}
-By the forward pass, \(\partial f^{(\ell)}(x)/\partial A^{(\ell)}_j = \frac{\sigma_A}{\sqrt{n_\ell}}\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\). Therefore
-\begin{align}
-\text{Term 2} \;=\; \frac{\sigma_A^2}{n_\ell}\sum_{j=1}^{n_\ell} \ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x)\big)\,\ReLU\!\big(\bm{w}^{(\ell)\top}_j\bm{h}^{(\ell-1)}(x')\big).
-\end{align}
-Conditionally on \(\bm{h}^{(\ell-1)}\), the summands are i.i.d. over \(\bm{w}^{(\ell)}_j\). As \(n_\ell\to\infty\) (with lower layers already taken to their limits), LLN yields
-\begin{align}
-\text{Term 2} \xrightarrow{p} \sigma_A^2\,\Sigma^{(\ell)}(x,x').
-\end{align}
-
-\paragraph{Term 1 (previous layers).}
-By the chain rule,
-\begin{align}
-\nabla_{\theta^{(\ell-1)}} f^{(\ell)}(x) \;=\; \Big(\frac{\partial f^{(\ell)}(x)}{\partial \bm{h}^{(\ell-1)}(x)}\Big)\,\nabla_{\theta^{(\ell-1)}} \bm{h}^{(\ell-1)}(x).
-\end{align}
-Hence Term 1 factorizes as \(\Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')\) multiplied by a Jacobian metric:
-\begin{align}
-\text{Term 1} \;=\; \Theta^{(\ell-1)}_{\mathrm{rand}}(x,x')\;\cdot\;\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle.
-\end{align}
-Taking the inner product and applying LLN as \(n_\ell\to\infty\) yields
-\begin{align}
-\Big\langle \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x), \frac{\partial f^{(\ell)}}{\partial \bm{h}^{(\ell-1)}}(x') \Big\rangle \xrightarrow{p} \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
-\end{align}
-Therefore,
-\begin{align}
-\text{Term 1} \xrightarrow{p} \Theta^{(\ell-1)}(x,x')\cdot \sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x').
-\end{align}
-
-Combining the bias contribution with the two limits completes the recursion. For bottleneck layers \( \ell \ge 2 \), the Jacobian and output contributions scale with \( 1/r \) (from the \( r \)-dimensional bottleneck); we absorb \( \sigma_A^2 \) into the normalization. Thus
-\begin{align}
-\Theta^{(1)}(x,x') &\;=\; 1 \;+\; \Sigma^{(1)}(x,x'),\\
-\Theta^{(\ell)}(x,x') &\;=\; 1 \;+\; \frac{1}{r}\,\Theta^{(\ell-1)}(x,x')\cdot\sigma_A^2\,\dot{\Sigma}^{(\ell)}(x,x') \;+\; \frac{1}{r}\,\sigma_A^2\,\Sigma^{(\ell)}(x,x')\quad (\ell\ge2).
-\end{align}
-The sequential limit assumption ensures that lower-layer random objects have already converged when taking the next-layer limit, justifying the conditional LLN applications.
-\end{proof}
-
-\subsection{Proof of Theorem~\ref{thm:gp-composition}: Gaussian process composition}
-\label{appendix:proof-gp-composition}
-
-\paragraph{Proof sketch.} By induction on \(\ell\): for \(\ell=0\) the output is deterministic; for \(\ell\ge 1\), conditionally on \(\bm{h}^{(\ell-1)}\) the forward pass is a sum of i.i.d.\ terms over \(j\), so the multivariate CLT yields Gaussian convergence. The covariance matches the base kernel \(\Sigma^{(\ell)}\) by definition.
-\begin{proof}
-We prove by induction on \( \ell \) that \( \bm{h}^{(\ell)} \) converges to a Gaussian process with covariance kernel \( \Sigma^{(\ell)} \).
-
-\paragraph{Base case \( \ell=0 \).}
-For \( \ell=0 \), we have \( \bm{h}^{(0)}(x) = x \), which is deterministic and trivially a Gaussian process.
-
-\paragraph{Inductive step.}
-Assume that \( \bm{h}^{(\ell-1)} \) converges to a Gaussian process with covariance kernel \( \Sigma^{(\ell-1)} \). Consider the forward pass at layer \( \ell \):
-\begin{align}
-\bm{h}^{(\ell)}(x) = \frac{1}{\sqrt{\bm{n}_\ell}} \sum_{j=1}^{\bm{n}_\ell} A^{(\ell)}_j\,\bm{\ReLU}\!\Big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x)\Big) + c^{(\ell)}.
-\end{align}
-
-For any finite collection of inputs \( \{x_1, \dots, x_m\} \), conditionally on \( \bm{h}^{(\ell-1)} \), the terms \( A^{(\ell)}_j\,\bm{\ReLU}\!\big(w^{(\ell)\top}_j\,\bm{h}^{(\ell-1)}(x_i)\big) \) are independent across \( j \) and identically distributed. Since \( A^{(\ell)}_j \sim \mathcal{N}(0, \sigma_A^2) \) and \( w^{(\ell)}_j \) are frozen Gaussian draws, the conditional distribution of each term is centered with finite variance (and \(c^{(\ell)}\) is deterministic at initialization).
-
-By the multivariate Central Limit Theorem, as \( \bm{n}_\ell \to \infty \), the vector \( (\bm{h}^{(\ell)}(x_1), \dots, \bm{h}^{(\ell)}(x_m)) \) converges in distribution to a multivariate Gaussian. The covariance is given by
-\begin{align}
-\mathbb{E}\Big[\bm{h}^{(\ell)}(x_i)\,\bm{h}^{(\ell)}(x_j)\Big] = \mathbb{E}_{w}\Big[\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x_i)\big)\,\bm{\ReLU}\!\big(w^\top \bm{h}^{(\ell-1)}(x_j)\big)\Big] = \Sigma^{(\ell)}(x_i, x_j),
-\end{align}
-where the expectation is taken over the frozen weights \( w \) and the limiting Gaussian process \( \bm{h}^{(\ell-1)} \). The last equality follows from the definition of the base kernel in Definition~\ref{def:base-derivative-kernels}.
-
-The sequential infinite-width limit ensures that \( \bm{h}^{(\ell-1)} \) has already converged to its Gaussian process limit when taking the limit for layer \( \ell \), justifying the application of the CLT conditionally on \( \bm{h}^{(\ell-1)} \).
-\end{proof}
-
-\subsection{Proof of three-layer NTK Corollary}
-\label{appendix:proof-2layer}
-
-\paragraph{Proof sketch.} Apply the recursion (Theorem~\ref{thm:ntk_recursion}) for \(\ell=1\) and \(\ell=2\); for \(\ell=1\) use \(\Kop^{(0)}=0\); for \(\ell=2\) substitute \(\Kop^{(1)}=1+\Sigma^{(1)}\). Under homogeneity, the mean form involves expectations over Fisher (angular) and Kibble (radial); as \(r\to\infty\) these concentrate, recovering \(K_\infty\).
-\begin{proof}
-\label{proof:two_layer_ntk}
-Apply Theorem~\ref{thm:ntk_recursion} for \( \ell=1 \) and \( \ell=2 \). For \( \ell=1 \), since \( \Kop^{(0)}=0 \), the recursion gives:
-\begin{align}
-\Kop^{(1)}(x,x') = 1 + \Kop^{(0)}(x,x')\cdot\dot{\Sigma}^{(1)}(x,x') + \Sigma^{(1)}(x,x') = 1 + \Sigma^{(1)}(x,x').
-\end{align}
-For \( \ell=2 \), substitute \( \Kop^{(1)} = 1 + \Sigma^{(1)} \) into the recursion:
-\begin{align}
-\Kop^{(2)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') + \frac{1}{r}\,\Sigma^{(2)}(x,x').
-\end{align}
-This is the stated three-layer recursion with the bias contribution.
-\paragraph{Mean explicit form (low-rank).}
-Under the homogeneous ReLU setting on the sphere, the mean three-layer NTK (with \( 1/r \) factors) is
-\begin{align}
-\tilde{\Kop}^{(2)}(\rho) \;=\; 1 \;+\; \frac{1}{r}\,\Kop^{(1)}(\rho)\,\mathbb{E}\!\left[1-\frac{\arccos(\hat{\rho}_r)}{\pi}\right] \;+\; \frac{1}{r}\,\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r)\,\|x_1\|\|y_1\|\right],
-\end{align}
-where the expectations are over Fisher and Kibble. As \( r\to\infty \), \( \hat{\rho}_r\to\rho \) and \( \|x_1\|\|y_1\|/r\to 1 \), so the limit \( K_\infty(\rho) = \Theta^{(1)}(\rho)(1-\arccos(\rho)/\pi) + \Sigma^{(1)}(\rho) + 1 \) is recovered (without the \( 1/r \) prefactors, since the low-rank scaling is absorbed in the limit).
-\end{proof}
-
-\subsection{Proof of General \texorpdfstring{\(L\)}{L}-layer NTK Corollary}
-\label{appendix:proof-general-L}
-
-\begin{remark}[Explicit \(2L\)-term unrolling]\label{appendix:remark-2L-expansion}
-Equivalently, expanding the recursion yields an explicit \emph{linear} number of terms (namely \(2L\)). For example, for \( L=3 \):
-\begin{align}
-\Kop^{(3)}(x,x') &= 1 + \frac{1}{r}\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\dot{\Sigma}^{(3)} \nonumber\\
-&\quad + \frac{1}{r^2}\Sigma^{(1)}\cdot\dot{\Sigma}^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(2)}\cdot\dot{\Sigma}^{(3)} + \frac{1}{r}\Sigma^{(3)}.
-\end{align}
-Each bottleneck layer contributes a factor \( 1/r \); layer 1 has no such factor. In total, there are \( 2L \) terms for depth \( L \).
-\end{remark}
-
-\paragraph{Proof sketch.} By induction on \(L\): for \(L=1\) the recursion gives \(\Kop^{(1)}=1+\Sigma^{(1)}\). For \(L\ge 2\), expand \(\Kop^{(L)}\) via the recursion into a bias term and two paths (derivative-propagated and fresh-base); each path contributes \(L\) terms with the appropriate \(1/r\) factors, yielding \(2L\) terms in total.
-\begin{proof}
-\label{proof:general_L_ntk}
-We prove the explicit form by induction on \( L \), accounting for the \( +1 \) bias terms in the recursion.
-
-\paragraph{Base case \( L=1 \).}
-From Theorem~\ref{thm:ntk_recursion}, \( \Kop^{(1)} = 1 + \Sigma^{(1)} \). The formula with \( L=1 \) gives:
-\begin{align}
-\Kop^{(1)}(x,x') = \sum_{\ell=1}^{1} \left(\prod_{k=\ell+1}^{1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{1} \dot{\Sigma}^{(k)}(x,x').
-\end{align}
-For the first sum: when \( \ell=1 \), \( \prod_{k=2}^{1} \dot{\Sigma}^{(k)} = 1 \) (empty product). For the second sum: when \( \ell=1 \), \( \Sigma^{(1)}\cdot\prod_{k=2}^{1} \dot{\Sigma}^{(k)} = \Sigma^{(1)}\cdot 1 = \Sigma^{(1)} \). Therefore, \( \Kop^{(1)} = 1 + \Sigma^{(1)} \), which matches the recursion.
-
-\paragraph{Inductive step.}
-Assume the formula holds for depth \( L-1 \):
-\begin{align}
-\Kop^{(L-1)}(x,x') = \sum_{\ell=1}^{L-1} \left(\prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L-1} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L-1} \dot{\Sigma}^{(k)}(x,x').
-\end{align}
-By Theorem~\ref{thm:ntk_recursion}, for \( L \ge 2 \),
-\begin{align}
-\Kop^{(L)}(x,x') = 1 + \frac{1}{r}\,\Kop^{(L-1)}(x,x')\cdot\dot{\Sigma}^{(L)}(x,x') + \frac{1}{r}\,\Sigma^{(L)}(x,x').
-\end{align}
-Substituting the inductive hypothesis and distributing the \( 1/r \) factor yields the stated closed form; the first sum gains a new term \( 1 \) (from \( \ell=L \)) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \), while the second sum gains \( (1/r)\Sigma^{(L)} \) and each existing term is multiplied by \( (1/r)\dot{\Sigma}^{(L)} \).
-The first term \( 1 \) corresponds to \( \ell=L \) in the first sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). The last term \( \Sigma^{(L)} \) corresponds to \( \ell=L \) in the second sum (with empty product \( \prod_{k=L+1}^{L} \dot{\Sigma}^{(k)} = 1 \)). Therefore:
-\begin{align}
-\Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
-\end{align}
-completing the induction. The total number of terms is \( L + L = 2L \), which grows linearly with depth.
-\end{proof}
-
-\subsection{Reference: full-width MLP limiting NTK at the edge of chaos}
-\label{appendix:mlp-eoc-ntk}
-\begin{proposition}[Closed form for full-width MLP EOC NTK]\label{prop:mlp-eoc-ntk-formula}
-Let \(l\ge 1\) and consider an infinitely wide \(l\)-layer MLP with \((a,b)\)-ReLU activation initialized at the edge of chaos as in~\cite{terjek2025mlpsateoc}. Denote by \(\varrho\) the corresponding cosine map and by \(\rho_1(x,x')\) the input cosine similarity. Then the limiting NTK satisfies
-\[
-K_\infty(x,x') \;=\; \|x\|\,\|x'\|\left(\sum_{k=1}^{l}\varrho^{\circ(k-1)}\!\big(\rho_1(x,x')\big)\prod_{k'=k}^{l-1}\varrho'\!\left(\varrho^{\circ(k'-1)}\!\big(\rho_1(x,x')\big)\right)\right)\,I_{m_l},
-\]
-with the convention that the empty product (for \(k=l\)) equals \(1\). See~\cite{terjek2025mlpsateoc} for the derivation.
-\end{proposition}
-
-
 
 \section{Proofs of low-rank NTK RKHS}
 
@@ -514,7 +513,7 @@ Rotational invariance of isotropic Gaussian projections implies that \(\rho_1 = 
 \end{proof}
 
 \subsection{Open directions: deep mean NTK recursion and effective depth}\label{appendix:open-directions}
-The deterministic proxy (Definition~\ref{def:deterministic-proxy}) analyzes the scalar recursion along the mean path \( \rho_k = \varrho^{\circ(k-1)}(\rho_1) \). The actual network uses the \emph{random} correlation chain \( \rho_\ell \) with \( O(1/\sqrt{r}) \) per-layer fluctuations (Appendix~\ref{appendix:random-correlation-chain}). A rigorous link requires: (i)~propagating the Fisher-type concentration \( \mathbb{E}[(\rho_\ell - \varrho^{\circ(\ell-1)}(\rho_1))^2] \le C/r \) through depth to show \( \Theta^{(L)}_{\mathrm{random}} - \Theta^{(L)}_{\mathrm{proxy}} = O_P(\sqrt{L/r}) \) or similar; (ii)~a rigorous recursion for \( \tilde{\Kop}^{(\ell)} \) with explicit covariance bounds; (iii)~extension of Fisher--Kibble decoupling to nested layers to control mixed terms such as \( \mathbb{E}[\Kop^{(\ell-1)}\dot{\Sigma}^{(\ell)}] \) (where dependence through the deep GP chain prevents naive factorization). The exponential suppression of early-layer contributions suggests that very deep MMNNs may exhibit an ``effective depth'' phenomenon similar to ResNets, where only the top layers meaningfully contribute to the NTK.
+The deterministic proxy (Definition~\ref{def:deterministic-proxy}) analyzes the scalar recursion along the mean path \( \rho_k = \varrho^{\circ(k-1)}(\rho_1) \). The actual network uses the \emph{random} correlation chain \( \rho_\ell \) with \( O(1/\sqrt{r}) \) per-layer fluctuations (Appendix~\ref{appendix:random-correlation-chain}). A rigorous link requires: (i)~propagating the Fisher-type concentration \( \mathbb{E}[(\rho_\ell - \varrho^{\circ(\ell-1)}(\rho_1))^2] \le C/r \) through depth to show \( \Theta^{(L)}_{\mathrm{random}} - \Theta^{(L)}_{\mathrm{proxy}} = O_P(\sqrt{L/r}) \) or similar; (ii)~a rigorous recursion for \( \tilde{\Kop}^{(\ell)} \) with explicit covariance bounds; (iii)~extension of Fisher--Kibble decoupling to nested layers to control mixed terms such as \( \mathbb{E}[\Kop^{(\ell-1)}\dot{\Sigma}^{(\ell)}] \) (where dependence through the deep GP chain prevents naive factorization). The exponential suppression of early-layer contributions suggests that very deep RF-LR may exhibit an ``effective depth'' phenomenon similar to ResNets, where only the top layers meaningfully contribute to the NTK.
 
 \begin{lemma}[Nonasymptotic concentration of Gaussian sample cosine]\label{lem:gaussian-sample-cosine}
 Let \(r\ge 1\) and let \((X,Y)\in\mathbb{R}^r\times\mathbb{R}^r\) have i.i.d.\ coordinates \(\{(X_i,Y_i)\}_{i=1}^r\), each distributed as a centered bivariate normal with \(\mathbb{E}[X_i^2]=\mathbb{E}[Y_i^2]=1\) and \(\mathbb{E}[X_iY_i]=\rho\in(-1,1)\).
@@ -1010,9 +1009,30 @@ Therefore,
 \end{align}
 
 \paragraph{Verification: from mean identity to Puiseux expansion.}
-The mean three-layer NTK (Appendix~\ref{appendix:proof-2layer}) is \(\tilde{\Kop}^{(2)}(\rho) = 1 + \frac{1}{r}\,\Theta^{(1)}(\rho)\,\mathbb{E}[1-\arccos(\hat{\rho}_r)/\pi] + \frac{1}{r}\,\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)\,\|x_1\|\|y_1\|]\), with expectations over Fisher and Kibble. Set \(\rho=1-t\). Then \(\mathbb{E}[1-\arccos(\hat{\rho}_r)/\pi] = 1 - \sqrt{2t}\,I(r)/\pi + O(t^{3/2})\). By independence the radial term is \(\frac{1}{r}\,\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)]\,\mathbb{E}[\|x_1\|\|y_1\|]\); as \(t\to 0\), \(\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] = \Sigma^{(1)}(1) + O(t)\) and \(\mathbb{E}[\|x_1\|\|y_1\|] = r + O(1)\), so the radial term is \(\Sigma^{(1)}(1) + O(t) + O(1/r)\) and contributes no \(t^{1/2}\). Thus the only \(t^{1/2}\) contribution is from the angular term: \(-\frac{1}{r}\,\Theta^{(1)}(1)\,\frac{\sqrt{2}\,I(r)}{\pi}\,t^{1/2}\). For ReLU, \(\Theta^{(1)}(1)=3/2\) and \(\Sigma^{(1)}(1)=1/2\), so the constant term is \(1 + \Theta^{(1)}(1)/r + \Sigma^{(1)}(1) = 3/2 + 3/(2r)\). The limit kernel satisfies \(K_\infty(1)=\Theta^{(1)}(1)+\Sigma^{(1)}(1)+1=3\), so \(1+\frac{1}{r}(K_\infty(1)-1)=1+\frac{2}{r}\); the main text uses this form for the constant. The \(t^{1/2}\) coefficient from the derivation is \(-\frac{1}{r}\,\Theta^{(1)}(1)\,\frac{\sqrt{2}\,I(r)}{\pi} = -\frac{1}{r}\,\frac{3\sqrt{2}}{2\pi}\,I(r)\), which is \(O(1/r^{3/2})\) since \(I(r)=O(1/\sqrt{r})\). The shallow ReLU kernel has expansion \(K_\infty(1-t)=K_\infty(1)-\frac{2\sqrt{2}}{\pi}\sqrt{t}+O(t^{3/2})\), so the coefficient of \(t^{1/2}\) in the limit is \(-2\sqrt{2}/\pi\); the stated bracket \(\frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r)\) is chosen so that as \(r\to\infty\) it tends to \(2/\pi\) (matching the shallow limit) and the \(\frac{\sqrt{2}}{2\pi}I(r)\) term is the Fisher--Kibble correction. With this, the expansion \eqref{eq:puiseux-mean-ntk-main} in the main text is consistent and the \(r\)-scaling is correct: the \(1/r\) prefactor multiplies both the constant offset \((K_\infty(1)-1)\) and the \(t^{1/2}\) bracket, and \(I(r)=O(1/\sqrt{r})\) yields \(t^{1/2}\) coefficient \(\frac{2}{\pi r}+O(r^{-3/2})\).
+The mean three-layer NTK (Appendix~\ref{appendix:proof-2layer}) is, with expectations over Fisher and Kibble,
+\begin{align}
+\tilde{\Kop}^{(2)}(\rho)
+\;=\;
+1 + \frac{1}{r}\,\Theta^{(1)}(\rho)\,\mathbb{E}\!\left[1-\frac{\arccos(\hat{\rho}_r)}{\pi}\right]
++ \frac{1}{r}\,\mathbb{E}\!\left[\Sigma^{(1)}(\hat{\rho}_r)\,\|x_1\|\|y_1\|\right].
+\end{align}
+Set \(\rho=1-t\). Then
+\[
+\mathbb{E}\!\left[1-\frac{\arccos(\hat{\rho}_r)}{\pi}\right]
+\;=\;
+1 - \frac{\sqrt{2t}\,I(r)}{\pi} + O(t^{3/2}).
+\]
+By independence the radial term is \(\frac{1}{r}\,\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)]\,\mathbb{E}[\|x_1\|\|y_1\|]\). As \(t\to 0\), \(\mathbb{E}[\Sigma^{(1)}(\hat{\rho}_r)] = \Sigma^{(1)}(1) + O(t)\) and \(\mathbb{E}[\|x_1\|\|y_1\|] = r + O(1)\), so the radial term is \(\Sigma^{(1)}(1) + O(t) + O(1/r)\) and contributes no \(t^{1/2}\). Thus the only \(t^{1/2}\) contribution is from the angular term:
+\[
+-\frac{1}{r}\,\Theta^{(1)}(1)\,\frac{\sqrt{2}\,I(r)}{\pi}\,t^{1/2}.
+\]
+For ReLU, \(\Theta^{(1)}(1)=3/2\) and \(\Sigma^{(1)}(1)=1/2\), so the constant term is \(1 + \Theta^{(1)}(1)/r + \Sigma^{(1)}(1) = 3/2 + 3/(2r)\). The limit kernel satisfies \(K_\infty(1)=\Theta^{(1)}(1)+\Sigma^{(1)}(1)+1=3\), hence
+\[
+1+\frac{1}{r}\big(K_\infty(1)-1\big)\;=\;1+\frac{2}{r};
+\]
+the main text uses this form for the constant. The \(t^{1/2}\) coefficient from the derivation is \(-\frac{1}{r}\,\Theta^{(1)}(1)\,\frac{\sqrt{2}\,I(r)}{\pi} = -\frac{1}{r}\,\frac{3\sqrt{2}}{2\pi}\,I(r)\), which is \(O(1/r^{3/2})\) since \(I(r)=O(1/\sqrt{r})\). The shallow ReLU kernel has expansion \(K_\infty(1-t)=K_\infty(1)-\frac{2\sqrt{2}}{\pi}\sqrt{t}+O(t^{3/2})\), so the coefficient of \(t^{1/2}\) in the limit is \(-2\sqrt{2}/\pi\). The stated bracket \(\frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r)\) is chosen so that as \(r\to\infty\) it tends to \(2/\pi\) (matching the shallow limit), with \(\frac{\sqrt{2}}{2\pi}I(r)\) the Fisher--Kibble correction. Thus the expansion \eqref{eq:puiseux-mean-ntk-main} in the main text is consistent and the \(r\)-scaling is correct: the \(1/r\) prefactor multiplies both the constant offset \((K_\infty(1)-1)\) and the \(t^{1/2}\) bracket, and \(I(r)=O(1/\sqrt{r})\) yields \(t^{1/2}\) coefficient \(\frac{2}{\pi r}+O(r^{-3/2})\).
 
-Therefore, the mean NTK expansion is (with the \( 1/r \) prefactor from the recursion):
+Therefore, the mean NTK expansion is (with the \(1/r\) prefactor from the recursion):
 \begin{align}
 \tilde{\Kop}^{(2)}(1-t)
 \;=\;
@@ -1021,7 +1041,7 @@ Therefore, the mean NTK expansion is (with the \( 1/r \) prefactor from the recu
 \frac{1}{r}\,\Bigg[\frac{2}{\pi} + \frac{\sqrt{2}}{2\pi}\,I(r)\Bigg]\,t^{1/2}
 \;+\; O(t^{3/2}).
 \end{align}
-This exhibits the \( r \)-dependent constant multiplying \( t^{1/2} \); the \( 1/r \) factor scales the Fisher--Kibble correction.
+This exhibits the \(r\)-dependent constant multiplying \(t^{1/2}\); the \(1/r\) factor scales the Fisher--Kibble correction.
 
 \begin{remark}[Closed form via Beta function and asymptotics]
 Using the change of variables \( w=v/t \) and Euler's Beta integral, the inner integral appearing in \( I(r) \) can be evaluated explicitly:

@@ -18,7 +18,7 @@ Initialization is
 \[
 w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\big),\quad
 A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, 2),\quad
-c^{(\ell)} = 0,
+c^{(\ell)} = 0.
 \]
 We use the \emph{edge-of-chaos (EOC)} scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
 In our bottleneck regime we take \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), so \(w^{(\ell)}_j\in\mathbb{R}^r\) with covariance \(I_r/r\).
@@ -64,7 +64,7 @@ Given these definitions, we can now state the following composition result.
     In the sequential infinite-width limit, the hidden states \( \bm{h}^{(\ell)} \) form a composition of Gaussian processes:
 \begin{itemize}
     \item Conditionally on \( \bm{h}^{(\ell-1)} \), for any finite collection of inputs \( \{x_1, \dots, x_m\} \), the vector \( (\bm{h}^{(\ell)}(x_1), \dots, \bm{h}^{(\ell)}(x_m)) \) converges in distribution to a multivariate Gaussian.
-    \item The conditional limiting Gaussian has mean zero and covariance matrix \( [\Sigma^{(\ell)}(x_i, x_j)]_{i,j=1}^m \), where \( \Sigma^{(\ell)} \) is the base kernel defined in Definition~\ref{def:base-derivative-kernels} and depends on \( \bm{h}^{(\ell-1)} \)
+    \item The conditional limiting Gaussian has mean zero and covariance matrix \( [\Sigma^{(\ell)}(x_i, x_j)]_{i,j=1}^m \), where \( \Sigma^{(\ell)} \) is the base kernel defined in Definition~\ref{def:base-derivative-kernels} and depends on \( \bm{h}^{(\ell-1)} \).
 \end{itemize}
 \end{theorem}
 \begin{proof}
