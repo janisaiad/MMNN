@@ -28,6 +28,7 @@ All scripts here are **headless** (matplotlib `"Agg"` backend) and save figures 
 | `condition_number_highdim_spherical.py` | 2 | 16000 | 32 | 256, 128 | [10,…,200] | 30 per \(d\) |
 | `condition_number_non_equicorrelated.py` | 2 | 20000 | 48 | 64 | [10,…,1e4,1e5] | 30, 4 clusters (slower conv.) |
 | `kernel_regression_risk.py` | 2 | 12000 | 64 train, 256 test | 32 | [5,…,100] | 20 |
+| `rkhs_puiseux_depth_experiment.py` | \(L\in[1,6]\) (proxy) | — | — | — | \(r=20\) (fixed) | deterministic, Puiseux fit |
 | `fisher_kibble_and_decay_constants.py` | — | — | — | — | \(r\in[3,200]\) (grid) | analytic (no MC) |
 
 - **Depth:** All finite-width NTK scripts use a **3-layer (2 ReLU)** RF-LR architecture, i.e. \(L=2\) hidden ReLU layers and one output layer; the proxy/deterministic scripts iterate the recursion to large \(k\) (e.g. \(k_{\max}=4000\) or \(L=200\)).
@@ -239,7 +240,36 @@ The plot and numbers are consistent with the story in the paper: as \(r\) grows,
 
 - `python3 condition_number_non_equicorrelated.py` (requires `numpy`, `matplotlib`).
 
-## 9) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
+## 9) RKHS Puiseux exponent vs depth (L ≥ 4): does RKHS equivalence extend?
+
+### `rkhs_puiseux_depth_experiment.py`
+
+**What it computes**
+
+Numerical test for whether the RKHS equivalence (Corollary `thm:no_rkhs_advantage`) extends to depth \(L \ge 4\). The Bietti--Bach criterion: for zonal kernels on the sphere, the RKHS is determined by the Puiseux exponent \(\gamma\) at the endpoint \(\rho=1\). If \(K(1-t) - K(1) \sim c \cdot t^\gamma\) for small \(t\), then \(\gamma\) controls the RKHS. The paper proves \(\gamma = 1/2\) for the mean 3-layer RF-LR kernel (same as shallow ReLU); extension to \(L \ge 4\) is open.
+
+This script estimates \(\gamma(L)\) for the **deterministic proxy** kernel \(\Theta^{(L)}(\rho)\) via log--log regression of the gap \(\Theta^{(L)}(1) - \Theta^{(L)}(1-t)\) vs \(t\). If \(\gamma(L) \approx 1/2\) for \(L = 2, 3, 4, 5, 6\), that suggests RKHS equivalence may extend; if \(\gamma(L)\) deviates at large \(L\), the deep kernel may induce a different RKHS.
+
+**Where it maps in the paper**
+
+- RKHS equivalence (3 layers): `refs/colt2026/rkhs.tex` (Corollary `thm:no_rkhs_advantage`)
+- Open extension to \(L \ge 4\): `refs/colt2026/rkhs.tex`, `refs/colt2026/conclusion.tex`
+
+**Outputs**
+
+- **`rkhs_puiseux_exponent_vs_depth.png`** — Left: estimated Puiseux exponent \(\gamma(L)\) vs depth \(L\); horizontal line at \(\gamma = 1/2\) (ReLU RKHS). Right: log--log plot of the gap vs \(t\) for \(L=2\) and \(L=6\), with \(t^{1/2}\) reference.
+
+**Takeaway**
+
+If \(\gamma(L)\) remains near \(1/2\) across depths, the proxy kernel’s endpoint behavior is consistent with RKHS equivalence at all tested depths. If \(\gamma(L)\) decreases (e.g. toward 0) at large \(L\), the deep proxy kernel would induce a strictly larger RKHS than the shallow one.
+
+**Run**
+
+- `python3 rkhs_puiseux_depth_experiment.py` (requires `numpy`, `matplotlib`).
+
+---
+
+## 10) Analytic Fisher/Kibble densities + \(I(r)\) and spectral-decay prefactor vs \(r\)
 
 ### `fisher_kibble_and_decay_constants.py`
 **What it computes**
@@ -274,7 +304,7 @@ Then plots **\(r\)-dependent constants** appearing in the Puiseux coefficient an
 
 ## Notes and cautions (COLT-style)
 
-- Scripts in Sections 1–2 are **deterministic proxy / mean-field** computations (they illustrate Theorem 15–17 as stated in `depth_scaling.tex`).
+- Scripts in Sections 1–2 and 9 are **deterministic proxy / mean-field** computations (they illustrate Theorem 15–17 and the RKHS Puiseux test).
 - Scripts in Sections 3–5, 7–8 are **finite-width / finite-rank Monte Carlo** and are meant to illustrate remarks about fluctuation scales (they do not constitute proofs).
 - Section 6 (high-dim spherical) and Section 9 (Fisher/Kibble) mix proxy and analytic computations.
 - Centering removes the rank-one spike aligned with \(\mathbf{1}\), but does not “improve” the remaining spectral shape; see `refs/colt2026/spectra.tex` (“Centered vs uncentered”) and `rmk:bulk-vs-extremes`.
@@ -325,6 +355,10 @@ Below is a concise description of each figure and the **main takeaway** for the 
 
 - **`spectral_decay_prefactor_vs_r.png`** — \(|2c_1(r)|\) (spectral-decay amplitude) vs \(r\). **Takeaway:** Quantifies the \(r\)-dependent prefactor in the Puiseux/RKHS spectral decay.
 
+### RKHS Puiseux exponent vs depth (L ≥ 4)
+
+- **`rkhs_puiseux_exponent_vs_depth.png`** — Left: estimated Puiseux exponent \(\gamma(L)\) vs depth \(L\); reference line at \(\gamma=1/2\). Right: log--log gap vs \(t\) for \(L=2\) and \(L=6\). **Takeaway:** Tests whether RKHS equivalence (Corollary `thm:no_rkhs_advantage`) extends to \(L \ge 4\); if \(\gamma(L) \approx 1/2\) for all \(L\), the proxy suggests same RKHS.
+
 ---
 
 ## Quick run (all experiments)
@@ -339,6 +373,7 @@ python3 condition_number_proxy_empirical.py
 python3 condition_number_highdim_spherical.py
 python3 kernel_regression_risk.py
 python3 condition_number_non_equicorrelated.py
+python3 rkhs_puiseux_depth_experiment.py       # RKHS Puiseux exponent vs depth (L>=4)
 python3 fisher_kibble_and_decay_constants.py   # requires scipy
 ```
 
