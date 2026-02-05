@@ -1,3 +1,4 @@
+\newpage
 \tableofcontents
 \clearpage
 
@@ -16,6 +17,34 @@ This work develops an NTK analysis for low-rank random-feature architectures (RF
 \clearpage
 
 \section{Notation and standing assumptions}\label{appendix:notation-assumptions}
+
+\subsection{Notation}\label{appendix:notation-index}
+We collect all notation used in the main text and appendix.
+
+\paragraph{Architecture and dimensions.}
+\(L\): depth (number of layers). \quad \(\ell\): layer index, \(\ell=0,1,\ldots,L\). \quad \(\bm{n}_\ell\): width (number of random features) at layer \(\ell\). \quad \(\bm{d}_\ell\): output dimension at layer \(\ell\), with \(\bm{d}_0=d\) (input dimension) and \(\bm{d}_\ell=r\) for \(\ell\ge 1\) in the bottleneck regime. \quad \(r\): bottleneck rank, \(r\ll \bm{n}_\ell\) for \(\ell\ge 2\). \quad \(N\): generic notation for width (e.g.\ \(n_1\) or \(\bm{n}_\ell\)). \quad \(\mathbb{S}^{d-1}\): unit sphere in \(\mathbb{R}^d\).
+
+\paragraph{Parameters and activations.}
+\(A^{(\ell)}\in\mathbb{R}^{\bm{d}_\ell\times \bm{n}_\ell}\): trainable readout matrix at layer \(\ell\); columns \(A^{(\ell)}_j\). \quad \(w^{(\ell)}_j\in\mathbb{R}^{\bm{d}_{\ell-1}}\): frozen random feature direction at layer \(\ell\), neuron \(j\). \quad \(c^{(\ell)}\in\mathbb{R}^{\bm{d}_\ell}\): trainable layer bias. \quad \(\sigma\), \(\bm{\ReLU}\): activation function (ReLU). \quad \(\sigma_A\): readout variance scale; at EOC, \(\sigma_A=\sqrt{2}\). \quad \(\Sigma_w=\mathrm{Cov}(w^{(\ell)}_j)\): covariance of feature weights; at EOC, \(\Sigma_w=I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\), and \(\Sigma_w=I_r/r\) in the bottleneck regime.
+
+\paragraph{Hidden states and kernels.}
+\(\bm{h}^{(\ell)}(x)\): hidden state at layer \(\ell\) for input \(x\). \quad \(\Sigma^{(\ell)}(x,x')\): base kernel (conditional covariance of \(\bm{h}^{(\ell)}\) given \(\bm{h}^{(\ell-1)}\)). \quad \(\dot{\Sigma}^{(\ell)}(x,x')\): derivative kernel (conditional expectation involving \(\dot{\sigma}\) and \(\|w\|^2\)). \quad \(\Theta^{(\ell)}(x,x')\) or \(\Kop^{(\ell)}(x,x')\): neural tangent kernel at layer \(\ell\) (infinite-width limit). \quad \(\Theta^{(L)}_{\theta_0}\): empirical NTK for finite-width network with initial parameters \(\theta_0\). \quad \(\tilde{\Kop}^{(\ell)}\): mean (over randomness) NTK. \quad \(s(\rho)\), \(\dot{s}(\rho)\): scalar ReLU base and derivative kernels as functions of cosine similarity \(\rho\). \quad \(\bar{\dot{\Sigma}}^{(\ell)}(\rho)\): normalized derivative kernel as function of \(\rho\). \quad \(K_\infty(\rho)\): deterministic \(r\to\infty\) limit kernel (three-layer case). \quad \(q^{(\ell)}=\mathbb{E}\|h^{(\ell)}(x)\|^2\): forward variance at layer \(\ell\).
+
+\paragraph{Correlations and proxy.}
+\(\rho=\langle x,x'\rangle/(\|x\|\|x'\|)\): input cosine similarity. \quad \(\rho_\ell\): (random) layer-\(\ell\) correlation \(\cos\angle(\bm{h}^{(\ell-1)}(x),\bm{h}^{(\ell-1)}(x'))\). \quad \(\rho_k=\varrho^{\circ(k-1)}(\rho_1)\): deterministic proxy correlation at depth \(k\). \quad \(\varrho\): ReLU cosine map (EOC correlation propagation). \quad \(\theta=\arccos(\rho)\): angle. \quad \(\Theta^{(k)}(\rho_1)\): deterministic proxy NTK at depth \(k\). \quad \(\Theta_\star(r)\): fixed point of proxy recursion as \(k\to\infty\). \quad \(K_{\mathrm{proxy}}\): proxy Gram matrix with entries \(\Theta^{(L)}(\rho_{ij})\). \quad \(\hat{K}\): empirical RF-LR NTK Gram matrix.
+
+\paragraph{Data and optimization.}
+\(\mu\): data distribution on the input space (or on input--output pairs). \quad \(y(x)\): target function. \quad \(n\): number of training samples when considering a dataset \(\{(x_i,y_i)\}_{i=1}^n\). \quad \(f_t(x)\): kernel gradient flow output at time \(t\). \quad \(\theta_0\): initial parameters.
+
+\paragraph{Gram matrix and spectrum.}
+\(\mathbf{M}\): Gram matrix with entries \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) for pairwise input similarities \(\rho_{ij}\). \quad \(\lambda_{\max}\), \(\lambda_{\min}\): maximum and minimum eigenvalues of \(\mathbf{M}\) (or of its restriction to \(\mathbf{1}^\perp\)). \quad \(\kappa=\lambda_{\max}/\lambda_{\min}\): condition number. \quad \(\kappa_\perp\): condition number of \(\mathbf{M}\) restricted to the mean-zero subspace \(\mathbf{1}^\perp\). \quad \(\mathbf{1}\): all-ones vector; \(\mathbf{1}^\perp\): subspace orthogonal to \(\mathbf{1}\) (mean-zero subspace).
+
+\paragraph{RKHS and Fisher--Kibble.}
+\(\mathcal{H}_\Theta\), \(\mathcal{H}_{\tilde{K}}\): RKHS induced by kernel \(\Theta\) or \(\tilde{K}\). \quad \(I(r)\): coefficient in Puiseux expansion of \(\mathbb{E}[\arccos(\hat{\rho}_r)]\) near \(\rho=1\). \quad \(\hat{\rho}_r\): sample correlation (Fisher distribution). \quad \(w_r=\sqrt{uv}/r\): Kibble radial factor (with \(u=\|x_1\|^2\), \(v=\|y_1\|^2\) for rank-\(r\) projections). \quad \(p_{\mathrm{Fisher}}\), \(p_{\mathrm{Kibble}}\): Fisher and Kibble densities.
+
+\paragraph{Asymptotics and constants.}
+\(O(\cdot)\), \(\Theta(\cdot)\), \(\Omega(\cdot)\): standard asymptotic notation. \quad \(o_P(1)\), \(O_P(\cdot)\): in probability. \quad \(C\), \(c\), \(C_0\), \(c_0\), etc.: positive constants that may depend on \(L,\rho_0\) or other fixed parameters.
+
 \subsection{Standing assumptions (expanded)}\label{appendix:assumptions-expanded}
 We summarize the conventions used throughout the main text.
 \begin{itemize}
@@ -24,6 +53,7 @@ We summarize the conventions used throughout the main text.
     \item \textbf{Bottleneck regime.} For \(\ell\ge 2\), the representation dimension is \(\bm{d}_\ell=r\ll \bm{n}_\ell\). This induces an explicit \(1/r\) factor in the RF-LR NTK recursion at bottleneck layers.
     \item \textbf{Zonal kernels.} By rotational invariance of Gaussian features, base and derivative kernels depend on inputs only through the cosine similarity \(\rho=\langle x,x'\rangle/(\|x\|\,\|x'\|)\). For RKHS results we typically take \(x\in\mathbb{S}^{d-1}\).
     \item \textbf{Homogeneity.} We use Assumption~\ref{assump:homogeneous_activation} (positive 1-homogeneity) for Fisher--Kibble decoupling and for separating radial and angular components in three-layer calculations.
+    \item \textbf{Training data.} We assume training data are drawn from a distribution \(\mu\) on the input space (or on input--output pairs). For kernel gradient flow and condition-number statements we assume sufficiently many training samples so that the empirical Gram matrix and its spectrum approximate the population (kernel) quantities; precise sample-complexity bounds are left to future work.
 \end{itemize}
 
 \subsection{Finite-width empirical NTK and limiting gradient flow}\label{appendix:empirical-ntk-gradient-flow}
@@ -1305,7 +1335,7 @@ On that high-probability event the data are approximately equicorrelated, so the
 \end{proof}
 
 \paragraph{Terjék--González-Sánchez pipeline and RF-LR.}
-Terjék and González-Sánchez~\cite{terjek2025mlpsateoc} obtain sharp two-sided eigenvalue and condition-number bounds for full-width MLP NTKs via a three-step pipeline:
+~\cite{terjek2025mlpsateoc} obtain sharp two-sided eigenvalue and condition-number bounds for full-width MLP NTKs via a three-step pipeline:
 \begin{itemize}\setlength{\itemsep}{1pt}
   \item[(i)] Approximate NTK entries by an affine function of the inverse cosine distance \(\omega^{\circ(l-1)}(w)\);
   \item[(ii)] Show the inverse cosine distance matrix is close to an equicorrelated structure;

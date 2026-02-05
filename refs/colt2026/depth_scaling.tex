@@ -1,8 +1,7 @@
 \section{Depth scaling of the RF-LR NTK}\label{sec:depth-scaling}
+We state sharp depth scaling for the deterministic proxy kernel and condition-number bounds; under a fixed budget \(O(NLr)\), depth and rank commute from a conditioning perspective.
 
-\subsection{Main results}\label{subsec:rflr-terjek-generalization}
-
-\paragraph{Random correlations and deterministic proxy.}
+\paragraph{Random correlations and deterministic proxy.}\label{subsec:rflr-terjek-generalization}
 At each layer \( \ell \ge 2 \), the correlation \( \rho_\ell = \cos\angle(\bm{h}^{(\ell-1)}(x), \bm{h}^{(\ell-1)}(x')) \) is a \emph{random variable}: given the population correlation from the previous layer, Fisher's law and Lemma~\ref{lem:gaussian-sample-cosine} give \( \mathbb{E}[(\rho_\ell - \varrho(\rho_{\ell-1}))^2] \le C/r \) and \( \mathbb{P}(|\rho_\ell - \varrho(\rho_{\ell-1})| \ge t) \le 6\exp(-c\,r\,t^2) \), so fluctuations are \( O(1/\sqrt{r}) \) sub-Gaussian. The NTK recursion passes through this chain of random correlations. The \emph{deterministic proxy} replaces \( \rho_\ell \) by the deterministic iterates \( \rho_k = \varrho^{\circ(k-1)}(\rho_1) \) and analyzes the scalar recursion~\eqref{eq:rflr-scalar-mean-ntk-rec}; for large \(r\) the random kernel concentrates around the proxy (Appendix~\ref{appendix:random-correlation-chain}); a formal bound \(\|\hat{K}-K_{\mathrm{proxy}}\|_{\mathrm{op}}=o_P(1)\) as \(r\to\infty\) and its implication for empirical conditioning are given in Appendix~\ref{appendix:proxy-empirical-concentration}. In the equicorrelated case, a full proof yields \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) (Theorem~\ref{thm:equicorrelated-op-bound}). All condition-number statements in this section refer to the \emph{proxy} Gram matrix; we give a lower bound on its condition number and, in one special case, exact conditioning with high probability.
 
 \paragraph{Depth--rank scaling.}

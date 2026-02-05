@@ -12,7 +12,6 @@ Under NTK parameterization \( 1/\sqrt{\bm{n}_\ell} \) and a sequential limit \( 
 where the factor \( 1/r \) appears for bottleneck layers \( \ell \ge 2 \) (low-rank regime). For \( \ell=1 \), \( \Sigma^{(1)} \) is deterministic; for \( \ell>1 \), \( \Sigma^{(\ell)} \) and \( \dot{\Sigma}^{(\ell)} \) are random fields whose fluctuations shrink with the rank \( r \) of bottlenecks.
 The additive constant \(1\) term comes from the trained layer biases \(c^{(\ell)}\) and corresponds to the constant mode. For mean-zero targets (or after centering labels), the relevant spectrum is that of the kernel restricted to \(\mathbf{1}^\perp\), so \(\kappa_\perp\) is the quantity governing convergence; the constant mode then plays no role.
 
-\vspace{0.2cm}
 Furthermore, for a finite-width network initialized at random parameters \(\theta_0\), the empirical NTK \(\Kop^{(L)}_{\theta_0}\) is a \emph{random} kernel (a Gram operator of gradients). Consequently the kernel gradient flow trajectory \(t\mapsto f_t\) is also a random object (measurable with respect to \(\theta_0\)) and satisfies
 \[
 \frac{d}{dt}f_t(x) = -\int \Kop^{(L)}_{\theta_0}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
@@ -22,7 +21,6 @@ where \( \mu \) is the data distribution and \( y \) is the target function. In 
 
 Proof: See Appendix~\ref{appendix:proof-ntk-recursion}, Proof~\ref{proof:ntk_recursion}.
 
-\vspace{0.4cm}
 We can now derive an explicit closed-form expression for the NTK at any depth by expanding the recursion.
 
 \begin{corollary}[General L-layer NTK; closed form]\label{cor:general_L_layer_ntk}
@@ -38,15 +36,11 @@ where the first sum has bias contributions (empty product \( = 1 \) when \( \ell
 \label{proof:general_L_ntk_inline}
 Expanding the recursion in Theorem~\ref{thm:ntk_recursion} yields the two sums in \eqref{eq:ntk_explicit_form}. A complete proof by induction (including an explicit \(L=3\) expansion) is given in Appendix~\ref{appendix:proof-general-L}; see also Appendix~\ref{appendix:remark-2L-expansion}.
 \end{proof}
-
-\vspace{0.3cm}
 Finite-width corrections and comparison with the full-width MLP NTK at EOC are given in Appendix~\ref{appendix:finite-width-effects} and Appendix~\ref{appendix:classical-ntk-comparison} (Proposition~\ref{prop:mlp-eoc-ntk-formula}).
 
-\vspace{0.4cm}
 \subsection{Large-depth regime: probabilistic kernel and exponential decay}
 \label{subsec:large-depth}
+We summarize the probabilistic recursion and exponential depth suppression; full details are deferred to the appendix.
 
 The mean (probabilistic) recursion and the resulting nested conditional expectations are essential for understanding the deep (\(L\to\infty\)) behavior, but the full discussion is lengthy. We therefore defer the probabilistic recursion, its nested-expectation form, and the exponential depth-suppression bound to Appendix~\ref{appendix:probabilistic-recursion-details} (see also Appendix~\ref{appendix:open-directions} for related open problems).
-
-\vspace{0.4cm}
 The three-layer case admits a compact representation that makes the Fisher--Kibble structure explicit; we present it in Section~\ref{subsec:fisher-kibble-main}.
