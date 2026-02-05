@@ -105,7 +105,7 @@ def main() -> None:
     seed_init = 800
     target_type = "linear"  # "linear" or "quadratic"
 
-    ranks = [5, 10, 15, 20, 30, 50, 75, 100]
+    ranks = [5, 10, 15, 20, 30, 50, 75, 100, 200, 500, 1000]  # extend to reach ~e-3 risk
 
     rng_data = np.random.default_rng(seed_data)
     x_train = sample_unit_sphere(n=n_train, d=d, rng=rng_data)
@@ -154,15 +154,25 @@ def main() -> None:
         capsize=3,
         label="test MSE (mean $\\pm$ std)",
     )
-    ax.set_xlabel("bottleneck rank $r$")
-    ax.set_ylabel("test MSE (kernel ridge)")
+    r0, v0 = ranks[0], risks_mean[0]
+    r_ref = np.asarray(ranks, dtype=np.float64)
+    v_ref = v0 * (float(r0) / r_ref) ** 0.5  # slope -0.5 in log-log: ~ 1/sqrt(r) from 1st point
+    ax.plot(ranks, v_ref, linestyle="--", color="gray", linewidth=1.2, label=r"$\propto r^{-1/2}$ ref")
+    ax.set_ylim(bottom=2e-1)
+    ax.set_xlabel("bottleneck rank $r$", fontsize=10)
+    ax.set_ylabel("test MSE (kernel ridge)", fontsize=10)
     ax.set_title(
-        f"Kernel regression: RF-LR NTK, {target_type} target, $n$={n_train}, $d$={d}, $L$=2"
+        f"Kernel regression: RF-LR NTK, {target_type} target, $n$={n_train}, $d$={d}, $L$=2",
+        fontsize=10,
     )
+    ax.tick_params(axis="x", labelsize=9)
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.tick_params(axis="y", labelsize=4)
+    for label in ax.get_yticklabels():
+        label.set_fontsize(4)
     ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    ax.legend(loc="upper right", fontsize=10)
+    ax.legend(loc="upper right", fontsize=9)
     plt.tight_layout()
     out_dir = Path(__file__).resolve().parent
     plt.savefig(out_dir / "kernel_regression_risk_vs_r.png", dpi=300)

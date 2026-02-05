@@ -1,151 +1,120 @@
 \section{Experiments}\label{sec:experiments}
 
-This section presents numerical illustrations produced by the scripts in \texttt{experiments/ntkvariance/}. All scripts are headless (matplotlib ``Agg'' backend) and save figures next to the script; the figures below were copied into \texttt{refs/colt2026/figures/}. Setup: finite-width NTK scripts use a \textbf{3-layer (2 ReLU)} RF-LR architecture with hidden width 12000--20000 so that finite-width variance is small; deterministic proxy scripts iterate the recursion to large \(k\) (e.g.\ \(k_{\max}=4000\) or \(L=200\)). Bottleneck rank \(r\) is swept as indicated; \(n\) is the number of inputs, \(d\) the input dimension. Scripts in the first subsection are \textbf{deterministic}; the rest are \textbf{finite-width Monte Carlo} (they illustrate fluctuation scales and do not constitute proofs).
+This section presents numerical illustrations. All scripts are headless (matplotlib ``Agg'' backend). Setup: finite-width NTK scripts use a \textbf{3-layer (2 ReLU)} RF-LR architecture with hidden width 12000--20000 so that finite-width variance is small; deterministic proxy scripts iterate the recursion to large \(k\) (e.g.\ \(k_{\max}=4000\) or \(L=200\)). Bottleneck rank \(r\) is swept as indicated; \(n\) is the number of inputs, \(d\) the input dimension. Scripts in the first subsection are \textbf{deterministic}; the rest are \textbf{finite-width Monte Carlo} (they illustrate fluctuation scales and do not constitute proofs).
 
-\subsection{Deterministic mean-field / proxy depth scaling (Theorem~\ref{thm:rflr-depth-scaling-mean}, Corollary~\ref{cor:conditioning-equicorrelated-highdim})}
+\subsection{Correlation alignment and equicorrelated spectrum (Theorem~\ref{thm:rflr-depth-scaling-mean}, Corollary~\ref{cor:conditioning-equicorrelated-highdim})}
 
-\textbf{What is computed.} The deterministic ReLU EOC correlation recursion \(\rho_k=\varrho(\rho_{k-1})\) and the proxy NTK recursion \(\Theta^{(1)}(\rho_1)=1+s(\rho_1)\), \(\Theta^{(k)}(\rho_1)=1+\frac{1}{r}\Theta^{(k-1)}(\rho_1)\dot{s}(\rho_k)+\frac{1}{r}s(\rho_k)\) for \(k\ge 2\). Diagnostics: \(w_k/k\), \(k|\Theta^{(k)}-\Theta_\star(r)|\), \(rk(\Theta_{\mathrm{diag}}^{(k)}-\Theta_{\mathrm{off}}^{(k)})\). For the equicorrelated model, explicit eigenvalues \(\lambda_1=\Theta^{(L)}(1)+(n-1)\Theta^{(L)}(\rho_0)\), \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\) (e.g.\ \(n=64\), \(\rho_0=0\)).
+\textbf{What is computed.} Deterministic ReLU EOC correlation recursion \(\rho_k=\varrho(\rho_{k-1})\) and proxy NTK recursion; diagnostics \(w_k/k\), \(k|\Theta^{(k)}-\Theta_\star(r)|\), \(rk(\Theta_{\mathrm{diag}}^{(k)}-\Theta_{\mathrm{off}}^{(k)})\). For the equicorrelated model, eigenvalues \(\lambda_1=\Theta^{(L)}(1)+(n-1)\Theta^{(L)}(\rho_0)\), \(\lambda_\perp=\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\) (e.g.\ \(n=64\), \(\rho_0=0\)).
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.71\textwidth]{confirm_thm15}
+  \includegraphics[width=0.9\textwidth]{confirm_thm15}
   \caption{Three panels (Theorem~\ref{thm:rflr-depth-scaling-mean}): (1) \(w_k/k\) vs \(k\) (stabilizes); (2) \(k|\Theta^{(k)}(\rho_1)-\Theta_\star(r)|\) vs \(k\) (bounded); (3) \(rk(\Theta_{\mathrm{diag}}^{(k)}-\Theta_{\mathrm{off}}^{(k)})\) vs \(k\) (stabilizes). One curve per rank \(r\in\{5,10,20,50\}\).}
   \label{fig:confirm_thm15}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.71\textwidth]{confirm_prop17}
+  \includegraphics[width=0.45\textwidth]{one_minus_rho_vs_depth_loglog}
+  \caption{Correlation alignment along depth: \(1-\rho_k=O(k^{-2})\) (log--log) as in Theorem~\ref{thm:rflr-depth-scaling-mean}.}
+  \label{fig:rho_vs_depth}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.99\textwidth]{confirm_prop17}
   \caption{Equicorrelated spectrum (Corollary~\ref{cor:conditioning-equicorrelated-highdim}): (1) spike saturation \(L|\lambda_1/n-\Theta_\star(r)|/n\) vs \(L\) (log--log); (2) gap scaling \(rL\lambda_\perp\) vs \(L\) (log--log). One curve per \(r\).}
   \label{fig:confirm_prop17}
 \end{figure}
 
+\subsection{Product decay and entry variance}
+
+\textbf{What is computed.} \textbf{Left:} Deterministic product \(\prod_{k=\ell+1}^L \dot{\Sigma}^{(k)}/r\) vs \(j=L-\ell\) (exponential-in-depth suppression, Eq.~\ref{eq:ntk_explicit_form}). \textbf{Right:} Monte Carlo \(\mathrm{Var}[K(-1,1)]\) vs \(r\) over 100 initializations (3-layer RF-LR, width 16000); rank-driven concentration (Section~\ref{sec:no-rkhs-advantage}).
+
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.64\textwidth]{decay_vs_depth}
-  \caption{Product \(\prod_{k=\ell+1}^L \dot{\Sigma}^{(k)}/r\) vs \(j=L-\ell\) (semilogy), compared to the bound \((c_0/r)^j\). Exponential-in-depth suppression (Eq.~\ref{eq:ntk_explicit_form}).}
-  \label{fig:decay_vs_depth}
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{decay_vs_depth}
+    \caption*{Product decay vs depth; bound \((c_0/r)^j\).}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{variance_vs_r}
+    \caption*{Entry variance vs \(r\); \(\propto 1/r\) baseline.}
+  \end{minipage}
+  \caption{Left: depth suppression (deterministic). Right: entry-wise variance (finite-width Monte Carlo).}
+  \label{fig:decay_and_variance}
 \end{figure}
 
+\subsection{Smallest eigenvalue (finite-width Monte Carlo)}
+
+\textbf{What is computed.} Fixed random dataset on the unit sphere (\(n=64\), \(d=16\)); empirical Gram \(K\), centered \(K_c=HKH\); \(\lambda_{\min}^+(K_c)\) over 50 initializations, \(r\in\{5,10,20,50,100,200,500,1000\}\). Illustrates smallest eigenvalue driven close to 0 by finite-width noise (Appendix~\ref{rmk:lambda-min-negative-appendix}).
+
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.56\textwidth]{rho_vs_depth}
-  \caption{\(\rho_k\) vs \(k\). Correlation aligns to 1 along depth (ReLU EOC path). From \texttt{scalingdepth.py} (\(L=200\), \(c_0=1/2\)).}
-  \label{fig:rho_vs_depth}
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{min_eig_distribution}
+    \caption*{Histograms of \(\lambda_{\min}^+(HKH)\); matrix stays PSD.}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{min_eig_mean_vs_r}
+    \caption*{Mean \(\lambda_{\min}^+(HKH)\) vs \(r\); better conditioning with \(r\).}
+  \end{minipage}
+  \caption{Distribution and mean of smallest positive centered eigenvalue vs \(r\).}
+  \label{fig:min_eig_pair}
 \end{figure}
 
+\subsection{Condition number \(\kappa\) (proxy vs empirical; equicorrelated, high-dim, non-equicorrelated)}
+
+\textbf{What is computed.} Condition number on \(\mathbf{1}^\perp\) vs \(r\). \textbf{Equicorrelated:} \(n=32\), \(d=64\), \(\rho_0=0\); proxy \(\kappa_\perp=1\) (Corollary~\ref{cor:conditioning-equicorrelated-highdim}); empirical mean \(\pm\) std over 40 initializations (Theorem~\ref{thm:equicorrelated-op-bound}). \textbf{High-dim spherical:} i.i.d.\ uniform on \(S^{d-1}\), \(d=256,128\); \(\kappa_\perp\approx 1\). \textbf{Non-equicorrelated:} Clustered design (4 clusters), \(n=48\), \(d=64\), 30 trials; \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}).
+
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.56\textwidth]{one_minus_rho_vs_depth_loglog}
-  \caption{\(1-\rho_k\) vs \(k\) (log--log) with \(k^{-2}\) reference. Consistent with Theorem~\ref{thm:rflr-depth-scaling-mean}: \(1-\rho_k=O(k^{-2})\).}
-  \label{fig:one_minus_rho_vs_depth_loglog}
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{condition_number_proxy_vs_empirical}
+    \caption*{Equicorrelated: proxy 1; empirical concentrates.}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{condition_number_highdim_spherical}
+    \caption*{High-dim spherical: \(\kappa_\perp\approx 1\).}
+  \end{minipage}
+  \caption{Condition number on \(\mathbf{1}^\perp\): equicorrelated and high-dimensional spherical data.}
+  \label{fig:condition_number_equi_highdim}
 \end{figure}
 
-\subsection{Finite-width Monte Carlo: variance of a single NTK entry}
+\subsection{Non-equicorrelated \(\kappa\) and kernel regression risk}
 
-\textbf{What is computed.} Monte Carlo over random initializations of a 3-layer (2-ReLU) RF-LR network: \(\mathrm{Var}[K(-1,1)]\) vs \(r\) (log--log). Two inputs \(x=-1\), \(x'=1\); width 16000; 100 trials. \textbf{Paper link:} rank-driven concentration (Section~\ref{sec:no-rkhs-advantage}, Appendix concentration bounds).
+\textbf{Left:} Condition number vs \(r\) for clustered (non-equicorrelated) data; \(\kappa\) need not approach 1 (Proposition~\ref{prop:condition-number-depth}). \textbf{Right:} Kernel ridge regression with the empirical RF-LR NTK: fix a target on the sphere, 64 train / 256 test, \(d=32\), 20 trials; as \(r\) grows the Gram concentrates toward the proxy, so test MSE and its variance across trials decrease, linking conditioning and concentration to downstream risk.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\textwidth]{variance_vs_r}
-  \caption{\(\mathrm{Var}[K(-1,1)]\) vs \(r\) with \(\propto 1/r\) baseline. Entry-wise variance decreases with \(r\) (rank-driven concentration).}
-  \label{fig:variance_vs_r}
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{condition_number_non_equicorrelated}
+    \caption*{\(\kappa\) vs \(r\), non-equicorrelated; \(\kappa\ge\Omega(r\cdot L)\).}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{kernel_regression_risk_vs_r}
+    \caption*{Test MSE vs \(r\); mean risk and std drop with \(r\).}
+  \end{minipage}
+  \caption{Left: \(\kappa\) vs \(r\) for clustered (non-equicorrelated) data; \(\kappa\) need not approach 1 (Proposition~\ref{prop:condition-number-depth}). Right: Test MSE of kernel ridge regression vs \(r\); as \(r\) grows and the Gram concentrates toward the proxy, mean risk decreases and std across trials drops.}
+  \label{fig:kappa_and_kernel_regression}
 \end{figure}
 
-\subsection{Finite-width Monte Carlo: distribution of smallest centered eigenvalue}
+\subsection{RKHS Puiseux exponent vs depth (Corollary~\ref{thm:no_rkhs_advantage}, extension to \(L\ge 4\))}
 
-\textbf{What is computed.} For a fixed random dataset on the unit sphere (\(n=64\), \(d=16\)), build the empirical Gram \(K\), center \(K_c=HKH\), and record \(\lambda_{\min}^+(K_c)\) (smallest strictly positive eigenvalue; centering forces one zero eigenvalue). Monte Carlo over 50 initializations; \(r\in\{5,10,20,50,100,200,500,1000\}\). Illustrates the remark that the smallest eigenvalue can be driven close to 0 by finite-width noise (Appendix~\ref{rmk:lambda-min-negative-appendix}).
+For zonal kernels on the sphere, the RKHS is controlled by the Puiseux exponent \(\gamma\) at the endpoint \(\rho=1\): if \(K(1-t)-K(1)\sim c\cdot t^\gamma\) for small \(t\), then \(\gamma\) determines the RKHS~\cite{bietti2021deepequalsshallowrelu}. The paper proves \(\gamma=1/2\) for the mean three-layer RF-LR kernel (same as shallow ReLU); extension to \(L\ge 4\) is open. We estimate \(\gamma(L)\) for the deterministic proxy \(\Theta^{(L)}(\rho)\) via log--log regression of the gap \(\Theta^{(L)}(1)-\Theta^{(L)}(1-t)\) vs \(t\). For \(L\in\{2,3,4,5,6\}\) we obtain \(\gamma(L)\approx 0.52\)--\(0.55\) with \(R^2>0.999\), suggesting the proxy's endpoint behavior is consistent with RKHS equivalence extending to \(L\ge 4\).
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.68\textwidth]{min_eig_distribution}
-  \caption{Histograms of \(\lambda_{\min}^+(HKH)\) over random initializations, for several \(r\). Distribution can be driven close to zero (matrix stays PSD).}
-  \label{fig:min_eig_distribution}
+  \includegraphics[width=0.85\textwidth]{rkhs_puiseux_exponent_vs_depth}
+  \caption{RKHS Puiseux exponent vs depth. Left: estimated \(\gamma(L)\) vs \(L\); reference \(\gamma=1/2\) (ReLU RKHS). Right: log--log gap vs \(t\) for \(L=2\) and \(L=6\). The proxy kernel exhibits \(\gamma\approx 1/2\) for \(L\ge 2\), consistent with RKHS equivalence extending beyond three layers.}
+  \label{fig:rkhs_puiseux_depth}
 \end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{min_eig_mean_vs_r}
-  \caption{Mean of \(\lambda_{\min}^+(HKH)\) vs \(r\) (log scale). Smallest positive eigenvalue increases or stabilizes with \(r\) (better conditioning).}
-  \label{fig:min_eig_mean_vs_r}
-\end{figure}
-
-\subsection{Condition number: proxy vs empirical (equicorrelated and high-dim spherical)}
-
-\textbf{What is computed.} \textbf{Equicorrelated:} Proxy Gram has \(\kappa_\perp=1\) on \(\mathbf{1}^\perp\) (Corollary~\ref{cor:conditioning-equicorrelated-highdim}). Script computes condition number of the \emph{centered} empirical Gram vs \(r\), mean and std over 40 initializations; \(n=32\), \(d=64\), \(\rho_0=0\). Validates concentration around 1 (Theorem~\ref{thm:equicorrelated-op-bound}). \textbf{High-dim spherical:} Same plot for i.i.d.\ uniform points on \(S^{d-1}\) with \(d=256,128\); \(\max_{i\neq j}|\rho_{ij}|=O(1/\sqrt{d})\) w.h.p., so data are approximately equicorrelated.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.64\textwidth]{condition_number_proxy_vs_empirical}
-  \caption{Condition number on \(\mathbf{1}^\perp\) vs \(r\), equicorrelated data. Proxy fixed at 1; empirical mean \(\pm\) std concentrates as \(r\) grows.}
-  \label{fig:condition_number_proxy_vs_empirical}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.64\textwidth]{condition_number_highdim_spherical}
-  \caption{Same \(\kappa\) vs \(r\) for i.i.d.\ uniform on \(S^{d-1}\), \(d=256\) and \(d=128\). \(\kappa_\perp\approx 1\), empirical \(\kappa\) concentrates (Corollary~\ref{cor:conditioning-equicorrelated-highdim}).}
-  \label{fig:condition_number_highdim_spherical}
-\end{figure}
-
-\subsection{Condition number: non-equicorrelated data (Proposition~\ref{prop:condition-number-depth})}
-
-\textbf{What is computed.} Condition number vs \(r\) for a \textbf{clustered} design (e.g.\ 4 clusters) with varying \(\rho_{ij}\). \(n=48\), \(d=64\), 30 trials; \(r\) swept to \(10^4\)--\(10^5\). Illustrates that \(\kappa\) need not approach 1 and the lower bound \(\kappa\ge\Omega(r\cdot L)\) can be large.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.64\textwidth]{condition_number_non_equicorrelated}
-  \caption{\(\kappa\) vs \(r\) for clustered (non-equicorrelated) data. Contrast with equicorrelated: \(\kappa\) can remain large (Proposition~\ref{prop:condition-number-depth}).}
-  \label{fig:condition_number_non_equicorrelated}
-\end{figure}
-
-\subsection{Kernel regression risk and analytic Fisher/Kibble constants}
-
-\textbf{Kernel regression:} Fix a target (linear or low-degree polynomial on the sphere); fit kernel ridge regression with the empirical RF-LR NTK Gram; plot test MSE vs \(r\). 64 train, 256 test, \(d=32\), 20 trials. Validates that as \(r\) grows and the Gram concentrates, risk improves. \textbf{Fisher/Kibble:} Closed-form curves (no sampling): Fisher density \(p(\hat{\rho}\mid \rho,r)\) (\({}_2F_1\)), Kibble joint density (modified Bessel \(I_\nu\)). \textbf{\(I(r)\) and spectral decay:} \(I(r)\) and \(\sqrt{r}\,I(r)\) vs \(r\); \(|2c_1(r)|\) (Puiseux spectral-decay amplitude). Paper: Remark~\ref{rmk:fisher-kibble-law}, Section~\ref{appendix:I-r-scaling}.
-
-\IfFileExists{figures/kernel_regression_risk_vs_r.png}{%
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{kernel_regression_risk_vs_r}
-  \caption{Test MSE of kernel ridge regression vs \(r\). Performance improves as the Gram concentrates toward the proxy.}
-  \label{fig:kernel_regression_risk_vs_r}
-\end{figure}%
-}{}
-
-\IfFileExists{figures/fisher_density_curves.png}{%
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.56\textwidth]{fisher_density_curves}
-  \caption{Fisher density \(p(\hat{\rho}\mid \rho,r)\) (closed form). Analytic correlation distribution used in concentration (Remark~\ref{rmk:fisher-kibble-law}).}
-  \label{fig:fisher_density_curves}
-\end{figure}%
-}{}
-
-\IfFileExists{figures/kibble_density_contours.png}{%
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.56\textwidth]{kibble_density_contours}
-  \caption{Kibble joint density contours (closed form). Radial part of Fisher--Kibble decoupling.}
-  \label{fig:kibble_density_contours}
-\end{figure}%
-}{}
-
-\IfFileExists{figures/I_of_r_scaling.png}{%
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.34\textwidth]{I_of_r_scaling}
-  \hfill
-  \includegraphics[width=0.34\textwidth]{sqrt_r_I_of_r}
-  \caption{Left: \(I(r)\) vs \(r\). Right: \(\sqrt{r}\,I(r)\) vs \(r\). \(I(r)\sim C/\sqrt{r}\); \(\sqrt{r}\,I(r)\) stabilizes (Section~\ref{appendix:I-r-scaling}).}
-  \label{fig:I_of_r_scaling}
-\end{figure}%
-}{}
-
-\IfFileExists{figures/spectral_decay_prefactor_vs_r.png}{%
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{spectral_decay_prefactor_vs_r}
-  \caption{\(|2c_1(r)|\) (spectral-decay amplitude) vs \(r\). Puiseux/RKHS \(r\)-dependent prefactor.}
-  \label{fig:spectral_decay_prefactor_vs_r}
-\end{figure}%
-}{}

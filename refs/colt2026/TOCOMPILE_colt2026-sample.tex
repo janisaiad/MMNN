@@ -10,6 +10,7 @@
 \usepackage{bm}
 \usepackage{tikz}
 \usetikzlibrary{positioning, fit}
+\usepackage{float}
 \graphicspath{{figures/}}
 
 \DeclareRobustCommand{\ReLU}{\mathrel{\boldsymbol{\sigma}}}
@@ -17,7 +18,7 @@
 
 \newtheorem{assumption}{Assumption}
 
-\title[Low rank is enough for the NTK]{Low rank is enough for the neural tangent kernel: depth--rank tradeoff in neural network optimization}
+\title[Low rank is enough for the NTK]{Low rank is enough for the neural tangent kernel: depth and rank commutes for lazy training}
 
 \coltauthor{%
   \Name{Janis (Heran) Aiad}\thanks{This work was completed by J.H-A. during an undergraduate internship at University of Maryland.}\\
@@ -35,9 +36,9 @@
 \maketitle
 
 \begin{abstract}
-Deep networks with low-rank bottlenecks (RF-LR) drastically cut trainable parameters by freezing random feature maps and training only narrow readouts of dimension \(r\ll N\) per layer. In the lazy/NTK regime, training reduces to kernel regression, so the spectrum of the neural tangent kernel controls convergence and stability. We study how depth \(L\) and bottleneck rank \(r\) shape this kernel: we take the sequential infinite-width limit \(N\to\infty\), then analyze how the remaining randomness concentrates as \(r\to\infty\).
+In the lazy regime, training deep neural networks reduces to kernel regression, and the spectrum of the neural tangent kernel (NTK) controls convergence and stability. To reduce parameters, one can use low-rank structure and random features: deep networks with low-rank bottlenecks (RF-LR) freeze random feature maps and train only narrow readouts of dimension \(r\ll N\) per layer. We study how depth \(L\) and bottleneck rank \(r\) shape this kernel: we take the sequential infinite-width limit \(N\to\infty\), then analyze how the remaining randomness concentrates as \(r\to\infty\).
 
-We give an explicit \emph{new} NTK recursion for RF-LR with a visible \(1/r\) factor at each bottleneck layer and a closed-form expansion at any depth. For the deterministic mean (proxy) kernel we prove sharp depth scaling: correlations align to \(1\) at rate \(O(k^{-2})\), the kernel magnitude saturates, and the diagonal--off-diagonal gap decays as \(\asymp 1/(rk)\). We prove a condition-number lower bound \(\kappa\ge\Omega(r\cdot L)\) for the proxy Gram matrix in general, showing that rank and depth commute for low-rank networks from an optimization perspective. For high-dimensional spherical data we obtain \emph{exact} conditioning \(\kappa_\perp=1+o(1)\) with full proof in the appendix. For the three-layer network we show that \emph{low rank does not shrink the kernel function class}: the mean RF-LR kernel induces the same RKHS as the shallow ReLU kernel via a non-integer Taylor series at the endpoint, so expressivity is preserved while trainable parameters drop from \(O(LN^2)\) to \(O(LrN)\). We link the \(I(r)\sim 1/\sqrt{r}\) scaling to \(1/\sqrt{r}\) sub-Gaussian concentration of the empirical kernel around the proxy and prove a rigorous proxy--empirical bound (Appendix~\ref{appendix:proxy-empirical-concentration}). All condition-number statements refer to the proxy; we do not claim these bounds govern optimization dynamics.
+We derive an explicit \emph{new} NTK recursion for RF-LR with a visible \(1/r\) factor at each bottleneck layer and a closed-form expansion at any depth. For the deterministic mean (proxy) kernel we prove sharp depth scaling---correlations align to \(1\) at rate \(O(k^{-2})\) (same as for MLPs at the edge of chaos), the kernel magnitude saturates, and the diagonal--off-diagonal gap decays as \(\asymp 1/(rk)\)---and we give condition-number bounds: \(\kappa\ge\Omega(r\cdot L)\) in general, and \(\kappa_\perp=1\) or \(\kappa_\perp=1+o(1)\) for equicorrelated or high-dimensional spherical data (full proof in the appendix). Under a fixed parameter budget \(O(NLr)\), depth and rank trade off, and from a conditioning perspective they commute. A main message is that \emph{low rank does not shrink the kernel function class}: for the three-layer network, the mean RF-LR kernel induces the same RKHS as the shallow ReLU kernel, so expressivity is preserved while trainable parameters drop from \(O(LN^2)\) to \(O(LrN)\). We prove a rigorous proxy--empirical bound for equicorrelated data (Appendix~\ref{appendix:proxy-empirical-concentration}); for general (non-equicorrelated) data the concentration is sketched and left open. We also link the \(I(r)\sim 1/\sqrt{r}\) scaling to \(1/\sqrt{r}\) sub-Gaussian concentration of the empirical kernel around the proxy. Numerical experiments (Appendix~\ref{sec:experiments}) confirm the depth scaling, conditioning bounds, and proxy--empirical concentration. All condition-number statements refer to the proxy kernel; we see strong experimental agreement with our theory and proxy predictions, and exact RKHS equivalence holds for three layers, with extension to depth \(L\ge 4\) left to future work.
 \end{abstract}
 
 \begin{keywords}

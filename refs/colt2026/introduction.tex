@@ -1,23 +1,10 @@
 
 \section{Introduction}
 
-Low-rank random-feature networks (RF-LR) freeze random feature directions and train only linear readouts (and biases) into a bottleneck of dimension \(r\ll N\) at each layer~\cite{zhang2025structuredbalancedmulticomponentmultilayer}.
-In the lazy/NTK regime, training linearizes and reduces to kernel regression with an (approximately) fixed Gram matrix~\cite{jacot2018neural}.
-This paper asks: \emph{how do depth \(L\) and bottleneck dimension \(r\) control conditioning-relevant scales for optimization in kernel regression?}
-We adopt the standard NTK setup (ReLU activation, isotropic Gaussian initialization, sequential infinite-width limit) and analyze the induced kernel at initialization.
+In the lazy/NTK regime, training deep neural networks linearizes and reduces to kernel regression with an (approximately) fixed Gram matrix~\cite{jacot2018neural}. To reduce parameters, one can factorize weights as \(W=LR^\top\) with \(r\ll\min\{n,m\}\); a central question is whether such factorizations preserve favorable optimization and convergence~\cite{zhang2025structuredbalancedmulticomponentmultilayer}. We combine this with the random-feature lazy regime: we freeze the feature (left) directions and train only the readout (right) factors into a bottleneck of dimension \(r\) per layer. That combination defines the RF-LR architecture studied in this paper: RF-LR freezes random feature directions and trains only linear readouts (and biases) into a bottleneck of dimension \(r\ll N\) at each layer. This paper asks: \emph{how do depth \(L\) and bottleneck dimension \(r\) control conditioning-relevant scales for optimization under the NTK perspective?} We adopt the standard NTK setup (ReLU activation, isotropic Gaussian initialization, sequential infinite-width limit) and analyze the induced kernel at initialization.
 
-\paragraph{Main results and contributions.}
-In the lazy/NTK regime, gradient flow reduces to kernel regression with an (approximately) fixed kernel~\cite{jacot2018neural}. Our contributions are:
-\begin{itemize}
-    \item \textbf{Explicit NTK recursion and closed form.} We derive the infinite-width NTK recursion for RF-LR with an explicit \(1/r\) factor at each bottleneck layer and a closed-form \(L\)-layer expansion (Theorem~\ref{thm:ntk_recursion}, Corollary~\ref{cor:general_L_layer_ntk}).
-    \item \textbf{Depth scaling and condition number.} For the deterministic proxy kernel we prove sharp depth scaling: correlation alignment \(1-\rho_k=\Theta(k^{-2})\), kernel saturation to a fixed point, and diagonal--off-diagonal gap \(\asymp 1/(rk)\) (Theorem~\ref{thm:rflr-depth-scaling-mean}). We prove a condition-number \emph{lower bound} \(\kappa\ge\Omega(r\cdot L)\) for the proxy Gram in general (Proposition~\ref{prop:condition-number-depth}), and \emph{exact} conditioning \(\kappa_\perp=1\) or \(\kappa_\perp=1+o(1)\) for equicorrelated or high-dimensional spherical data (Corollary~\ref{cor:conditioning-equicorrelated-highdim}). Depth and rank thus trade off under a fixed parameter budget.
-    \item \textbf{RKHS equivalence (three layers).} We show that the mean three-layer RF-LR kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}): the bottleneck does not shrink the kernel-regime function class, while reducing trainable parameters from \(O(LN^2)\) to \(O(LrN)\) per layer. The proof uses Fisher--Kibble decoupling and a Puiseux expansion at the endpoint; extension to \(L\ge 4\) remains open.
-\end{itemize}
-All condition-number bounds refer to the proxy Gram matrix; we give a rigorous proxy--empirical bound on \(\mathbf{1}^\perp\) for equicorrelated data (Theorem~\ref{thm:equicorrelated-op-bound}). Proof sketch: Appendix~\ref{appendix:techniques-proof-sketch}.
+The architecture stacks high-then-low width layers with a bottleneck \(r\ll n_1\); we train readouts and biases while keeping feature directions frozen. In the kernel regime, the Gram matrix spectrum controls optimization rates~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}. We characterize limiting kernels and spectra under a composition-of-GPs view in the sequential infinite-width limit. Figure~\ref{fig:RF-LR_architecture} illustrates the layout.
 
-\subsection{Architecture}
-The architecture stacks high-then-low width layers with a bottleneck \(r\ll n_1\); we train readouts and biases while keeping feature directions frozen.
-In the kernel regime, the Gram matrix spectrum controls optimization rates~\cite{jacot2018neural,cao2020understandingspectralbiasdeep}. We characterize limiting kernels and spectra under a composition-of-GPs view in the sequential infinite-width limit.
 \begin{figure}[htbp]
     \centering
     \begin{tikzpicture}[
@@ -96,9 +83,9 @@ In the kernel regime, the Gram matrix spectrum controls optimization rates~\cite
     \node at (12,-2) {$d_L = k$};
     % Mathematical notation
     \node at (1.5,3) {$\bm{W}^{(1)}$};
-    \node[yshift=2cm] at (4.5,2) {$\bm{A}^{(1)}$};
+    \node[yshift=2cm] at (4.5,1) {$\bm{A}^{(1)}$};
     \node at (7.5,2) {$\bm{W}^{(2)}$};
-    \node[yshift=2cm] at (10.5,1.5) {$\bm{A}^{(2)}$};
+    \node[yshift=2cm] at (10.5,0.5) {$\bm{A}^{(2)}$};
     % Highlight low rank structure
     \draw[red, thick, dashed] (5.5,1.5) rectangle (6.5,-0.75);
     \node[red] at (6,-2.5) {\textbf{Low Rank}};
@@ -111,5 +98,15 @@ In the kernel regime, the Gram matrix spectrum controls optimization rates~\cite
 \subsection{Related work}
 The NTK framework~\cite{jacot2018neural} characterizes infinitely wide networks as kernel methods. Extensions cover finite-width corrections~\cite{arora2019exact,dyer2019asymptoticswidenetworksfeynman}, depth scaling~\cite{yang2019scaling,terjek2022depth}, and RMT limits for Gram spectra in the extensive-width regime (\(n\sim N^2\), layers in the RMT limit)~\cite{benigni2025eigenvaluedistributionneuraltangent}. Low-rank architectures reduce parameters and change optimization dynamics~\cite{sainath2013low,novikov2015tensorizing,arora2018optimization}; freezing features isolates \(r\) as the key control parameter. LoRA theory situates low-rank fine-tuning between kernel and feature-learning regimes~\cite{dayi2024gradientdynamicslowrankfinetuning,jang2024loratrainingntkregime}. For ReLU kernels, Bietti and Bach~\cite{bietti2021deepequalsshallowrelu} established the ``deep equals shallow'' RKHS phenomenon via endpoint expansions; we combine Fisher--Kibble decoupling~\cite{fisher1915probable,hotelling1953new} with a Puiseux analysis near \(\rho=1\).
 
-\paragraph{Scope, regime, roadmap.}
+Depth analyses for fully trained MLPs at the edge of chaos~\cite{terjek2025mlpsateoc,pmlr-v163-hayou22a} show that increasing depth drives correlations toward \(1\), so layerwise kernels become nearly constant and the deep mean kernel approaches a rank-one structure. The same qualitative picture holds in RF-LR; the mean-kernel infinite-depth limit collapses after centering unless one rescales time or learning rate (Appendix~\ref{appendix:infinite-depth-limit}). Freezing the random features removes some cross-layer dependencies present in fully trained networks; together with Fisher--Kibble decoupling, this yields explicit formulas and suggests a path toward joint large-\(n\) regimes via the RMT extensive-width framework~\cite{benigni2025eigenvaluedistributionneuraltangent}. The recursion (Theorem~\ref{thm:ntk_recursion}) also suggests organizing finite-width corrections as an expansion in the bottleneck dimension \(r\). Natural connections for future work include tensor programs~\cite{yang2020tensorprogramsiineural} and depth-dependent NTK spectral analyses for MLPs at the edge of chaos~\cite{terjek2025mlpsateoc}, while retaining explicit control of the bottleneck scaling.
+
+In the lazy/NTK regime, gradient flow reduces to kernel regression with an (approximately) fixed kernel~\cite{jacot2018neural}. Our contributions are:
+\begin{itemize}
+    \item \textbf{Explicit NTK recursion and closed form.} We derive the infinite-width NTK recursion for RF-LR with an explicit \(1/r\) factor at each bottleneck layer and a closed-form \(L\)-layer expansion (Theorem~\ref{thm:ntk_recursion}, Corollary~\ref{cor:general_L_layer_ntk}).
+    \item \textbf{Depth scaling and condition number.} For the deterministic proxy kernel we prove sharp depth scaling: correlation alignment \(1-\rho_k=\Theta(k^{-2})\) (the same as for full-width MLPs at the edge of chaos~\cite{terjek2025mlpsateoc,pmlr-v163-hayou22a}), kernel saturation to a fixed point, and diagonal--off-diagonal gap \(\asymp 1/(rk)\) (Theorem~\ref{thm:rflr-depth-scaling-mean}). We prove a condition-number \emph{lower bound} \(\kappa\ge\Omega(r\cdot L)\) for the proxy Gram in general (Proposition~\ref{prop:condition-number-depth}), and \emph{exact} conditioning \(\kappa_\perp=1\) or \(\kappa_\perp=1+o(1)\) for equicorrelated or high-dimensional spherical data (Corollary~\ref{cor:conditioning-equicorrelated-highdim}). Under a fixed parameter budget \(O(NLr)\), depth and rank thus trade off from a conditioning perspective.
+    \item \textbf{RKHS equivalence (three layers).} We show that the mean three-layer RF-LR kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}): the bottleneck does not shrink the kernel-regime function class, while reducing trainable parameters from \(O(LN^2)\) to \(O(LrN)\) per layer. The proof uses Fisher--Kibble decoupling and a Puiseux expansion at the endpoint; extension to \(L\ge 4\) remains open.
+    \item \textbf{Numerical experiments.} Appendix~\ref{sec:experiments} presents deterministic and finite-width experiments that confirm the depth scaling (Theorem~\ref{thm:rflr-depth-scaling-mean}), equicorrelated and high-dimensional conditioning (Corollary~\ref{cor:conditioning-equicorrelated-highdim}), and proxy--empirical concentration (Theorem~\ref{thm:equicorrelated-op-bound}); non-equicorrelated data illustrate the \(\kappa\ge\Omega(r\cdot L)\) lower bound (Proposition~\ref{prop:condition-number-depth}).
+\end{itemize}
+All condition-number bounds refer to the proxy Gram matrix; we give a rigorous proxy--empirical bound on \(\mathbf{1}^\perp\) for equicorrelated data (Theorem~\ref{thm:equicorrelated-op-bound}). Proof sketch: Appendix~\ref{appendix:techniques-proof-sketch}.
+
 We study the RF-LR NTK in the sequential infinite-width limit and its deterministic proxy; we do not analyze feature learning, adaptive optimizers, or continual learning. Regime: fix \(n\), take \(N\to\infty\), then study concentration as \(r\to\infty\); we do not pursue \(n\to\infty\) bulk spectral laws here. Sections~\ref{sec:network-definition}--\ref{sec:no-rkhs-advantage} define the architecture, derive the recursion, state depth--rank scaling, and give the RKHS identification.
