@@ -45,7 +45,7 @@ The model is a \textbf{matrix-rank neural network (MMNN)}: input and output dime
 We use \textbf{1-dimensional} regression for three reasons that are standard in mean-field and optimization analyses of low-rank networks. \textbf{(i) Mean-field parameterization and convergence of $\E_Z[\cdot]$:} the training dynamics in the mean-field width limit are expressed in terms of expectations over the data distribution, $\E_Z[\cdot]$. With 1D input we can use \emph{large sample sizes} (e.g.\ $N_{\mathrm{train}} = 768$ or several thousand) so that empirical averages over the training set approximate these expectations well; optimization dynamics are then not confounded by overfitting or sample-complexity effects, and the finite-width behavior is close to the mean-field limit. \textbf{(ii) Controlled hierarchical frequency learning:} a frequency-dependent target on $[-1,1]$ (e.g.\ sum of cosines) provides a controlled setting to study how the loss landscape and feature learning interact across frequency bands---with a direct link to tractable toy models (e.g.\ two-point support) and to the interpretation that each sharp loss drop corresponds to capturing a new frequency. \textbf{(iii) Interpretability:} 1D allows clear visualization and quantification of channel specialization (spatial location and frequency) and of observables such as the log-ratio evolution and the number of minima per partial-function component.
 
 \subsection{Training protocol and observables}
-The initial learning rate is $10^{-2}$. The schedule is \textbf{adaptive stagnation}: over a sliding window of 10 epochs, if the mean training loss does not improve compared to the previous window, and at least 20 epochs have passed since the last reduction, the learning rate is replaced by the next value in a precomputed sequence (divide by $2$ each step, 25 steps; training stops if LR falls below $10^{-6}$). At each LR reduction, the script saves (i) the model state \emph{just before} the divide and (ii) the state \emph{10 epochs after} the divide. The reported figures compare these checkpoints: \textbf{loss} (training curve), \textbf{fit} (prediction vs.\ target), and \textbf{partial functions} (channel outputs at selected layers). Runs are produced by \texttt{experiments/table/run\_selected\_sumcos\_configs.py}; configs are in \texttt{results\_sumcos\_selected\_rerun/f3\_N768\_bs8\_L2/config.json} (and similarly for $L=3$). Max epochs 10,000; seed 42. See Appendix for full parameterization.
+The initial learning rate is $10^{-2}$. The schedule is \textbf{adaptive stagnation}: over a sliding window of 10 epochs, if the mean training loss does not improve compared to the previous window, and at least 20 epochs have passed since the last reduction, the learning rate is replaced by the next value in a precomputed sequence (divide by $2$ each step, 25 steps; training stops if LR falls below $10^{-6}$). At each LR reduction, the script saves (i) the model state \emph{just before} the divide and (ii) the state \emph{10 epochs after} the divide. The reported figures compare these checkpoints: \textbf{loss} (training curve), \textbf{fit} (prediction vs.\ target), and \textbf{partial functions} (channel outputs at selected layers). Max epochs 10,000; seed 42. The Appendix gives full experiment methodology and all configs.
 
 \section{Plateau--sharp--plateau and frequency structure}
 \label{sec:plateau}
@@ -64,6 +64,19 @@ The loss drops \emph{sharply and almost instantaneously} at each learning-rate (
 
 In our setting, Adam training is observed to be highly unstable. A notable empirical finding is that a \emph{jump} in the trajectory near \emph{end-of-schedule} (EOS) can land the solution in a sharp but small basin---in some runs with a shape resembling multiple local minima and the global minimum in the middle. When such a jump occurs at EOS, the optimizer effectively reaches a favorable basin; this may partly explain why Adam can perform well in practice despite instability. The \emph{lower part} of the landscape (near good minima) appears more sensitive to the number of samples $N$ than the upper part; under unstable or very long training, behavior can exhibit unexpected sensitivity or non-monotonicity. When instability is present, training curves sometimes display a characteristic symmetry; we leave a systematic characterization for future work.
 
+\subsection{Symmetry preservation: low-rank vs full-rank}
+\label{sec:symmetry}
+
+Targets such as $y(x)=\sum_k \cos(2\pi k x)$ or $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ are \textbf{symmetric about $x=0$} (even in $x$). Under batched optimization, full-rank (MLP) networks can learn \emph{asymmetric} internal representations for these symmetric targets; low-rank (RF-LR or MMNN) networks, in contrast, tend to \textbf{preserve symmetry} in the channel partials and activations. Figure~\ref{fig:mlp-asymmetry} shows the asymmetry when the random-feature/low-rank structure is removed: at layers 7 and 16, the learned features are visibly asymmetric about $x=0$ (same setup as symmetric low-rank runs: 8 layers, $n=1024$, $r=20$, target $(f_1,f_2)=(144,48)$, $N=4k$, Adam, batch 100). So the low-rank constraint acts as an \emph{implicit regularizer} that preserves the target's geometric symmetry and restricts the trajectory to basins whose minimizers exhibit symmetric feature structure; full-rank nets can fall into asymmetric basins that still achieve low loss. This fits the valley--frequency picture: the landscape for low-rank nets appears to have a symmetry-aligned structure that full-rank nets do not respect.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\linewidth]{figures/mlp_asymmetry_layer7.png}\hfill
+\includegraphics[width=0.42\linewidth]{figures/mlp_asymmetry_layer16.png}
+\caption{Symmetry comparison: asymmetry when RF/low-rank is removed (full-rank MLP). (a) Layer 7. (b) Layer 16. $r=20$, target $(f_1,f_2)=(144,48)$; full-rank learns asymmetric features despite symmetric target; low-rank (not shown here) preserves symmetry. Source: \texttt{icml\_sgdadamlandscapedynamical/tofill.tex}.}
+\label{fig:mlp-asymmetry}
+\end{figure}
+
 \section{Scaling and the feature--landscape relation}
 \label{sec:scaling}
 
@@ -73,14 +86,14 @@ We observe that \textbf{plateau-escape time} (epoch to leave the first plateau) 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/epochs_to_escape_vs_lr.png}
+\includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_lr.png}
 \caption{Epochs to escape the first plateau vs.\ learning rate (plateau-escape runs). Consistent with scaling $\propto 1/\mathrm{lr}$.}
 \label{fig:escape_vs_lr}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/epochs_to_escape_vs_bs.png}
+\includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_bs.png}
 \caption{Epochs to escape vs.\ batch size. Small batch (1--4) escapes effectively; optimal/critical batch size in this setting.}
 \label{fig:escape_vs_bs}
 \end{figure}
@@ -92,35 +105,35 @@ We illustrate the \textbf{feature--landscape relation} with the runs described i
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L2.png}
+\includegraphics[width=0.42\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L2.png}
 \caption{Loss and fit before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=2$.}
 \label{fig:loss_fit_L2}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L3.png}
+\includegraphics[width=0.42\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L3.png}
 \caption{Loss and fit before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=3$.}
 \label{fig:loss_fit_L3}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/plot_partial_before_after_lr_divides_L3.png}
+\includegraphics[width=0.42\linewidth]{figures/plot_partial_before_after_lr_divides_L3.png}
 \caption{Partial functions before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=3$.}
 \label{fig:partial_L3}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}
 \caption{Log-ratio trajectories (channel dominance over training); lr $2{\times}10^{-3}$, bs 4. Trajectories diverge globally by end of training.}
 \label{fig:logratio_div}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
 \caption{Log-ratio trajectories; lr $2{\times}10^{-4}$, bs 4. Trajectories converge by end of training (stable specialization).}
 \label{fig:logratio_conv}
 \end{figure}
@@ -139,8 +152,61 @@ We described the \textbf{relation between feature learning and the loss landscap
 \bibliographystyle{iclr2026_conference}
 
 \appendix
-\section{Appendix}
-Config files (e.g.\ \texttt{experiments/table/results\_sumcos\_selected\_rerun/f3\_N768\_bs8\_L2/config.json}) and the training script \texttt{experiments/table/run\_selected\_sumcos\_configs.py} define the full parameterization and LR schedule. Broader baseline sweeps (sumcos rank 5/10, factor 1--5, batch 1--16) and their analysis (worked/failed counts, histograms of min loss per factor) are produced by \texttt{run\_scaling\_law\_depth\_width.py} (e.g.\ \texttt{--baseline-sweep}, \texttt{--baseline-sweep-rank5}) and \texttt{analyze\_baseline\_sweep.py} (\texttt{--sumcos}, \texttt{--sumcos-rank5}); batch-size analysis and run naming are documented in \texttt{experiments/table/BASELINE\_SWEEP\_SETUPS\_AND\_RANKS.md}. Log-ratio trajectory plots (Figures~\ref{fig:logratio_div}--\ref{fig:logratio_conv}) and epochs-to-escape scaling plots (Figures~\ref{fig:escape_vs_lr}, \ref{fig:escape_vs_bs}) come from \texttt{experiments/table/plateau/} (script \texttt{run\_plateau\_escape.py}); scaling law index and batch-size/rank sweep references: \texttt{experiments/table/INDEX\_LOGRATIO\_ESCAPE\_SCALING.md}. Frequency/layer-scaling training and CSV summary by \texttt{--train} and \texttt{--analyze}. Stable baseline (cos $2\pi x$, $N=\mathrm{width}=1024$, rank 10, $L=2$) reaches test error $\sim 1.9{\times}10^{-6}$ (momentum 0.7). Additional details are in \texttt{idea.md} and \texttt{experiments/partialfunctionanalysis/}.
+\section{Appendix: Full experiment methodology and configs}
+\label{app:methodology}
+
+\subsection{Target and architecture (all experiments)}
+Target: $y(x) = \sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$ on $x \in [-1,1]$. MMNN: input/output dim 1; hidden rank $R$, width $W$; depth $L$ blocks (linear rank$\to$width, ReLU, linear width$\to$rank). fixWb = True (first linear frozen). $\mu$-parameterization; SGD momentum 0; gradient clipping max norm 1.0.
+
+\subsection{Main figures (loss, fit, partials before/after LR divides)}
+Runs used for Figures 3--5 (loss/fit L2, L3; partials L3): factor 3, $N_{\mathrm{train}}=768$, batch size 8, depths $L=2$ and $L=3$. Full parameterization:
+\begin{itemize}
+\item \textbf{Config name:} f3\_N768\_bs8\_L2, f3\_N768\_bs8\_L3.
+\item \textbf{Data:} $N_{\mathrm{train}}=768$, batch\_size $=8$, factor $=3$.
+\item \textbf{Architecture:} hidden\_width $=1024$, hidden\_rank $=10$, num\_layers $\in \{2,3\}$.
+\item \textbf{Training:} num\_epochs $=10{,}000$; lr\_sequence: initial $0.01$, then divide by 2 at each reduction (25 steps); lr\_window $=10$, min\_epochs\_before\_reduce $=20$; stop if lr $< 10^{-6}$. Checkpoints: state before and 10 epochs after each LR divide.
+\item \textbf{Optimizer:} SGD, momentum $0$, gradient clipping 1.0.
+\end{itemize}
+
+\subsection{Selected sumcos rerun configs (all)}
+The following configs share the same LR schedule and architecture (width 1024, rank 10); only $N$, batch size, depth, and factor vary. Naming: f\{factor\}\_N\{n\_train\}\_bs\{batch\_size\}\_L\{num\_layers\}.
+
+\begin{center}
+\begin{tabular}{lccccl}
+\hline
+Config & $N$ & bs & $L$ & factor & Notes \\
+\hline
+f3\_N768\_bs8\_L2 & 768 & 8 & 2 & 3 & Main fig.\ loss/fit \\
+f3\_N768\_bs8\_L3 & 768 & 8 & 3 & 3 & Main fig.\ loss/fit/partials \\
+f3\_N768\_bs4\_L2 & 768 & 4 & 2 & 3 & \\
+f3\_N768\_bs4\_L3 & 768 & 4 & 3 & 3 & \\
+f3\_N768\_bs2\_L2 & 768 & 2 & 2 & 3 & \\
+f3\_N768\_bs2\_L3 & 768 & 2 & 3 & 3 & \\
+f3\_N768\_bs1\_L1 & 768 & 1 & 1 & 3 & \\
+f3\_N768\_bs1\_L2 & 768 & 1 & 2 & 3 & \\
+f3\_N384\_bs1\_L2 & 384 & 1 & 2 & 3 & \\
+f3\_N384\_bs2\_L2 & 384 & 2 & 2 & 3 & \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Plateau-escape and log-ratio runs (Figures 1, 2, 6, 7)}
+Plateau-escape runs train until loss $<$ threshold (escape); they record epochs to escape and log-ratio trajectories. Per run: fixed lr and batch size; factor 3, $N=768$, $L=3$, rank 10, width 1024. Naming: lr\{value\}\_bs\{batch\_size\} (e.g.\ lr2e-03\_bs4 = lr $2{\times}10^{-3}$, bs 4). Key params: escape\_threshold $=0.1$; max\_epochs 400--2000 depending on lr; log-ratio at $x=0$; checkpoint every 5--12 epochs. Figures 1--2: epochs to escape vs lr and vs batch size (sweep over lr $\in \{1{\times}10^{-2}, 2{\times}10^{-3}, 5{\times}10^{-3}, 1{\times}10^{-3}, 2{\times}10^{-4}, 5{\times}10^{-4}\}$, bs $\in \{1,2,4,8,16,32,64,128\}$). Figures 6--7: log-ratio trajectories for lr $2{\times}10^{-3}$ bs 4 (divergence) and lr $2{\times}10^{-4}$ bs 4 (convergence).
+
+\subsection{Baseline sweeps (sumcos, rank 5/10/20)}
+Target $\sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$; factor $\in \{1,2,3,4,5\}$; $N = \mathrm{base} \times \mathrm{factor}$ with base $\in \{16,32,64,128,256\}$; batch sizes 1, 2, 4, 8, 16; depths $1 \ldots 2{\times}\mathrm{factor}$; max 10K epochs; adaptive LR (divide by 2 on stagnation); worked = test error $< 0.01$. Rank 5: 76 worked / 750; rank 10: 73 worked / 429. Small batch (1--4) outperforms 8, 16. Run naming: f\{f\}\_N\{n\}\_bs\{bs\}\_L\{L\}. Batch-size analysis and commands: BASELINE\_SWEEP\_SETUPS\_AND\_RANKS.md; INDEX\_LOGRATIO\_ESCAPE\_SCALING.md.
+
+\subsection{Frequency/layer-scaling}
+Multi-frequency target (freq multipliers 0.3--10); Adam, StepLR; ranks 10, 15, 25; layer counts per freq; 58 configs. Low freq (0.3, 0.6): test error $\sim 10^{-6}$--$10^{-5}$; high freq (1.5+): no convergence; very deep ($L=56$, 80): blow-up or NaN. CSV and summary: \texttt{--train} then \texttt{--analyze}.
+
+\subsection{Symmetry comparison (Figure~\ref{fig:mlp-asymmetry})}
+Same architecture as low-rank runs but with RF/low-rank removed (full-rank MLP, fixWb = False): 8 layers, width $n=1024$, effective rank $r=20$, target $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ with $(f_1,f_2)=(144,48)$; $N=4\mathrm{k}$ train, 10k epochs, Adam lr $0.001$, batch 100, StepLR $\gamma=0.9$ every 100 steps. Plots show channel partials at layers 7 and 16; asymmetry about $x=0$ is visible. Low-rank (RF-LR) runs with same hyperparameters preserve symmetry (see \texttt{icml\_sgdadamlandscapedynamical/tofill.tex}, Sec.~5.3).
+
+\subsection{Stable baseline}
+Target cos $2\pi x$; $N = \mathrm{width} = 1024$, rank 10, $L=2$, batch 4; 250 epochs; SGD lr 0.01, AdaptiveStagnation (sequence 0.01, 0.005, 0.001, 0.0005, 0.0001). Best: momentum 0.7, test error $\sim 1.9{\times}10^{-6}$.
+
+\subsection{Script and document index}
+Training: \texttt{run\_selected\_sumcos\_configs.py} (selected rerun); \texttt{run\_scaling\_law\_depth\_width.py} (baseline, baseline-sweep, baseline-sweep-rank5, baseline-sweep-rank N, baseline-sweep-expcos, train, analyze). Plateau escape and log-ratios: \texttt{run\_plateau\_escape.py}. Analysis: \texttt{analyze\_baseline\_sweep.py} (--sumcos, --sumcos-rank5, --sumcos-rank20, --expcos). Docs: BASELINE\_SWEEP\_SETUPS\_AND\_RANKS.md (batch-size and run naming); INDEX\_LOGRATIO\_ESCAPE\_SCALING.md (scaling law and sweep references); idea.md, experiments/partialfunctionanalysis/ for further detail.
 
 \newpage
 \section{Science of DL Improvement Challenge Submission}
