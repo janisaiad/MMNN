@@ -120,7 +120,7 @@ def main() -> None:
     seed_data = 444
     seed_init = 555
 
-    ranks = [10, 15, 20, 30, 50, 75, 100, 200, 1000, 2000, 5000, 10000, 100000]  # up to e4, e5
+    ranks = [10, 15, 20, 30, 50, 75, 100, 200, 1000, 2000, 5000, 10000, 20000, 100000]  # e4, 2e4, e5
 
     rng_data = np.random.default_rng(seed_data)
     x = clustered_sphere_data(

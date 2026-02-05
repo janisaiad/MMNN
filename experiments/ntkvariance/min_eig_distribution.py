@@ -82,7 +82,7 @@ def centered_min_eig_from_ntk(width: int, r: int, x: np.ndarray, rng: np.random.
 
 def main() -> None:
     width = 16000
-    ranks = [5, 10, 20, 50]
+    ranks = [5, 10, 20, 50, 100, 200, 500, 1000]
     n = 64
     d = 16
     n_trials = 50
@@ -125,6 +125,19 @@ def main() -> None:
     plt.legend(fontsize=10)
     plt.tight_layout()
     plt.savefig(out_dir / "min_eig_cdf.png", dpi=300)
+
+    means = [float(results[r].mean()) for r in ranks]
+    stds = [float(results[r].std(ddof=1)) for r in ranks]
+    plt.figure(figsize=(5, 4))
+    plt.errorbar(ranks, means, yerr=stds, marker="o", capsize=3)
+    plt.xlabel("rank $r$", fontsize=11)
+    plt.ylabel(r"mean of $\lambda_{\min}^{+}(HKH)$", fontsize=11)
+    plt.title(f"mean smallest positive centered eigenvalue vs rank, width={width}, n={n}, d={d}", fontsize=11)
+    plt.xscale("log")
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    plt.tight_layout()
+    plt.savefig(out_dir / "min_eig_mean_vs_r.png", dpi=300)
+    plt.close()
 
     for r in ranks:
         vals = results[r]
