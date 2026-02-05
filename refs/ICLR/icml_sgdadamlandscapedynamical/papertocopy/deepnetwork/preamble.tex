@@ -1,0 +1,120 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{mathrsfs,amsmath,amsfonts,amssymb,comment}
+\usepackage{mathtools,xcolor,enumerate}
+\usepackage{dsfont}
+\usepackage{bm}% MnSymbol after bm
+\usepackage{indentfirst}\setlength{\parindent}{2em}% indent
+%\usepackage{natbib} % references
+%\usepackage[sort,nocompress]{cite}
+%\usepackage{extarrows,xfrac,nameref,dsfont,color,cancel}
+%\usepackage[normalem]{ulem}
+%\usepackage[all,pdf]{xy}
+\usepackage{enumerate} 
+% \begin{enumerate}[{A}-1)] '\item one' will be 'A-1) one'
+%\usepackage{srcltx}
+%\usepackage{fancybox}
+%\usepackage{tikz}%% 
+% \usepackage{comment}%% \begin{comment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% table setting
+\usepackage{tabularx,multirow,array,booktabs}
+\usepackage{colortbl}%%% color in tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\usepackage{coloremoji}
+%Style package for directly including color emojis in LATEX documents.
+%\usepackage{textcomp}
+%LATEX support for the Text Companion fonts.
+%\usepackage{textgreek}
+%Upright greek letters in text.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% figure setting
+\usepackage{graphicx}%% 
+\graphicspath{{figures/}}%
+\usepackage{float}%% 
+%%%5\usepackage{subfigure}%% 
+%%\usepackage{caption}
+\usepackage{subcaption} 
+%% \begin{subfigure}[b]{0.95\textwidth}pic\end{subfigure}
+\captionsetup{subrefformat=parens} % \subref will look like (a)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% New commands below
+\let\tn\textnormal % normal text (\tn)
+%% Real nature integer rational
+\newcommand{\R}{\ifmmode\mathbb{R}\else$\mathbb{R}$\fi}
+\newcommand{\N}{\ifmmode\mathbb{N}\else$\mathbb{N}$\fi}
+\newcommand{\Z}{\ifmmode\mathbb{Z}\else$\mathbb{Z}$\fi}
+\newcommand{\Q}{\ifmmode\mathbb{Q}\else$\mathbb{Q}$\fi}
+%%%%%%%%%%%%%%%%%%%%%%%%% bm
+\newcommand{\bmx}{{\bm{x}}}
+\newcommand{\bma}{{\bm{a}}}
+\newcommand{\bmz}{{\bm{z}}}
+\newcommand{\bme}{{\bm{e}}}
+\newcommand{\bmy}{{\bm{y}}}
+\newcommand{\bmb}{{\bm{b}}}
+\newcommand{\bmA}{{\bm{A}}}
+\newcommand{\bmW}{{\bm{W}}}
+\newcommand{\bmf}{{\bm{f}}}
+\newcommand{\bmh}{{\bm{h}}}
+\newcommand{\bmn}{{\bm{n}}}
+\newcommand{\bmzero}{{\bm{0}}}
+\newcommand{\bmpsi}{{\bm{\psi}}}
+\newcommand{\bmphi}{{\bm{\phi}}}
+\newcommand{\bmTheta}{{\bm{\Theta}}}
+\newcommand{\bmtheta}{{\bm{\theta}}}
+\newcommand{\bmsigma}{{\bm{\sigma}}}
+\newcommand{\bmlambda}{{\bm{\lambda}}}
+\newcommand{\bmvarrho}{{\bm{\varrho}}}
+\newcommand{\bmeta}{{\bm{\eta}}}
+\newcommand{\bmbeta}{{\bm{\beta}}}
+\newcommand{\bmalpha}{{\bm{\alpha}}}
+\newcommand{\bmPhi}{{\bm{\Phi}}}
+%%%%%%%%%%%%%%%%%%%% cal
+\newcommand{\calC}{{\mathcal{C}}}
+\newcommand{\calX}{{\mathcal{X}}}
+\newcommand{\calL}{{\mathcal{L}}}
+\newcommand{\calO}{{\mathcal{O}}}
+\newcommand{\calH}{{\mathcal{H}}}
+\newcommand{\calD}{{\mathcal{D}}}
+\newcommand{\calR}{{\mathcal{R}}}
+\newcommand{\calF}{{\mathcal{F}}}
+\newcommand{\calT}{{\mathcal{T}}}
+\newcommand{\calS}{{\mathcal{S}}}
+\newcommand{\calN}{{\mathcal{N}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%% tilde
+\newcommand{\tildephi}{{\widetilde{\phi}}}
+\newcommand{\tildepsi}{{\widetilde{\psi}}}
+\newcommand{\tildeg}{{\widetilde{g}}}
+\newcommand{\tildeL}{{\widetilde{L}}}
+\newcommand{\tildef}{{\widetilde{f}}}
+\newcommand{\tildes}{{\widetilde{s}}}
+\newcommand{\tildeN}{{\widetilde{N}}}
+\newcommand{\tildeM}{{\widetilde{M}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%5 hat
+\newcommand{\hatbmf}{{\widehat{\bm{f}}}}
+%%%%%%%%%%%%%%%%%%%%%%%% scr
+\newcommand{\scrI}{{\mathscr{I}}}
+\newcommand{\scrE}{{\mathscr{E}}}
+\newcommand{\scrT}{{\mathscr{T}}}
+\newcommand{\scrF}{{\mathscr{F}}}
+\newcommand{\scrH}{{\mathscr{H}}}
+\newcommand{\scrB}{{\mathscr{B}}}
+\newcommand{\scrA}{{\mathscr{A}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+\def\one{{\ensuremath{\mathds{1}}}}
+\def\middleValue{\tn{mid}}
+\newcommand{\vcd}{\tn{VCDim}}
+\providecommand*{\sgn}{}
+\renewcommand{\sgn}{\tn{sgn}}
+% \usepackage{xspace}
+% \newcommand{\innerpart}{\tn{inner-part}\xspace}
+% \newcommand{\outerpart}{\tn{outer-part}\xspace}
+\DeclareMathOperator*{\argmin}{arg\,min}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+\newcommand{\bin}{\tn{bin}\hspace{1.2pt}}
+\newcommand{\mystep}[2]{\par \vspace{0.25cm}\noindent\textbf{\hspace{8pt}Step }$#1\colon$ #2 \vspace{0.18cm} \par }
+\usepackage{tikz}
+\newcommand{\myto}[2][1]{\mathop{
+		\vcenter{\hbox{\scalebox{1}[#1]{\tikz{\draw[->,line width=0.72pt] (0,0.5) to (0.69*#2,0.5);}}}}
+}}
+\let\mycdots\cdots
+\def\cdots{{\mycdots}}

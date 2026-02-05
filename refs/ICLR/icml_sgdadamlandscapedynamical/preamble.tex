@@ -1,0 +1,140 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{mathrsfs,amsmath,amsfonts,amssymb,comment}
+\usepackage{mathtools,xcolor,enumerate}
+\usepackage{dsfont}
+\usepackage{bm}
+\usepackage{indentfirst}\setlength{\parindent}{2em}% indent
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% table setting
+\usepackage{tabularx,multirow,array,booktabs}
+\usepackage{colortbl}%%% color in tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% figure setting
+\usepackage{graphicx}%% 
+\graphicspath{{figures/}}%
+\usepackage{float}%% 
+\usepackage{subcaption} 
+\captionsetup{subrefformat=parens} % \subref will look like (a)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% New commands below
+\let\tn\textnormal % normal text (\tn)
+%% Real nature integer rational
+\newcommand{\R}{\ifmmode\mathbb{R}\else$\mathbb{R}$\fi}
+\newcommand{\N}{\ifmmode\mathbb{N}\else$\mathbb{N}$\fi}
+\newcommand{\Z}{\ifmmode\mathbb{Z}\else$\mathbb{Z}$\fi}
+\newcommand{\Q}{\ifmmode\mathbb{Q}\else$\mathbb{Q}$\fi}
+%%%%%%%%%%%%%%%%%%%%%%%%% bm
+\newcommand{\bmx}{{\bm{x}}}
+\newcommand{\bma}{{\bm{a}}}
+\newcommand{\bmz}{{\bm{z}}}
+\newcommand{\bme}{{\bm{e}}}
+\newcommand{\bmy}{{\bm{y}}}
+\newcommand{\bmb}{{\bm{b}}}
+\newcommand{\bmA}{{\bm{A}}}
+\newcommand{\bmW}{{\bm{W}}}
+\newcommand{\bmw}{{\bm{w}}}
+\newcommand{\bmf}{{\bm{f}}}
+\newcommand{\bmh}{{\bm{h}}}
+\newcommand{\bmn}{{\bm{n}}}
+\newcommand{\bmzero}{{\bm{0}}}
+\newcommand{\bmpsi}{{\bm{\psi}}}
+\newcommand{\bmphi}{{\bm{\phi}}}
+\newcommand{\bmTheta}{{\bm{\Theta}}}
+\newcommand{\bmtheta}{{\bm{\theta}}}
+\newcommand{\bmsigma}{{\bm{\sigma}}}
+\newcommand{\bmlambda}{{\bm{\lambda}}}
+\newcommand{\bmvarrho}{{\bm{\varrho}}}
+\newcommand{\bmeta}{{\bm{\eta}}}
+\newcommand{\bmbeta}{{\bm{\beta}}}
+\newcommand{\bmalpha}{{\bm{\alpha}}}
+\newcommand{\bmPhi}{{\bm{\Phi}}}
+\newcommand{\bmk}{{\bm{k}}}
+\newcommand{\bmv}{{\bm{v}}}
+\newcommand{\bmu}{{\bm{u}}}
+%%%%%%%%%%%%%%%%%%%% cal
+\newcommand{\calC}{{\mathcal{C}}}
+\newcommand{\calX}{{\mathcal{X}}}
+\newcommand{\calL}{{\mathcal{L}}}
+\newcommand{\calO}{{\mathcal{O}}}
+\newcommand{\calH}{{\mathcal{H}}}
+\newcommand{\calD}{{\mathcal{D}}}
+\newcommand{\calR}{{\mathcal{R}}}
+\newcommand{\calF}{{\mathcal{F}}}
+\newcommand{\calT}{{\mathcal{T}}}
+\newcommand{\calS}{{\mathcal{S}}}
+\newcommand{\calN}{{\mathcal{N}}}
+\newcommand{\calE}{{\mathcal{E}}}
+\newcommand{\calM}{{\mathcal{M}}}
+\newcommand{\calB}{{\mathcal{B}}}
+\newcommand{\calA}{{\mathcal{A}}}
+\newcommand{\calI}{{\mathcal{I}}}
+\newcommand{\calG}{{\mathcal{G}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%% tilde
+\newcommand{\tildephi}{{\widetilde{\phi}}}
+\newcommand{\tildepsi}{{\widetilde{\psi}}}
+\newcommand{\tildeg}{{\widetilde{g}}}
+\newcommand{\tildeL}{{\widetilde{L}}}
+\newcommand{\tildef}{{\widetilde{f}}}
+\newcommand{\tildes}{{\widetilde{s}}}
+\newcommand{\tildeN}{{\widetilde{N}}}
+\newcommand{\tildeM}{{\widetilde{M}}}
+\newcommand{\tilded}{{\widetilde{d}}}
+\newcommand{\tildeh}{{\widetilde{h}}}
+\newcommand{\tildew}{{\widetilde{w}}}
+\newcommand{\tildeb}{{\widetilde{b}}}
+\newcommand{\tildex}{{\widetilde{x}}}
+\newcommand{\tildey}{{\widetilde{y}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%5 hat
+\newcommand{\hatbmf}{{\widehat{\bm{f}}}}
+\newcommand{\hatN}{{\widehat{N}}}
+\newcommand{\hatL}{{\widehat{L}}}
+\newcommand{\hatd}{{\widehat{d}}}
+%%%%%%%%%%%%%%%%%%%%%%%% scr
+\newcommand{\scrI}{{\mathscr{I}}}
+\newcommand{\scrE}{{\mathscr{E}}}
+\newcommand{\scrT}{{\mathscr{T}}}
+\newcommand{\scrF}{{\mathscr{F}}}
+\newcommand{\scrH}{{\mathscr{H}}}
+\newcommand{\scrB}{{\mathscr{B}}}
+\newcommand{\scrA}{{\mathscr{A}}}
+\newcommand{\scrC}{{\mathscr{C}}}
+\newcommand{\scrL}{{\mathscr{L}}}
+\newcommand{\scrS}{{\mathscr{S}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+\def\one{{\ensuremath{\mathds{1}}}}
+\newcommand{\1}{\mathds{1}}
+\def\middleValue{\tn{mid}}
+\newcommand{\vcd}{\tn{VCDim}}
+\providecommand*{\sgn}{}
+\renewcommand{\sgn}{\tn{sgn}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+\newcommand{\bin}{\tn{bin}\hspace{1.2pt}}
+\newcommand{\mystep}[2]{\par \vspace{0.25cm}\noindent\textbf{\hspace{8pt}Step }$#1\colon$ #2 \vspace{0.18cm} \par }
+\usepackage{tikz}
+\newcommand{\myto}[2][1]{\mathop{
+		\vcenter{\hbox{\scalebox{1}[#1]{\tikz{\draw[->,line width=0.72pt] (0,0.5) to (0.69*#2,0.5);}}}}
+}}
+\let\mycdots\cdots
+\def\cdots{{\mycdots}}
+\let\dotsc\cdots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{mygray}{RGB}{230,230,230}
+\long\def\black#1{{\color{black}#1}}
+\long\def\red#1{{\color{red}#1}}
+\long\def\blue#1{{\color{blue}#1}}
+\long\def\cyan#1{{\color{cyan}#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% additional commands for mean-field
+\newcommand{\ip}[2]{\langle #1, #2 \rangle}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\providecommand{\provedflag}{}
+\providecommand{\openflag}{}
+\providecommand{\proofinapp}[1]{\emph{Proof deferred to appendix.}}
+% double brackets for norms
+\newcommand{\llbracket}{[\![}
+\newcommand{\rrbracket}{]\!]}
+% interleave for Orlicz norms
+\newcommand{\interleave}[1]{\llbracket #1 \rrbracket}

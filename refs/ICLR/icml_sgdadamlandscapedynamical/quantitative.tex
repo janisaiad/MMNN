@@ -1,0 +1,423 @@
+\section{Quantitative Approximation by the Mean-Field Limit for Low-Rank Networks}
+\label{sec:quantitative}
+
+This section provides a rigorous quantitative bound on the approximation error between finite-width low-rank networks and their mean-field limit. The key result shows that the approximation error scales as $O(1/\sqrt{n_{\min}} + \sqrt{\epsilon})$ with explicit constants, where $n_{\min}$ is the minimum width across layers and $\epsilon$ is the learning rate step size. This bound holds for any $n_1$ and $n_2$, independent of the data dimension $d$, similar to the full-width case \cite{nguyen2020global,araujo2019mean}. The bound suggests that widths $n_1, n_2 \approx 1000$ are typically sufficient to observe mean-field behaviors, as empirically validated in \cite{nguyen2019meanfield} for high-dimensional real-world data.
+
+\subsection{Main Result: Approximation by the MF Limit}
+
+\begin{assumption}[Initialization for Low-Rank Networks]
+\label{assump:quant-init}
+We assume that ${\rm ess\text{-}sup}\max_{1\le k\le r}|w_1^0(C_1,k)| \le K$ and ${\rm ess\text{-}sup}|w_2^0(C_2)| \le K$, where $w_1^0$ and $w_2^0$ are the initial weights as described in the low-rank architecture setup.
+\end{assumption}
+
+\begin{theorem}[Finite-width approximation error bound]
+\label{thm:quantitative-lowrank}
+Given a family $\mathsf{Init}$ of initialization laws and a tuple $\{n_1, n_2\}$ that is in the index set of $\mathsf{Init}$, perform the coupling procedure for the low-rank architecture as described in Section~\ref{sec:setup}. Fix a terminal time $T \in \epsilon\mathbb{N}_{\ge 0}$. Under Assumptions~\ref{assump:regularity}, \ref{assump:quant-init}, and the low-rank structure with mixing matrix $L$ satisfying $\|L\|_{\infty,1} \le \textcolor{red}{rK}$, for $\epsilon \le 1$, we have with probability at least $1-2\delta$,
+\begin{align*}
+\mathscr{D}_T(W, \mathbf{W}) &\le \mathbf{e^{K_T\textcolor{red}{(1+rK)}}}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right) \\
+&\equiv \mathsf{err}_{\delta,T}(\epsilon, n_1, n_2, r),
+\end{align*}
+in which $n_{\min} = \min\{n_1, n_2\}$, $n_{\max} = \max\{n_1, n_2\}$, $K_T = K(1+T^K)$, and the factor $\textcolor{red}{(1+rK)}$ accounts for the low-rank structure through $\|L\|_{\infty,1} \le \textcolor{red}{rK}$.
+\end{theorem}
+
+The theorem gives a connection between $\mathbf{W}(\lfloor t/\epsilon\rfloor)$ (the discrete-time finite-width network) and $W(t)$ (the continuous-time mean-field limit). This result extends the quantitative approximation theorem from the full-width case \cite{nguyen2020global} to the low-rank setting, with \textbf{the key difference being the multiplicative factor $\textcolor{red}{(1+rK)}$ in the exponential constant}, which accounts for the low-rank mixing matrix structure.
+
+\begin{corollary}[Test function approximation quality]
+\label{cor:gradient-descent-quality-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, consider any test function $\psi:\mathbb{R}\times\mathbb{R}\to\mathbb{R}$ which is $K$-Lipschitz in the second variable uniformly in the first variable (an example of $\psi$ is the loss $\mathscr{L}$). For any $\delta>0$, with probability at least $1-3\delta$,
+\[
+\sup_{t\leq T}\left|\mathbb{E}_{Z}\left[\psi\left(Y,\hat{\mathbf{y}}\left(X;\mathbf{W}\left(\left\lfloor t/\epsilon\right\rfloor \right)\right)\right)\right]-\mathbb{E}_{Z}\left[\psi\left(Y,\hat{y}\left(X;W\left(t\right)\right)\right)\right]\right|\leq e^{K_T\textcolor{red}{(1+rK)}}\mathsf{err}_{\delta,T}\left(\epsilon,n_{1},n_{2},r\right),
+\]
+where $\hat{\mathbf{y}}(X; \mathbf{W})$ and $\hat{y}(X; W)$ denote the outputs of the finite-width and mean-field networks respectively.
+\end{corollary}
+
+\begin{proof}[Proof sketch]
+The proof follows the same structure as in the full-width case \cite{nguyen2020global}. Since $\psi$ is $K$-Lipschitz in the second variable, we have:
+\[
+|\psi(Y, \hat{\mathbf{y}}(X; \mathbf{W})) - \psi(Y, \hat{y}(X; W))| \le K|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)|.
+\]
+The difference $|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)|$ can be bounded by the distance $\mathscr{D}_T(W, \mathbf{W})$ using the low-rank structure of the network. Specifically, for the low-rank architecture, the output difference involves:
+\begin{align*}
+|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)| &\le \sum_{k=1}^r |L_{C_2,k}|\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k)\varphi_1(\langle f_1(C_1(j_1)), X\rangle)\right.\\
+&\quad\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\varphi_1(\langle f_1(C_1), X\rangle)]\right| + \text{(similar terms for $w_2$)}\\
+&\le \textcolor{red}{\mathbf{rK}}\mathscr{D}_T(W, \mathbf{W}) + K\mathscr{D}_T(W, \mathbf{W}) = \textcolor{red}{\mathbf{K(1+rK)}}\mathscr{D}_T(W, \mathbf{W}),
+\end{align*}
+where we used $\|L\|_{\infty,1} \le \textcolor{red}{rK}$. Taking expectation over $Z$ and applying Theorem~\ref{thm:quantitative-lowrank} completes the proof.
+\end{proof}
+
+\paragraph*{Comparison with the Full-Width Case.}
+\textbf{The main difference between our low-rank result and the full-width case \cite{nguyen2020global} is the appearance of the factor $\textcolor{red}{(1+rK)}$ in the exponential constant.} In the full-width case, the bound is:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le e^{K_T}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right),
+\]
+whereas in our low-rank case, we have:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le \mathbf{e^{K_T\textcolor{red}{(1+rK)}}}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right).
+\]
+
+The factor $\textcolor{red}{(1+rK)}$ arises from:
+\begin{itemize}
+\item The low-rank structure of $H_2$, which involves a sum over $r$ channels: $H_2(t, c_2; X, W) = \sum_{k=1}^r L_{c_2,k}\,m_k(t; X, W)$.
+\item The mixing matrix bounds: $\|L\|_{\infty,1} = \sup_{c_2}\sum_{k=1}^r |L_{c_2,k}| \le \textcolor{red}{rK}$.
+\item The backpropagated signal $B_k$ which aggregates over $n_2$ neurons with mixing coefficients $L_{C_2,k}$.
+\end{itemize}
+
+However, the fundamental structure of the proof remains the same: we still decompose the error into particle coupling and gradient descent discretization, and the scaling with $n_{\min}$ and $\epsilon$ is identical. The low-rank structure only affects the exponential constant, not the polynomial scaling. This suggests that the mean-field approximation quality is preserved under low-rank constraints, with the trade-off being a potentially larger (but still finite) exponential constant.
+
+\begin{remark}[Deterministic mixing matrix and hierarchical learning]
+The mixing matrix $L$ can be chosen deterministically (e.g., on a grid) rather than randomly, since the proof only requires the boundedness condition $\|L\|_{\infty,1} \le \textcolor{red}{rK}$. There is no advantage to maximizing the entries of $L$; fixing $L$ deterministically with appropriate structure can enable hierarchical learning, where different channels $k$ specialize to different frequency components or scales through the backpropagated signal $B_k$. This design choice allows for structured learning dynamics while maintaining the same theoretical guarantees.
+\end{remark}
+
+\begin{remark}[Low-rank framework enables i.i.d. initialization for arbitrary depth]
+\label{rem:iid-init-lowrank}
+A key theoretical advantage of our low-rank framework is that it enables standard i.i.d. initialization for networks of arbitrary depth $L$, whereas full-width networks require correlated initialization for $L \geq 3$.
+
+In the full-width case, by Corollary 29 of \cite{nguyen2023rigorousframeworkmeanfield}, neurons at intermediate layers collapse to the same function of the input under i.i.d. initialization for $L \geq 3$, and therefore are not expected to span the space of functions of the input $L^2(\mathcal{P}_X)$. In other words, these intermediate layers become a bottleneck that hinders universal approximation in the context of more than three layers and general data distributions. To attain meaningful training, this suggests a departure from i.i.d. initializations, requiring a correlated initialization scheme that introduces correlation among weights across layers.
+
+\emph{Our low-rank framework with frozen random features eliminates this requirement entirely.} The frozen first-layer features $f_1(C_1)$ automatically maintain full support $\text{supp}(f_1(C_1)) = \mathbb{R}^d$ throughout training, independent of the target function. This means:
+\begin{itemize}
+\item \textbf{Standard i.i.d. initialization suffices}: We can initialize $w_1^0(C_1, k)$ and $w_2^0(C_2)$ independently from standard distributions (e.g., Gaussian), without requiring any correlation structure.
+\item \textbf{Function-independent}: The initialization does not depend on the target function to approximate, unlike the correlated initialization scheme needed for full-width networks.
+\item \textbf{Arbitrary depth}: Global convergence holds for any depth $L$, not just $L=3$, with the same simple initialization scheme.
+\end{itemize}
+This represents a significant theoretical improvement: while full-width networks require carefully designed, function-dependent correlated initialization for $L \geq 3$, our low-rank framework achieves global convergence for arbitrary depth with standard i.i.d. initialization. The frozen random features act as a stable basis that prevents the neuron collapse phenomenon observed in full-width networks.
+\end{remark}
+
+\begin{remark}[Generalization to $L$ layers: recursive pattern]
+\label{rem:generalization-L}
+The proof strategy generalizes naturally to arbitrary depth $L$ because \textbf{the same three-step pattern repeats at each intermediate layer}:
+
+\begin{enumerate}
+\item \textbf{Forward decomposition}: For each $H_i$ with $i = 2, \ldots, L$, we decompose the difference $q_i = \tilde{H}_i - H_i$ using the same structure:
+\[
+|q_i(t, x, j_i, c_i)| \le \sum_{k=1}^r |L^{(i)}_{C_i(j_i),k}|(Q_{i,1,k} + Q_{i,2,k}) \le rK\,\max_{1 \le k \le r}(Q_{i,1,k} + Q_{i,2,k}),
+\]
+where $Q_{i,1,k}$ bounds weight differences and $Q_{i,2,k}$ bounds concentration errors. This pattern is identical for all layers.
+
+\item \textbf{Backward decomposition}: For each backpropagated signal $B_k^{(i)}$ with $i = 2, \ldots, L-1$, we decompose:
+\[
+|q_{B,k}^{(i)}(t, x)| \le Q_{B,1,k}^{(i)}(x) + Q_{B,2,k}^{(i)}(x),
+\]
+where $Q_{B,1,k}^{(i)}$ bounds activation/weight differences and $Q_{B,2,k}^{(i)}$ bounds concentration errors. This pattern is identical for all intermediate layers.
+
+\item \textbf{Concentration and Gronwall}: The concentration bounds and Gronwall argument proceed identically at each layer, with union bounds over $r$ channels and factors of $rK$ from $\|L^{(i)}\|_{\infty,1} \le rK$.
+\end{enumerate}
+
+\textbf{Key insight:} With bounded mixing matrices $\|L^{(i)}\|_{\infty,1} \le rK$, bounded activations (e.g., ReLU), and bounded data $|X| \le K$, the exponential constant accumulates multiplicatively as $(1+rK)^{L-2}$ rather than exponentially in $L$. The frozen first layer eliminates recursion at the base case, ensuring the pattern starts cleanly. Each layer applies the same bounded operations, so depth $L$ only enters polynomially in the exponential constant, not exponentially. This is why the proof works for arbitrary depth: \textbf{the low-rank structure with bounded mixing matrices ensures that each layer contributes at most a factor of $(1+rK)$ to the exponential constant, and these factors multiply rather than compound exponentially.}
+
+\textbf{Crucial point:} The frozen first layer is not just a simplification—it's the key mechanism that prevents divergence. Since $H_1(t, c_1; X, W) = \langle f_1(c_1), X\rangle$ is independent of $W(t)$, it cannot diverge and maintains full support $\text{supp}(f_1(C_1)) = \mathbb{R}^d$ trivially. This stable base allows us to apply the same bounded procedure recursively at each subsequent layer, with all errors bounded in terms of the global distance $\mathscr{D}_t(W, \tilde{W})$ rather than layer-wise errors that would compound exponentially. Without the frozen first layer, we would need correlated initialization (as in the full-width case) and would be limited to $L=3$ layers.
+\end{remark}
+
+\subsection{Particle ODEs for Low-Rank Networks}
+
+We construct auxiliary trajectories, which we call the \textit{particle ODEs} for the low-rank case. These are continuous-time trajectories of finitely many neurons, averaged over the data distribution, adapted to the low-rank structure:
+\begin{align*}
+\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) &= -\xi_2(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t)))\right],\\
+\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) &= -\xi_1(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_1(\langle f_1(C_1(j_1)), X\rangle)\,\tilde{B}_k(t; X, \tilde{W}(t))\right],
+\end{align*}
+where $j_1 = 1, \ldots, n_1$, $j_2 = 1, \ldots, n_2$, $k = 1, \ldots, r$, $\tilde{W}(t) = (\tilde{w}_1(t, \cdot, \cdot), \tilde{w}_2(t, \cdot))$, and $t \in \mathbb{R}_{\ge 0}$. 
+
+The second-layer output for the particle ODEs is:
+\[
+\tilde{H}_2(t, j_2; X, \tilde{W}) = \sum_{k=1}^r L_{C_2(j_2),k}\,\frac{1}{n_1}\sum_{j_1=1}^{n_1} \tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), X\rangle),
+\]
+and the backpropagated signal is:
+\[
+\tilde{B}_k(t; X, \tilde{W}) = \frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k}\,\varphi_2'(\tilde{H}_2(t, j_2; X, \tilde{W}))\,\tilde{w}_2(t, j_2).
+\]
+
+We specify the initialization $\tilde{W}(0)$: $\tilde{w}_1(0, j_1, k) = w_1^0(C_1(j_1), k)$ and $\tilde{w}_2(0, j_2) = w_2^0(C_2(j_2))$. That is, it shares the same initialization with the neural network $\mathbf{W}(0)$, and hence is coupled with the neural network and the MF ODEs.
+
+The existence and uniqueness of the solution to the particle ODEs follows from the same proof as in Theorem~\ref{thm:wellposed}, adapted to account for the low-rank structure. We equip $\tilde{W}(t)$ with the norm:
+\[
+\interleave\tilde{W}\interleave_T = \max\left\{\max_{j_1 \le n_1, 1 \le k \le r}\sup_{t \le T}|\tilde{w}_1(t, j_1, k)|, \max_{j_2 \le n_2}\sup_{t \le T}|\tilde{w}_2(t, j_2)|\right\}.
+\]
+
+We define the distance measures:
+\begin{align*}
+\mathscr{D}_T(W, \tilde{W}) &= \sup\Big\{|w_1(t, C_1(j_1), k) - \tilde{w}_1(t, C_1(j_1), k)|, |w_2(t, C_2(j_2)) - \tilde{w}_2(t, C_2(j_2))|:\\
+&\qquad t \le T, j_1 \le n_1, j_2 \le n_2, 1 \le k \le r\Big\},\\
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) &= \sup\Big\{|\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k) - \tilde{w}_1(t, C_1(j_1), k)|,\\
+&\qquad |\mathbf{w}_2(\lfloor t/\epsilon\rfloor, j_2) - \tilde{w}_2(t, C_2(j_2))|: t \le T, j_1 \le n_1, j_2 \le n_2, 1 \le k \le r\Big\}.
+\end{align*}
+
+\subsection{Key Lemmas}
+
+\begin{lemma}[Particle coupling bound]
+\label{lem:particle-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, for any $\delta > 0$, with probability at least $1-\delta$,
+\[
+\mathscr{D}_T(W, \tilde{W}) \le \frac{1}{\sqrt{n_{\min}}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right)\mathbf{e^{K_T\textcolor{red}{(1+rK)}}},
+\]
+in which $n_{\min} = \min\{n_1, n_2\}$, $n_{\max} = \max\{n_1, n_2\}$, and $K_T = K(1+T^K)$.
+\end{lemma}
+
+\begin{lemma}[Gradient descent discretization error]
+\label{lem:gradient-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, for any $\delta > 0$ and $\epsilon \le 1$, with probability at least $1-\delta$,
+\[
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) \le \sqrt{\epsilon\log\left(\frac{\mathbf{2n_1n_2r}}{\delta} + e\right)}\mathbf{e^{K_T\textcolor{red}{(1+rK)}}},
+\]
+in which $K_T = K(1+T^K)$.
+\end{lemma}
+
+\begin{proof}[Proof of Theorem~\ref{thm:quantitative-lowrank}]
+Using the triangle inequality:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le \mathscr{D}_T(W, \tilde{W}) + \mathscr{D}_T(\tilde{W}, \mathbf{W}),
+\]
+the result follows immediately from Lemmas~\ref{lem:particle-lowrank} and \ref{lem:gradient-lowrank}, noting that the $\log(2n_1n_2r/\delta)$ term can be absorbed into the $\log(3(T+1)n_{\max}^2/\delta + e)$ term up to constants.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:particle-lowrank}}
+
+\begin{proof}
+In the following, let $K_t$ denote a generic positive constant that may change from line to line and takes the form $K_t = K(1+t^K)$, such that $K_t \ge 1$ and $K_t \le K_T$ for all $t \le T$. We first note that at initialization, $\mathscr{D}_0(W, \tilde{W}) = 0$. Since $\interleave W\interleave_0 \le K$, we have $\interleave W\interleave_T \le K_T$ by the a priori bounds. Furthermore, it is easy to see that $\interleave\tilde{W}\interleave_0 \le \interleave W\interleave_0 \le K$ almost surely. By the same argument, $\interleave\tilde{W}\interleave_T \le K_T$ almost surely.
+
+We decompose the proof into several steps.
+
+\paragraph*{Step 1: Main bound with low-rank structure.}
+
+Let us define, for brevity, the differences specific to the low-rank architecture:
+\begin{align*}
+q_2(t, x, j_2, c_2) &= \tilde{H}_2(t, j_2; x, \tilde{W}(t)) - H_2(t, c_2; x, W(t)),\\
+q_{B,k}(t, x) &= \tilde{B}_k(t; x, \tilde{W}(t)) - B_k(t; x, W(t)),
+\end{align*}
+where $H_2(t, c_2; x, W) = \sum_{k=1}^r L_{c_2,k}\,\mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]$ and $B_k(t; x, W) = \mathbb{E}_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]$.
+
+Consider $t \ge 0$. We first bound the difference in the updates between $W$ and $\tilde{W}$.
+
+\subparagraph*{Bound for $w_2$ and $\tilde{w}_2$:}
+By Assumption~\ref{assump:regularity} and the definition of the ODEs:
+\begin{align*}
+&\left|\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) - \frac{\partial}{\partial t}w_2(t, C_2(j_2))\right|\\
+&\quad = \left|\xi_2(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t))) - d_L(Z; W(t))\,\varphi_2(H_2(t, C_2(j_2); X, W(t)))\right]\right|\\
+&\quad \le K\mathbb{E}_Z\left[|d_L(Z; \tilde{W}(t)) - d_L(Z; W(t))|\,|\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t)))|\right]\\
+&\quad\quad + K\mathbb{E}_Z\left[|d_L(Z; W(t))|\,|\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t))) - \varphi_2(H_2(t, C_2(j_2); X, W(t)))|\right]\\
+&\quad \le K_t\mathbb{E}_Z\left[|q_2(t, X, j_2, C_2(j_2))|\right] + K_t\mathscr{D}_t(W, \tilde{W}),
+\end{align*}
+where we used that $d_L$ is Lipschitz in $W$, $\varphi_2$ is Lipschitz, and $H_2$ differences are controlled.
+
+\subparagraph*{Bound for $w_1$ and $\tilde{w}_1$:}
+For the low-rank case, we have $k = 1, \ldots, r$ channels. By the definition of the ODEs:
+\begin{align*}
+&\left|\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) - \frac{\partial}{\partial t}w_1(t, C_1(j_1), k)\right|\\
+&\quad = \left|\xi_1(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_1(\langle f_1(C_1(j_1)), X\rangle)\,\tilde{B}_k(t; X, \tilde{W}(t))\right.\right.\\
+&\quad\quad\left.\left. - d_L(Z; W(t))\,\varphi_1(\langle f_1(C_1(j_1)), X\rangle)\,B_k(t; X, W(t))\right]\right|\\
+&\quad \le K\mathbb{E}_Z\left[|d_L(Z; \tilde{W}(t)) - d_L(Z; W(t))|\,|\tilde{B}_k(t; X, \tilde{W}(t))|\right]\\
+&\quad\quad + K\mathbb{E}_Z\left[|d_L(Z; W(t))|\,|q_{B,k}(t, X)|\right]\\
+&\quad \le K_t\mathbb{E}_Z\left[|q_{B,k}(t, X)|\right] + K_t\mathscr{D}_t(W, \tilde{W}),
+\end{align*}
+where the expectation over $j_2$ in $\tilde{B}_k$ will be handled via concentration.
+
+\paragraph*{Step 2: Decomposition of $q_2$ with low-rank structure.}
+
+\textbf{The key difference from the full-width case is that $H_2$ involves a sum over $r$ channels.} We decompose:
+\begin{align*}
+|q_2(t, x, j_2, c_2)| &= \left|\textcolor{red}{\sum_{k=1}^r L_{C_2(j_2),k}}\left(\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\right.\right.\\
+&\quad\left.\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]\right)\right|\\
+&\le \textcolor{red}{\sum_{k=1}^r |L_{C_2(j_2),k}|}\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\right.\\
+&\quad\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]\right|.
+\end{align*}
+
+We further decompose each term in the sum:
+\begin{align*}
+&\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle) - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]\right|\\
+&\quad \le \max_{j_1 \le n_1}\left|\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle) - w_1(t, C_1(j_1), k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\right|\\
+&\quad\quad + \left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}w_1(t, C_1(j_1), k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle) - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]\right|\\
+&\equiv Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2).
+\end{align*}
+
+Therefore:
+\[
+|q_2(t, x, j_2, c_2)| \le \textcolor{red}{\sum_{k=1}^r |L_{C_2(j_2),k}|}(Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2)) \le \textcolor{red}{rK}\max_{1 \le k \le r}(Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2)),
+\]
+where we used $\|L\|_{\infty,1} \le \textcolor{red}{rK}$.
+
+\paragraph*{Step 3: Decomposition of $q_{B,k}$ with low-rank structure.}
+
+For the backpropagated signal difference:
+\begin{align*}
+|q_{B,k}(t, x)| &= \left|\frac{1}{n_2}\sum_{j_2=1}^{n_2} \textcolor{red}{L_{C_2(j_2),k}}\,\varphi_2'(\tilde{H}_2(t, j_2; x, \tilde{W}))\,\tilde{w}_2(t, j_2)\right.\\
+&\quad\left. - \mathbb{E}_{C_2}[\textcolor{red}{L_{C_2,k}}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]\right|.
+\end{align*}
+
+We decompose:
+\begin{align*}
+|q_{B,k}(t, x)| &\le \max_{j_2 \le n_2}\left|\textcolor{red}{L_{C_2(j_2),k}}\,\varphi_2'(\tilde{H}_2(t, j_2; x, \tilde{W}))\,\tilde{w}_2(t, j_2)\right.\\
+&\quad\left. - \textcolor{red}{L_{C_2(j_2),k}}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))\right|\\
+&\quad + \left|\frac{1}{n_2}\sum_{j_2=1}^{n_2} \textcolor{red}{L_{C_2(j_2),k}}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))\right.\\
+&\quad\left. - \mathbb{E}_{C_2}[\textcolor{red}{L_{C_2,k}}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]\right|\\
+&\equiv Q_{B,1,k}(x) + Q_{B,2,k}(x).
+\end{align*}
+
+For $Q_{B,1,k}$, using Assumption~\ref{assump:regularity} and the fact that $\textcolor{red}{|L_{C_2(j_2),k}| \le K}$:
+\begin{align*}
+\mathbb{E}_Z[Q_{B,1,k}(X)] &\le K\max_{j_2 \le n_2}\left(|\tilde{w}_2(t, j_2) - w_2(t, C_2(j_2))|\right.\\
+&\quad\left. + |w_2(t, C_2(j_2))|\,\mathbb{E}_Z[|\tilde{H}_2(t, j_2; X, \tilde{W}) - H_2(t, C_2(j_2); X, W)|]\right)\\
+&\le K_t\left(\mathscr{D}_t(W, \tilde{W}) + \max_{j_2 \le n_2}\mathbb{E}_Z[|q_2(t, X, j_2, C_2(j_2))|]\right).
+\end{align*}
+
+\paragraph*{Step 4: Concentration bounds adapted to low-rank.}
+
+For $Q_{2,1,k}$, we have:
+\begin{align*}
+\max_{j_2 \le n_2}\mathbb{E}_Z[Q_{2,1,k}(X, j_2)] &\le K\max_{j_1 \le n_1, 1 \le k \le r}|\tilde{w}_1(t, j_1, k) - w_1(t, C_1(j_1), k)|\\
+&\le K_t\mathscr{D}_t(W, \tilde{W}).
+\end{align*}
+
+For $Q_{2,2,k}$, we apply concentration. Let us write:
+\[
+Z_{1,k}(x, c_1) = w_1(t, c_1, k)\,\varphi_1(\langle f_1(c_1), x\rangle).
+\]
+Recall that $\{C_1(j_1)\}_{j_1=1}^{n_1}$ are i.i.d. We have:
+\[
+\mathbb{E}[Z_{1,k}(X, C_1(j_1))|X] = \mathbb{E}_{C_1}[Z_{1,k}(X, C_1)],
+\]
+and $\{Z_{1,k}(X, C_1(j_1))\}_{j_1=1}^{n_1}$ are independent conditional on $X$. By Assumption~\ref{assump:regularity}, $|Z_{1,k}(X, C_1(j_1))| \le K_t$ almost surely. Then by concentration inequalities:
+\[
+\mathbb{P}\left(\mathbb{E}_Z[Q_{2,2,k}(X, j_2)] \ge K_t\gamma_{2,k}\right) \le \frac{1}{\gamma_{2,k}}\exp\left(-\frac{n_1\gamma_{2,k}^2}{K_t}\right).
+\]
+
+For $Q_{B,2,k}$, we note that almost surely:
+\[
+\textcolor{red}{|L_{C_2(j_2),k}|}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))| \le K\textcolor{red}{|L_{C_2(j_2),k}|} \le K^2,
+\]
+by Assumption~\ref{assump:regularity}. Then by concentration inequalities:
+\[
+\mathbb{P}\left(\mathbb{E}_Z[Q_{B,2,k}(X)] \ge K_t\gamma_{1,k}\right) \le \frac{1}{\gamma_{1,k}}\exp\left(-\frac{n_2\gamma_{1,k}^2}{K_t}\right).
+\]
+
+\paragraph*{Step 5: Combining bounds with union over $k$.}
+
+\textbf{Taking a union bound over $k = 1, \ldots, r$ channels} (which is specific to the low-rank structure), we obtain that for any $\gamma_1, \gamma_2 > 0$ and $t \ge 0$, the event:
+\begin{align*}
+&\max\Bigg\{\max_{j_2 \le n_2}\mathbb{E}_Z[|q_2(t, X, j_2, C_2(j_2))|],\\
+&\qquad\max_{j_1 \le n_1, 1 \le k \le r}\mathbb{E}_Z[|q_{B,k}(t, X)|]\Bigg\}\\
+&\quad \le K_t\textcolor{red}{(1+rK)}(\mathscr{D}_t(W, \tilde{W}) + \gamma_1 + \gamma_2),
+\end{align*}
+holds with probability at least:
+\[
+1 - \frac{\mathbf{n_1r}}{\gamma_1}\exp\left(-\frac{n_2\gamma_1^2}{\mathbf{K_t\textcolor{red}{(1+rK)^2}}}\right) - \frac{\mathbf{n_2r}}{\gamma_2}\exp\left(-\frac{n_1\gamma_2^2}{\mathbf{K_t\textcolor{red}{(1+rK)^2}}}\right).
+\]
+
+\paragraph*{Step 6: Gronwall argument.}
+
+Combining the bounds and taking a union bound over a discrete time grid $t \in \{0, \xi, 2\xi, \ldots, \lfloor T/\xi\rfloor\xi\}$ for some $\xi \in (0,1)$, we obtain:
+\[
+\max\left\{\max_{j_2 \le n_2}\left|\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) - \frac{\partial}{\partial t}w_2(t, C_2(j_2))\right|,\right.
+\]
+\[
+\left.\max_{j_1 \le n_1, 1 \le k \le r}\left|\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) - \frac{\partial}{\partial t}w_1(t, C_1(j_1), k)\right|\right\}
+\]
+\[
+\le \mathbf{K_T\textcolor{red}{(1+rK)}}(\mathscr{D}_t(W, \tilde{W}) + \gamma_1 + \gamma_2 + \xi), \qquad \forall t \in [0, T],
+\]
+with probability at least:
+\[
+1 - \frac{T+1}{\xi}\left[\frac{\mathbf{n_1r}}{\gamma_1}\exp\left(-\frac{n_2\gamma_1^2}{\mathbf{K_T\textcolor{red}{(1+rK)^2}}}\right) + \frac{\mathbf{n_2r}}{\gamma_2}\exp\left(-\frac{n_1\gamma_2^2}{\mathbf{K_T\textcolor{red}{(1+rK)^2}}}\right)\right].
+\]
+
+The above event implies:
+\[
+\mathscr{D}_t(W, \tilde{W}) \le \mathbf{K_T\textcolor{red}{(1+rK)}}\int_0^t(\mathscr{D}_s(W, \tilde{W}) + \gamma_1 + \gamma_2 + \xi)ds,
+\]
+and hence by Gronwall's lemma and the fact $\mathscr{D}_0(W, \tilde{W}) = 0$:
+\[
+\mathscr{D}_T(W, \tilde{W}) \le (\gamma_1 + \gamma_2 + \xi)\mathbf{e^{K_T\textcolor{red}{(1+rK)}}}.
+\]
+
+The result follows from choosing:
+\[
+\xi = \frac{1}{\sqrt{n_{\max}}}, \quad \gamma_1 = \frac{\mathbf{K_T\textcolor{red}{(1+rK)}}}{\sqrt{n_2}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2\mathbf{r}}{\delta} + e\right),
+\]
+\[
+\gamma_2 = \frac{\mathbf{K_T\textcolor{red}{(1+rK)}}}{\sqrt{n_1}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2\mathbf{r}}{\delta} + e\right).
+\]
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:gradient-lowrank}}
+
+\begin{proof}
+The proof follows the same structure as the full-width case \cite{nguyen2020global}, with careful adaptations for the low-rank structure. \textbf{The key difference is that we need to account for the $r$ channels in $w_1$ and the mixing matrix $L$ in all bounds.}
+
+We consider $t \le T$ for a given terminal time $T \in \epsilon\mathbb{N}_{\ge 0}$. We reuse the notation $K_t$ from the proof of Lemma~\ref{lem:particle-lowrank}. Note that $K_t \le K_T$ for all $t \le T$. We also note that at initialization, $\mathscr{D}_0(\mathbf{W}, \tilde{W}) = 0$.
+
+For brevity, let us define quantities that relate to the difference in the gradient updates between $\mathbf{W}$ and $\tilde{W}$:
+\begin{align*}
+q_2(k, z, \tilde{z}, j_2) &= d_L(z; \mathbf{W}(k))\,\varphi_2(\mathbf{H}_2(k, j_2; x, \mathbf{W}(k)))\\
+&\quad - d_L(\tilde{z}; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; \tilde{x}, \tilde{W}(k\epsilon))),\\
+\textcolor{red}{r_2(k, z, j_2)} &= \xi_2(k\epsilon)d_L(z; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; x, \tilde{W}(k\epsilon)))\\
+&\quad - \xi_2(k\epsilon)\mathbb{E}_Z[d_L(Z; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; X, \tilde{W}(k\epsilon)))],\\
+q_1(k, z, \tilde{z}, j_1, k') &= d_L(z; \mathbf{W}(k))\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\,\mathbf{B}_{k'}(k; x, \mathbf{W}(k))\\
+&\quad - d_L(\tilde{z}; \tilde{W}(k\epsilon))\,\varphi_1(\langle f_1(C_1(j_1)), \tilde{x}\rangle)\,\tilde{B}_{k'}(k\epsilon; \tilde{x}, \tilde{W}(k\epsilon)),\\
+\textcolor{red}{r_1(k, z, j_1, k')} &= \xi_1(k\epsilon)d_L(z; \tilde{W}(k\epsilon))\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\,\tilde{B}_{k'}(k\epsilon; x, \tilde{W}(k\epsilon))\\
+&\quad - \xi_1(k\epsilon)\mathbb{E}_Z[d_L(Z; \tilde{W}(k\epsilon))\,\varphi_1(\langle f_1(C_1(j_1)), X\rangle)\,\tilde{B}_{k'}(k\epsilon; X, \tilde{W}(k\epsilon))],
+\end{align*}
+where $\mathbf{B}_{k'}(k; x, \mathbf{W}) = \frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k'}\,\varphi_2'(\mathbf{H}_2(k, j_2; x, \mathbf{W}))\,\mathbf{w}_2(k, j_2)$.
+
+By time-interpolation estimates (similar to Claim 1 in the full-width case) and Assumption~\ref{assump:regularity}, we have:
+\begin{align*}
+|\mathbf{w}_2(\lfloor t/\epsilon\rfloor, j_2) - \tilde{w}_2(t, j_2)| &\le K\max_{j_2 \le n_2}\left[Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) + Q_{2,2}(\lfloor t/\epsilon\rfloor, j_2)\right] + tK_t\epsilon,\\
+|\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k) - \tilde{w}_1(t, j_1, k)| &\le K\max_{j_1 \le n_1, 1 \le k \le r}\left[Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) + Q_{1,2}(\lfloor t/\epsilon\rfloor, j_1, k)\right] + tK_t\epsilon,
+\end{align*}
+where:
+\begin{align*}
+Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) &= \epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}|q_2(\ell, z(\ell), z(\ell), j_2)|,\\
+Q_{2,2}(\lfloor t/\epsilon\rfloor, j_2) &= \left|\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\textcolor{red}{r_2(\ell, z(\ell), j_2)}\right|,\\
+Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) &= \epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}|q_1(\ell, z(\ell), z(\ell), j_1, k)|,\\
+Q_{1,2}(\lfloor t/\epsilon\rfloor, j_1, k) &= \left|\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\textcolor{red}{r_1(\ell, z(\ell), j_1, k)}\right|.
+\end{align*}
+
+\paragraph*{Bounding the terms:}
+
+For $Q_{2,1}$, using Assumption~\ref{assump:regularity} and the low-rank structure:
+\begin{align*}
+|q_2(\ell, z(\ell), z(\ell), j_2)| &\le K|d_L(z(\ell); \mathbf{W}(\ell)) - d_L(z(\ell); \tilde{W}(\ell\epsilon))|\\
+&\quad + K|d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{H}_2(\ell, j_2; x(\ell), \mathbf{W}(\ell)) - \tilde{H}_2(\ell\epsilon, j_2; x(\ell), \tilde{W}(\ell\epsilon))|\\
+&\le K_t\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}) + K_t\textcolor{red}{\sum_{k=1}^r |L_{C_2(j_2),k}|}\max_{j_1 \le n_1}|\mathbf{w}_1(\ell, j_1, k) - \tilde{w}_1(\ell\epsilon, j_1, k)|\\
+&\le \mathbf{K_t\textcolor{red}{(1+rK)}}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}),
+\end{align*}
+which yields:
+\[
+\max_{j_2 \le n_2}Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) \le K_t\textcolor{red}{(1+rK)}\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}).
+\]
+
+For $Q_{1,1}$, similarly:
+\begin{align*}
+|q_1(\ell, z(\ell), z(\ell), j_1, k)| &\le K|d_L(z(\ell); \mathbf{W}(\ell)) - d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{B}_k(\ell; x(\ell), \mathbf{W}(\ell))|\\
+&\quad + K|d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{B}_k(\ell; x(\ell), \mathbf{W}(\ell)) - \tilde{B}_k(\ell\epsilon; x(\ell), \tilde{W}(\ell\epsilon))|\\
+&\le K_t\textcolor{red}{(1+rK)}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}),
+\end{align*}
+which yields:
+\[
+\max_{j_1 \le n_1, 1 \le k \le r}Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) \le K_t\textcolor{red}{(1+rK)}\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}).
+\]
+
+For $Q_{2,2}$ and $Q_{1,2}$, we use martingale concentration. The martingale differences are bounded: $\textcolor{red}{|r_2(\ell, z(\ell), j_2)| \le K_t}$ and $\textcolor{red}{|r_1(\ell, z(\ell), j_1, k)| \le K_t\textcolor{red}{(1+rK)}}$ almost surely by Assumption~\ref{assump:regularity} and the low-rank structure. Then by martingale concentration inequalities:
+\[
+\textcolor{red}{\mathbb{P}\left(\max_{j_2 \le n_2}\max_{\ell \in \{0,1,\ldots,T/\epsilon\}}Q_{2,2}(\ell, j_2) \ge \xi\right) \le 2n_2\exp\left(-\frac{\xi^2}{K_T(T+1)\epsilon}\right),}
+\]
+\[
+\textcolor{red}{\mathbb{P}\left(\max_{j_1 \le n_1, 1 \le k \le r}\max_{\ell \in \{0,1,\ldots,T/\epsilon\}}Q_{1,2}(\ell, j_1, k) \ge \xi\right) \le \mathbf{2n_1r}\exp\left(-\frac{\xi^2}{\mathbf{K_T\textcolor{red}{(1+rK)^2}}(T+1)\epsilon}\right).}
+\]
+
+\paragraph*{Putting everything together:}
+
+All the above results give us:
+\[
+\mathscr{D}_{\lfloor t/\epsilon\rfloor\epsilon}(\tilde{W}, \mathbf{W}) \le \mathbf{K_T\textcolor{red}{(1+rK)}}\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}) + \xi + TK_T\epsilon, \qquad \forall t \le T,
+\]
+which holds with probability at least:
+\[
+1 - \mathbf{2n_1r}\exp\left(-\frac{\xi^2}{\mathbf{K_T\textcolor{red}{(1+rK)^2}}(T+1)\epsilon}\right) - 2n_2\exp\left(-\frac{\xi^2}{K_T(T+1)\epsilon}\right).
+\]
+
+The above event implies, by Gronwall's lemma:
+\[
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) \le (\xi + \epsilon)e^{K_T\textcolor{red}{(1+rK)}}.
+\]
+
+Choosing $\xi = \mathbf{K_T\textcolor{red}{(1+rK)}}\sqrt{(T+1)\epsilon\log(\mathbf{2n_1n_2r}/\delta)}$ completes the proof.
+\end{proof}
+
