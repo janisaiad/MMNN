@@ -1,4 +1,4 @@
-\section{NTK recursion}
+\section{NTK recursion}\label{sec:recursion}
 
 We now state the main result characterizing the NTK recursion for MMNNs. This recursion governs how the kernel evolves through layers and determines the training dynamics in the infinite-width limit.
 
@@ -13,11 +13,11 @@ where the factor \( 1/r \) appears for bottleneck layers \( \ell \ge 2 \) (low-r
 The additive constant \(1\) term comes from the trained layer biases \(c^{(\ell)}\) and corresponds to the constant mode (which vanishes after centering).
 
 \vspace{0.2cm}
-Furthermore, the gradient flow dynamics in the NTK regime satisfy
+Furthermore, for a finite-width network initialized at random parameters \(\theta_0\), the empirical NTK \(\Kop^{(L)}_{\theta_0}\) is a \emph{random} kernel (a Gram operator of gradients). Consequently the kernel gradient flow trajectory \(t\mapsto f_t\) is also a random object (measurable with respect to \(\theta_0\)) and satisfies
 \[
-\frac{d}{dt}f_t(x) = -\int \Kop^{(L)}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
+\frac{d}{dt}f_t(x) = -\int \Kop^{(L)}_{\theta_0}(x,x') \big(f_t(x') - y(x')\big) d\mu(x'),
 \]
-where \( \mu \) is the data distribution and \( y \) is the target function.
+where \( \mu \) is the data distribution and \( y \) is the target function. In the sequential infinite-width NTK limit, \(\Kop^{(L)}_{\theta_0}\) concentrates and converges (in probability) to the deterministic kernel \(\Kop^{(L)}\), yielding the corresponding deterministic limiting gradient flow.
 \end{theorem}
 
 Proof: See Appendix~\ref{appendix:proof-ntk-recursion}, Proof~\ref{proof:ntk_recursion}.
@@ -31,7 +31,7 @@ Under the assumptions of Theorem~\ref{thm:ntk_recursion}, for any \( L\ge1 \), t
 \label{eq:ntk_explicit_form}
 \Kop^{(L)}(x,x') = \sum_{\ell=1}^{L} \frac{1}{r^{L-\ell}}\left(\prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x')\right) + \sum_{\ell=1}^{L} \frac{1}{r^{\max(1,L-\ell)}}\,\Sigma^{(\ell)}(x,x') \prod_{k=\ell+1}^{L} \dot{\Sigma}^{(k)}(x,x'),
 \end{equation}
-where the first sum has bias contributions (empty product \( = 1 \) when \( \ell=L \)) and the second has fresh-basis contributions; each bottleneck layer contributes a factor \( 1/r \). For \( L=2 \): \( \Kop^{(2)} = 1 + \frac{1}{r}(\dot{\Sigma}^{(2)} + \Sigma^{(1)}\dot{\Sigma}^{(2)} + \Sigma^{(2)}) \).
+where the first sum has bias contributions (empty product \( = 1 \) when \( \ell=L \)) and the second has fresh-basis contributions; each bottleneck layer contributes a factor \( 1/r \). For \( L=2 \): \( \Kop^{(2)} = 1 + \frac{1}{r}\bigl(\dot{\Sigma}^{(2)} + \Sigma^{(1)}\dot{\Sigma}^{(2)} + \Sigma^{(2)}\bigr) \): the leading \(1\) is the bias (constant mode); \( \frac{1}{r}\dot{\Sigma}^{(2)} \) is the bias-path term (derivative at layer \(2\) only); \( \frac{1}{r}\Sigma^{(1)}\dot{\Sigma}^{(2)} \) and \( \frac{1}{r}\Sigma^{(2)} \) are the fresh-basis terms (layers \(1\) and \(2\)). This matches Theorem~\ref{thm:ntk_recursion} by substituting \( \Kop^{(1)}=1+\Sigma^{(1)} \) into the recursion for \( \ell=2 \).
 \end{corollary}
 
 \begin{proof}
@@ -41,7 +41,7 @@ Expanding the recursion in Theorem~\ref{thm:ntk_recursion} yields the two sums i
 
 \vspace{0.3cm}
 \paragraph{Finite-width effects.}
-Beyond the infinite-width limit, one can in principle study finite-width corrections to the kernel via cumulant/resolvent expansions or diagrammatic methods; see~\cite{dyer2019asymptoticswidenetworksfeynman} for a Feynman-diagram approach in wide-network asymptotics. We do not pursue these corrections here.
+Beyond the infinite-width limit, one can in principle study finite-width corrections to the kernel via cumulant/resolvent expansions or diagrammatic methods; see~\cite{dyer2019asymptoticswidenetworksfeynman} for a Feynman-diagram approach in wide-network asymptotics. These corrections are deferred to future work.
 
 \paragraph{Relation to fully trained MLPs at the edge of chaos.}
 For comparison with the fully trained (full-width) MLP NTK at EOC, see Appendix~\ref{appendix:classical-ntk-comparison} and the reference closed form in Proposition~\ref{prop:mlp-eoc-ntk-formula}.
@@ -53,19 +53,4 @@ For comparison with the fully trained (full-width) MLP NTK at EOC, see Appendix~
 The mean (probabilistic) recursion and the resulting nested conditional expectations are essential for understanding the deep (\(L\to\infty\)) behavior, but the full discussion is lengthy. We therefore defer the probabilistic recursion, its nested-expectation form, and the exponential depth-suppression bound to Appendix~\ref{appendix:probabilistic-recursion-details} (see also Appendix~\ref{appendix:open-directions} for related open problems).
 
 \vspace{0.4cm}
-We now specialize to the three-layer case, where we can obtain a particularly compact form under a homogeneity assumption on the activation function.
-
-\begin{corollary}[three-layer NTK: compact form]\label{cor:two_layer_ntk}
-Under the assumptions of Theorem~\ref{thm:ntk_recursion} with \( L=2 \),
-\[
-\Kop^{(1)}(x,x') \;=\; 1 + \Sigma^{(1)}(x,x'),
-\]
-\[
-\Kop^{(2)}(x,x') \;=\; 1 + \frac{1}{r}\,\Kop^{(1)}(x,x')\cdot\dot{\Sigma}^{(2)}(x,x') \;+\; \frac{1}{r}\,\Sigma^{(2)}(x,x').
-\]
-\end{corollary}
-
-\begin{proof}
-\label{proof:two_layer_ntk_inline}
-Immediate from Theorem~\ref{thm:ntk_recursion}.
-\end{proof}
+The three-layer case admits a compact representation that makes the Fisher--Kibble structure explicit; we present it in Section~\ref{subsec:fisher-kibble-main}.

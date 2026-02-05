@@ -17,7 +17,7 @@ We distinguish the feature width \(\bm{n}_\ell\) (number of random features) fro
 Initialization is
 \[
 w^{(\ell)}_j \sim \mathcal{N}\!\big(0, I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1}\big),\quad
-A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, \sigma_A^2),\quad
+A^{(\ell)}_{ij} \sim \mathcal{N}\!(0, 2),\quad
 c^{(\ell)} = 0,
 \]
 We use the \emph{edge-of-chaos (EOC)} scaling for the weights so that \( \mathrm{Cov}\!\big(w^{(\ell)}_j\big) = I_{\bm{d}_{\ell-1}}/\bm{d}_{\ell-1} \) \cite{hayou2018selectioninitializationactivationfunction}.
@@ -41,14 +41,7 @@ We work under the positive 1-homogeneity assumption (satisfied by \(\ReLU\)); se
 
 \subsection{Parameterization, signal propagation, and kernels}
 
-We briefly record the scaling conventions used in the kernel calculations; details are in Appendix~\ref{appendix:notation-assumptions}.
-\paragraph{EOC scaling.}
-We choose the variance \(\sigma_A\) so that the forward variance remains stable across depth (edge of chaos); the resulting recursion for the layerwise variance \(q^{(\ell)}\) and the condition on \(\sigma_A\) are given in Appendix~\ref{appendix:eoc-scaling}.
-\paragraph{Bottleneck scaling and the \(1/r\) factor.}
-In the bottleneck regime \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), the EOC scaling uses \( \mathrm{Cov}(w)=I_r/r \), which keeps base and derivative kernels \(O(1)\). The RF-LR NTK recursion carries an explicit prefactor \(1/r\) at bottleneck layers; see Appendix~\ref{appendix:eoc-scaling} and Appendix~\ref{appendix:proof-ntk-recursion}.
-
-\vspace{0.5em}
-With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel.
+We briefly record the scaling conventions used in the kernel calculations; details are in Appendix~\ref{appendix:eoc-scaling} and Appendix~\ref{appendix:proof-ntk-recursion}. \emph{EOC scaling:} we choose the variance \(\sigma_A\) so that the forward variance remains stable across depth (edge of chaos), leading to a recursion for the layerwise variance \(q^{(\ell)}\) and a corresponding condition on \(\sigma_A\). \emph{Bottleneck scaling and the \(1/r\) factor:} in the bottleneck regime \(\bm{d}_{\ell-1}=r\) for \(\ell\ge 2\), the EOC scaling uses \( \mathrm{Cov}(w)=I_r/r \), which keeps base and derivative kernels \(O(1)\), and the RF-LR NTK recursion carries an explicit prefactor \(1/r\) at bottleneck layers. With an abuse of notation, we denote by \( \Sigma^{(\ell)} \) the base kernel and by \( \dot{\Sigma}^{(\ell)} \) the derivative kernel.
 
 \begin{definition}[Base and derivative kernels]\label{def:base-derivative-kernels}
 \vspace{0.3cm}

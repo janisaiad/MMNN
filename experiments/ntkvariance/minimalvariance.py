@@ -70,7 +70,7 @@ def ntk_entry_pair(width: int, r: int, x: float, xp: float, rng: np.random.Gener
 
 def main() -> None:
     width = 16000
-    ranks = [5, 10, 20, 50]
+    ranks = [5, 10, 20, 50, 75, 100]  # up to e2
     n_trials = 100
     x = -1.0
     xp = 1.0
@@ -87,15 +87,22 @@ def main() -> None:
         means.append(float(values.mean()))
         variances.append(float(values.var(ddof=1)))
 
-    plt.figure(figsize=(5, 4))
-    plt.loglog(ranks, variances, marker="o")
-    plt.xlabel("rank r")
-    plt.ylabel("var[NTK(-1,1)]")
-    plt.title(f"3-layer (2-ReLU) low-rank NTK variance, width={width}, trials={n_trials}")
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    ax.loglog(ranks, variances, marker="o", label="empirical")
+    r_min, v_min = ranks[0], variances[0]
+    r_ref = np.asarray(ranks, dtype=np.float64)
+    v_ref = v_min * (float(r_min) / r_ref)  # 1/r baseline through lowest rank
+    ax.loglog(ranks, v_ref, linestyle="--", color="gray", linewidth=1.2, label=r"$\propto 1/r$ baseline")
+    ax.set_xlabel("rank $r$", fontsize=11)
+    ax.set_ylabel(r"$\mathrm{Var}[K(-1,1)]$", fontsize=11)
+    ax.set_title(f"3-layer (2-ReLU) low-rank NTK variance, width={width}, trials={n_trials}", fontsize=11)
+    ax.tick_params(axis="both", labelsize=8)
+    ax.legend(loc="upper right", fontsize=9)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.tight_layout()
     out_path = Path(__file__).resolve().parent / "variance_vs_r.png"
-    plt.savefig(out_path, dpi=200)
+    fig.savefig(out_path, dpi=200)
+    plt.close(fig)
 
     for r, m, v in zip(ranks, means, variances):
         print(f"r={r:>3d}  mean={m:.6e}  var={v:.6e}")

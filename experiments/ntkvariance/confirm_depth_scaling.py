@@ -106,7 +106,8 @@ def main() -> None:
         delta = theta_diag - theta_off
 
         axs1[0].plot(ks, w / ks, linewidth=1.8, label=f"r={r}")
-        axs1[1].plot(ks, (1.0 - rho) * (ks**2), linewidth=1.8, label=f"r={r}")
+        one_minus_rho = np.maximum(1.0 - rho, 1e-300)
+        axs1[1].plot(ks, one_minus_rho, linewidth=1.8, label=f"r={r}")
 
         ths = theta_star(r)
         axs1[2].plot(ks, np.abs(theta_off - ths) * ks, linewidth=1.8, label=f"r={r}")
@@ -117,9 +118,14 @@ def main() -> None:
     axs1[0].grid(True, linestyle="--", linewidth=0.5)
     axs1[0].legend(fontsize=10)
 
-    axs1[1].set_title(r"$(1-\rho_k)\,k^2$ (bounded)")
-    axs1[1].set_xlabel("k")
-    axs1[1].grid(True, linestyle="--", linewidth=0.5)
+    axs1[1].set_title(r"$1-\rho_k$ vs $k$ (log-log)")
+    axs1[1].set_xlabel("$k$")
+    axs1[1].set_ylabel(r"$1-\rho_k$")
+    axs1[1].set_xscale("log")
+    axs1[1].set_yscale("log")
+    k_ref = np.arange(1.0, k_max + 1.0, dtype=np.float64)
+    axs1[1].plot(k_ref, 1.0 / (k_ref**2), linestyle="--", color="gray", linewidth=1.2, label=r"$k^{-2}$ ref")
+    axs1[1].grid(True, which="both", linestyle="--", linewidth=0.5)
     axs1[1].legend(fontsize=10)
 
     axs1[2].set_title(r"$k\,|\Theta^{(k)}(\rho_1)-\Theta_\star(r)|$ (bounded)")
