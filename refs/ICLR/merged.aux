@@ -24,8 +24,8 @@
 \@writefile{toc}{\contentsline {section}{\numberline {2}Model}{1}{section.2}\protected@file@percent }
 \newlabel{sec:model}{{2}{1}{Model}{section.2}{}}
 \citation{abbe2023sgdlearningneuralnetworks}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Theory: when does a channel dominate?}{2}{subsection.2.1}\protected@file@percent }
-\newlabel{sec:theory}{{2.1}{2}{Theory: when does a channel dominate?}{subsection.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Methodology}{2}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:theory}{{2.1}{2}{Methodology}{subsection.2.1}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Results}{2}{section.3}\protected@file@percent }
 \newlabel{sec:results}{{3}{2}{Results}{section.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {Loss and fit around learning-rate reductions.} Left: depth $L=2$; right: $L=3$. Training on a sum of three cosines ($N=768$, batch 8). The curves show how the global fit (blue) approaches the target (orange) in stages: after each LR cut the loss drops and the predictor gains finer oscillations in the interior of $[-1,1]$, reflecting descent into a deeper valley of the landscape.}}{2}{figure.1}\protected@file@percent }
@@ -36,49 +36,51 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Log-ratio evolution at $x=0$.} Left: the maximum log-ratio between channel pairs grows over epochs when channels specialize. Right: the full set of pairwise log-ratios over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles.}}{3}{figure.3}\protected@file@percent }
 \newlabel{fig:trajectory}{{3}{3}{\textbf {Log-ratio evolution at $x=0$.} Left: the maximum log-ratio between channel pairs grows over epochs when channels specialize. Right: the full set of pairwise log-ratios over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles}{figure.3}{}}
 \newlabel{fig:logratio-heatmap}{{3}{3}{\textbf {Log-ratio evolution at $x=0$.} Left: the maximum log-ratio between channel pairs grows over epochs when channels specialize. Right: the full set of pairwise log-ratios over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles}{figure.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times }10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times }10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions.}}{3}{figure.4}\protected@file@percent }
-\newlabel{fig:logratio_div}{{4}{3}{\textbf {Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times }10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times }10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions}{figure.4}{}}
-\newlabel{fig:logratio_conv}{{4}{3}{\textbf {Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times }10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times }10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions}{figure.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell $ partials) vs.\ layer index $\ell $ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth shows that later layers develop more oscillatory internal representations.}}{3}{figure.5}\protected@file@percent }
-\newlabel{fig:mean-minima-vs-layer}{{5}{3}{\textbf {Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell $ partials) vs.\ layer index $\ell $ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth shows that later layers develop more oscillatory internal representations}{figure.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces \textbf  {Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry.}}{4}{figure.6}\protected@file@percent }
-\newlabel{fig:mlp-asymmetry}{{6}{4}{\textbf {Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry}{figure.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces \textbf  {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm  {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones.}}{4}{figure.7}\protected@file@percent }
-\newlabel{fig:escape_vs_lr}{{7}{4}{\textbf {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones}{figure.7}{}}
-\newlabel{fig:escape_vs_bs}{{7}{4}{\textbf {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones}{figure.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell $ partials) vs.\ layer index $\ell $ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth is consistent with the conjecture that layer $L$ exhibits on the order of $2L$ spikes and that later layers develop more oscillatory internal representations.}}{3}{figure.4}\protected@file@percent }
+\newlabel{fig:mean-minima-vs-layer}{{4}{3}{\textbf {Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell $ partials) vs.\ layer index $\ell $ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth is consistent with the conjecture that layer $L$ exhibits on the order of $2L$ spikes and that later layers develop more oscillatory internal representations}{figure.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry.}}{3}{figure.5}\protected@file@percent }
+\newlabel{fig:mlp-asymmetry}{{5}{3}{\textbf {Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry}{figure.5}{}}
 \bibdata{iclr2026_conference,../colt2026/arxhive,icml_sgdadamlandscapedynamical/example_paper}
 \bibcite{abbe2023sgdlearningneuralnetworks}{{1}{2023}{{Abbe et~al.}}{{Abbe, Boix-Adsera, and Misiakiewicz}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces \textbf  {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm  {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones.}}{4}{figure.6}\protected@file@percent }
+\newlabel{fig:escape_vs_lr}{{6}{4}{\textbf {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones}{figure.6}{}}
+\newlabel{fig:escape_vs_bs}{{6}{4}{\textbf {How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm {lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones}{figure.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces \textbf  {Channel partials at depth $L=2$: before and after training.} Left: epoch 0 (initial). Right: epoch 180. Oscillatory structure develops over training as the network captures higher-frequency components.}}{4}{figure.7}\protected@file@percent }
+\newlabel{fig:logratio_div}{{7}{4}{\textbf {Channel partials at depth $L=2$: before and after training.} Left: epoch 0 (initial). Right: epoch 180. Oscillatory structure develops over training as the network captures higher-frequency components}{figure.7}{}}
+\newlabel{fig:logratio_conv}{{7}{4}{\textbf {Channel partials at depth $L=2$: before and after training.} Left: epoch 0 (initial). Right: epoch 180. Oscillatory structure develops over training as the network captures higher-frequency components}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Limitations}{4}{section.4}\protected@file@percent }
+\newlabel{sec:limitations}{{4}{4}{Limitations}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{4}{section.5}\protected@file@percent }
+\newlabel{sec:conclusion}{{5}{4}{Conclusion}{section.5}{}}
 \bibcite{chizat2018globalconvergencegradientdescent}{{2}{2018}{{Chizat \& Bach}}{{Chizat and Bach}}}
 \bibcite{jacot2018neural}{{3}{2018}{{Jacot et~al.}}{{Jacot, Gabriel, and Hongler}}}
 \bibcite{nguyen2023rigorousframeworkmeanfield}{{4}{2023}{{Nguyen \& Pham}}{{Nguyen and Pham}}}
 \bibcite{pham2021globalconvergencethreelayerneural}{{5}{2021}{{Pham \& Nguyen}}{{Pham and Nguyen}}}
 \bibcite{zhang2025structuredbalancedmulticomponentmultilayer}{{6}{2025}{{Zhang et~al.}}{{Zhang, Zhao, Zhong, and Zhou}}}
 \bibstyle{iclr2026_conference}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Limitations}{5}{section.4}\protected@file@percent }
-\newlabel{sec:limitations}{{4}{5}{Limitations}{section.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{5}{section.5}\protected@file@percent }
-\newlabel{sec:conclusion}{{5}{5}{Conclusion}{section.5}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Setup: architecture, target, data, and training}{5}{appendix.A}\protected@file@percent }
 \newlabel{app:setup}{{A}{5}{Setup: architecture, target, data, and training}{appendix.A}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Architecture and low-rank structure}{5}{subsection.A.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Target, data, and training}{5}{subsection.A.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Symmetry and log-ratio figure setups}{5}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Two-sided step toy model and log-ratio criterion}{5}{appendix.B}\protected@file@percent }
+\newlabel{app:toy}{{B}{5}{Two-sided step toy model and log-ratio criterion}{appendix.B}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Setup and closed-form dynamics}{5}{subsection.B.1}\protected@file@percent }
 \citation{jacot2018neural}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Target, data, and training}{6}{subsection.A.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Symmetry and log-ratio figure setups}{6}{subsection.A.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Two-sided step toy model and log-ratio criterion}{6}{appendix.B}\protected@file@percent }
-\newlabel{app:toy}{{B}{6}{Two-sided step toy model and log-ratio criterion}{appendix.B}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Setup and closed-form dynamics}{6}{subsection.B.1}\protected@file@percent }
 \newlabel{eq:fk-twostep}{{1}{6}{Setup and closed-form dynamics}{equation.B.1}{}}
 \newlabel{eq:dtfk-full-delta}{{2}{6}{Setup and closed-form dynamics}{equation.B.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Statement: log-ratio criterion and theorem}{6}{subsection.B.2}\protected@file@percent }
 \newlabel{thm:logratio}{{B.2}{6}{Two-sided step: log-ratio growth at $x_0$ (conditional)}{theorem.B.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Proof of Theorem\nobreakspace  {}\ref  {thm:logratio}}{7}{subsection.B.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{At $x_0$.}{7}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Proof of Theorem\nobreakspace  {}\ref  {thm:logratio}}{6}{subsection.B.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{At $x_0$.}{6}{section*.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{At $x_1$.}{7}{section*.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Conclusion.}{7}{section*.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {B.4}On the hypothesis: when (i)--(iii) hold in practice}{7}{subsection.B.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {C}Full experiment methodology and configs (exhaustive)}{8}{appendix.C}\protected@file@percent }
-\newlabel{app:methodology}{{C}{8}{Full experiment methodology and configs (exhaustive)}{appendix.C}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Target and architecture (all experiments)}{8}{subsection.C.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces \textbf  {Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times }10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times }10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions. The left panel exhibits a scaling exponent near $1$ as expected; the right panel gives $\approx 0.75$, which may relate to $(1+0.5)/2$ from martingale and hole distribution in the landscape (speculative).}}{7}{figure.8}\protected@file@percent }
+\newlabel{fig:app:logratio_trajectories}{{8}{7}{\textbf {Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times }10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times }10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions. The left panel exhibits a scaling exponent near $1$ as expected; the right panel gives $\approx 0.75$, which may relate to $(1+0.5)/2$ from martingale and hole distribution in the landscape (speculative)}{figure.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Full experiment methodology and configs (exhaustive)}{7}{appendix.C}\protected@file@percent }
+\newlabel{app:methodology}{{C}{7}{Full experiment methodology and configs (exhaustive)}{appendix.C}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Target and architecture (all experiments)}{7}{subsection.C.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.2}Config naming}{8}{subsection.C.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.3}Main figures (loss, fit, partials)}{8}{subsection.C.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.4}Baseline sweep (cos functions): definition and ranks}{8}{subsection.C.4}\protected@file@percent }
@@ -90,10 +92,10 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.8}Frequency/layer-scaling}{9}{subsection.C.8}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.9}Symmetry comparison}{9}{subsection.C.9}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {C.10}Oscillatory-complexity (partial-function minima)}{9}{subsection.C.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {D}Adam training curves (additional)}{10}{appendix.D}\protected@file@percent }
-\newlabel{app:adam-curves}{{D}{10}{Adam training curves (additional)}{appendix.D}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces \textbf  {Adam loss curve showing symmetric spikes.} Factor 2, $N=512$, batch 512, depth 1. The repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them, supporting the picture of a plateau with many sharp holes.}}{10}{figure.8}\protected@file@percent }
-\newlabel{fig:adam_loss_f2_L1}{{8}{10}{\textbf {Adam loss curve showing symmetric spikes.} Factor 2, $N=512$, batch 512, depth 1. The repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them, supporting the picture of a plateau with many sharp holes}{figure.8}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Adam loss curves. \textbf  {(a)} f2, $N=512$, bs 512, $L=3$. \textbf  {(b)} f3, $N=768$, bs 512, $L=1$. \textbf  {(c)} f4, $N=512$, bs 512, $L=1$. \textbf  {(d)} f4, $N=512$, bs 512, $L=4$. Symmetric spikes indicate a landscape with many deep valleys.}}{10}{figure.9}\protected@file@percent }
-\newlabel{fig:app-adam-curves}{{9}{10}{Adam loss curves. \textbf {(a)} f2, $N=512$, bs 512, $L=3$. \textbf {(b)} f3, $N=768$, bs 512, $L=1$. \textbf {(c)} f4, $N=512$, bs 512, $L=1$. \textbf {(d)} f4, $N=512$, bs 512, $L=4$. Symmetric spikes indicate a landscape with many deep valleys}{figure.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Adam training curves (additional)}{9}{appendix.D}\protected@file@percent }
+\newlabel{app:adam-curves}{{D}{9}{Adam training curves (additional)}{appendix.D}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces \textbf  {Adam loss curve showing symmetric spikes.} Factor 2, $N=512$, batch 512, depth 1. The repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them, supporting the picture of a plateau with many sharp holes.}}{10}{figure.9}\protected@file@percent }
+\newlabel{fig:adam_loss_f2_L1}{{9}{10}{\textbf {Adam loss curve showing symmetric spikes.} Factor 2, $N=512$, batch 512, depth 1. The repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them, supporting the picture of a plateau with many sharp holes}{figure.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Adam loss curves. \textbf  {(a)} f2, $N=512$, bs 512, $L=3$. \textbf  {(b)} f3, $N=768$, bs 512, $L=1$. \textbf  {(c)} f4, $N=512$, bs 512, $L=1$. \textbf  {(d)} f4, $N=512$, bs 512, $L=4$. Symmetric spikes indicate a landscape with many deep valleys.}}{10}{figure.10}\protected@file@percent }
+\newlabel{fig:app-adam-curves}{{10}{10}{Adam loss curves. \textbf {(a)} f2, $N=512$, bs 512, $L=3$. \textbf {(b)} f3, $N=768$, bs 512, $L=1$. \textbf {(c)} f4, $N=512$, bs 512, $L=1$. \textbf {(d)} f4, $N=512$, bs 512, $L=4$. Symmetric spikes indicate a landscape with many deep valleys}{figure.10}{}}
 \gdef \@abspage@last{10}

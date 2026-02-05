@@ -8,6 +8,12 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 
+% Tighter spacing around figures to reduce white space
+\setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+\setlength{\floatsep}{5pt plus 1pt minus 1pt}
+\setlength{\dbltextfloatsep}{6pt plus 1pt minus 1pt}
+
 % Extra math for theorems (from features.tex)
 \usepackage{amsthm}
 \theoremstyle{plain}
@@ -42,10 +48,10 @@ Our contribution is a \textbf{unified picture} in three strands. \textbf{(i) Fea
 
 We work with \textbf{low-rank random feature (RF-LR)} networks \cite{zhang2025structuredbalancedmulticomponentmultilayer} on 1D regression with cosine targets. The architecture uses a tall-skinny bottleneck: the first-layer features $L^0$ and the mixing matrices $L^{(\ell)}$ are frozen, and only the channel weights $w_\ell$ are trained. Target, data, and the full training protocol are detailed in Appendix~\ref{app:setup}.
 
-\subsection{Theory: when does a channel dominate?}
+\subsection{Methodology}
 \label{sec:theory}
 
-When a single channel dominates at some input, the backward pass tends to reinforce that dominance (sign-coherence and a self-reinforcing loop). We formalize this with a conditional \textbf{log-ratio criterion}: under certain conditions on an interval $I$, once a channel dominates there it cannot lose that role on $I$. The two-sided step toy model and the precise statement appear in Appendix~\ref{app:toy}.
+We use a single experimental protocol: sum-of-cosines targets on $[-1,1]$, RF-LR networks with adaptive learning-rate schedule and checkpoints before and after each LR divide, and observables including loss, fit, channel partials, log-ratios, and mean minima per channel. Full config naming, baseline sweeps (ranks 5, 10, 20), plateau-escape and log-ratio runs, and exhaustive methodology are given in Appendix~\ref{app:methodology}.
 
 \section{Results}
 \label{sec:results}
@@ -59,15 +65,13 @@ When trained with SGD, the loss curve spends long stretches on flat plateaus bef
 \caption{\textbf{Loss and fit around learning-rate reductions.} Left: depth $L=2$; right: $L=3$. Training on a sum of three cosines ($N=768$, batch 8). The curves show how the global fit (blue) approaches the target (orange) in stages: after each LR cut the loss drops and the predictor gains finer oscillations in the interior of $[-1,1]$, reflecting descent into a deeper valley of the landscape.}
 \label{fig:loss_fit_L2}
 \label{fig:loss_fit_L3}
-\end{figure}
-
+\end{figure}\vspace{-3pt}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.42\linewidth]{figures/plot_partial_before_after_lr_divides_L3.png}
 \caption{\textbf{Channel partials before and after LR divides} (depth $L=3$, same setup). Each curve is the scalar output of one low-rank channel over the input domain. After long training and an LR reduction, the partials develop visible high-frequency structure in the middle of the interval, matching the moment when the trajectory enters a sharp valley and the network picks up higher modes.}
 \label{fig:partial_L3}
-\end{figure}
-
+\end{figure}\vspace{-3pt}
 We track how channels specialize using the log-ratios $R_{i,j}=\log|f_i|-\log|f_j|$ at a fixed point $x=0$. When channels separate by role, the maximum of these ratios grows over training; when they collapse to a similar profile, the ratios stay flat or behave erratically. Figure~\ref{fig:trajectory} shows how the maximum log-ratio evolves and how the full set of pairwise ratios at $x=0$ is distributed over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles.
 
 \begin{figure}[htbp]
@@ -77,28 +81,15 @@ We track how channels specialize using the log-ratios $R_{i,j}=\log|f_i|-\log|f_
 \caption{\textbf{Log-ratio evolution at $x=0$.} Left: the maximum log-ratio between channel pairs grows over epochs when channels specialize. Right: the full set of pairwise log-ratios over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles.}
 \label{fig:trajectory}
 \label{fig:logratio-heatmap}
-\end{figure}
-
-Depending on learning rate and batch size, we either see stable specialization (ratios converge to a spread distribution) or divergence by the end of training. Figure~\ref{fig:logratio_div} illustrates this contrast: at higher LR the trajectories diverge and channels do not settle into clear roles; at lower LR they converge to a stable separation.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}\hfill
-\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
-\caption{\textbf{Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times}10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times}10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions.}
-\label{fig:logratio_div}
-\label{fig:logratio_conv}
-\end{figure}
-
-We also count, per layer, how many strict local minima each channel partial has on a grid; this count rises with depth, so deeper layers carry more oscillatory structure. Figure~\ref{fig:mean-minima-vs-layer} shows the mean number of strict local minima per channel versus layer index for a network with $L=6$ blocks.
+\end{figure}\vspace{-3pt}
+We also count, per layer, how many strict local minima each channel partial has on a grid; this count rises with depth, so deeper layers carry more oscillatory structure. We conjecture that layer $L$ exhibits on the order of $2L$ spikes in the partials; the mean number of strict local minima per channel is a proxy for this oscillatory complexity. Figure~\ref{fig:mean-minima-vs-layer} shows the mean number of strict local minima per channel versus layer index for a network with $L=6$ blocks.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\linewidth]{../../experiments/partialfunctionanalysis/output_leap_all_L6_W128_grouped/grouped/L6_R5/mean_minima_per_component_vs_layer.png}
-\caption{\textbf{Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell$ partials) vs.\ layer index $\ell$ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth shows that later layers develop more oscillatory internal representations.}
+\caption{\textbf{Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell$ partials) vs.\ layer index $\ell$ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth is consistent with the conjecture that layer $L$ exhibits on the order of $2L$ spikes and that later layers develop more oscillatory internal representations.}
 \label{fig:mean-minima-vs-layer}
-\end{figure}
-
+\end{figure}\vspace{-3pt}
 On symmetric targets such as sums of cosines, full-rank MLPs often learn asymmetric internal representations, while the low-rank setup tends to preserve symmetry in the channel partials (Figure~\ref{fig:mlp-asymmetry}). The time to escape the first plateau scales roughly inversely with learning rate, and smaller batches (e.g.\ 1--4) escape more readily (Figure~\ref{fig:escape_vs_lr}). Deeper networks can exhibit on the order of $2L$ spikes per layer in the partials; very deep nets sometimes become unstable.
 
 \begin{figure}[htbp]
@@ -109,8 +100,7 @@ On symmetric targets such as sums of cosines, full-rank MLPs often learn asymmet
 \includegraphics[width=0.48\linewidth]{icml_sgdadamlandscapedynamical/figures/channel_partials_layer16.png}
 \caption{\textbf{Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry.}
 \label{fig:mlp-asymmetry}
-\end{figure}
-
+\end{figure}\vspace{-3pt}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_lr.png}\hfill
@@ -118,8 +108,17 @@ On symmetric targets such as sums of cosines, full-rank MLPs often learn asymmet
 \caption{\textbf{How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm{lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones.}
 \label{fig:escape_vs_lr}
 \label{fig:escape_vs_bs}
-\end{figure}
+\end{figure}\vspace{-3pt}
+Channel partials evolve over training; Figure~\ref{fig:logratio_div} shows depth $L=2$ at the start of training (left) and after 180 epochs (right), with clearer oscillatory structure emerging as the network learns.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\linewidth]{figures/partial_functions_L2_epoch_000.png}\hfill
+\includegraphics[width=0.42\linewidth]{figures/partial_functions_L2_epoch_180.png}
+\caption{\textbf{Channel partials at depth $L=2$: before and after training.} Left: epoch 0 (initial). Right: epoch 180. Oscillatory structure develops over training as the network captures higher-frequency components.}
+\label{fig:logratio_div}
+\label{fig:logratio_conv}
+\end{figure}\vspace{-3pt}
 With Adam, the loss curve can display large symmetric spikes---sudden dips to very low loss followed by a jump back up (Figure~\ref{fig:adam_loss_f2_L1}, Appendix). This pattern is consistent with a landscape that has many deep, narrow valleys: the optimizer can reach near machine-precision loss in one of them and then move out again.
 
 \section{Limitations}
@@ -130,7 +129,7 @@ Our results are limited to 1D regression with cosine targets and the RF-LR archi
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have presented a unified picture of feature learning and the loss landscape for RF-LR networks in 1D. The log-ratio criterion and toy model clarify when a channel dominates, and the diagnostics (trajectories, mean minima per channel) support this picture empirically. The loss evolves in a plateau--sharp--plateau fashion, with sharp basins that become accessible when the learning rate is reduced, and observables such as mean minima per channel and the $2L$-spike pattern link the geometry of the landscape to the way features are learned. Low-rank structure also preserves the symmetry of the target. Within this setting, understanding the loss landscape amounts to understanding when and how the network acquires each frequency.
+We have presented a unified picture of feature learning and the loss landscape for RF-LR networks in 1D. The log-ratio criterion and toy model clarify when a channel dominates, and the diagnostics (trajectories, mean minima per channel) support this picture empirically. The loss evolves in a plateau--sharp--plateau fashion, with sharp basins that become accessible when the learning rate is reduced, and observables such as mean minima per channel and the $2L$-spike pattern (we conjecture that layer $L$ has on the order of $2L$ spikes in the partials) link the geometry of the landscape to the way features are learned. Low-rank structure also preserves the symmetry of the target. Within this setting, understanding the loss landscape amounts to understanding when and how the network acquires each frequency.
 
 \bibliography{iclr2026_conference,../colt2026/arxhive,icml_sgdadamlandscapedynamical/example_paper}
 \bibliographystyle{iclr2026_conference}
@@ -230,6 +229,14 @@ The log-ratio $R_{12}$ at $x_0$ is non-decreasing on $I$; strict dominance of ch
 \subsection{On the hypothesis: when (i)--(iii) hold in practice}
 
 The hypothesis of Theorem~\ref{thm:logratio} is conditional: (i)~$-d_0(t)\ge 0$, (ii)~$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$, and (iii)~$|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$ for some $\rho_0\in[0,1)$. In practice, these conditions are observed to hold in standard training setups. Under \emph{Xavier initialization} (or similar scale-corrected schemes) for the frozen feature and mixing matrices, and \emph{sub-Gaussian initialization} for the trainable weights $w_1$, $w_2$, the initial $f_k$ and backprop signals $B_{k,p}$ are well-balanced across channels. The gradient-flow dynamics then tend to amplify small asymmetries: once one channel leads at $x_0$, (ii)~and (iii)~are maintained because the dominant channel receives a larger $B_k$ and thus a larger $\partial_t f_k$, while the weaker channel's backprop stays proportionally smaller. Condition~(i) holds when the network under-predicts at $x_0$; for squared loss $d_L \propto \hat{y}-y$, $-d_0\ge 0$ corresponds to $\hat{y}(x_0)\le y(x_0)=+A$, which is typical before convergence. Thus, although the theorem does not prove (i)--(iii) from first principles, they are consistent with and typically observed under standard initialization.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}\hfill
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
+\caption{\textbf{Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times}10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times}10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions. The left panel exhibits a scaling exponent near $1$ as expected; the right panel gives $\approx 0.75$, which may relate to $(1+0.5)/2$ from martingale and hole distribution in the landscape (speculative).}
+\label{fig:app:logratio_trajectories}
+\end{figure}
 
 \section{Full experiment methodology and configs (exhaustive)}
 \label{app:methodology}
