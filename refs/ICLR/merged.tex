@@ -17,7 +17,7 @@
 \newtheorem{remark}[theorem]{Remark}
 \newcommand{\ip}[1]{\langle #1 \rangle}
 
-\title{Low-Rank Networks: Feature Learning and Loss Landscape\\ Valley--Frequency Correspondence}
+\title{Low-Rank Networks Learn High-Frequency Features on Loss Landscape Valleys}
 
 \author{Anonymous Author(s)}
 
@@ -27,223 +27,226 @@
 \maketitle
 
 \begin{abstract}
-We study \textbf{feature learning} and its \textbf{relation to the loss landscape} for low-rank neural networks (RF-LR and MMNNs) in frequency-dependent, 1D regression. We combine: (1) a tractable mean-field picture and a rigorous \emph{log-ratio criterion} for channel dominance, with experimental validation and diagnostics (log-ratio trajectories, specialization vs.\ collapse by LR/batch); (2) an \emph{empirical study of oscillatory complexity} across layers via the mean number of strict local minima per partial-function component, showing that deeper layers learn more oscillatory representations; (3) the \emph{landscape--feature link}: plateau--sharp--plateau loss structure where each plateau corresponds to a frequency to be learned (saddle-to-saddle dynamics), sharp deep basins that are hard to enter unless the learning rate is small (loss and partials before/after LR divides), scaling of plateau-escape time with LR and batch size, and symmetry preservation (low-rank preserves target symmetry, full-rank can break it). We provide a single, reproducible methodology and config index. Scope: 1D regression and the sumcos/MMNN setting. This submission fits the workshop focus on empirical studies of learned representations and loss landscapes.
+We study \textbf{feature learning} and its \textbf{relation to the loss landscape} for low-rank random feature (RF-LR) networks in frequency-dependent, 1D regression. We combine: (1) a tractable mean-field picture and a rigorous \emph{log-ratio criterion} for channel dominance, with experimental validation and diagnostics (log-ratio trajectories, specialization vs.\ collapse by LR/batch); (2) an \emph{empirical study of oscillatory complexity} across layers via the mean number of strict local minima per channel (layer-wise partial functions), showing that deeper layers learn more oscillatory representations; (3) the \emph{landscape--feature link} and \emph{valley--frequency correspondence}: plateau--sharp--plateau loss structure where each plateau corresponds to a frequency to be learned (saddle-to-saddle dynamics), sharp deep basins (valleys) that are hard to enter unless the learning rate is small (loss and partials before/after LR divides), scaling of plateau-escape time with LR and batch size, and symmetry preservation (low-rank preserves target symmetry, full-rank can break it). We provide a single, reproducible methodology and config index. Scope: 1D regression and the cos functions/RF-LR setting. This submission fits the workshop focus on empirical studies of learned representations and loss landscapes.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
 
-Understanding how deep networks learn representations and how this connects to the \textbf{geometry of the loss landscape} (plateaus, sharp transitions, basins) remains a central challenge. We focus on \emph{low-rank} neural networks (RF-LR with frozen random features, and matrix-rank MMNNs) in a setting chosen for controllability and reproducibility: 1D regression on frequency-dependent targets (e.g.\ sum of cosines).
+We study how \emph{low-rank random feature} (RF-LR) networks learn representations and how this ties to the loss landscape \cite{chizat2018globalconvergencegradientdescent,abbe2023sgdlearningneuralnetworks} in 1D regression on frequency-dependent (cos) targets.
 
-Our contribution is a \textbf{unified picture} that ties together three strands. \textbf{(i) Feature learning and the log-ratio:} different low-rank channels specialize to distinct spatial locations and progressively capture higher-frequency components; we use a mean-field toy model and a conditional \emph{log-ratio criterion} that characterizes when one channel dominates at a given input, and we validate with log-ratio trajectories and diagnostics (including log-ratio collapse vs.\ convergence depending on LR/batch). \textbf{(ii) Oscillatory complexity across layers:} we define the mean number of strictly-positive local minima per component of the layer-wise partial functions and show that this statistic increases with layer index in MMNNs, consistent with deeper layers learning more oscillatory representations. \textbf{(iii) Loss landscape and valley--frequency correspondence:} the loss exhibits a plateau--sharp--plateau structure where each plateau (or saddle) corresponds to a frequency to be learned and dynamics are saddle-to-saddle; the landscape behaves like a plateau with many sharp, deep basins that are hard to reach unless the learning rate is small---at each LR divide the loss drops sharply and internal partial functions refine; we report scaling of plateau-escape time with LR and batch size, and we show that low-rank networks preserve the target's geometric symmetry while full-rank nets can learn asymmetric features. Observables such as mean minima per component and the $2L$-spike pattern per layer $L$ provide a concrete bridge between landscape and feature learning.
+Our contribution is a \textbf{unified picture} in three strands. \textbf{(i) Feature learning and the log-ratio:} channels specialize to distinct spatial locations and progressively capture higher frequencies; a mean-field toy model \cite{nguyen2023rigorousframeworkmeanfield,pham2021globalconvergencethreelayerneural} and a conditional \emph{log-ratio criterion} characterize when one channel dominates; we validate with log-ratio trajectories and diagnostics (collapse vs.\ convergence with LR/batch). \textbf{(ii) Oscillatory complexity:} the mean number of strict local minima per channel (layer-wise partials) increases with layer index, consistent with deeper layers learning more oscillatory representations. \textbf{(iii) Valley--frequency correspondence:} the loss has plateau--sharp--plateau structure (saddle-to-saddle); each plateau is a frequency not yet learned; the landscape is a plateau with sharp, deep valleys reachable only when LR is small---at each LR divide the loss drops and partials refine; we report plateau-escape scaling with LR and batch and show that low-rank preserves target symmetry while full-rank can learn asymmetric features. Observables (mean minima per channel, $2L$-spike pattern per layer $L$) bridge landscape and feature learning. Scope: 1D cos functions/RF-LR; we do not claim generalization beyond this setting.
 
-\textbf{Scope and limitations:} the study is restricted to 1D regression and the sumcos/MMNN (and RF-LR) setting; we do not claim generalization to higher dimensions or other architectures without further experiments. The takeaway is that \emph{in this setting}, feature learning and the loss landscape are tightly linked and testable via the provided methodology.
+\section{Model}
+\label{sec:model}
 
-\section{Setup: target, architecture, and channel partials}
-\label{sec:setup}
+We work with \textbf{low-rank random feature (RF-LR)} networks \cite{zhang2025structuredbalancedmulticomponentmultilayer} on 1D regression with cosine targets. The architecture uses a tall-skinny bottleneck: the first-layer features $L^0$ and the mixing matrices $L^{(\ell)}$ are frozen, and only the channel weights $w_\ell$ are trained. Target, data, and the full training protocol are detailed in Appendix~\ref{app:setup}.
 
-\subsection{Target and data}
-The target is $y(x) = \sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$ on $x \in [-1,1]$ (e.g.\ factor $=3$ gives $y(x) = \cos(2\pi x) + \cos(4\pi x) + \cos(6\pi x)$). Training inputs are a uniform grid of $N_{\mathrm{train}}$ points; for the main figures we use $N_{\mathrm{train}} = 768$ and batch size $8$. Loss is MSE. In broader baseline sweeps (factor 1--5, ranks 5 and 10, batch sizes 1--16), small batch (1--4) consistently outperforms larger batch; for rank 5, depth $L=3$ often leads to better results (Appendix~\ref{app:methodology}).
+\subsection{Theory: when does a channel dominate?}
+\label{sec:theory}
 
-\subsection{MMNN architecture}
-The \textbf{matrix-rank neural network (MMNN)} has input and output dimension $1$; hidden layers have \textbf{rank} $R$ and \textbf{width} $W$. For depth $L$, each block is (i) linear rank$\to$width, (ii) ReLU, (iii) linear width$\to$rank. In the reported configs, $W = 1024$, $R = 10$, $L \in \{2, 3\}$. With \textbf{fixWb = True}, the first linear (rank$\to$width) in each block is frozen; only the width$\to$rank linears are trained. Initialization is $\mu$-parameterization; optimizer SGD, momentum $0$, gradient clipping max norm $1.0$.
+When a single channel dominates at some input, the backward pass tends to reinforce that dominance (sign-coherence and a self-reinforcing loop). We formalize this with a conditional \textbf{log-ratio criterion}: under certain conditions on an interval $I$, once a channel dominates there it cannot lose that role on $I$. The two-sided step toy model and the precise statement appear in Appendix~\ref{app:toy}.
 
-\subsection{RF-LR and channel partial functions}
-For the mean-field and log-ratio theory we use a \textbf{low-rank random feature} (RF-LR) formulation. The first layer uses frozen random features $L^0(C_1)$; the second layer has a frozen mixing matrix $L$ of rank $r$ and trainable weights $w_1(t,C_1,k)$, $w_2(t,C_2)$. The second-layer pre-activation is $H_2(t,c_2;X,W) = \sum_{k=1}^r L_{c_2,k}\,f_k(t;X,W)$, where the \emph{channel partial functions} are $f_k(t;X,W) = \E_{C_1}[w_1(t,C_1,k)\,\varphi_1(\ip{L^0(C_1)}{X})]$. The backpropagated signal is $B_k(t;X,W) = \E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t,C_2;X,W))\,w_2(t,C_2)]$. The kernel from the frozen first layer is $K_{\mu_0}(x,x')$ (NNGP-type). The mean-field evolution for $f_k$ is
-\begin{equation}
-\label{eq:fk-evol}
-\partial_t f_k(t,x) = -\xi_1(t)\,\E_{Z=(X,Y)}[d_L(Z;W(t))\,B_k(t;X)\,K_{\mu_0}(x,X)].
-\end{equation}
+\section{Results}
+\label{sec:results}
 
-\section{Methodology}
-\label{sec:methodology}
-
-\subsection{Why 1D data}
-We use 1D regression so that (i) large sample sizes make empirical averages approximate mean-field expectations; (ii) frequency-dependent targets give a controlled setting for hierarchical frequency learning; (iii) channel specialization (spatial location and frequency) and observables (log-ratio, minima counts) are interpretable.
-
-\subsection{Training protocol and observables}
-Initial learning rate $10^{-2}$. \textbf{Adaptive stagnation}: over a sliding window of 10 epochs, if mean training loss does not improve and at least 20 epochs have passed since the last reduction, LR is replaced by the next value in a sequence (divide by 2, 25 steps; stop if LR $< 10^{-6}$). At each LR reduction we save the state just before and 10 epochs after the divide. We compare \textbf{loss}, \textbf{fit}, and \textbf{partial functions} across these checkpoints. Max epochs 10,000. The Appendix gives full configs and script index.
-
-\section{Mechanism of spike learning and log-ratio criterion}
-\label{sec:mechanism}
-
-When channel $k$ dominates at $x_0$, $H_2 \approx L_{c_2,k}f_k$ there, so $\varphi_2'(H_2)$ is effectively driven by that channel. The backprop signal $B_k$ aggregates over the second layer; once a channel dominates, the dynamics create emergent sign-coherence and a self-reinforcing loop. The \textbf{log-ratio criterion} (Theorem~\ref{thm:logratio}) formalizes that \emph{when} certain conditions hold on an interval $I$, dominance cannot be lost on $I$.
-
-\subsection{Two-sided step toy model}
-Consider two support points $x_0=-\delta$, $x_1=+\delta$ with $y(x_0)=+A$, $y(x_1)=-A$. Then $f_k(t,x) = f_k(0,x) - \Gamma_{k,1}(t)\,K_{\mu_0}(x,x_0) - \Gamma_{k,2}(t)\,K_{\mu_0}(x,x_1)$, with $\Gamma_{k,p}(t) = \int_0^t \xi_1(s)\,d_p(s)\,B_{k,p}(s)\,ds$. The evolution at $x_p$ is $\partial_t f_k(t,x_p) = -\xi_1(t)\,K_{\mu_0}(x_p,x_p)\,d_p(t)\,B_{k,p}(t) + E_p(t)$, with $|E_p(t)|\le C'\,\psi(\delta)$, $\psi(\delta)\to 0$ as $\delta\to\infty$.
-
-\begin{definition}[Log-ratio criterion]
-At $x_0$, define $R_{12}(t,x_0) = \log\frac{|f_1(t,x_0)|}{|f_2(t,x_0)|}$.
-\end{definition}
-
-\begin{theorem}[Log-ratio growth at $x_0$ (conditional)]
-\label{thm:logratio}
-\textbf{Setting:} Two-sided step, $r=2$ channels, 3-layer RF-LR.
-
-\textbf{Hypothesis (at $x_0$, for all $t\in I$):} (i) $-d_0(t)\ge 0$; (ii) $B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$; (iii) $|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$ for some $\rho_0\in[0,1)$.
-
-\textbf{Conclusion:} For $t\in I$, $\partial_t R_{12}(t,x_0) \ge 0$ (up to $O(\psi(\delta))$). Strict dominance of channel 1 at $x_0$ cannot be lost on $I$. The result is symmetrical at $x_1$.
-\end{theorem}
-
-\begin{remark}
-The theorem is conditional: when (i)--(iii) hold, the conclusion follows. In practice, (i)--(iii) are observed under standard initialization.
-\end{remark}
-
-\section{Plateau--sharp--plateau and frequency structure}
-\label{sec:plateau}
-
-The training loss exhibits long \emph{plateaus} interrupted by \emph{sharp} drops. Each plateau (or saddle region) corresponds to a \emph{frequency band} not yet learned; dynamics are \emph{saddle-to-saddle}, so each sharp transition marks the acquisition of a new frequency. For lr $10^{-2}$ we observe a plateau of on the order of \textbf{20 epochs} before the first drop. Each transition coincides with the network capturing a new frequency and with partial functions gaining more oscillatory structure (e.g.\ increase in mean number of strict local minima per component). The landscape thus displays a hierarchical structure aligned with hierarchical feature learning.
-
-\section{Learning rate and sharp basins on a plateau}
-\label{sec:lr}
-
-The loss drops \emph{sharply} at each LR divide (Figures~\ref{fig:loss_fit_L2} and \ref{fig:loss_fit_L3}). The landscape has \textbf{very sharp basins}---deep, narrow holes on a plateau: the trajectory wanders on the plateau until LR is reduced, then descends into one of these holes. So the picture is a \emph{plateau with many sharp holes that are hard to enter unless the learning rate is small}. Entering such a basin is accompanied by visible refinement of partial functions (Figure~\ref{fig:partial_L3}).
-
-\section{Experimental validation and figures}
-\label{sec:experiments}
-
-\subsection{Log-ratio diagnostics}
-Setup: 3-layer low-rank ReLU, $n=1024$, $r=15$, target $f(x)=\cos(8\pi x)$ on $[-1,1]$, $N=5000$. At $x=0$ we measure channel partials $f_k$ and log-ratios $R_{i,j}=\log|f_i|-\log|f_j|$. The trajectory of $\max_{i,j}R_{i,j}(x=0)$ shows sustained growth (Figures~\ref{fig:trajectory}, \ref{fig:logratio-heatmap}). A \textbf{uniform distribution in log space} of the ratios is a useful diagnostic for specialization. \textbf{Log-ratio collapse vs.\ convergence:} under some LR/batch regimes the log-ratios collapse (all channels similar) or diverge by end of training; at smaller LR (e.g.\ lr $2{\times}10^{-4}$, bs 4) they converge (stable specialization). Figures~\ref{fig:logratio_div} and \ref{fig:logratio_conv} illustrate: at lr $2{\times}10^{-3}$, bs 4, trajectories diverge; at lr $2{\times}10^{-4}$, bs 4, they converge.
+When trained with SGD, the loss curve spends long stretches on flat plateaus before dropping sharply; each plateau corresponds to a frequency that the network has not yet captured, and the dynamics move from saddle to saddle \cite{abbe2023sgdlearningneuralnetworks}. The loss landscape effectively presents a plateau riddled with narrow valleys: the optimizer wanders on the plateau until a learning-rate reduction allows it to slip into one of these valleys. When that happens, the loss drops and the fit improves, with high-frequency structure emerging in the middle of the input domain and in the channel partials (Figures~\ref{fig:loss_fit_L2}, \ref{fig:partial_L3}). As each new frequency is acquired, the partial functions become more oscillatory, and the mean number of strict local minima per channel goes up.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.5\linewidth]{icml_sgdadamlandscapedynamical/figures/trajectory_max_ratio.png}
-\caption{Trajectory of $\max_{i,j}R_{i,j}(x=0)$ vs.\ epoch. $n=1024$, $r=15$, $\cos(8\pi x)$.}
-\label{fig:trajectory}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.5\linewidth]{icml_sgdadamlandscapedynamical/figures/logratio_statistics_x0.png}
-\caption{Log-ratios $R_{i,j}$ at $x=0$ over training (all channel pairs).}
-\label{fig:logratio-heatmap}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}
-\caption{Log-ratio trajectories; lr $2{\times}10^{-3}$, bs 4. Divergence by end of training.}
-\label{fig:logratio_div}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
-\caption{Log-ratio trajectories; lr $2{\times}10^{-4}$, bs 4. Convergence (stable specialization).}
-\label{fig:logratio_conv}
-\end{figure}
-
-\subsection{Oscillatory complexity across layers}
-For MMNNs we define the \textbf{mean number of strict local minima per component} $\bar{m}_\ell$ (minima above a small positivity threshold $\varepsilon=10^{-4}$ on a uniform grid). In all runs we observe a \textbf{clear increase in $\bar{m}_\ell$ with layer index $\ell$} in the second half of the network. For $L=6$, $W=128$, early layers (1--4) have $\bar{m}_\ell \le 0.35$; later layers show mean counts from about 1 to 9 (e.g.\ layer 12: $\bar{m}_{12}$ from 2.33 to 8.60 depending on $R$). Distributions are right-skewed. This is consistent with \textbf{deeper layers learning more oscillatory partial functions}. The dependence on rank $R$ is not monotonic in the current single-run-per-config data.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.5\linewidth]{../../experiments/partialfunctionanalysis/output_leap_all_L6_W128_grouped/grouped/L6_R5/mean_minima_per_component_vs_layer.png}
-\caption{Mean number of strictly-positive local minima per component vs.\ layer $\ell$; MMNN $L=6$, $W=128$, $R=5$.}
-\label{fig:mean-minima-vs-layer}
-\end{figure}
-
-\subsection{Loss, fit, and partials before/after LR reduction}
-Figures~\ref{fig:loss_fit_L2} and \ref{fig:loss_fit_L3} show loss and fit before and after LR divides for $L=2$ and $L=3$ (factor $f_3$, $N=768$, bs 8). The sharp loss drops at each LR divide are the empirical signature of sharp basins on a plateau. Figure~\ref{fig:partial_L3} shows partial functions before and after LR divides for $L=3$---the internal representation changes when the trajectory enters a sharper basin.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.42\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L2.png}
-\caption{Loss and fit before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=2$.}
-\label{fig:loss_fit_L2}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
+\includegraphics[width=0.42\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L2.png}\hfill
 \includegraphics[width=0.42\linewidth]{figures/plot_loss_and_fit_before_after_lr_divides_L3.png}
-\caption{Loss and fit before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=3$.}
+\caption{\textbf{Loss and fit around learning-rate reductions.} Left: depth $L=2$; right: $L=3$. Training on a sum of three cosines ($N=768$, batch 8). The curves show how the global fit (blue) approaches the target (orange) in stages: after each LR cut the loss drops and the predictor gains finer oscillations in the interior of $[-1,1]$, reflecting descent into a deeper valley of the landscape.}
+\label{fig:loss_fit_L2}
 \label{fig:loss_fit_L3}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.42\linewidth]{figures/plot_partial_before_after_lr_divides_L3.png}
-\caption{Partial functions before/after LR divides; $f_3$, $N=768$, bs=8, depth $L=3$.}
+\caption{\textbf{Channel partials before and after LR divides} (depth $L=3$, same setup). Each curve is the scalar output of one low-rank channel over the input domain. After long training and an LR reduction, the partials develop visible high-frequency structure in the middle of the interval, matching the moment when the trajectory enters a sharp valley and the network picks up higher modes.}
 \label{fig:partial_L3}
 \end{figure}
 
-\section{Adam, symmetry preservation, and scaling}
-\label{sec:adam-scaling}
-
-\subsection{Adam and instability}
-In our setting, Adam is observed to be highly unstable. A jump near end-of-schedule (EOS) can sometimes land the solution in a sharp basin. The lower part of the landscape appears more sensitive to $N$ than the upper part.
-
-\subsection{Symmetry preservation: low-rank vs full-rank}
-Targets such as $y(x)=\sum_k \cos(2\pi k x)$ or $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ are \textbf{symmetric about $x=0$}. Under batched optimization, full-rank (MLP) networks can learn \emph{asymmetric} internal representations; low-rank (RF-LR or MMNN) networks tend to \textbf{preserve symmetry} in the channel partials. Figure~\ref{fig:mlp-asymmetry} shows the asymmetry when RF/low-rank is removed: at layers 7 and 16 the learned features are visibly asymmetric about $x=0$ (same setup as symmetric low-rank: 8 layers, $n=1024$, $r=20$, target $(f_1,f_2)=(144,48)$, $N=4k$, Adam, batch 100). The low-rank constraint acts as an implicit regularizer that preserves the target's symmetry.
+We track how channels specialize using the log-ratios $R_{i,j}=\log|f_i|-\log|f_j|$ at a fixed point $x=0$. When channels separate by role, the maximum of these ratios grows over training; when they collapse to a similar profile, the ratios stay flat or behave erratically. Figure~\ref{fig:trajectory} shows how the maximum log-ratio evolves and how the full set of pairwise ratios at $x=0$ is distributed over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.42\linewidth]{figures/mlp_asymmetry_layer7.png}\hfill
-\includegraphics[width=0.42\linewidth]{figures/mlp_asymmetry_layer16.png}
-\caption{Symmetry comparison: full-rank MLP (RF removed) learns asymmetric features at layers 7 and 16 despite symmetric target; low-rank preserves symmetry.}
+\includegraphics[width=0.42\linewidth]{icml_sgdadamlandscapedynamical/figures/trajectory_max_ratio.png}\hfill
+\includegraphics[width=0.42\linewidth]{icml_sgdadamlandscapedynamical/figures/logratio_statistics_x0.png}
+\caption{\textbf{Log-ratio evolution at $x=0$.} Left: the maximum log-ratio between channel pairs grows over epochs when channels specialize. Right: the full set of pairwise log-ratios over training; a spread, roughly uniform distribution in log space indicates that different channels take on distinct roles.}
+\label{fig:trajectory}
+\label{fig:logratio-heatmap}
+\end{figure}
+
+Depending on learning rate and batch size, we either see stable specialization (ratios converge to a spread distribution) or divergence by the end of training. Figure~\ref{fig:logratio_div} illustrates this contrast: at higher LR the trajectories diverge and channels do not settle into clear roles; at lower LR they converge to a stable separation.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-03_bs4_divergence.png}\hfill
+\includegraphics[width=0.42\linewidth]{figures/logratio_trajectories_lr2e-04_bs4_convergence.png}
+\caption{\textbf{Specialization vs.\ collapse as a function of LR and batch.} Left: at higher LR ($2{\times}10^{-3}$, batch 4) the log-ratio trajectories diverge by end of training and channels do not settle into clear roles. Right: at lower LR ($2{\times}10^{-4}$, batch 4) the trajectories converge to a stable spread, with channels maintaining distinct contributions.}
+\label{fig:logratio_div}
+\label{fig:logratio_conv}
+\end{figure}
+
+We also count, per layer, how many strict local minima each channel partial has on a grid; this count rises with depth, so deeper layers carry more oscillatory structure. Figure~\ref{fig:mean-minima-vs-layer} shows the mean number of strict local minima per channel versus layer index for a network with $L=6$ blocks.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\linewidth]{../../experiments/partialfunctionanalysis/output_leap_all_L6_W128_grouped/grouped/L6_R5/mean_minima_per_component_vs_layer.png}
+\caption{\textbf{Oscillatory complexity across layers.} Mean number of strict local minima per channel (on layer-$\ell$ partials) vs.\ layer index $\ell$ for a network with $L=6$ blocks, width 128, rank 5. The rise with depth shows that later layers develop more oscillatory internal representations.}
+\label{fig:mean-minima-vs-layer}
+\end{figure}
+
+On symmetric targets such as sums of cosines, full-rank MLPs often learn asymmetric internal representations, while the low-rank setup tends to preserve symmetry in the channel partials (Figure~\ref{fig:mlp-asymmetry}). The time to escape the first plateau scales roughly inversely with learning rate, and smaller batches (e.g.\ 1--4) escape more readily (Figure~\ref{fig:escape_vs_lr}). Deeper networks can exhibit on the order of $2L$ spikes per layer in the partials; very deep nets sometimes become unstable.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.48\linewidth]{figures/mlp_asymmetry_layer7.png}\hfill
+\includegraphics[width=0.48\linewidth]{figures/mlp_asymmetry_layer16.png}\\[0.5em]
+\includegraphics[width=0.48\linewidth]{icml_sgdadamlandscapedynamical/figures/channel_partials_layer5.png}\hfill
+\includegraphics[width=0.48\linewidth]{icml_sgdadamlandscapedynamical/figures/channel_partials_layer16.png}
+\caption{\textbf{Symmetry preservation: low-rank vs.\ full-rank.} Top row: full-rank MLP (random features removed) at layers 7 and 16; the channel partials are visibly asymmetric about $x=0$ despite a symmetric target. Bottom row: low-rank (RF-LR) with the same hyperparameters; the partials remain symmetric, so the low-rank constraint acts as an implicit regularizer for the target geometry.}
 \label{fig:mlp-asymmetry}
 \end{figure}
 
-\subsection{Scaling}
-\textbf{Plateau-escape time} scales roughly like $1/\mathrm{lr}$ (e.g.\ $\sim$20 epochs for lr $10^{-2}$ vs.\ $\sim$2000 for lr $10^{-4}$), with dependence on batch size (small batch 1--4 escapes effectively). Figures~\ref{fig:escape_vs_lr} and \ref{fig:escape_vs_bs} show epochs to escape vs.\ LR and vs.\ batch size. Layer $L$ can exhibit on the order of $2L$ spikes in the partial functions, a distinctive feature-learning signature. Very deep nets ($L=56$, 80) can exhibit blow-up or NaN in frequency/layer-scaling runs.
-
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_lr.png}
-\caption{Epochs to escape the first plateau vs.\ learning rate.}
-\label{fig:escape_vs_lr}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
+\includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_lr.png}\hfill
 \includegraphics[width=0.42\linewidth]{figures/epochs_to_escape_vs_bs.png}
-\caption{Epochs to escape vs.\ batch size. Small batch (1--4) escapes effectively.}
+\caption{\textbf{How quickly the first plateau is left.} Left: epochs to escape the first plateau vs.\ learning rate; the trend is roughly $1/\mathrm{lr}$. Right: same quantity vs.\ batch size; small batches (1--4) escape the plateau much sooner than larger ones.}
+\label{fig:escape_vs_lr}
 \label{fig:escape_vs_bs}
 \end{figure}
+
+With Adam, the loss curve can display large symmetric spikes---sudden dips to very low loss followed by a jump back up (Figure~\ref{fig:adam_loss_f2_L1}, Appendix). This pattern is consistent with a landscape that has many deep, narrow valleys: the optimizer can reach near machine-precision loss in one of them and then move out again.
 
 \section{Limitations}
 \label{sec:limitations}
 
-This study is restricted to 1D regression with the sum-of-cosines (and related) target and the MMNN/RF-LR architecture; we do not claim that the same feature--landscape relation holds in higher dimensions or for other architectures without further experiments. Observations on Adam and on self-similarity of training curves are qualitative; replication over seeds and hyperparameters would be needed for robust scaling statements. Oscillatory-complexity results are from single runs per config; the minima count is a lower bound (grid resolution). Very deep networks can become unstable (stability frontier). The reported configs and script index in the Appendix are intended to make the methodology reproducible.
+Our results are limited to 1D regression with cosine targets and the RF-LR architecture; we do not claim that the same feature--landscape relations hold in higher dimensions or for other architectures. The remarks on Adam and on scaling are qualitative, and the oscillatory-complexity numbers come from single runs per configuration. Very deep networks can become unstable. Full configurations and methodology are given in the Appendix.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a \textbf{unified picture} of feature learning and the loss landscape for low-rank neural networks in a controlled 1D setting. The log-ratio criterion and two-sided step toy model formalize when channel dominance is maintained; log-ratio trajectories and oscillatory-complexity statistics (mean minima per component) provide empirical support. The loss exhibits a plateau--sharp--plateau structure aligned with frequency learning; the landscape is a plateau with sharp, deep basins that become accessible when the learning rate is small; and observables such as mean minima per component and the $2L$-spike pattern per layer $L$ bridge landscape and feature learning. Low-rank structure also preserves the target's geometric symmetry while full-rank nets can break it. Within the stated scope, understanding the loss landscape in these networks amounts to understanding how and when features are acquired. These observations support the SciForDL goal of building a scientific understanding of deep learning through reproducible experiments and explicit reporting of the relation between landscape geometry and learned representations.
+We have presented a unified picture of feature learning and the loss landscape for RF-LR networks in 1D. The log-ratio criterion and toy model clarify when a channel dominates, and the diagnostics (trajectories, mean minima per channel) support this picture empirically. The loss evolves in a plateau--sharp--plateau fashion, with sharp basins that become accessible when the learning rate is reduced, and observables such as mean minima per channel and the $2L$-spike pattern link the geometry of the landscape to the way features are learned. Low-rank structure also preserves the symmetry of the target. Within this setting, understanding the loss landscape amounts to understanding when and how the network acquires each frequency.
 
-\bibliography{iclr2026_conference}
+\bibliography{iclr2026_conference,../colt2026/arxhive,icml_sgdadamlandscapedynamical/example_paper}
 \bibliographystyle{iclr2026_conference}
 
 \appendix
+\section{Setup: architecture, target, data, and training}
+\label{app:setup}
+
+\subsection{Architecture and low-rank structure}
+The \textbf{low-rank random feature (RF-LR)} network has input/output dimension $1$ and $L$ hidden blocks. Each block is: (i) linear rank$\to$width, (ii) ReLU, (iii) linear width$\to$rank, with \emph{rank} $r \ll$ \emph{width} $n$ (tall-skinny bottleneck). Factorized view: weight matrix $W = L\,R^\top$, $r \ll n$; first-layer features $L^0$ and mixing matrices $L^{(\ell)}$ are \textbf{frozen}; only channel weights $w_\ell$ (width$\to$rank linears) are trained. With \textbf{fixWb = True}: first linear per block frozen. Main configs: $W=1024$, $R=10$, $L \in \{2,3\}$; $\mu$-parameterization; SGD, momentum $0$, gradient clipping 1.0. Channel partial functions $f_k$: scalar outputs per channel; evolution in Appendix~\ref{app:toy}.
+
+\subsection{Target, data, and training}
+\textbf{Target:} $y(x) = \sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$ on $x \in [-1,1]$. \textbf{Data:} uniform grid of $N_{\mathrm{train}}$ points; main figures: $N_{\mathrm{train}}=768$, batch size $8$. Loss: MSE. \textbf{Training:} initial LR $10^{-2}$; adaptive stagnation (LR halved when loss does not improve over 10 epochs, min 20 between reductions; stop if LR $< 10^{-6}$). Checkpoints: before and 10 epochs after each LR divide. Max 10,000 epochs. Full config naming and sweeps: Appendix~\ref{app:methodology}.
+
+\subsection{Symmetry and log-ratio figure setups}
+Symmetry (Figure~\ref{fig:mlp-asymmetry}): 8 layers, $n=1024$, $r=20$, target $(f_1,f_2)=(144,48)$, $N=4k$, Adam, batch 100. Log-ratio diagnostics: 3-layer, $n=1024$, $r=15$, target $\cos(8\pi x)$, $N=5000$; divergence/convergence: lr $2{\times}10^{-3}$ bs 4 vs.\ lr $2{\times}10^{-4}$ bs 4. Oscillatory complexity: $L=6$, $W=128$, $R=5$; mean minima on layer-$\ell$ partials above $\varepsilon=10^{-4}$.
+
+\section{Two-sided step toy model and log-ratio criterion}
+\label{app:toy}
+
+\subsection{Setup and closed-form dynamics}
+
+Consider the \emph{two-sided step}: two support points $x_0=-\delta$, $x_1=+\delta$ ($\delta>0$) with $y(x_0)=+A$, $y(x_1)=-A$. For this finitely supported data, define $d_0(t)=d_L((x_0,y(x_0));W(t))$, $d_1(t)=d_L((x_1,y(x_1));W(t))$, $B_{k,1}(t)=B_k(t;x_0)$, $B_{k,2}(t)=B_k(t;x_1)$, and
+\[
+\Gamma_{k,1}(t) = \int_0^t \xi_1(s)\,d_0(s)\,B_{k,1}(s)\,ds,\qquad \Gamma_{k,2}(t) = \int_0^t \xi_1(s)\,d_1(s)\,B_{k,2}(s)\,ds.
+\]
+Then $f_k$ takes the form
+\begin{equation}
+\label{eq:fk-twostep}
+f_k(t,x) = f_k(0,x) - \Gamma_{k,1}(t)\,K_{\mu_0}(x,x_0) - \Gamma_{k,2}(t)\,K_{\mu_0}(x,x_1).
+\end{equation}
+The spike shape is determined by $K_{\mu_0}$ (NNGP, \cite{jacot2018neural}); all learning dynamics reduce to the scalar coefficients $\Gamma_{k,1}(t)$, $\Gamma_{k,2}(t)$. The kernel satisfies $K_{\mu_0}(x_p,x_p)=K_0>0$ for $p\in\{0,1\}$ (same by symmetry). The off-diagonal $K_{\mu_0}(x_0,x_1)=K_{\mu_0}(-\delta,+\delta)$ is positive and fastly decaying in $\delta$: $0<K_{\mu_0}(x_0,x_1)\le \psi(\delta)$ with $\psi(\delta)\to 0$ rapidly as $\delta\to\infty$. Thus the cross-term is small for separated points and, being positive, reinforces the leading local term in the log-ratio dynamics.
+
+The full evolution has two terms (local plus non-local). At $x_0$ and $x_1$:
+\begin{equation}
+\label{eq:dtfk-full-delta}
+\partial_t f_k(t,x_0) = -\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,d_0(t)\,B_{k,1}(t) + E_0(t),\quad \partial_t f_k(t,x_1) = -\xi_1(t)\,K_{\mu_0}(x_1,x_1)\,d_1(t)\,B_{k,2}(t) + E_1(t),
+\end{equation}
+where the non-local remainders satisfy $|E_p(t)|\le C'\,\psi(\delta)$ with $\psi(\delta)$ fastly decaying in $\delta$.
+
+\subsection{Statement: log-ratio criterion and theorem}
+
+\begin{definition}[Log-ratio criterion]
+At $x_0$, define $R_{12}(t,x_0) = \log\frac{|f_1(t,x_0)|}{|f_2(t,x_0)|}$.
+\end{definition}
+
+\begin{theorem}[Two-sided step: log-ratio growth at $x_0$ (conditional)]
+\label{thm:logratio}
+\textbf{Setting:} The two-sided step with $r=2$ channels and a 3-layer RF-LR; the dynamics are \eqref{eq:fk-twostep} and the full evolution \eqref{eq:dtfk-full-delta}. The result is \textbf{conditional}: \emph{if} the three conditions in (Hypothesis) hold on an interval $I \subseteq [0,\infty)$, \emph{then} the stated conclusion holds on $I$.
+
+\medskip
+\noindent\textbf{Hypothesis (at $x_0$, for all $t\in I$):} (i)~$-d_0(t)\ge 0$; (ii)~$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$; (iii)~there exists $\rho_0\in[0,1)$ such that $|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$.
+
+\medskip
+\noindent\textbf{Conclusion:} For $t\in I$,
+\[
+\begin{aligned}
+\partial_t R_{12}(t,x_0) &= (1-\rho_0)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|} + \varepsilon_0(t),
+\end{aligned}
+\]
+with $|\varepsilon_0(t)|\le C''\,\psi(\delta)$ for $\psi(\delta)$ fastly decaying in $\delta$ (from $E_p$). Hence $\partial_t R_{12}(t,x_0)\ge 0$ whenever the leading term dominates $|\varepsilon_0|$; since $K_{\mu_0}(x_0,x_1)>0$, the off-diagonal coupling contributes with a favorable sign and reinforces the leading term. Strict dominance of channel~1 at $x_0$ cannot be lost on $I$ and is amplified whenever $|B_{1,1}|$ is not too small. The result is symmetrical at $x_1$ (channel~2 dominates there).
+\end{theorem}
+
+\begin{remark}[On the hypothesis]
+The theorem does \emph{not} assert that (i)--(iii) hold for the canonical two-sided step ($y=\pm A$ at $x=\pm\delta$) from generic initial conditions; it only establishes that \emph{when} they hold on $I$, the conclusion follows. Verifying (i)--(iii) from the ODEs for specific initial conditions and $A,\delta$ is outside the scope of this result. When (i)--(iii) hold in practice is discussed below.
+\end{remark}
+
+\subsection{Proof of Theorem~\ref{thm:logratio}}
+
+We prove the theorem at $x_0$; the argument at $x_1$ is symmetrical.
+
+\paragraph{At $x_0$.}
+By the log-ratio derivative identity at $x_0$,
+\[
+\partial_t R_{12}(t,x_0)=\frac{\mathrm{sign}(f_1)\,\partial_t f_1}{|f_1|}-\frac{\mathrm{sign}(f_2)\,\partial_t f_2}{|f_2|}.
+\]
+Insert the full evolution \eqref{eq:dtfk-full-delta}: $\partial_t f_k(t,x_0)=-\xi_1\,K_{\mu_0}(x_0,x_0)\,d_0\,B_{k,1}+E_0(t)$ with $|E_0(t)|\le C'\,\psi(\delta)$ for $\psi(\delta)$ fastly decaying in $\delta$. Then
+\[
+\partial_t R_{12}(t,x_0)=\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\Big(
+\frac{\mathrm{sign}(f_1)B_{1,1}}{|f_1|}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|}\Big)
++ \varepsilon_0(t),\qquad |\varepsilon_0(t)|\le C''\,\psi(\delta),
+\]
+where $\varepsilon_0(t)=E_0(t)\,\big(\frac{\mathrm{sign}(f_1)}{|f_1|}-\frac{\mathrm{sign}(f_2)}{|f_2|}\big)$ inherits the bound from $E_0$. Use $-d_0\ge 0$. The sign condition gives $\mathrm{sign}(f_1)B_{1,1}=|B_{1,1}|$; $-\mathrm{sign}(f_2)B_{2,1}\ge -|B_{2,1}|$. The dominance inequality at $x_0$ is $|B_{2,1}|\le \rho_0\,\frac{|f_2|}{|f_1|}\,|B_{1,1}|$, hence
+\[
+\frac{|B_{1,1}|}{|f_1|}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|}
+\ge \frac{|B_{1,1}|}{|f_1|}-\frac{|B_{2,1}|}{|f_2|}
+\ge (1-\rho_0)\,\frac{|B_{1,1}|}{|f_1|},
+\]
+so $\partial_t R_{12}(t,x_0)= (1-\rho_0)\,\xi_1\,K_{\mu_0}(x_0,x_0)\,(-d_0)\,\frac{|B_{1,1}|}{|f_1|}+\varepsilon_0(t)$. The leading term is $\ge 0$; since $K_{\mu_0}(x_0,x_1)>0$ and fastly decaying, the off-diagonal coupling reinforces the leading term while $|\varepsilon_0|\le C''\,\psi(\delta)$ is negligible for $\delta$ large. Thus $\partial_t R_{12}(t,x_0)\ge 0$ whenever the leading term dominates $|\varepsilon_0|$.
+
+\paragraph{At $x_1$.}
+The same argument applies by symmetry (indices $1\leftrightarrow 2$, $x_0\leftrightarrow x_1$): channel~2 dominates at $x_1$ and $\partial_t R_{21}(t,x_1)\ge 0$.
+
+\paragraph{Conclusion.}
+The log-ratio $R_{12}$ at $x_0$ is non-decreasing on $I$; strict dominance of channel~1 at $x_0$ cannot be lost and is amplified whenever $|B_{1,1}|$ is not too small. By symmetry, channel~2 dominates at $x_1$.
+
+\subsection{On the hypothesis: when (i)--(iii) hold in practice}
+
+The hypothesis of Theorem~\ref{thm:logratio} is conditional: (i)~$-d_0(t)\ge 0$, (ii)~$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$, and (iii)~$|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$ for some $\rho_0\in[0,1)$. In practice, these conditions are observed to hold in standard training setups. Under \emph{Xavier initialization} (or similar scale-corrected schemes) for the frozen feature and mixing matrices, and \emph{sub-Gaussian initialization} for the trainable weights $w_1$, $w_2$, the initial $f_k$ and backprop signals $B_{k,p}$ are well-balanced across channels. The gradient-flow dynamics then tend to amplify small asymmetries: once one channel leads at $x_0$, (ii)~and (iii)~are maintained because the dominant channel receives a larger $B_k$ and thus a larger $\partial_t f_k$, while the weaker channel's backprop stays proportionally smaller. Condition~(i) holds when the network under-predicts at $x_0$; for squared loss $d_L \propto \hat{y}-y$, $-d_0\ge 0$ corresponds to $\hat{y}(x_0)\le y(x_0)=+A$, which is typical before convergence. Thus, although the theorem does not prove (i)--(iii) from first principles, they are consistent with and typically observed under standard initialization.
+
 \section{Full experiment methodology and configs (exhaustive)}
 \label{app:methodology}
 
-All paths and commands below are relative to repo root \texttt{MMNN/} unless noted. Full reference: \texttt{experiments/table/EXHAUSTIVE\_RESULTS\_BASELINE\_SWEEP\_RANKS.md}, \texttt{INDEX\_LOGRATIO\_ESCAPE\_SCALING.md}, \texttt{BASELINE\_SWEEP\_SETUPS\_AND\_RANKS.md}.
-
 \subsection{Target and architecture (all experiments)}
-Target: $y(x) = \sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$ on $x \in [-1,1]$. MMNN: input/output dim 1; hidden rank $R$, width $W$; depth $L$ blocks (linear rank$\to$width, ReLU, linear width$\to$rank). fixWb = True. $\mu$-parameterization; SGD momentum 0; gradient clipping max norm 1.0.
+Target: $y(x) = \sum_{k=1}^{\mathrm{factor}} \cos(2\pi k x)$ on $x \in [-1,1]$. Low-rank RF network: input/output dim 1; hidden rank $R$, width $W$; depth $L$ blocks (linear rank$\to$width, ReLU, linear width$\to$rank). fixWb = True. $\mu$-parameterization; SGD momentum 0; gradient clipping max norm 1.0.
+
+\subsection{Config naming}
+A config is identified by \textbf{factor}, \textbf{$N$} (train size), \textbf{bs} (batch size), and \textbf{$L$} (depth). We write this as \texttt{f\{factor\}\_N\{n\}\_bs\{bs\}\_L\{L\}}: e.g.\ \texttt{f3\_N768\_bs8\_L2} means factor $=3$, $N=768$, batch size $=8$, depth $L=2$; \texttt{f5\_N1280\_bs4\_L3} means factor $=5$, $N=1280$, bs $=4$, $L=3$.
 
 \subsection{Main figures (loss, fit, partials)}
-Factor 3, $N_{\mathrm{train}}=768$, batch 8, depths $L=2,3$. Configs \texttt{f3\_N768\_bs8\_L2}, \texttt{f3\_N768\_bs8\_L3}. Architecture: width 1024, rank 10. Training: num\_epochs 10,000; lr initial 0.01, divide by 2 on stagnation (25 steps); lr\_window 10, min\_epochs\_before\_reduce 20. Checkpoints: before and 10 epochs after each LR divide.
+Factor 3, $N_{\mathrm{train}}=768$, batch 8, depths $L=2,3$: configs f3\_N768\_bs8\_L2 and f3\_N768\_bs8\_L3. Architecture: width 1024, rank 10. Training: up to 10,000 epochs; initial lr 0.01, divided by 2 on stagnation (window 10 epochs, min 20 epochs between reductions); stop if lr $< 10^{-6}$. Checkpoints: state before and 10 epochs after each LR divide.
 
-\subsection{Baseline sweep: commands and sweep definition}
+\subsection{Baseline sweep (cos functions): definition and ranks}
 \label{app:baseline-sweep}
 
-\begin{center}
-\begin{tabular}{@{}llll@{}}
-\toprule
-Command & Rank & Output directory & Target / notes \\
-\midrule
-\texttt{--baseline} & 10 & \texttt{results\_stable\_baseline/} & $\cos(2\pi x)$, $N{=}$width${=}1024$, $L{=}2$ \\
-\texttt{--baseline-sweep} & 10 & \texttt{results\_baseline\_sweep\_sumcos/} & Sumcos factor 1--5 \\
-\texttt{--baseline-sweep-rank5} & 5 & \texttt{results\_baseline\_sweep\_sumcos\_rank5/} & Same sumcos, rank 5 \\
-\texttt{--baseline-sweep-rank 20} & 20 & \texttt{results\_baseline\_sweep\_sumcos\_rank20/} & Same sumcos, rank 20 \\
-\texttt{--baseline-sweep-expcos} & 10 & \texttt{results\_baseline\_sweep\_expcos/} & Expcos $\sum_{k=0}^{\mathrm{f}}\cos(2^k\pi x)$, f=3,4 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Sweep definition (sumcos): factors 1,2,3,4,5; $N = \mathrm{SWEEP\_BASE\_N} \times \mathrm{factor}$ with base $\in \{16,32,64,128,256\}$; batch sizes 1, 2, 4, 8, 16 (only bs $\le N$); layers 1 to $2{\times}\mathrm{factor}$; up to 10k epochs; AdaptiveStagnation (lr halved on plateau; stop if lr $< 10^{-6}$). Run name: \texttt{f\{factor\}\_N\{n\_train\}\_bs\{batch\_size\}\_L\{num\_layers\}} (e.g.\ \texttt{f3\_N768\_bs4\_L3}).
+We run baseline sweeps for \textbf{rank 5}, \textbf{rank 10}, and \textbf{rank 20}. Target: cos functions $\sum_{k=1}^{\mathrm{factor}}\cos(2\pi k x)$. \textbf{Sweep}: factors 1,2,3,4,5; $N = \mathrm{base} \times \mathrm{factor}$ with base $\in \{16,32,64,128,256\}$; batch sizes 1, 2, 4, 8, 16 (only bs $\le N$); depths $L \in 1..2{\times}\mathrm{factor}$; up to 10k epochs; adaptive LR (halved on plateau; stop if lr $< 10^{-6}$). Config name: f\{factor\}\_N\{n\}\_bs\{bs\}\_L\{L\} (e.g.\ f3\_N768\_bs4\_L3 = factor 3, $N=768$, bs 4, $L=3$).
 
 \subsection{Rank 5: exhaustive counts and tables}
 
@@ -280,7 +283,7 @@ factor & bs=1 & bs=2 & bs=4 & bs=8 & bs=16 \\
 \bottomrule
 \end{tabular}
 \end{center}
-For factor 5, rank 5, only bs=4 has a worked config: \texttt{f5\_N1280\_bs4\_L3}.
+For factor 5, rank 5, only bs=4 has a worked config: f5\_N1280\_bs4\_L3 (factor 5, $N=1280$, bs 4, $L=3$).
 
 \textbf{By batch size only (rank 5) --- aggregate:}
 \begin{center}
@@ -298,9 +301,9 @@ bs & count & worked (test$<0.01$) & mean(test\_err) & best test err \\
 \end{tabular}
 \end{center}
 
-\textbf{Configs with min\_loss $< 2{\times}10^{-2}$ (rank 5).} Factor 5: \texttt{f5\_N1280\_bs4\_L3} (min\_loss 2.80e-03, final\_test 3.26e-03, $N{=}1280$, bs 4, $L{=}3$); \texttt{f5\_N1280\_bs2\_L2} (9.48e-03, 1.11e-02). Factor 4: \texttt{f4\_N1024\_bs4\_L3} (1.42e-03, 1.59e-03); \texttt{f4\_N1024\_bs2\_L3} (5.50e-03, 5.94e-03); \texttt{f4\_N1024\_bs1\_L2}, \texttt{f4\_N1024\_bs2\_L2}. Parameter counts: $L{=}3 \to 36{,}880$; $L{=}2 \to 25{,}611$ (formula: $2W + L(2Wr+W+r) + (W+1)$, $W{=}1024$, $r{=}5$). Full list of 76 worked configs (sorted by final\_test\_error): \texttt{EXHAUSTIVE\_RESULTS\_BASELINE\_SWEEP\_RANKS.md} \S3.7.
+\textbf{Configs with min\_loss $< 2{\times}10^{-2}$ (rank 5).} Factor 5: f5\_N1280\_bs4\_L3 (min\_loss 2.80e-03, final\_test 3.26e-03); f5\_N1280\_bs2\_L2 (9.48e-03, 1.11e-02). Factor 4: f4\_N1024\_bs4\_L3 (1.42e-03, 1.59e-03); f4\_N1024\_bs2\_L3 (5.50e-03, 5.94e-03); f4\_N1024\_bs1\_L2, f4\_N1024\_bs2\_L2. Parameter counts: $L{=}3 \to 36{,}880$; $L{=}2 \to 25{,}611$ (formula $2W + L(2Wr+W+r) + (W+1)$, $W{=}1024$, $r{=}5$). The full list of 76 worked configs (sorted by final test error) is available in the supplementary material.
 
-\subsection{Rank 10 (sumcos) batch summary}
+\subsection{Rank 10 (cos functions) batch summary}
 \begin{center}
 \small
 \begin{tabular}{@{}ccccc@{}}
@@ -320,54 +323,37 @@ Same trend: larger batch (8, 16) $\to$ fewer worked runs and worse best test err
 \subsection{Plateau-escape and log-ratio runs}
 \label{app:plateau-logratio}
 
-\textbf{Script:} \texttt{experiments/table/plateau/run\_plateau\_escape.py}. Trains until loss $<$ threshold; records \textbf{epochs\_to\_escape}, param norm at escape, and \textbf{log-ratio} $R_{i,j}=\log|f_i|-\log|f_j|$ at $x{=}0$ over time. \textbf{Output dir:} \texttt{experiments/table/plateau/}. Per run (e.g.\ \texttt{lr1e-03\_bs4/}): \texttt{logratio\_epochs.npy}, \texttt{logratio\_values.npy}, \texttt{logratio\_trajectories.png}, \texttt{results.json} (includes \texttt{epochs\_to\_escape}). Figures: \texttt{epochs\_to\_escape\_vs\_lr.png}, \texttt{epochs\_to\_escape\_vs\_bs.png}. Main-figure runs: factor 3, $N{=}768$, $L{=}3$, rank 10, width 1024; escape threshold 0.1; max\_epochs 400--2000; log-ratio trajectories for lr $2{\times}10^{-3}$ bs 4 (divergence) and lr $2{\times}10^{-4}$ bs 4 (convergence).
-
-\textbf{Standalone log-ratio (full training):} \texttt{experiments/table/logratio/track\_logratio\_during\_training.py}; output \texttt{logratio/runs/}. Scaling hypotheses (epoch to escape $\propto 1/\mathrm{lr}$, $\propto \sqrt{\mathrm{batch}}$; optimal batch size): \texttt{refs/ICLR/idea.md}; empirical \texttt{EXHAUSTIVE\_RESULTS\_BASELINE\_SWEEP\_RANKS.md}, \texttt{DISCUSSION\_RESUME\_BASELINE\_SWEEP\_AND\_RANKS.md}, \texttt{BASELINE\_SWEEP\_HISTOGRAM\_RESUME.md}.
-
-\subsection{File and directory locations}
-Results: \texttt{results\_baseline\_sweep\_sumcos/} (rank 10), \texttt{results\_baseline\_sweep\_sumcos\_rank5/}, \texttt{results\_baseline\_sweep\_sumcos\_rank20/}; each run subdir \texttt{f\{f\}\_N\{n\}\_bs\{bs\}\_L\{L\}/} contains \texttt{config.json}, \texttt{losses.json}, \texttt{model\_parameters.pth}, optional \texttt{plot\_target\_prediction\_loss.png}. Analysis outputs (in \texttt{experiments/table/}): \texttt{baseline\_sweep\_sumcos\_rank5\_results.csv}, \texttt{baseline\_sweep\_sumcos\_rank5\_summary.md}, \texttt{baseline\_sweep\_sumcos\_rank5\_loss\_histogram.png}; similarly rank 10 and rank 20. Rerun list: \texttt{baseline\_sweep\_rerun.txt} (e.g.\ \texttt{f3\_N768\_bs4\_L3}).
-
-\subsection{Commands (exhaustive)}
-From repo root:
-\begin{center}
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-Goal & Command \\
-\midrule
-Train rank 5 sweep & \texttt{python experiments/table/run\_scaling\_law\_depth\_width.py --baseline-sweep-rank5} \\
-Train rank 20 & \texttt{... --baseline-sweep-rank 20} \\
-Train rank 10 sumcos & \texttt{... --baseline-sweep} \\
-Plot one run (rank 5) & \texttt{python experiments/table/plot\_baseline\_sweep\_run.py f5\_N1280\_bs4\_L3 --results-dir results\_baseline\_sweep\_sumcos\_rank5} \\
-Plot all rank 5 & \texttt{... plot\_baseline\_sweep\_run.py --rank 5 --results-dir results\_baseline\_sweep\_sumcos\_rank5} \\
-Analyze rank 5 & \texttt{python experiments/table/analyze\_baseline\_sweep.py --sumcos-rank5} \\
-Analyze rank 20 & \texttt{... --sumcos-rank20}; analyze rank 10 \texttt{... --sumcos} \\
-\bottomrule
-\end{tabular}
-\end{center}
+Runs with fixed lr and batch size: train until loss $<$ threshold; record \textbf{epochs to escape} and \textbf{log-ratio} $R_{i,j}=\log|f_i|-\log|f_j|$ at $x=0$ over time. Main-figure setting: factor 3, $N=768$, $L=3$, rank 10, width 1024; escape threshold 0.1; max 400--2000 epochs. Log-ratio trajectory figures: lr $2{\times}10^{-3}$ bs 4 (divergence) and lr $2{\times}10^{-4}$ bs 4 (convergence). Epochs-to-escape scaling (Figures in main text): sweep over lr and batch size; scaling consistent with $\propto 1/\mathrm{lr}$ and small batch (1--4) escaping effectively.
 
 \subsection{Frequency/layer-scaling}
-Script: \texttt{run\_scaling\_law\_depth\_width.py --train} and \texttt{--analyze}. Output: \texttt{results\_frequency\_layer\_scaling/}; analysis writes \texttt{frequency\_layer\_scaling\_analysis.csv}, \texttt{frequency\_layer\_scaling\_summary.txt}. Target: multi-frequency cosine; freq multipliers 0.3, 0.6, 1.5, 2, 3, 5, 7, 10; ranks 10, 15, 25; layer counts 3, 5, 8, 12, 16, 24, 40, 56, 80; 58 completed configs. Low freq (0.3, 0.6): test error $\sim 10^{-6}$--$10^{-5}$; high freq (1.5+): no convergence; very deep (L=56, 80): blow-up or NaN at freq$\times$5/7. Full tables: \texttt{SCALING\_LAW\_DEPTH\_WIDTH.md}, \texttt{frequency\_layer\_scaling\_full\_analysis.txt}.
+Multi-frequency cosine target; freq multipliers 0.3, 0.6, 1.5, 2, 3, 5, 7, 10; ranks 10, 15, 25; layer counts 3, 5, 8, 12, 16, 24, 40, 56, 80. 58 completed configs. Outcomes: low freq (0.3, 0.6) test error $\sim 10^{-6}$--$10^{-5}$; high freq (1.5+) no convergence; very deep ($L=56$, 80) blow-up or NaN at higher freq (e.g.\ freq$\times$5, 7).
 
 \subsection{Symmetry comparison}
-Full-rank MLP (fixWb = False): 8 layers, width 1024, $r=20$, target $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ with $(f_1,f_2)=(144,48)$; $N=4k$, 10k epochs, Adam lr 0.001, batch 100, StepLR $\gamma=0.9$ every 100. Plots: channel partials at layers 7 and 16 (asymmetry about $x=0$). Low-rank (RF-LR) with same hyperparameters preserves symmetry; source \texttt{refs/ICLR/icml\_sgdadamlandscapedynamical/tofill.tex} Sec.~5.3.
+Full-rank MLP (fixWb = False): 8 layers, width 1024, $r=20$, target $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ with $(f_1,f_2)=(144,48)$; $N=4k$, 10k epochs, Adam lr 0.001, batch 100, StepLR $\gamma=0.9$ every 100. Channel partials at layers 7 and 16 show asymmetry about $x=0$. Low-rank (RF-LR) with same hyperparameters preserves symmetry.
 
 \subsection{Oscillatory-complexity (partial-function minima)}
-Reproducibility: \texttt{experiments/partialfunctionanalysis/}: \texttt{positive\_local\_minima\_analysis.py} (see \texttt{RESULTS\_ANALYSIS.md}). Outputs: \texttt{group\_layer\_stats.csv}, \texttt{group\_summary.json}; figure \texttt{grouped/L6\_R5/mean\_minima\_per\_component\_vs\_layer.png} under \texttt{output\_leap\_all\_L6\_W128\_grouped/}.
+Per-layer partial functions on a uniform grid; count of strict local minima above a positivity threshold per channel; layer statistic = mean minima per channel. Outputs: per-layer and per-group stats; figure mean minima per channel vs.\ layer (e.g.\ $L=6$, $W=128$, $R=5$).
 
-\subsection{Script and document index}
-Training: \texttt{run\_selected\_sumcos\_configs.py}; \texttt{run\_scaling\_law\_depth\_width.py} (baseline, baseline-sweep, baseline-sweep-rank5, baseline-sweep-rank N, baseline-sweep-expcos, train, analyze). Plateau escape and log-ratios: \texttt{experiments/table/plateau/run\_plateau\_escape.py}. Analysis: \texttt{analyze\_baseline\_sweep.py} (--sumcos, --sumcos-rank5, --sumcos-rank20, --expcos). Docs: \texttt{BASELINE\_SWEEP\_SETUPS\_AND\_RANKS.md}, \texttt{INDEX\_LOGRATIO\_ESCAPE\_SCALING.md}, \texttt{EXHAUSTIVE\_RESULTS\_BASELINE\_SWEEP\_RANKS.md}, \texttt{DISCUSSION\_RESUME\_BASELINE\_SWEEP\_AND\_RANKS.md}, \texttt{BASELINE\_SWEEP\_HISTOGRAM\_RESUME.md}, \texttt{SCALING\_LAW\_DEPTH\_WIDTH.md}, \texttt{SCALING\_LAW\_CONCLUSIONS.md}, \texttt{VERIFICATION\_SUMMARY.md}, \texttt{experiments/partialfunctionanalysis/}, \texttt{refs/ICLR/idea.md}.
+\section{Adam training curves (additional)}
+\label{app:adam-curves}
 
-\newpage
-\section{Science of DL Improvement Challenge Submission}
+The large symmetric spikes (down then up) in these Adam loss curves suggest machine-precision training is enabled by a landscape with many deep holes (valleys) that the optimizer can enter and leave. Figure~\ref{fig:adam_loss_f2_L1} shows the factor 2, $N=512$, batch 512, depth 1 run; the repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them. Additional factor/depth/config variants from the low-lr Adam table follow.
 
-\subsection{What model are you targeting?}
-Low-rank neural networks (RF-LR and MMNNs) for 1D regression on hierarchical Fourier targets (sum of cosines and related). We target \textbf{feature learning} (channel specialization, log-ratio dynamics, oscillatory complexity) and its \textbf{relation to the loss landscape} (plateaus, sharp basins, scaling, symmetry).
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{../../experiments/table/results_sumcos_lowlr_table_below_1e2_adam/f2_N512_bs512_L1/loss_curve.png}
+\caption{\textbf{Adam loss curve showing symmetric spikes.} Factor 2, $N=512$, batch 512, depth 1. The repeated down-then-up spikes indicate that the optimizer repeatedly enters very deep valleys (very low loss) and then leaves them, supporting the picture of a plateau with many sharp holes.}
+\label{fig:adam_loss_f2_L1}
+\end{figure}
 
-\subsection{How do your results contribute—or could potentially contribute—to understanding these models?}
-We provide: (i) a conditional log-ratio criterion and mean-field toy model for channel dominance, with log-ratio and oscillatory-complexity validation; (ii) a concrete feature--landscape link: plateau--frequency correspondence, sharp basins accessible at small LR, scaling of plateau-escape time, and symmetry preservation by low-rank structure. This contributes a single, reproducible empirical picture of how landscape geometry and learned representations relate in low-rank nets.
-
-\subsection{How do you expect your submission to influence future work?}
-The feature--landscape relation can be tested systematically (multiple seeds, architectures, metrics); scaling laws and the link to log-ratio and minima-count diagnostics can be refined; and the methodology can be extended to other tasks and architectures to assess generality.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.48\linewidth]{../../experiments/table/results_sumcos_lowlr_table_below_1e2_adam/f2_N512_bs512_L3/loss_curve.png}\hfill
+\includegraphics[width=0.48\linewidth]{../../experiments/table/results_sumcos_lowlr_table_below_1e2_adam/f3_N768_bs512_L1/loss_curve.png}\\[0.5em]
+\includegraphics[width=0.48\linewidth]{../../experiments/table/results_sumcos_lowlr_table_below_1e2_adam/f4_N512_bs512_L1/loss_curve.png}\hfill
+\includegraphics[width=0.48\linewidth]{../../experiments/table/results_sumcos_lowlr_table_below_1e2_adam/f4_N512_bs512_L4/loss_curve.png}
+\caption{Adam loss curves. \textbf{(a)} f2, $N=512$, bs 512, $L=3$. \textbf{(b)} f3, $N=768$, bs 512, $L=1$. \textbf{(c)} f4, $N=512$, bs 512, $L=1$. \textbf{(d)} f4, $N=512$, bs 512, $L=4$. Symmetric spikes indicate a landscape with many deep valleys.}
+\label{fig:app-adam-curves}
+\end{figure}
 
 \end{document}
