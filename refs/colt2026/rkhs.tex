@@ -11,9 +11,23 @@ We can now state a compact representation under a homogeneity assumption.
 \begin{lemma}[Fisher--Kibble decoupling]\label{lem:fisher-kibble}
 Let \(x,y\) be input vectors and let \(x_1,y_1\) denote their rank-\(r\) random projections. Define the empirical correlation \( \rho_1 = \cos\angle(x_1,y_1) \) and squared norms \( u=\|x_1\|^2, v=\|y_1\|^2 \). Then:
 \begin{itemize}
-    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable,hotelling1953new} (centered at \( \rho \)). For \(r>2\): \(p_{\text{Fisher}}(\rho_1)=\frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\frac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,{}_2F_1(\frac{1}{2},\frac{1}{2}; r-\frac{1}{2}; \frac{1+\rho\rho_1}{2})\).
-    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate chi-square law: \(p_{\text{Kibble}}(u,v)=\frac{(uv)^{\frac{r}{4}-\frac{1}{2}}\exp(-\frac{u+v}{2(1-\rho^2)})}{\Gamma(r/2)\,(2(1-\rho^2))^{\frac{r}{2}+1}\,\rho^{\frac{r}{4}-\frac{1}{2}}}\,I_{\frac{r}{2}-1}(\frac{\rho\sqrt{uv}}{1-\rho^2})\), \(u,v\ge 0\), where \(I_\nu\) is the modified Bessel function.
-    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\text{Fisher}}(\rho_1)\,p_{\text{Kibble}}(u,v) \).
+    \item \( \rho_1 \) follows Fisher's correlation distribution~\cite{fisher1915probable,hotelling1953new} (centered at \( \rho \)). For \(r>2\):
+    \[
+    p_{\mathrm{Fisher}}(\rho_1)
+    \;=\;
+    \frac{(r-2)\,\Gamma(r-1)\,(1-\rho^2)^{\frac{r-1}{2}}\,(1-\rho_1^2)^{\frac{r-4}{2}}}{\sqrt{2\pi}\,\Gamma(r-\frac{1}{2})\,(1-\rho\rho_1)^{r-\frac{3}{2}}}\,
+    {}_2F_1\!\left(\frac{1}{2},\frac{1}{2}; r-\frac{1}{2}; \frac{1+\rho\rho_1}{2}\right).
+    \]
+
+    \item \( (u,v) \) follow Kibble's~\cite{kibble1941two} bivariate chi-square law (\(u,v\ge 0\); \(I_\nu\) is the modified Bessel function):
+    \[
+    p_{\mathrm{Kibble}}(u,v)
+    \;=\;
+    \frac{(uv)^{\frac{r}{4}-\frac{1}{2}}\,\exp\!\left(-\frac{u+v}{2(1-\rho^2)}\right)}{\Gamma(r/2)\,(2(1-\rho^2))^{\frac{r}{2}+1}\,\rho^{\frac{r}{4}-\frac{1}{2}}}\,
+    I_{\frac{r}{2}-1}\!\left(\frac{\rho\sqrt{uv}}{1-\rho^2}\right).
+    \]
+
+    \item Angular and radial parts are independent: \( p(\rho_1,u,v) = p_{\mathrm{Fisher}}(\rho_1)\,p_{\mathrm{Kibble}}(u,v) \).
 \end{itemize}
 \end{lemma}
 

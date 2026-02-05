@@ -423,6 +423,8 @@ p(\rho_1 \mid \rho, r)
 {}_2F_1\!\left(\tfrac{1}{2},\tfrac{1}{2};\, r-\tfrac{1}{2};\, \tfrac{1+\rho\rho_1}{2}\right),
 \qquad r>2.
 \]
+\medskip
+\noindent
 For large \(r\), the inverse Gudermann function applied to the complementary angle is approximately normal:
 \[
 \mathrm{gd}^{-1}\!\left(\frac{\pi}{2}-\arccos(\rho_1)\right)
@@ -430,6 +432,8 @@ For large \(r\), the inverse Gudermann function applied to the complementary ang
 \mathcal{N}\!\left(\mathrm{arctanh}(\rho),\,\frac{1}{r-3}\right),
 \qquad\text{hence}\qquad \mathrm{Var}(\rho_1)=O(1/r).
 \]
+\medskip
+\noindent
 Kibble's~\cite{kibble1941two} bivariate chi-square law for \((u,v)=(\|x_1\|^2,\|y_1\|^2)\) has density
 \[
 f(u,v)
@@ -1017,11 +1021,7 @@ I(r) \;=\; \frac{(r-2)\,2^{\,r-\frac{5}{2}}}{\sqrt{2\pi}}\;
 C_1(r),\qquad
 C_1(r) \;=\; \frac{\Gamma\!\left(r-\tfrac{1}{2}\right)\Gamma\!\left(r-\tfrac{3}{2}\right)}{\Gamma(r-1)^2}.
 \end{align}
-The asymptotic scaling \( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \) is established in Proposition~\ref{prop:I-r-scaling-appendix} (Appendix~\ref{appendix:I-r-scaling}). In particular, the leading Puiseux coefficient
-\begin{align}
-1 - \left[\frac{2}{\pi} \;+\; \frac{\sqrt{2}}{2\pi}\,I(r)\right]\,t^{1/2} + O(t^{3/2})
-\end{align}
-is strictly positive and depends smoothly on \( r \). This confirms that the endpoint exponent \( \tfrac{1}{2} \) (hence the RKHS spectral decay rate) is unchanged by the Fisher–Kibble expectation, while the multiplicative constant is an \( O(1) \) perturbation of the shallow ReLU constant \( 2/\pi \).
+The asymptotic scaling \( I(r) \sim C/\sqrt{r} \) as \( r\to\infty \) is established in Proposition~\ref{prop:I-r-scaling-appendix} (Appendix~\ref{appendix:I-r-scaling}). The mean NTK expansion \eqref{eq:puiseux-mean-ntk-main} is the canonical form: the \( t^{1/2} \) coefficient \( -\frac{1}{r}\big[\frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r)\big] \) has the \( 1/r \) from EOC; the bracket tends to \( 2/\pi \) as \( r\to\infty \). The endpoint exponent \( \tfrac{1}{2} \) (hence the RKHS spectral decay rate) is unchanged; only the exponent matters for Bietti--Bach equivalence.
 \end{remark}
 
 \paragraph{RKHS equivalence via endpoint behavior.}
@@ -1035,14 +1035,8 @@ The extension to general depth \( L \ge 3 \) remains open. A detailed account of
 
 \subsection{What extends to general depth vs.\ what remains open}\label{appendix:what-extends-L}
 
-\paragraph{Why \(L=3\) is special (RKHS).}
-The mean kernel \(\tilde{\Kop}^{(2)}(\rho)=\mathbb{E}[\hat{\Theta}^{(2)}_r]\) has a single bottleneck: one Fisher (for \(\rho_1\)) and one Kibble (norms). The only non-trivial expectation is \(\mathbb{E}[\arccos(\hat{\rho}_r)]\) with \(\hat{\rho}_r\sim\mathrm{Fisher}(\rho,r)\), which is a one-dimensional integral; the \({}_2F_1\) connection formula gives the Puiseux \(t^{1/2}\) term and \(I(r)\sim 1/\sqrt{r}\).
-
-\paragraph{Why RKHS for \(L\ge 4\) is hard.}
-For \(L\ge 4\), the mean kernel is \(\tilde{\Kop}^{(L-1)}(\rho)=\mathbb{E}[\Theta^{(L-1)}(\rho_1,\ldots,\rho_{L-1})]\) over the random chain \((\rho_1,\ldots,\rho_{L-1})\). That is an \((L-1)\)-fold expectation over a Markov chain of Fisher-type variables. A rigorous proof would require: (i)~the conditional law of the chain (or the marginal of \(\rho_{L-1}\) given \(\rho\)); (ii)~a Laplace-type expansion as \(\rho=1-t\to 1^-\) of integrals such as \(\int \dot{s}(u)\,\mathbb{E}[\Theta^{(L-2)}\mid\rho_{L-1}=u]\,p_{\mathrm{Fisher}}(u\mid\rho,r)\,du\). The conditional expectation \(\mathbb{E}[\Theta^{(L-2)}\mid\rho_{L-1}=u]\) is not equal to \(\tilde{\Kop}^{(L-2)}(u)\), since the former conditions on the chain endpoint while the latter fixes the input; verifying the Puiseux structure of the conditional expectation would require a detailed analysis of the backward Fisher-chain density. That leads to nested hypergeometric/Laplace integrals; generalizing the current \({}_2F_1\) computation to \(L\) layers is the main difficulty.
-
-\paragraph{RKHS for \(L\ge 4\): possible directions.}
-Establishing RKHS equivalence for \(L\ge 4\) likely needs new ideas, e.g.\ an inductive argument that the leading Puiseux exponent remains \(1/2\) at each layer, or a characterization that avoids full chain marginals. We conjecture that the same \(t^{1/2}\) leading exponent holds for all \(L\) and that the mean NTK induces the same RKHS; a complete proof is left for future work.
+\paragraph{RKHS: why \(L=3\) is tractable and \(L\ge 4\) is open.}
+The mean kernel \(\tilde{\Kop}^{(2)}(\rho)=\mathbb{E}[\hat{\Theta}^{(2)}_r]\) has a single bottleneck: one Fisher (for \(\rho_1\)) and one Kibble (norms). The only non-trivial expectation is \(\mathbb{E}[\arccos(\hat{\rho}_r)]\) with \(\hat{\rho}_r\sim\mathrm{Fisher}(\rho,r)\), a one-dimensional integral; the \({}_2F_1\) connection formula gives the Puiseux \(t^{1/2}\) term and \(I(r)\sim 1/\sqrt{r}\). For \(L\ge 4\), the mean kernel \(\tilde{\Kop}^{(L-1)}(\rho)=\mathbb{E}[\Theta^{(L-1)}(\rho_1,\ldots,\rho_{L-1})]\) is an \((L-1)\)-fold expectation over a Markov chain of Fisher-type variables. A rigorous proof would require the conditional law of the chain and a Laplace-type expansion of integrals such as \(\int \dot{s}(u)\,\mathbb{E}[\Theta^{(L-2)}\mid\rho_{L-1}=u]\,p_{\mathrm{Fisher}}(u\mid\rho,r)\,du\); the conditional expectation \(\mathbb{E}[\Theta^{(L-2)}\mid\rho_{L-1}=u]\) is not equal to \(\tilde{\Kop}^{(L-2)}(u)\), and verifying the Puiseux structure would need a detailed analysis of the backward Fisher-chain density. We conjecture that the same \(t^{1/2}\) leading exponent holds for all \(L\); establishing RKHS equivalence for \(L\ge 4\) likely needs new ideas (e.g.\ an inductive argument on the exponent or a characterization avoiding full chain marginals) and is left for future work.
 
 \paragraph{Conditioning for general \(L\).}
 In contrast, \emph{conditioning} results hold for all \(L\). The proxy depth scaling (Theorem~\ref{thm:rflr-depth-scaling-mean}), the condition-number lower bound \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}), exact conditioning for equicorrelated and high-dimensional random data (Corollary~\ref{cor:conditioning-equicorrelated-highdim}), and the rigorous bound \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) in the equicorrelated case (Theorem~\ref{thm:equicorrelated-op-bound}) are all stated and proved for arbitrary depth \(L\). Extending the proxy--empirical bound to \emph{general} (non-equicorrelated) datasets is the natural next step and does not require hypergeometric machinery.
@@ -1057,16 +1051,16 @@ I(r) \;\sim\; \frac{C}{\sqrt{r}} \quad \text{as } r\to\infty,\qquad \text{for so
 \end{equation}
 i.e., \( I(r) = O(1/\sqrt{r}) \). For fixed \( r \ge 3 \), \( I(r) \) is bounded and strictly positive.
 \end{proposition}
-\paragraph{Proof sketch.} Express \(I(r)\) via the Beta function \(B((r-1)/2,\,r/2-1)\) and Gamma ratios. Apply Stirling's formula to the Gamma terms and the asymptotic \(B(a,b)\sim\sqrt{2\pi}\,a^{a-1/2}b^{b-1/2}/(a+b)^{a+b-1/2}\) when \(a,b\to\infty\) with \(a\sim b\sim r/2\); the Beta contributes a factor \(\sim\sqrt{2\pi}\,2^{-r}/\sqrt{r}\). The Gamma-ratio tends to 1; combining yields \(I(r)\sim C/\sqrt{r}\).
 \begin{proof}
-Using the Beta representation \( B((r-1)/2,\,r/2-1) = \Gamma((r-1)/2)\Gamma(r/2-1)/\Gamma(r-3/2) \), the closed form reduces to \( I(r) = (r-2)\,2^{r-5/2}/\sqrt{2\pi} \cdot B \cdot \Gamma(r-3/2)\Gamma(r-1/2)/\Gamma(r-1)^3 \). By Stirling's formula and the asymptotics \( B(a,b) \sim \sqrt{2\pi}\,a^{a-1/2}b^{b-1/2}/(a+b)^{a+b-1/2} \) when \( a,b \to \infty \) with \( a \sim b \sim r/2 \), one has \( B((r-1)/2,\,r/2-1) \sim \sqrt{2\pi}\,2^{-r}/\sqrt{r} \). The Gamma-ratio \( \Gamma(r-1/2)\Gamma(r-3/2)/\Gamma(r-1)^2 \sim 1 \). Combining these yields \( I(r) \sim C/\sqrt{r} \).
+Using the Beta representation \( B((r-1)/2,\,r/2-1) = \Gamma((r-1)/2)\Gamma(r/2-1)/\Gamma(r-3/2) \), the closed form reduces to \( I(r) = (r-2)\,2^{r-5/2}/\sqrt{2\pi} \cdot B \cdot \Gamma(r-3/2)\Gamma(r-1/2)/\Gamma(r-1)^3 \). Apply Stirling's formula to the Gamma terms and the asymptotic \( B(a,b) \sim \sqrt{2\pi}\,a^{a-1/2}b^{b-1/2}/(a+b)^{a+b-1/2} \) when \( a,b \to \infty \) with \( a \sim b \sim r/2 \): the Beta contributes \( B((r-1)/2,\,r/2-1) \sim \sqrt{2\pi}\,2^{-r}/\sqrt{r} \), and the Gamma-ratio \( \Gamma(r-1/2)\Gamma(r-3/2)/\Gamma(r-1)^2 \sim 1 \). Combining yields \( I(r) \sim C/\sqrt{r} \).
 \end{proof}
 
-Implications: (i)~the Puiseux coefficient \( c_1(r) = -\big[2/\pi + (\sqrt{2}/(2\pi))\,I(r)\big] \) satisfies \( c_1(r) \to -2/\pi \) as \( r\to\infty \), recovering the shallow ReLU constant; (ii)~the Fisher--Kibble correction to the mean NTK is \( O(1/(r\sqrt{r})) \) in the \( t^{1/2} \) term when \( I(r) \sim C/\sqrt{r} \).
+\paragraph{Implications for the Puiseux expansion.}
+The mean NTK expansion \eqref{eq:puiseux-mean-ntk-main} has \( t^{1/2} \) coefficient \( -\frac{1}{r}\big[\frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r)\big] \); the \( 1/r \) prefactor is from the EOC recursion (Appendix~\ref{appendix:eoc-scaling}). The bracket \( \frac{2}{\pi}+\frac{\sqrt{2}}{2\pi}\,I(r) \to 2/\pi \) as \( r\to\infty \), recovering the shallow ReLU constant; the Fisher--Kibble correction is \( O(1/(r\sqrt{r})) \). For RKHS equivalence (Bietti--Bach), only the exponent \( 1/2 \) matters; the \( 1/r \) scaling does not change the RKHS.
 \section{Proofs for depth scaling}\label{appendix:depth-scaling-proofs}
 
 \subsection{Correlation propagation and inverse cosine distances}\label{appendix:inverse-cosine-background}
-For ReLU activation, the RF-LR architecture uses the same EOC parameterization as standard MLPs~\cite{hayou2018selectioninitializationactivationfunction}. The forward correlation map induced by ReLU is the same as in~\cite{terjek2025mlpsateoc}; in particular, if we define a deterministic cosine recursion \( \rho_k = \varrho(\rho_{k-1}) \) (the infinite-width/full-rank idealization), then for ReLU \( \Delta_\phi = 1/2 \) (i.e. \( a = b = 1/\sqrt{2} \) in \( (a,b) \)-ReLU notation).
+For ReLU activation, the RF-LR architecture uses the same EOC parameterization as standard MLPs~\cite{hayou2018selectioninitializationactivationfunction}. The forward correlation map induced by ReLU is the same as in~\cite{terjek2025mlpsateoc}; in particular, if we define a deterministic cosine recursion \( \rho_k = \varrho(\rho_{k-1}) \) (the infinite-width/full-rank idealization), then for ReLU \( \Delta_\phi = 1/2 \) (i.e. \( a = b = 1/\sqrt{2} \) in \( (a,b) \)-ReLU notation). The proofs in this subsection are inspired by~\cite{terjek2025mlpsateoc}.
 
 \begin{definition}[Cosine map for ReLU at EOC]
 For ReLU, set \( \Delta_\phi = 1/2 \). The cosine map \( \varrho : [-1,1] \to [-1,1] \) and its derivative \( \varrho' \) satisfy
@@ -1153,9 +1147,8 @@ Assume EOC initialization and a dataset with no parallel pairs. For each \( k \i
 \bigl\Vert W_k - \omega^{\circ(k-1)}(\widehat{W}_k)\,(\mathbf{1}_n\mathbf{1}_n^\top - I_n) \bigr\Vert \le O(\Delta_\phi\, n^{-1} k) + O(1).
 \]
 \end{proposition}
-\paragraph{Proof sketch.} Apply~\cite[Proposition~6]{terjek2025mlpsateoc} to the deterministic recursion \(\rho_{k,ij}=\varrho(\rho_{k-1,ij})\): the inverse cosine distance matrix \(W_k\) is close to an equicorrelated structure \(\omega^{\circ(k-1)}(\widehat{W}_k)(\mathbf{1}\mathbf{1}^\top-I)\) by convexity and monotonicity of \(\omega\).
 \begin{proof}
-This follows from~\cite[Proposition~6]{terjek2025mlpsateoc} applied to the deterministic recursion \( \rho_{k,ij}=\varrho(\rho_{k-1,ij}) \). The argument relies on convexity/monotonicity of \( \omega \) and standard matrix comparison estimates.
+By~\cite[Proposition~6]{terjek2025mlpsateoc}, applied to the deterministic recursion \(\rho_{k,ij}=\varrho(\rho_{k-1,ij})\), the inverse cosine distance matrix \(W_k\) is close to the equicorrelated structure \(\omega^{\circ(k-1)}(\widehat{W}_k)(\mathbf{1}\mathbf{1}^\top-I_n)\): convexity and monotonicity of \(\omega\) on \((1,\infty)\) imply the stated matrix-norm bound via standard comparison estimates for the entrywise recursion.
 \end{proof}
 
 \subsection{Preliminaries and full statements for Section~\ref{subsec:rflr-terjek-generalization}}\label{appendix:mean-depth-theorem-preliminaries}
@@ -1331,3 +1324,5 @@ so the entrywise infinite-depth limit of the (mean) Gram matrix is a constant ke
 Consequently, after centering (restricting to the orthogonal complement of the constant mode), the relevant part of \(K^{(L)}\) tends to zero and the spectrum collapses.
 In particular, a \emph{non-degenerate} deep limit on \(\mathbf{1}^\perp\) can only hold under a joint scaling (e.g. \(r\) growing with \(L\)) or after an explicit rescaling of the centered operator (equivalently, rescaling time/learning rate in kernel gradient descent).
 \end{remark}
+
+\input{experiments}

@@ -1,19 +1,8 @@
-\section{Conclusion}
 
-This work develops an NTK analysis for low-rank random-feature architectures (RF-LR/MMNN) under explicit assumptions. The paper contains no experiments; empirical validation is left for future work.
-
-\textbf{Main: depth/rank scaling and condition number.} The trainable parameter budget scales as \(O(LrN)\). In the deterministic proxy mean recursion, depth drives correlations toward \(1\), the kernel magnitude saturates, and the diagonal--off-diagonal gap decays as \(\asymp 1/(rk)\) (Theorem~\ref{thm:rflr-depth-scaling-mean}). We prove a lower bound on the condition number of the \emph{proxy} Gram matrix, \(\kappa\ge\Omega(r\cdot L)\) (Proposition~\ref{prop:condition-number-depth}), and one result giving exact conditioning for equicorrelated and high-dimensional random data (Corollary~\ref{cor:conditioning-equicorrelated-highdim}). Under a fixed budget, depth and rank trade off from a conditioning perspective; the choice of \(r\) and \(L\) is a matter of approximation power (e.g.\ effective depth and RKHS expressivity).
-
-\textbf{Recursion.} We provide an explicit NTK recursion for arbitrary depth in RF-LR and a closed-form expansion (Theorem~\ref{thm:ntk_recursion}, Corollary~\ref{cor:general_L_layer_ntk}).
-
-\textbf{Low rank is enough for the NTK RKHS (three layers).} In the NTK regime, the three-layer RF-LR mean kernel induces the same RKHS as the shallow ReLU kernel (Corollary~\ref{thm:no_rkhs_advantage}), showing that the bottleneck does not reduce the kernel-regime function class while lowering the trainable parameter scaling from dense \(O(LN^2)\) to \(O(LrN)\).
-
-\textbf{Concentration in the bottleneck dimension.} For the three-layer case, the empirical kernel concentrates around its deterministic limit \(K_\infty(\rho)\) with tails controlled by the bottleneck dimension \(r\) (Theorem~\ref{thm:rkhs_rank_concentration}, Corollary~\ref{cor:three_layer_ntk_concentration}). For equicorrelated data, a full proof in the appendix gives \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) (Theorem~\ref{thm:equicorrelated-op-bound}), linking proxy and empirical conditioning on the mean-zero subspace.
+\section{Conclusion and discussion}
 
 \paragraph{Condition number (kernel GD).}
 For squared loss in the lazy/NTK regime with mean-zero targets, stability and convergence speed depend on the condition number \(\lambda_{\max}/\lambda_{\min}\) of the centered Gram matrix: stability requires \(\eta<2/\lambda_{\max}\), and the best fixed-step linear rate depends on \(\lambda_{\max}/\lambda_{\min}\). Our results give a lower bound on this quantity for the proxy and, in one setting, its exact value with high probability. We do not claim to govern optimization; the link between proxy condition number and GD convergence or sample complexity is not made precise in this work.
-
-\section{Discussion}
 
 This work leaves several natural directions open. We emphasize that our current scope is the lazy/NTK regime under explicit standard assumptions; extending beyond this setting requires additional ideas.
 
