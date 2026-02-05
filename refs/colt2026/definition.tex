@@ -28,16 +28,7 @@ We include a layer bias \(c^{(\ell)}\) for completeness, but we avoid introducin
 With this setup in place, we record the standing assumptions and conventions used throughout the paper.
 
 \subsection{Assumptions}\label{subsec:assumptions}
-\noindent
-We collect the standing assumptions and conventions used throughout the paper; expanded discussion is in Appendix~\ref{appendix:notation-assumptions}.
-\begin{itemize}
-    \item \textbf{Sequential infinite width.} We take \( \bm{n}_1\to\infty,\dots,\bm{n}_L\to\infty \) with i.i.d.\ Gaussian random features, frozen after initialization, under NTK scaling \(1/\sqrt{\bm{n}_\ell}\)~\cite{jacot2018neural} (Appendix~\ref{appendix:assumptions-expanded}).
-    \item \textbf{Bottleneck regime and scaling.} For \(\ell\ge 2\), \(\bm{d}_\ell=r\ll \bm{n}_\ell\), and we use edge-of-chaos scaling \( \mathrm{Cov}(w^{(\ell)}_j)=I_r/r \) (Appendix~\ref{appendix:eoc-scaling}).
-    \item \textbf{Input normalization.} For RKHS statements we focus on normalized inputs (typically \(x\in\mathbb{S}^{d-1}\)), so kernels are zonal functions of the cosine similarity \(\rho\); concentration statements keep explicit \(\|x\|\|x'\|\) factors when needed.
-\end{itemize}
-
-\paragraph{Homogeneous activation.}
-We work under the positive 1-homogeneity assumption (satisfied by \(\ReLU\)); see Assumption~\ref{assump:homogeneous_activation} in Appendix~\ref{appendix:notation-assumptions}. This condition is used for Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}) and for separating radial and angular fluctuations in the three-layer kernel.
+We take the sequential infinite-width limit (\(n_1\to\infty,\ldots,n_L\to\infty\)) with i.i.d.\ Gaussian random features frozen after initialization under NTK scaling \(1/\sqrt{n_\ell}\)~\cite{jacot2018neural}; for \(\ell\ge 2\) we assume the bottleneck regime \(\bm{d}_\ell=r\ll n_\ell\) with edge-of-chaos scaling \(\mathrm{Cov}(w^{(\ell)}_j)=I_r/r\). For RKHS and concentration we use normalized inputs (typically \(x\in\mathbb{S}^{d-1}\)) so kernels are zonal in the cosine similarity \(\rho\), and we assume positive 1-homogeneity of the activation (satisfied by \(\ReLU\)), which is used for Fisher--Kibble decoupling (Lemma~\ref{lem:fisher-kibble}) and radial/angular separation in the three-layer kernel. Full statements and discussion are in Appendix~\ref{appendix:notation-assumptions} (standing assumptions, EOC scaling, and Assumption~\ref{assump:homogeneous_activation}).
 
 \subsection{Parameterization, signal propagation, and kernels}
 
