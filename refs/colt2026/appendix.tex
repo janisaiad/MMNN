@@ -1201,23 +1201,42 @@ All entries are \(\Theta(1)\). For \(\lambda_{\min}\le O(1/(rL))\): take \(v=e_i
 
 \begin{proof}
 \paragraph{Entries.}
-We have \(M_{ij}=\Theta^{(L)}(\rho_{ij})\). The range \(\Theta^{(L)}(\rho)\in[\Theta^{(L)}(-1),\Theta^{(L)}(1)]\) is bounded, and \(\Theta^{(L)}(1)\to\Theta_\star(r)=\Theta(1)\). So all entries are \(\Theta(1)\).
+We have \(M_{ij}=\Theta^{(L)}(\rho_{ij})\). The range is bounded and the diagonal tends to the fixed point:
+\[
+\Theta^{(L)}(\rho)\in[\Theta^{(L)}(-1),\Theta^{(L)}(1)], \qquad \Theta^{(L)}(1)\to\Theta_\star(r)=\Theta(1).
+\]
+So all entries are \(\Theta(1)\).
 
 \paragraph{Upper bound on \(\lambda_{\min}\): \(\lambda_{\min}\le O(1/(rL))\).}
 By assumption (ii), there exist \(i\neq j\) with \(\rho_{ij}\le\rho_{\max}<1\). Take \(v=e_i-e_j\). Then \(v\perp\mathbf{1}\) and \(\|v\|^2=2\). The Rayleigh quotient is
 \[
 \frac{v^\top \mathbf{M} v}{\|v\|^2} \;=\; M_{ii}+M_{jj}-2M_{ij} \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\rho_{ij}).
 \]
-By Theorem~\ref{thm:rflr-depth-scaling-mean}, \(\Theta^{(L)}(1)-\Theta^{(L)}(\rho)=\Theta(1/(rL))\) for \(\rho<1\). So this quotient is \(O(1/(rL))\), and \(\lambda_{\min}(\mathbf{M}|_{\mathbf{1}^\perp})\le O(1/(rL))\).
+By Theorem~\ref{thm:rflr-depth-scaling-mean}, for \(\rho<1\),
+\[
+\Theta^{(L)}(1)-\Theta^{(L)}(\rho)\;=\;\Theta(1/(rL)).
+\]
+So this quotient is \(O(1/(rL))\), hence
+\[
+\lambda_{\min}(\mathbf{M}|_{\mathbf{1}^\perp})\;\le\; O(1/(rL)).
+\]
 
 \paragraph{\(\lambda_{\max}=\Theta(1)\).}
-\emph{Upper bound.} All eigenvalues of \(\mathbf{M}|_{\mathbf{1}^\perp}\) lie in \((0,\Theta^{(L)}(1)]\) because \(\mathbf{M}\) is positive definite and \(M_{ii}=\Theta^{(L)}(1)=\Theta(1)\). Thus \(\lambda_{\max}\le\Theta(1)\).
+\emph{Upper bound.} All eigenvalues of \(\mathbf{M}|_{\mathbf{1}^\perp}\) lie in \((0,\Theta^{(L)}(1)]\) because \(\mathbf{M}\) is positive definite and \(M_{ii}=\Theta^{(L)}(1)=\Theta(1)\). Thus
+\[
+\lambda_{\max}\;\le\; \Theta(1).
+\]
 
 \medskip\noindent
-\emph{Lower bound.} Under assumption (iii) (non-equicorrelated), the off-diagonal entries \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) are not all equal. Pick distinct \(i,j,k\) with \(\rho_{ij}\neq\rho_{ik}\). The restriction of \(\mathbf{M}\) to \(\operatorname{span}\{e_i,e_j,e_k\}\cap\mathbf{1}^\perp\) is a \(2\times 2\) positive definite matrix with diagonal entries \(\Theta(1)\), so its eigenvalues are \(\Theta(1)\). Hence \(\lambda_{\max}(\mathbf{M}|_{\mathbf{1}^\perp})\ge\Omega(1)\).
+\emph{Lower bound.} Under assumption (iii) (non-equicorrelated), the off-diagonal entries \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) are not all equal. Pick distinct \(i,j,k\) with \(\rho_{ij}\neq\rho_{ik}\). The restriction of \(\mathbf{M}\) to \(\operatorname{span}\{e_i,e_j,e_k\}\cap\mathbf{1}^\perp\) is a \(2\times 2\) positive definite matrix with diagonal entries \(\Theta(1)\), so its eigenvalues are \(\Theta(1)\). Hence
+\[
+\lambda_{\max}(\mathbf{M}|_{\mathbf{1}^\perp})\;\ge\; \Omega(1).
+\]
 
 \paragraph{Condition number.}
-Thus \(\kappa=\lambda_{\max}/\lambda_{\min}\ge \Theta(1)/O(1/(rL))=\Omega(r\cdot L)\).
+\[
+\kappa \;=\; \frac{\lambda_{\max}}{\lambda_{\min}} \;\ge\; \frac{\Theta(1)}{O(1/(rL))} \;=\; \Omega(r\cdot L).
+\]
 \end{proof}
 
 \subsection{Proof of Corollary~\ref{cor:conditioning-equicorrelated-highdim}}\label{appendix:proof-conditioning-equicorrelated-highdim}
@@ -1227,19 +1246,42 @@ Assume \(\rho_{ij}=\rho_0\) for all \(i\neq j\) and \(\rho_{ii}=1\). Then
 \[
 \mathbf{M} \;=\; \Theta^{(L)}(1)I_n + \Theta^{(L)}(\rho_0)(\mathbf{1}\mathbf{1}^\top - I_n) \;=\; \Theta^{(L)}(\rho_0)\mathbf{1}\mathbf{1}^\top + \bigl(\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\bigr)I_n.
 \]
-So \(\mathbf{M}\) has eigenvalue \(\Theta^{(L)}(1)+(n-1)\Theta^{(L)}(\rho_0)\) for the eigenvector \(\mathbf{1}\), and eigenvalue \(\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\) with multiplicity \(n-1\) on \(\mathbf{1}^\perp\). By Theorem~\ref{thm:rflr-depth-scaling-mean}, \(\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)=\Theta(1/(rL))\). On \(\mathbf{1}^\perp\) all eigenvalues therefore equal \(\lambda_\perp=\Theta(1/(rL))\), so \(\kappa_\perp=1\).
+So \(\mathbf{M}\) has eigenvalue \(\Theta^{(L)}(1)+(n-1)\Theta^{(L)}(\rho_0)\) for the eigenvector \(\mathbf{1}\), and eigenvalue \(\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\) with multiplicity \(n-1\) on \(\mathbf{1}^\perp\). By Theorem~\ref{thm:rflr-depth-scaling-mean},
+\[
+\Theta^{(L)}(1)-\Theta^{(L)}(\rho_0)\;=\;\Theta(1/(rL)).
+\]
+On \(\mathbf{1}^\perp\) all eigenvalues therefore equal \(\lambda_\perp=\Theta(1/(rL))\), so
+\[
+\kappa_\perp \;=\; 1.
+\]
 
 \paragraph{High-dimensional random data.}
-Let \(x_1,\ldots,x_n\) be i.i.d.\ uniform on \(\mathbb{S}^{d-1}\). For \(i\neq j\), the inner product \(\langle x_i,x_j\rangle\) equals the cosine similarity \(\rho_{ij}\) and satisfies \(\mathbb{P}(|\rho_{ij}|\ge t)\le 2\exp(-c d\,t^2)\) for \(t\ge 0\) (concentration on the sphere~\cite{vershynin2018highdimensionalprobability}). With \(\tau=C/\sqrt{d}\) for a large constant \(C\), we have \(\max_{i\neq j}|\rho_{ij}|=O(1/\sqrt{d})\) with probability \(1-O(n^2)\exp(-\Omega(d))\).
+Let \(x_1,\ldots,x_n\) be i.i.d.\ uniform on \(\mathbb{S}^{d-1}\). For \(i\neq j\), \(\langle x_i,x_j\rangle=\rho_{ij}\) and \(\mathbb{P}(|\rho_{ij}|\ge t)\le 2\exp(-c d\,t^2)\) for \(t\ge 0\) (concentration on the sphere~\cite{vershynin2018highdimensionalprobability}). With \(\tau=C/\sqrt{d}\) for a large constant \(C\),
+\[
+\max_{i\neq j}|\rho_{ij}|\;=\; O(1/\sqrt{d}) \qquad \text{with probability }\; 1-O(n^2)\exp(-\Omega(d)).
+\]
 
 \medskip\noindent
-On that event, all off-diagonal \(\rho_{ij}\) lie in an interval of length \(O(1/\sqrt{d})\). The map \(\rho\mapsto \Theta^{(L)}(\rho)\) is Lipschitz on \([-1,1]\) (the recursion has bounded derivative), so \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) for \(i\neq j\) differ by \(O(1/\sqrt{d})\). Thus \(\mathbf{M}\) is an equicorrelated matrix (common off-diagonal \(\Theta^{(L)}(\bar{\rho})\) for some \(\bar{\rho}=O(1/\sqrt{d})\)) plus a matrix \(E\) with \(\|E\|_{\mathrm{F}}\le n^2\cdot O(1/\sqrt{d})=o(1)\) as \(d\to\infty\) with \(n\) fixed.
+On that event, all off-diagonal \(\rho_{ij}\) lie in an interval of length \(O(1/\sqrt{d})\). The map \(\rho\mapsto \Theta^{(L)}(\rho)\) is Lipschitz on \([-1,1]\), so \(M_{ij}=\Theta^{(L)}(\rho_{ij})\) for \(i\neq j\) differ by \(O(1/\sqrt{d})\). Thus \(\mathbf{M}\) equals an equicorrelated matrix (common off-diagonal \(\Theta^{(L)}(\bar{\rho})\) for some \(\bar{\rho}=O(1/\sqrt{d})\)) plus \(E\) with
+\[
+\|E\|_{\mathrm{F}} \;\le\; n^2\cdot O(1/\sqrt{d}) \;=\; o(1) \qquad \text{as } d\to\infty \text{ with } n \text{ fixed}.
+\]
 
 \medskip\noindent
-By Weyl's inequality, each eigenvalue of \(\mathbf{M}|_{\mathbf{1}^\perp}\) differs from the unique eigenvalue \(\lambda_\perp^0=\Theta^{(L)}(1)-\Theta^{(L)}(\bar{\rho})\) of the equicorrelated part by \(O(\|E\|_{\mathrm{op}})=o(1)\). For \(\bar{\rho}=O(1/\sqrt{d})\), the proxy recursion gives \(\Theta^{(L)}(\bar{\rho})\) bounded and \(\Theta^{(L)}(1)=\Theta_\star(r)+O(1/L)=\Theta(1)\), so \(\lambda_\perp^0=\Theta^{(L)}(1)-\Theta^{(L)}(\bar{\rho})\) is \(\Theta(1)\) (for fixed \(r,L\); the \(r,L\)-scaling is \(\Theta(1/(rL))\) by the depth-induced gap). Hence all eigenvalues of \(\mathbf{M}|_{\mathbf{1}^\perp}\) are \(\lambda_\perp^0+o(1)=\Theta(1)(1+o(1))\), and \(\kappa_\perp=1+o(1)\).
+By Weyl's inequality, each eigenvalue of \(\mathbf{M}|_{\mathbf{1}^\perp}\) differs from
+\[
+\lambda_\perp^0 \;=\; \Theta^{(L)}(1)-\Theta^{(L)}(\bar{\rho})
+\]
+by \(O(\|E\|_{\mathrm{op}})=o(1)\). For \(\bar{\rho}=O(1/\sqrt{d})\), the proxy recursion gives \(\Theta^{(L)}(\bar{\rho})\) bounded and \(\Theta^{(L)}(1)=\Theta_\star(r)+O(1/L)=\Theta(1)\), so \(\lambda_\perp^0\) is \(\Theta(1)\) (for fixed \(r,L\); the \(r,L\)-scaling is \(\Theta(1/(rL))\) by the depth-induced gap). Hence
+\[
+\text{each eigenvalue of }\;\mathbf{M}|_{\mathbf{1}^\perp}\;=\; \lambda_\perp^0+o(1)\;=\;\Theta(1)(1+o(1)), \qquad \kappa_\perp\;=\;1+o(1).
+\]
 
 \medskip\noindent
-On that high-probability event the data are approximately equicorrelated. So the same operator-norm bound on \(\mathbf{1}^\perp\) as in Theorem~\ref{thm:equicorrelated-op-bound} applies to the random Gram matrix \(\hat{K}\): \(\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\|_{\mathrm{op}}=O_P(L/r+1/\sqrt{r})\) with high probability (in \(r\) and \(d\)).
+On that high-probability event the data are approximately equicorrelated, so the same operator-norm bound as in Theorem~\ref{thm:equicorrelated-op-bound} applies to \(\hat{K}\):
+\[
+\bigl\|(\hat{K}-K_{\mathrm{proxy}})|_{\mathbf{1}^\perp}\bigr\|_{\mathrm{op}} \;=\; O_P(L/r+1/\sqrt{r}) \qquad \text{with high probability (in \(r\) and \(d\))}.
+\]
 \end{proof}
 
 \paragraph{Terjék--González-Sánchez pipeline and RF-LR.}

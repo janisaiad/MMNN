@@ -107,3 +107,14 @@ This section presents numerical illustrations. All scripts are headless (matplot
   \caption{Left: \(\kappa\) vs \(r\) for clustered (non-equicorrelated) data; \(\kappa\) need not approach 1 (Proposition~\ref{prop:condition-number-depth}). Right: Test MSE of kernel ridge regression vs \(r\); as \(r\) grows and the Gram concentrates toward the proxy, mean risk decreases and std across trials drops.}
   \label{fig:kappa_and_kernel_regression}
 \end{figure}
+
+\subsection{RKHS Puiseux exponent vs depth (Corollary~\ref{thm:no_rkhs_advantage}, extension to \(L\ge 4\))}
+
+For zonal kernels on the sphere, the RKHS is controlled by the Puiseux exponent \(\gamma\) at the endpoint \(\rho=1\): if \(K(1-t)-K(1)\sim c\cdot t^\gamma\) for small \(t\), then \(\gamma\) determines the RKHS~\cite{bietti2021deepequalsshallowrelu}. The paper proves \(\gamma=1/2\) for the mean three-layer RF-LR kernel (same as shallow ReLU); extension to \(L\ge 4\) is open. We estimate \(\gamma(L)\) for the deterministic proxy \(\Theta^{(L)}(\rho)\) via log--log regression of the gap \(\Theta^{(L)}(1)-\Theta^{(L)}(1-t)\) vs \(t\). For \(L\in\{2,3,4,5,6\}\) we obtain \(\gamma(L)\approx 0.52\)--\(0.55\) with \(R^2>0.999\), suggesting the proxy's endpoint behavior is consistent with RKHS equivalence extending to \(L\ge 4\).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{rkhs_puiseux_exponent_vs_depth}
+  \caption{RKHS Puiseux exponent vs depth. Left: estimated \(\gamma(L)\) vs \(L\); reference \(\gamma=1/2\) (ReLU RKHS). Right: log--log gap vs \(t\) for \(L=2\) and \(L=6\). The proxy kernel exhibits \(\gamma\approx 1/2\) for \(L\ge 2\), consistent with RKHS equivalence extending beyond three layers.}
+  \label{fig:rkhs_puiseux_depth}
+\end{figure}
