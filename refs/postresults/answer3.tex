@@ -1,30 +1,31 @@
+We thank the reviewer for the careful reading and thoughtful questions.
 
-Rebuttal (Reviewer Z9GA)
-
-We thank the reviewer for the careful reading and thoughtful questions. We respond below to the main concerns on technical novelty and the spectral-bias discussion.
-
-Q1 (Technical novelty)
-
+\medskip
+\noindent\textbf{Q1 (Technical novelty).}\quad
 We apologize for not being precise enough in the coupling argument presentation: one intermediate step was missing in the draft wording.
 
-More precisely, following the Nguyen--Pham coupling template (their three-layer assumption / coupling display), after introducing the coupling $\pi_t$ and using bounded first-layer activation, one obtains a bound of the form
+More precisely, there is no technical novelty for the existence/uniqueness proof following Nguyen et al.
+The only technical novelty comes from modifying the coupling template to our channel-wise sum (their three-layer assumption / coupling display): after introducing the coupling $\pi_t$ and using bounded first-layer activation, one obtains a bound of the form
 $$
-\mathbb{E}_{\pi_t}\left[\left|\left\langle \mathbb{E}_{Z}\left[\Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\mid X=x\right],\varphi_{1}(\langle u,x\rangle)\right\rangle\right|\right]
-\le K\,\mathbb{E}_{\pi_t}\left[\left|\Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\right|\right]
+\mathbb{E}_{\pi_t}\left[\left|\left\langle \mathbb{E}_{Z}\left[ \Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\mid X=x \right],\varphi_{1}(\langle u,x\rangle) \right\rangle\right|\right]
+\le K\,\mathbb{E}_{\pi_t}\left[\left|\Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\right|\right],
 $$
-and then controls the right-hand side by weighted coupled gaps (same logic as Nguyen \& Pham), with low-rank-specific channel aggregation.
+and one then controls the right-hand side by weighted coupled gaps (same logic as Nguyen \& Pham), with low-rank-specific channel aggregation.
 
 Our low-rank translation of this missing step is that the main coupling term is controlled through a channel sum under $\pi_t$:
 $$
-\mathbb{E}_{\pi_t}\Big[(1+|\bar w_2|)\,|\bar w_2|\,\sum_{k=1}^{r} |\bar w_{1,k}|\,|w_{1,k}-\bar w_{1,k}|\Big]\to 0
+\mathbb{E}_{\pi_t}\Bigl[(1+|\bar w_2|)\,|\bar w_2|\,\sum_{k=1}^{r} |\bar w_{1,k}|\,|w_{1,k}-\bar w_{1,k}|\Bigr]\to 0,
 $$
-with notation matched to our neuronal embedding variables in Eq.~(1). This is exactly the place where the RF-LR structure replaces the fully connected contraction chain by channelwise control plus mixing bounds.
+with notation matched to our neuronal embedding variables in Eq.~(1).
+This is exactly the place where the RF-LR structure replaces the fully connected contraction chain by channelwise control plus mixing bounds.
 
-We will make this explicit in the appendix by adding (i) the post-"translates to" display, (ii) the time-regularity condition for each channel
+We will make this explicit in the appendix by adding:
+(i)~the post-\emph{translates-to} display;
+(ii)~the time-regularity condition for each channel,
 $$
-\operatorname*{ess\,sup}_{t}\left|\partial_t w_1(t,U_k)\right|\to 0,\qquad k=1,\dots,r,
+\operatorname*{ess\,sup}_{t}\left|\partial_t w_1(t,U_k)\right|\to 0,\qquad k=1,\dots,r;
 $$
-and (iii) the bi-Lipschitz/bounded-mixing constants used to close the backward estimate.
+(iii)~the bi-Lipschitz/bounded-mixing constants used to close the backward estimate.
 
 For ReLU, the closure step uses the sharp inequality
 $$
@@ -32,23 +33,20 @@ $$
 \le \left|\sum_{i=1}^{r}(x_i-y_i)\right|
 \le \sum_{i=1}^{r}|x_i-y_i|
 $$
-rather than any extra factor-$r$ slack. We will state this explicitly (with compact-support / boundedness assumptions for pre-activations) to clarify why $r$-channel coupling closes.
+rather than any extra factor-of-$r$ slack.
+We will state this explicitly (with compact-support / boundedness assumptions for pre-activations) to clarify why $r$-channel coupling closes.
 
+\medskip
+\noindent\textbf{Q2 (Spectral bias and Section~4).}\quad
+On universality and training regimes: we will revise Section~4 to separate statements cleanly.
+In the NTK / lazy training regime, the effective bias is governed by the kernel spectrum and one expects the classical low-frequency-first behavior emphasized in that line of work.
+The empirical ``tilt'' toward comparatively higher-frequency structure that we highlight is observed in a richer feature-learning setting for our low-rank RF architecture; we do not claim that this behavior is universal across all scalings (including finite width outside mean-field parameterizations or lazy limits).
 
+Regarding Rahaman et al., ``On the Spectral Bias of Neural Networks'' (2019), arXiv:1806.08734, \url{https://arxiv.org/abs/1806.08734}, is an apt reference for the standard Fourier / low-frequency-first picture in sufficiently wide, kernel-like regimes.
 
+On why low-rank maps might carry more high-frequency content (strictly heuristic, work in progress / under review):
+in depth-$L$ ReLU networks, one can view NN outputs through ``sum over paths'' (per-region linear parametrizations); shrinking the effective rank reduces how many independent hinge directions can co-activate across depth, which loosely relaxes constraints on how linear regions can tile input space---informally, a less constrained CPWL can allow relatively more high-dimensional faces versus low-dimensional ones and thus alter how energy is distributed across spatial frequencies in a Fourier lens.
+This complements the shorter ``fewer effectively independent hinge directions / boundary geometry'' phrasing we will keep in the main text and will be marked explicitly as exploratory reasoning and ongoing review, not as a formal implication.
 
-
-
-Q2 (Spectral bias and Section~4)
-
-This reply merges the reviewer’s questions on universality beyond the mean-field regime and on the qualitative discussion around the two-point setting / high- vs.\ low-frequency behavior.
-
-We thank the reviewers for connecting this discussion to the broader spectral-bias literature. In particular, Rahaman et al., ``On the Spectral Bias of Neural Networks'' (2019), arXiv:1806.08734, \url{https://arxiv.org/abs/1806.08734}, is an apt reference for the standard Fourier / low-frequency-first picture in sufficiently wide, kernel-like regimes.
-
-On universality and training regimes: we will revise Section~4 to separate statements cleanly. In the NTK / lazy training regime, the effective bias is governed by the kernel spectrum and one expects the classical low-frequency-first behavior emphasized in that line of work. The empirical ``tilt'' toward comparatively higher-frequency structure that we highlight is observed in a richer feature-learning setting for our low-rank RF architecture; we do not claim that this behavior is universal across all scalings (including finite width outside mean-field parameterizations or lazy limits).
-
-On exposition and scope: we agree Section~4 is currently qualitative and that the two-point analytic anchor is minimal. We will tone down claims, acknowledge the simplicity of the two-point construction, and add citations for the CPWL / compositional picture and Fourier heuristics beyond Rahaman et al.\ (e.g., Mont\'ufar; Raghu et al., as already standard in this discussion).
-
-On why low-rank maps might carry more high-frequency content (strictly heuristic, work in progress / under refinement for the manuscript): we will present one intuition alongside the boundary / region-count narrative, clearly labeled as not a theorem. In depth-$L$ ReLU networks, one can view contributions through ``sum over paths'' (per-region linear parametrizations); shrinking the effective rank reduces how many independent hinge directions can co-activate across depth, which loosely relaxes constraints on how linear regions can tile input space---informally, a less constrained CPWL can allow relatively more high-dimensional faces versus low-dimensional ones and thus alter how energy is distributed across spatial frequencies in a Fourier lens. This complements the shorter ``fewer effectively independent hinge directions / boundary geometry'' phrasing we will keep in the main text and will be marked explicitly as exploratory reasoning and ongoing review, not as a formal implication.
-
-Concretely for the camera-ready, we will (i) separate NTK vs.\ feature-learning claims, (ii) integrate the Rahaman et al.\ citation and related CPWL references, (iii) state the path / polytope / hinge-direction heuristic and the region-count argument only as intuition, and (iv) clarify that full-rank, fully trained networks are discussed relative to the usual low-frequency bias narrative, while our low-rank observations are regime-dependent and empirical.
+On exposition and scope: we agree Section~4 is currently qualitative and that the two-point analytic anchor is minimal.
+We will tone down claims, acknowledge the simplicity of the two-point construction, and add citations for the CPWL / compositional picture and Fourier heuristics beyond Rahaman et al.
