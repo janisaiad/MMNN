@@ -7,9 +7,9 @@ Our main guarantee is conditional on convergence of the mean-field dynamics. Unc
 Q23 (High-dimensional extensions of the spike mechanism)
 
 Yes in substance: the mechanism (channel dominance $\leftrightarrow$ amplified backward signal through the mixing matrix and ReLU gates) is dimension-agnostic at the ODE algebra level because it depends on the same identity
-\[
-  H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W)
-\]
+$$
+H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W)
+$$
 and the channelwise backprop objects that feed the mean-field equations. What we do not currently have for general input dimension $d$ is a clean theorem isolating well-separated (non-overlapping) spikes in feature space; overlapping channel contributions when $d>1$ complicate bookkeeping and the rigorous two-point caricature used in Theorem~4.1. We will state this distinction clearly in the camera-ready and add empirical evidence in higher $d$ where space permits.
 
 Additional context. The explanatory content is not the simplified two-point, two-channel statement itself, but the positive feedback it isolates. Fix a second-layer neuron index $c_2$ and recall $H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j} f_j(x;W)$. For ReLU, gating enters mean-field gradients through $\varphi'_2(H_2)=\mathbf{1}\{H_2>0\}$. The channel-$k$ backward signal (cf.~the ODE for $\partial_t w_1(\cdot,k)$) is built from expectations over $C_2$ of terms that couple (i)~the mixing weight $W_{C_2,k}$, (ii)~the gate $\mathbf{1}\{H_2(C_2;x,W)>0\}$, and (iii)~upstream factors (output error and later-layer weights). When channel $k$ dominates, neurons $c_2$ that contribute to the channel-$k$ drift are precisely those with the gate "on." Across $c_2$, the effective weights in the expectation are then positively aligned with $W_{c_2,k}$ and with $\mathbf{1}\{H_2(c_2)>0\}$, producing a large contribution to the drift of the $k$-th channel, which in turn pushes $f_k$ further in the same direction: a reinforcing loop. The ODE-level mechanism is dimension-agnostic; the two-point theorem is a minimal tractable instance.

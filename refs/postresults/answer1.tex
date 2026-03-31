@@ -60,18 +60,18 @@ We thank the reviewer again. The first message covered Q1--Q6. Below is the cont
 Q7 (Write the loss and make the gradient-flow structure explicit):
 
 We thank the reviewer for this suggestion and will make the statement explicit. We will define the population loss
-\[
+$$
 \mathcal L(W)=\mathbb E_Z[\mathcal L(Y,\hat y(X;W))],\qquad
-d\mathcal L(Z;W)=\partial_{\hat y}\mathcal L(Y,\hat y(X;W)),
-\]
+d\mathcal L(Z;W)=\partial_{\hat y}\mathcal L(Y,\hat y(X;W))
+$$
 and state that the mean-field ODE is the gradient flow (with learning-rate schedules $\xi_\ell(t)$) of $\mathcal L$ in the mean-field parameterization. These definitions are currently spelled out in the appendix; for the camera-ready, we will also add them in the main body (with concise notation) so Section 3 is self-contained.
 
 Q8 (Learning-rate schedules):
 
 We will define $\xi_\ell(t)\ge 0$ as the learning-rate prefactor in the mean-field ODE (allowing time-dependent schedules such as constant, piecewise, exponential, or cosine forms). We will also state the discrete-time correspondence explicitly: with step size $\varepsilon$ and iteration index $n$, Euler discretization gives
-\[
-W_{n+1}=W_n-\varepsilon\,\xi_\ell(\varepsilon n)\,(\text{drift at time }\varepsilon n),
-\]
+$$
+W_{n+1}=W_n-\varepsilon\,\xi_\ell(\varepsilon n)\,(\text{drift at time }\varepsilon n)
+$$
 and the mean-field limit is $\varepsilon\to 0$ with $t=\varepsilon n$ (plus the usual width scaling). In the classical mean-field parameterization, this corresponds to the familiar $1/n$ learning-rate scaling at width $n$.
 
 Q9 ("Better than null" assumption):
@@ -83,20 +83,20 @@ Q10 (ReLU vs. $\phi_2'$ bounded away from zero; high probability in $r$):
 We will clarify both points.
 
 - Meaning of $r$. $r$ is the rank (number of channels) in the low-rank bottleneck. The second-layer pre-activation is a sum over $r$ channels:
-\[
-H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W).
-\]
+$$
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W)
+$$
 
 - Why ReLU is excluded in the formal global-convergence proof. Our regularity assumption in the manuscript appendix requires $\inf_u |\phi_2'(u)|>0$, which excludes plain ReLU (since $\phi'(u)=0$ for $u\le 0$). This is used in the step "vanishing conditional gradient implies vanishing residual".
 
 - What we can still say for ReLU (high-level). The only problematic case is convergence to a degenerate stationary point where all gates are off ($H_2\le 0$ almost everywhere). In our architecture, this corresponds to a rare alignment event across $r$ channels; we treat the resulting high-probability-in-$r$ claim as intuition, not as a theorem.
 
 To make the logical use of the nonzero-derivative condition explicit, the global-optimality proof uses the implication
-\[
+$$
 \mathbb E[d\mathcal L(Z;W)\cdot\phi_2'(H_2(c_2;X,W))\mid X=x]=0
 \Rightarrow
-\mathbb E[d\mathcal L(Z;W)\mid X=x]=0,
-\]
+\mathbb E[d\mathcal L(Z;W)\mid X=x]=0
+$$
 which holds when $\phi_2'$ is bounded away from $0$ on the relevant set. For ReLU, the failure mode is the dead-gate event: $\phi_2'(H_2)=0$ even though $d\mathcal L\neq 0$, so the conditional moment can vanish at a non-optimal point.
 
 In RF-LR, $H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W)$ is a sum over $r$ channels. A design intuition is that sign-structured/NMF-style initialization can bias $H_2$ positive on target regions and reduce dead-gate behavior (not a proof step). Under symmetric random mixing (e.g., Xavier/Gaussian draws for $W_{c_2,k}$) and non-degenerate $f_k(x)$, one-neuron off probability is approximately $1/2$; therefore the event that all channels are simultaneously dead is heuristically exponentially unlikely in $r$ (informally $e^{-O(r)}$), i.e., concentrated on an input subset of exponentially small measure. We keep this as intuition, not theorem (GeLU satisfies assumptions directly).
@@ -130,9 +130,9 @@ Thank you for this suggestion. In the camera-ready version, we will either remov
 Q17 ("upstream $\times$ local" wording):
 
 We will replace this by the standard phrasing "backpropagated (upstream) signal $\times$ local derivative", and we will include the explicit definition of the backprop signal. In our notation, the channel backprop signal is
-\[
-B_k^{(\ell)}(t;X,W)=\mathbb E_{C_\ell}\!\left[W_{C_\ell,k}^{(\ell)}\,\phi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\right].
-\]
+$$
+B_k^{(\ell)}(t;X,W)=\mathbb E_{C_\ell}\left[W_{C_\ell,k}^{(\ell)}\,\phi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\right]
+$$
 
 Q18 (Meaning of $\partial_2 \mathcal{L}$):
 
@@ -141,15 +141,15 @@ Yes. We will define $\partial_2\mathcal L(y,\hat y)$ as the partial derivative w
 Q19 (Meaning of "shifts" and heterogeneous shifts):
 
 By shift we mean the additive translation behavior of intermediate-layer weights under i.i.d. initialization in the full-rank setting. In Nguyen \& Pham (2023) (Section 5.1.2, degeneracy discussion), intermediate-layer dynamics can collapse so that weights evolve essentially by a neuron-independent translation:
-\[
-w_i^\infty(t,C_{i-1},C_i)-w_i^\infty(0,C_{i-1},C_i)=w_i^\#(t),
-\]
+$$
+w_i^\infty(t,C_{i-1},C_i)-w_i^\infty(0,C_{i-1},C_i)=w_i^\#(t)
+$$
 under constant initial biases and standard architectures. This is a precise identical-shift phenomenon.
 
 In our RF-LR architecture, the frozen mixing matrix $L$ breaks this symmetry at the level of pre-activations:
-\[
-H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W),
-\]
+$$
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W)
+$$
 so different neurons $c_2$ compute different linear combinations of channel partial functions. In the full-rank infinite-width limit (Nguyen \& Pham (2023), Theorem 54 and Corollary 30), intermediate layers can exhibit collapse: pre-activations become neuron-independent under i.i.d. initialization, and weights receive identical additive shifts (a neuron-independent translation). Here $W$ enforces heterogeneity across neurons by construction: each neuron $c_2$ computes a distinct channel combination $\sum_k W_{c_2,k}f_k$. Consequently, the backprop signal aggregated through $W_{C_2,k}$ (the $B_k$ term above) differs across neurons/channels, preventing the all-neurons-move-by-the-same-increment mode. This plays the same conceptual role as Nguyen \& Pham (2023)'s bidirectional diversity achieved through correlated initializations (Theorem 38), but realized architecturally rather than initializationally.
 
 Q20 (Init index notation in Theorem~3.3):
