@@ -876,7 +876,7 @@ we add low rank and random features, derivations nguyen paper throw the basis fo
 in fact in our workflow we ran a lot of experiments (this comment is valable for any review) and wanted to see if theoretically it was sounded
 the answer is yes, but to prove it you have to rely a lot on former framework, up to our knowledge this is the 1st time this framwork used in another context than the author, after explaining all what's needed to understand the nguyen paper, we write the whole proof, in fact the only thing that matters
 is just at a moment, every other stuff are somewhat trivial understanding TO BE SURE that everything is well defined mathematically (unless you prove convergence of an object that do not exist)
-the only thing that matters the most is the part (GOODNOTES)
+the only thing that matters the most rely on what's explained to reviewer Z9GA
 
 
 
@@ -884,6 +884,8 @@ the only thing that matters the most is the part (GOODNOTES)
 I would strongly recommend mentioning the Assumptions in the main paper thoroughly with discussion about them, rather than hiding them in the Appendix since they are quite important for the analysis.
 
 yes
+
+
 
 
 
@@ -1119,12 +1121,9 @@ rf-lr are converging in the ntk regime
 
 **Answer.** Yes in substance: the **mechanism** (channel dominance $\leftrightarrow$ amplified backward signal through the mixing matrix and ReLU gates; cf.\ the feature-learning mechanism remark drafted above / the two-point toy) is **dimension-agnostic**---it is the same algebra of $H_2=\sum_k L_{c_2,k} f_k$ and the ODE for each $f_k$. What is **not** fully written in closed form for general $d$ is a **tractable theorem** isolating non-overlapping spikes; high-dimensional inputs typically induce **overlapping** channel contributions in feature space, so the **rigorous** two-point explanation is a deliberately minimal caricature. Empirically and heuristically, the same feedback loop operates in higher $d$; overlapping spikes mainly complicate **bookkeeping and visualization**, not the core optimization picture.
 
-3. Sensititivity of randomness of fixed feature maps. How sensitive are the convergence guarantees and empirical performance to the initial draw of the frozen feature maps for finite width networks?
+3. Sensitivity of randomness of fixed feature maps. How sensitive are the convergence guarantees and empirical performance to the initial draw of the frozen feature maps for finite width networks?
 
-in fact the convergence guarantees only requires that mixing matrices W are frozen integers, it can be drawn 
-from any distribution with finite support ! in practice we use gaussian for simplicity,
-for positive values W (which means non negative factorization of weights) neural collapse is avoided and convergence
-guaranteed for relu networks wigh high probability in r (which means for a lot of x, gradients of weights at are 0) 
+**Answer (draft; canonical version in `answers.tex`, Strengths/Weaknesses reply (3) “Sensitivity to the frozen feature draw”).** Guarantees use **frozen bounded mixing** (schematically $\|W^{(\ell)}\|_{\infty,1}\le rK$) and a **frozen-feature richness** condition; the frozen matrices can be drawn from **any law with finite support** (more generally any law satisfying the same a.s. bounds). **Gaussians** in experiments are an **unbounded engineering default**, not a theorem hypothesis. **Nonnegative / NMF-style** $\mathbf{W}\ge 0$ is compatible with the same template and is intuition for avoiding some collapse modes. The **ReLU** caveat (dead gates $\Rightarrow$ many $x$ with zero backprop through second-layer gates; “high probability in $r$” only as **heuristic**) is aligned with **Q10** in `answer1.tex` and the ReLU appendix in `answers.tex`. **Finite-width** performance can vary with the draw; we **did not** run a systematic multi-draw frozen-feature variance sweep post-deadline—the camera-ready states this and separates proved assumptions from mean-field approximations.
 
 
 

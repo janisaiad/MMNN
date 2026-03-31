@@ -47,9 +47,7 @@ We have tried to write in the spirit of strong conference rebuttals: acknowledge
 \begin{verbatim}
 Some of the figures could be cleaner and clearer. As an example of this, in Figure 2, it is not clear. Why not keep a two color code. Show the high rank curve in one color (e.g. blue) and the low rank curves in another (or shades of another) color. Also if you have a low rank and a high rank curve at the same momentum, wouldn't it make sense to only keep those two curves? Does it make sense to compare curves with different momentums ?
 \end{verbatim}
-\textit{Answer.} We agree that the current figure is not as legible as it should be, and we thank you for the concrete design guidance. In the camera-ready we will redraw Figure~2 so that the visual story matches the scientific one: a \emph{two-color} convention (for example, one hue for the full-rank baseline and a family of shades for low-rank curves), with the \emph{primary} panel showing only matched comparisons at fixed optimizer hyperparameters. Concretely, for each momentum value that we wish to highlight, we will show the pair (full-rank, low-rank) at that same momentum, rather than inviting the reader to mentally align curves that differ in both rank and momentum. Cross-momentum sweeps remain scientifically useful---they illustrate that the rank-induced effect is not an artifact of a single $\beta$---but we will move those panels to an appendix figure or supplementary material so the main figure stays uncluttered.
-
-Beyond readability, these curves are also a useful \emph{diagnostic of the loss landscape and optimization dynamics} under rank constraints. In particular, in the setup of Figure~2 the plain SGD dynamics (no momentum) can appear competitive or even better than momentum variants. This is consistent with the perspective that the mean-field limit is naturally described by a (zero-momentum) gradient-flow ODE: in that regime, adding momentum changes the effective dynamics and can move training away from the gradient-flow trajectory that our theory characterizes. We will clarify this point in the caption/discussion and use the matched-momentum panels as a compact way to communicate part of the landscape specification through optimization traces.
+\textit{Answer.} We agree and will redraw Figure~2 in a clearer two-color style, with the main panel showing only matched full-rank vs low-rank curves at fixed momentum/hyperparameters. Cross-momentum sweeps will be moved to the appendix/supplementary so the main figure remains readable. We will also state in the caption that these trajectories diagnose loss-landscape/optimization effects under rank constraints; in our setup, plain SGD (no momentum) can be competitive with, or better than, momentum variants, consistent with the zero-momentum gradient-flow viewpoint of the mean-field ODE.
 
 \paragraph{(2) Citation style consistency.}
 \textit{Question.}\par
@@ -65,7 +63,7 @@ Before line 126 you cite works by mentioning the authors and then providing the 
 \begin{verbatim}
 line 139, frozen random features ensure supp(W^0(C_1)) —> this is not clear*
 \end{verbatim}
-\textit{Answer.} We agree the wording is unclear. What we intend is a standard \emph{random-feature richness} assumption: with frozen first-layer features, universal approximation can be formulated via integral / Barron-type representations, so that the linear span of $\{\varphi_1(\langle L^0(c_1),\cdot\rangle)\}$ is dense in a suitable function class (for example $L^2(\mu_X)$ under the data distribution). This is the correct replacement for the informal ``$\operatorname{supp}(W^0(C_1))$'' phrasing.
+\textit{Answer.} We agree the wording is unclear. What we intend is a standard \emph{random-feature richness} assumption: with frozen first-layer features, universal approximation can be formulated via integral representations, so that the linear span of $\{\varphi_1(\langle L^0(c_1),\cdot\rangle)\}$ is dense in a suitable function class (for example $L^2(\mu_X)$ under the data distribution). This is the correct replacement for the informal ``$\operatorname{supp}(W^0(C_1))$'' phrasing.
 
 We will also \emph{disentangle} this from assumptions on later layers, because the manuscript was easy to misread as requiring the same non-degeneracy at every depth. The camera-ready assumption block will read along the following lines: for the first layer / random feature draw ($\ell=0$), we assume the richness condition needed for dense spans in the induced feature space; for layers $\ell>1$, we do \emph{not} need an analogous ``full support in $\mathbb{R}^d$'' statement for the trained objects. Instead, the deep part of the analysis is driven by \textbf{bounded mixing}: $|W^{(\ell)}_{c,k}|\le K$ and hence $\|W^{(\ell)}\|_{\infty,1}\le rK$, which controls channel aggregation and stability. Intuitively, bounded later-layer mixing interacts with first-layer richness rather than substituting for it. This matches the proof: dense random features provide approximation capacity at the input, while bounded $W^{(\ell)}$ controls the channelized Lipschitz/coupling chain.
 
@@ -103,11 +101,7 @@ Section 3.2.
 Line 166, your notations with the lower and uppercase case c_1 in W^0(c_1) is not really clear. Why put that C_i ? Why not just keep the notation of Eq. 1, W_0^{(i)} ?
 Your expectation is taken with respect to the neurons indices ? which is strange to me ? You also say that in the infinite width limit, the neurons indices are continuous. Isn’t the norm to work with a measure on the weight vectors associated to each neuron ? I.e whose support would be non zero at the points W(C_i) ?
 \end{verbatim}
-\textit{Answer.} We thank the reviewer for this important clarification request. We use the \emph{neuronal embedding} / ensemble formalism of \NP{}, in which each layer is represented by measurable maps $c\mapsto w(\cdot,c)$ on an abstract index space $(\Omega_i,\rho^i)$, and $\mathbb{E}_{C_i}[\cdot]$ denotes integration with respect to $\rho^i$. At finite width, neuron labels $C_i(j_i)$ are i.i.d.\ draws from $\rho^i$, and empirical averages over neurons converge to $\mathbb{E}_{C_i}[\cdot]$ under standard mean-field scaling.
-
-This is not ``expectation over neuron indices'' in a combinatorial sense; it is a continuum representation in which empirical parameter distributions converge to probability laws on parameter space. Although one can equivalently push $\rho^i$ forward to a measure on Euclidean weight vectors, the embedding notation keeps inter-layer coupling structure transparent and aligns with \NP{}. To our knowledge, this formalism has seen relatively limited use in subsequent works compared with Wasserstein-only presentations, so we agree that clearer exposition is necessary in the main text.
-
-Accordingly, in the camera-ready we will (i) remove wording that may suggest ``neuron indices become continuous'' and replace it with ``a continuum of neurons modeled by a probability space $(\Omega_i,\rho^i)$'', and (ii) add a short paragraph making the pushforward identification explicit for readers who prefer the ``measure on weights'' viewpoint.
+\textit{Answer.} We use the neuronal-embedding formalism of \NP{}: each layer is represented by measurable maps $c\mapsto w(\cdot,c)$ on $(\Omega_i,\rho^i)$, and $\mathbb{E}_{C_i}[\cdot]$ is integration under $\rho^i$. At finite width, neuron labels $C_i(j_i)$ are i.i.d.\ draws from $\rho^i$, so empirical averages converge to $\mathbb{E}_{C_i}[\cdot]$ under mean-field scaling. This is a continuum law-of-parameters representation (not a combinatorial ``expectation over indices''); equivalently, one may use the pushforward measure on Euclidean weights. In the camera-ready, we will remove ambiguous wording (e.g., ``indices become continuous'') and add a short explicit paragraph with this pushforward equivalence.
 
 \paragraph{(7) Write the loss and make the gradient-flow structure explicit.}
 \textit{Question.}\par
@@ -115,25 +109,23 @@ Accordingly, in the camera-ready we will (i) remove wording that may suggest ``n
 Section 3.3.
 lines 187-188, I strongly recommend writing down the expression of the loss at least and recall that the system corresponds to a simple gradient descent on this loss? Because the way you introduce (2) is a little rough
 \end{verbatim}
-\textit{Answer.} Agreed. We will explicitly define the population loss
+\textit{Answer.} We thank the reviewer for this suggestion and will make the statement explicit. We will define the population loss
 \[
 \mathscr{L}(W)=\mathbb{E}_{Z}\big[\mathcal{L}(Y,\hat{y}(X;W))\big],
 \qquad d_L(Z;W)=\partial_{\hat y}\mathscr{L}(Y,\hat{y}(X;W)),
 \]
-and state that the mean-field ODE is the gradient flow (with learning-rate schedules $\xi_\ell(t)$) of $\mathscr{L}$ in the mean-field parameterization. This is already made explicit in the manuscript appendix (definitions of $d_L$ and the layerwise ODE drifts).
+and state that the mean-field ODE is the gradient flow (with learning-rate schedules $\xi_\ell(t)$) of $\mathscr{L}$ in the mean-field parameterization. These definitions are currently spelled out in the appendix; for the camera-ready, we will also add them in the main body (with concise notation) so Section~3 is self-contained.
 
 \paragraph{(8) Learning-rate schedules.}
 \textit{Question.}\par
 \begin{verbatim}
 lines 187-188: What are the learning rate schedules?
 \end{verbatim}
-\textit{Answer.} We will define $\xi_\ell(t)\ge 0$ as the (possibly time-dependent) learning-rate \emph{prefactor} in the continuous-time mean-field dynamics. Concretely, in the ODE formulation one may take $\xi_\ell(t)$ to be a smooth envelope (exponential decay, piecewise-constant schedules, cosine schedules, etc.): it is whatever time dependence one inserts in front of the gradient field after rescaling time.
-
-We will also spell out the discrete-time identification that reviewers rightly expect. With step size $\epsilon$ and iterate index $n$, a standard Euler discretization takes the schematic form
+\textit{Answer.} We will define $\xi_\ell(t)\ge 0$ as the learning-rate prefactor in the mean-field ODE (allowing time-dependent schedules such as constant, piecewise, exponential, or cosine forms). We will also state the discrete-time correspondence explicitly: with step size $\epsilon$ and iteration index $n$, Euler discretization gives
 \[
 W_{n+1}=W_n-\epsilon\,\xi_\ell(\epsilon n)\,\big(\text{drift at time }\epsilon n\big),
 \]
-and the mean-field limit corresponds to $\epsilon\to 0$ with $t=\epsilon n$ held on compact intervals (together with the usual width scaling). In particular, in the classical mean-field parameterization for particle systems, learning rates are often written with a $1/n$ prefactor for a network of width $n$; in continuous time this corresponds to choosing $\xi_\ell(t)$ as the appropriate rescaled schedule. This is exactly the same SGD-to-ODE viewpoint used in \NP{} (their updates use $\epsilon\,\xi_i(t\epsilon)$ and pass to $\epsilon\to 0$).
+and the mean-field limit is $\epsilon\to 0$ with $t=\epsilon n$ (plus the usual width scaling). In the classical mean-field parameterization, this corresponds to the familiar $1/n$ learning-rate scaling at width $n$.
 
 \paragraph{(9) ``Better than null'' assumption.}
 \textit{Question.}\par
@@ -153,10 +145,10 @@ I don’t know how easily this can be done but I would recommend laying out the 
 \begin{itemize}
   \item \textbf{Meaning of $r$.} $r$ is the rank (number of channels) in the low-rank bottleneck. The second-layer pre-activation is a sum over $r$ channels:
   \[
-  H_2(c_2;x,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(x;W).
+  H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}\,f_k(x;W).
   \]
   \item \textbf{Why ReLU is excluded in the formal global-convergence proof.} Our regularity assumption in the manuscript appendix requires $\inf_u|\varphi_2'(u)|>0$, which excludes plain ReLU (since $\varphi'(u)=0$ for $u\le 0$). This is used in the step ``vanishing conditional gradient implies vanishing residual''.
-  \item \textbf{What we can still say for ReLU (high-level).} The manuscript appendix includes a dedicated remark explaining the only problematic case: convergence to a degenerate stationary point where gradients vanish solely because all gates are off ($H_2\le 0$ almost everywhere). In our architecture, this is tied to a rare alignment event across $r$ channel contributions and is heuristically exponentially unlikely in $r$ (we will keep this as intuition and avoid presenting it as a proved statement).
+  \item \textbf{What we can still say for ReLU (high-level).} The only problematic case is convergence to a degenerate stationary point where all gates are off ($H_2\le 0$ almost everywhere). In our architecture, this corresponds to a rare alignment event across $r$ channels; we treat the resulting high-probability-in-$r$ claim as intuition, not as a theorem.
 \end{itemize}
 
 To make the logical use of the nonzero-derivative condition explicit, the global-optimality proof uses the implication
@@ -167,22 +159,20 @@ To make the logical use of the nonzero-derivative condition explicit, the global
 \]
 which holds when $\varphi_2'$ is bounded away from $0$ on the relevant set. For ReLU, the failure mode is the ``dead gate'' event: $\varphi_2'(H_2)=0$ even though $d_L\neq 0$, so the conditional moment can vanish at a non-optimal point.
 
-In our RF-LR architecture, $H_2(c_2;x,W)=\sum_{k=1}^r L_{c_2,k}f_k(x;W)$ is a sum of $r$ channel contributions. Under symmetric mixing (e.g.\ Xavier/Gaussian draws for $L$) and non-degenerate $f_k(x)$, a single neuron's gate is ``off'' with probability close to $1/2$ (half-space). The degenerate situation in which \emph{all} channel contributions conspire to shut off gradient propagation is therefore heuristically exponentially unlikely in $r$ (informally $e^{-O(r)}$). We will keep this statement as intuition and will not present it as a theorem (smooth activations such as GeLU satisfy the assumptions directly).
+In RF-LR, $H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W)$ is a sum over $r$ channels. A design intuition is that sign-structured/NMF-style initialization can bias $H_2$ positive on target regions and reduce dead-gate behavior (not a proof step). Under symmetric random mixing (e.g., Xavier/Gaussian draws for $W_{c_2,k}$) and non-degenerate $f_k(x)$, one-neuron ``off'' probability is approximately $1/2$; therefore the event that all channels are simultaneously dead is heuristically exponentially unlikely in $r$ (informally $e^{-O(r)}$), i.e., concentrated on an input subset of exponentially small measure. We keep this as intuition, not theorem (GeLU satisfies assumptions directly).
 
-\textbf{Optional design note (not used as a proof step).} If one wishes to \emph{enforce} sign-structured mixing to steer away from dead gates, one can appeal to structured/nonnegative low-rank factorizations (NMF viewpoint) or Perron--Frobenius-style positivity properties on a low-dimensional basis. In practice, within the rank-$r$ class one can often re-factorize $W=LR^\top$ and absorb sign changes into $R$ so as to impose mild sign/positivity structure on the mixing factor $L$ without changing expressivity at fixed $r$. We stress we mention this only as design intuition and we do not use it as a proof step.
-
-We will also add a precise definition of ``mixing'' and the seminorm $\|L\|_{\infty,1}$ (next item).
+We will also add a precise definition of ``mixing'' and the seminorm $\|W\|_{\infty,1}$ (next item).
 
 \paragraph{(11) What is ``mixing''?}
 \textit{Question.}\par
 \begin{verbatim}
 I don’t know how easily this can be done but I would recommend laying out the assumptions cleary on lines 215 - 216. Some of them are not very clear. E.g. what do you mean by bounded activation and MIXING (i.e the mixing part)?
 \end{verbatim}
-\textit{Answer.} We will define the frozen low-rank mixing matrix $L^{(\ell)}$ as the factor that recombines the $r$ channel features into neuron pre-activations. The only structural bound we use is entrywise boundedness (equivalently the row-sum seminorm bound):
+\textit{Answer.} We will define the frozen low-rank mixing matrix $W^{(\ell)}$ as the factor that recombines the $r$ channel features into neuron pre-activations. The only structural bound we use is entrywise boundedness (equivalently the row-sum seminorm bound):
 \[
-\|L^{(\ell)}\|_{\infty,1}:=\sup_{c_\ell}\sum_{k=1}^r |L^{(\ell)}_{c_\ell,k}|\le rK,
+\|W^{(\ell)}\|_{\infty,1}:=\sup_{c_\ell}\sum_{k=1}^r |W^{(\ell)}_{c_\ell,k}|\le rK,
 \]
-as stated explicitly in the manuscript appendix (Assumption ``Bounded Activations and Mixing'').
+as stated explicitly in the manuscript appendix (Assumption ``Bounded Activations and Mixing''). In particular, $W^{(\ell)}$ can be drawn from any distribution with bounded support (or any law that satisfies the same almost-sure bound).
 
 \paragraph{(12) Lipschitz bound notation: $|H_\ell(W')-H_\ell(W'')|$ and what is $W^{\ell}$.}
 \textit{Question.}\par
@@ -190,13 +180,13 @@ as stated explicitly in the manuscript appendix (Assumption ``Bounded Activation
 Section 3.5 - 3.6
 lines 207 - 210, second column, you have |H_\ell(W’) - H_\ell(W’’)|< K||W^{\ell}||_{\infty, 1}. What is W^{\ell} in this setting? Does that mean all the weights from layer ell ? but then how does this relate to W’ and W’’? That notation does not make sense to me.
 \end{verbatim}
-\textit{Answer.} We agree the notation is wrong as written in the paper. The prefactor is a norm of the \emph{frozen mixing} $L^{(\ell)}$, not of the trainable tuple. In the manuscript appendix (``Bi-Lipschitz property''), for $\ell=2$ one has:
+\textit{Answer.} We agree the notation is wrong as written in the paper, and it can indeed confuse the reader. In this part of the analysis, the trainable object is the low-rank factor denoted $A$ (while $W$ was used elsewhere as a global network symbol), and the prefactor is a norm of the \emph{frozen mixing} matrix, not of the trainable tuple. In the manuscript appendix (``Bi-Lipschitz property''), for $\ell=2$ one has:
 \[
 \big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big|
 \le
-K\,\|L^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\mathbb{E}_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+K\,\|W^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\mathbb{E}_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
 \]
-We will fix the main-text inequality accordingly and clearly state what is included in the trainable tuple $W$.
+We will fix the main-text inequality accordingly, clearly distinguish trainable versus frozen quantities, and harmonize notation in the camera-ready (using $W_{c_2,k}$ consistently for mixing entries).
 
 \paragraph{(13) What is the solution operator $F$?}
 \textit{Question.}\par
@@ -210,21 +200,21 @@ lines 218 - 219, what is the solution operator F?
 \begin{verbatim}
 lines 220 - 223: “After defining norms, the solution operator F,… and the contraction operator …” —> “After defining norms, F and bounds, and the contraction, the argument proceeds… ” (I think you want to add a coma here)
 \end{verbatim}
-\textit{Answer.} Agreed; we will fix the sentence.
+\textit{Answer.} Thank you for spotting this wording issue. We will revise the sentence in the camera-ready version to correct the punctuation and improve readability.
 
 \paragraph{(15) Theorem 3.2: which depths / which widths go to infinity?}
 \textit{Question.}\par
 \begin{verbatim}
 In the statement of Theorem 3.2., when you talk about the mean field limit, you are referring to n_1, n_2 —> infinity right? A depth 2 network as in Theorem 3.3. Or does it hold for an arbitrary number of layers?
 \end{verbatim}
-\textit{Answer.} It holds for arbitrary depth in our RF-LR architecture (the manuscript appendix adapts the multilayer argument). We will rewrite the theorem statement to explicitly say which widths tend to infinity (all hidden-layer widths in the mean-field scaling) and to clarify the special notational simplification when we present the depth-2 quantitative bound.
+\textit{Answer.} Thank you for this clarification request. The result is intended to hold for arbitrary depth in our RF-LR architecture, with the multilayer extension detailed in the appendix. In the camera-ready version, we will rewrite the theorem statement to specify explicitly which widths tend to infinity (all hidden-layer widths under mean-field scaling) and to separate this general statement from the depth-2 notation used for the quantitative bound.
 
 \paragraph{(16) ``High level proof idea'' opacity.}
 \textit{Question.}\par
 \begin{verbatim}
 lines 269 -, What you call “High level proof idea” is pretty opaque. I think I would remove it. Or I would remove lines 227 - 243, second column and expand a little bit on the proof.
 \end{verbatim}
-\textit{Answer.} Agreed. We will either remove it from the main text or rewrite it to match the formal proof steps in the appendix (dense span, stationary condition, conditional expectation, and loss optimality).
+\textit{Answer.} Thank you for this suggestion. In the camera-ready version, we will either remove this high-level paragraph from the main text or rewrite it so that it mirrors the formal proof structure in the appendix (dense-span argument, stationary condition, conditional-expectation step, and loss-optimality conclusion).
 
 \paragraph{(17) ``upstream $\times$ local'' wording.}
 \textit{Question.}\par
@@ -233,7 +223,7 @@ lines 272 - 273, “this yields \mathbb{E}_Z[upstream\times local]” —> what 
 \end{verbatim}
 \textit{Answer.} We will replace this by the standard phrasing ``backpropagated (upstream) signal $\times$ local derivative'', and we will include the explicit definition of the backprop signal. In our notation, the channel backprop signal is
 \[
-B_k^{(\ell)}(t;X,W)=\mathbb{E}_{C_\ell}\big[L^{(\ell)}_{C_\ell,k}\,\varphi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\big].
+B_k^{(\ell)}(t;X,W)=\mathbb{E}_{C_\ell}\big[W^{(\ell)}_{C_\ell,k}\,\varphi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\big].
 \]
 
 \paragraph{(18) $\partial_2\mathcal{L}$ meaning.}
@@ -248,7 +238,7 @@ lines 220 - 223: What does \partial_2 \mathcal{L} mean here? Does that mean the 
 \begin{verbatim}
 lines 239 - 241, second column, it is not clear to me why the frozen random features yield heterogeneous shifts across neurons. In fact, even before this, what do you mean by “shifts” in this setting?
 \end{verbatim}
-\textit{Answer.} By ``shift'' we mean the additive translation behavior of intermediate-layer weights under i.i.d. initialization in the full-rank setting. In \NP{} (see their degeneracy discussion), intermediate-layer dynamics can collapse so that weights evolve essentially by a \emph{neuron-independent translation}:
+\textit{Answer.} By ``shift'' we mean the additive translation behavior of intermediate-layer weights under i.i.d. initialization in the full-rank setting. In \NP{} (see Section 5.1.2, degeneracy discussion), intermediate-layer dynamics can collapse so that weights evolve essentially by a \emph{neuron-independent translation}:
 \[
 w_i^{\infty}(t,C_{i-1},C_i)-w_i^{\infty}(0,C_{i-1},C_i)=w_i^{\#}(t),
 \]
@@ -256,11 +246,11 @@ under constant initial biases and standard architectures. This is a precise ``id
 
 In our RF-LR architecture, the frozen mixing matrix $L$ breaks this symmetry at the level of pre-activations:
 \[
-H_2(c_2;x,W)=\sum_{k=1}^r L_{c_2,k}f_k(x;W),
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W),
 \]
 so different neurons $c_2$ compute different linear combinations of channel partial functions. In the full-rank infinite-width limit (\NP{}, Theorem~54 and Corollary~30), intermediate layers can exhibit collapse: pre-activations become neuron-independent under i.i.d.\ initialization, and weights receive identical additive shifts (a neuron-independent translation).
 
-Here $L$ enforces heterogeneity \emph{across neurons} by construction: each neuron $c_2$ computes a distinct channel combination $\sum_k L_{c_2,k}f_k$. Consequently, the backprop signal aggregated through $L_{C_2,k}$ (the $B_k$ term above) differs across neurons/channels, preventing the ``all neurons move by the same increment'' mode. This plays the same conceptual role as \NP{}'s bidirectional diversity achieved through correlated initializations (Theorem~38), but realized architecturally rather than initializationally.
+Here $W$ enforces heterogeneity \emph{across neurons} by construction: each neuron $c_2$ computes a distinct channel combination $\sum_k W_{c_2,k}f_k$. Consequently, the backprop signal aggregated through $W_{C_2,k}$ (the $B_k$ term above) differs across neurons/channels, preventing the ``all neurons move by the same increment'' mode. This plays the same conceptual role as \NP{}'s bidirectional diversity achieved through correlated initializations (Theorem~38), but realized architecturally rather than initializationally.
 
 \paragraph{(20) Theorem 3.3 initialization over indices; meaning of $\{n_1,n_2\}\in\mathsf{Init}$.}
 \textit{Question.}\par
@@ -268,7 +258,7 @@ Here $L$ enforces heterogeneity \emph{across neurons} by construction: each neur
 Section 3.8
 In the statement of Theorem 3.3. Here as well, it is not clear why/how you initialize over the indices.. you have a tuple {n1, n2} that is in the index set of Init ? What does that mean concretely ? Why just a two tuple? What do n1 and n2 represent ? do they refer to the number of neurons in the first and second layers ? Does the result only hold for depth 2 then?
 \end{verbatim}
-\textit{Answer.} We agree this needs rewriting. $\{n_1,n_2\}$ are the finite widths of the first and second layers in the depth-2 quantitative approximation theorem; $\mathsf{Init}$ is a family of initialization laws indexed by widths. This is exactly the setup in the quantitative part of the manuscript appendix, where the theorem assumes a family $\mathsf{Init}$ and a tuple $\{n_1,n_2\}$ in its index set. We will restate the theorem with standard finite-width notation (``take widths $n_1,n_2$ and initialize i.i.d.'') and avoid the confusing ``index set of $\mathsf{Init}$'' phrase in the main text.
+\textit{Answer.} Thank you for highlighting this ambiguity. Here, $\{n_1,n_2\}$ are exactly the numbers of neurons in the first and second hidden layers in the depth-2 quantitative theorem, and $\mathsf{Init}$ denotes a width-indexed family of initialization laws. This matches the neuronal-embedding setup used in \NP{} (Section 4.1, Definition 1), where widths index the initialization family. We will rewrite the theorem in standard finite-width language (``take widths $n_1,n_2$ and initialize i.i.d.'') and remove the potentially confusing ``index set of $\mathsf{Init}$'' wording in the main text. We will also state explicitly that the detailed quantitative proof is written for depth 2, while the underlying argument extends naturally to deeper architectures.
 
 \paragraph{(21) ``coupling procedure'' and what distance $D$ measures.}
 \textit{Question.}\par
@@ -296,11 +286,11 @@ Theorem 4.1 provides an elegant explanation for feature learning, but it is rigo
 \end{verbatim}
 \textit{Answer.} We agree with the spirit of this comment: the proof template is recognizably related to \NP{}, and the two-point theorem is a minimal rigorous instance rather than a full theory of representation learning on natural data. Where we respectfully disagree is the framing that freezing is \emph{only} a limitation. For our goals, freezing the mixing matrices is simultaneously a modeling choice and a technical enabler. It is what makes the deep mean-field description closed while still producing nontrivial, channel-resolved dynamics; it enforces enough heterogeneity across neurons that the degenerate ``everyone receives the same effective update'' modes emphasized in \NP{} are not the right mental model for the architecture we analyze.
 
-Concretely, the non-verbatim mathematical content relative to \NP{} is not a single lemma in isolation but the \emph{redefinition of the forward and backward objects}: the channelized map $H_\ell=\sum_{k=1}^r L^{(\ell)}_{\cdot,k}f_k^{(\ell)}$ propagates discrepancies through $\|L^{(\ell)}\|_{\infty,1}$ and a $\max_{k\le r}$ over channels (Bi-Lipschitz/coupling chain in our manuscript appendix). Frozen first-layer features also remove one delicate homotopy step used in full-rank analyses to keep first-layer support from collapsing during training, because dense-span random-feature richness can be enforced at initialization and preserved by freezing $L^0$.
+Concretely, the non-verbatim mathematical content relative to \NP{} is not a single lemma in isolation but the \emph{redefinition of the forward and backward objects}: the channelized map $H_\ell=\sum_{k=1}^r W^{(\ell)}_{\cdot,k}f_k^{(\ell)}$ propagates discrepancies through $\|W^{(\ell)}\|_{\infty,1}$ and a $\max_{k\le r}$ over channels (Bi-Lipschitz/coupling chain in our manuscript appendix). Frozen first-layer features also remove one delicate homotopy step used in full-rank analyses to keep first-layer support from collapsing during training, because dense-span random-feature richness can be enforced at initialization and preserved by freezing $W^0$.
 
 We will revise the introduction and discussion to make the \textbf{target domain} explicit. We do not claim to subsume contemporary end-to-end training of billion-parameter models; we aim to contribute a theoretically grounded route to \textbf{low-rank / structured} training that is especially relevant when oscillatory or multiscale structure matters (scientific machine learning, PDE learning, and other settings where aggressively orthogonalized optimizers and full-rank dynamics are not the only relevant reference class). In that sense, the ``restriction'' is also an \emph{assumption that matches a family of applications} where random features and factorized weights are already standard engineering tools.
 
-For Theorem~4.1, we will keep the two-point, two-channel calculation as the fully proved anchor, and we will add a self-contained remark (already drafted below as Remark~\ref{rem:feature-learning-mechanism}) explaining the \emph{positive feedback} mechanism through $H_2=\sum_k L_{c_2,k}f_k$ and ReLU gating at the ODE level. High-dimensional, overlapping features will be discussed honestly as primarily empirical and as ongoing work, not as something the current theorem already covers.
+For Theorem~4.1, we will keep the two-point, two-channel calculation as the fully proved anchor, and we will add a self-contained remark (already drafted below as Remark~\ref{rem:feature-learning-mechanism}) explaining the \emph{positive feedback} mechanism through $H_2=\sum_k W_{c_2,k}f_k$ and ReLU gating at the ODE level. High-dimensional, overlapping features will be discussed honestly as primarily empirical and as ongoing work, not as something the current theorem already covers.
 
 \paragraph{(2) Symmetry sensitivity and the exponential factor in the finite-width bound.}
 \textit{Question.}\par
@@ -352,6 +342,8 @@ If  rmust be kept strictly minimal to preserve mean-field behaviors, how does th
 
 That said, we can still articulate a research roadmap that connects to work in progress. On the \textbf{NTK / kernel side}, understanding how rank interacts with input dimension requires controlling the induced kernel ensemble; related random-matrix analyses become delicate for low-rank structured weights, and we are actively building on recent frameworks for structured kernels (e.g.\ \href{https://arxiv.org/abs/2508.20036}{arXiv:2508.20036}) to connect $r$ scaling to high-dimensional concentration. On the \textbf{mean-field / Chizat side}, recent scaling-law and mean-field scaling discussions suggest that a ``sweet spot'' for faithful ODE descriptions can occur when rank grows sublinearly with width (informally, regimes such as $r\asymp \sqrt{\text{width}}$ are often discussed as practically relevant; see \href{https://arxiv.org/pdf/2509.10167}{arXiv:2509.10167} for related scaling perspectives). Separately, in LoRA-style NTK analyses, one sometimes sees rank thresholds of the form $r\gtrsim M^{\alpha}$ (with $\alpha$ in the $1/4$--$1/2$ range) discussed as regimes where kernel descriptions remain predictive; we treat such statements as \emph{indicators}, not as theorems proved for our exact architecture.
 
+Regarding the specific ``exponential suppression'' intuition: in the ReLU gating argument, the problematic configuration corresponds to a joint sign-alignment event across channels. The heuristic is not that optimization fails globally once $r$ grows, but that the input-region measure where \emph{all} channels are simultaneously dead can shrink exponentially in $r$ under symmetric mixing assumptions. In higher intrinsic dimension, whether this remains effective depends on how fast $r$ must grow to represent the target versus how concentration/gating geometry scales with $d$; this is exactly why we frame $(d,r,N)$ as an empirical+theoretical phase-diagram question rather than a settled theorem.
+
 Empirically, we have begun post-review sweeps on synthetic high-dimensional targets (using mixed sampling to avoid degenerate targets in high $d$) and we will report these curves without over-claiming a sharp phase transition unless the data clearly supports one. Any clean $(d,r)$ transition is, at present, \textbf{conjectural} and belongs in ``future work'' unless we can prove it.
 
 \paragraph{(4) Mechanism text (to add after Theorem 4.1; long-form).}
@@ -361,11 +353,11 @@ The explanatory content is not the simplified two-point, two-channel statement i
 
 Fix a second-layer neuron index $c_2$ and recall the low-rank pre-activation
 \[
-  H_2(c_2;x,W)=\sum_{j=1}^r L_{c_2,j}\,f_j(x;W).
+  H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W).
 \]
-For ReLU, gating enters mean-field gradients through $\varphi_2'(H_2)=\mathbf{1}\{H_2>0\}$. The channel-$k$ backward signal (cf.\ the ODE for $\partial_t w_1(\cdot,k)$) is built from expectations over $C_2$ of terms that couple \textbf{(i)} the mixing weight $L_{C_2,k}$, \textbf{(ii)} the gate $\mathbf{1}\{H_2(C_2;x,W)>0\}$, and \textbf{(iii)} upstream factors (output error and later-layer weights).
+For ReLU, gating enters mean-field gradients through $\varphi_2'(H_2)=\mathbf{1}\{H_2>0\}$. The channel-$k$ backward signal (cf.\ the ODE for $\partial_t w_1(\cdot,k)$) is built from expectations over $C_2$ of terms that couple \textbf{(i)} the mixing weight $W_{C_2,k}$, \textbf{(ii)} the gate $\mathbf{1}\{H_2(C_2;x,W)>0\}$, and \textbf{(iii)} upstream factors (output error and later-layer weights).
 
-When channel $k$ \emph{dominates}, those neurons $c_2$ that contribute to the channel-$k$ drift are precisely those with the gate ``on.'' Across $c_2$, the effective weights in the expectation are then \textbf{positively aligned} with $L_{c_2,k}$ and with $\mathbf{1}\{H_2(c_2)>0\}$, producing a \textbf{large} contribution to the drift of the $k$-th channel, which in turn pushes $f_k$ further in the same direction: a \emph{reinforcing loop}. The ODE-level mechanism is dimension-agnostic; the two-point theorem is a minimal tractable instance.
+When channel $k$ \emph{dominates}, those neurons $c_2$ that contribute to the channel-$k$ drift are precisely those with the gate ``on.'' Across $c_2$, the effective weights in the expectation are then \textbf{positively aligned} with $W_{c_2,k}$ and with $\mathbf{1}\{H_2(c_2)>0\}$, producing a \textbf{large} contribution to the drift of the $k$-th channel, which in turn pushes $f_k$ further in the same direction: a \emph{reinforcing loop}. The ODE-level mechanism is dimension-agnostic; the two-point theorem is a minimal tractable instance.
 \end{remark}
 
 \paragraph{(5) ``Limitations'' wording: frozen mixing as an architectural restriction.}
@@ -394,7 +386,7 @@ Technically speaking, the proof of the Theorem 3.1-3.3 follows exactly the same 
 \end{verbatim}
 \textit{Answer.} We will add an explicit ``difference from \NP{}'' paragraph in the camera-ready. The key non-verbatim changes are:
 \begin{itemize}
-  \item the low-rank forward map $H_\ell=\sum_{k=1}^r L^{(\ell)}_{\cdot,k}f_k^{(\ell)}$ and the resulting stability bounds carry $\|L^{(\ell)}\|_{\infty,1}$ and $\max_{k\le r}$ over channels (see the Bi-Lipschitz lemma in the manuscript appendix);
+  \item the low-rank forward map $H_\ell=\sum_{k=1}^r W^{(\ell)}_{\cdot,k}f_k^{(\ell)}$ and the resulting stability bounds carry $\|W^{(\ell)}\|_{\infty,1}$ and $\max_{k\le r}$ over channels (see the Bi-Lipschitz lemma in the manuscript appendix);
   \item frozen features remove the need for a homotopy argument to maintain full support of trained first-layer weights (dense span is automatic at all $t$);
   \item frozen mixing breaks the i.i.d.\ collapse mode described in \NP{}'s degeneracy/collapse results by enforcing neuron-dependent channel recombination.
 \end{itemize}
@@ -404,7 +396,7 @@ To make the coupling step fully transparent, the manuscript appendix also spells
 \Gamma_k(t,z;W):=d_L(z;W(t))\,B_k^{(2)}(t;x,W(t)),\qquad z=(x,y),
 \]
 so that $\partial_t w_1(t,c_1,k)=-\xi_1(t)\,\mathbb{E}_Z[\Gamma_k(t,Z;W)\,\varphi_1(\langle L^0(c_1),X\rangle)]$.
-The stability of $\Gamma_k(t,\cdot;W^*(t))$ under the convergence-to-limit-point assumption is obtained by the same triangle inequality as in \NP{} (expanded in the manuscript appendix), together with the low-rank Lipschitz control of $H_2(c_2)=\sum_{j=1}^r L_{c_2,j}f_j$ and the $\|L\|_{\infty,1}$ bound. This is the precise place where the low-rank channel structure enters the proof and is not verbatim from \NP{}.
+The stability of $\Gamma_k(t,\cdot;W^*(t))$ under the convergence-to-limit-point assumption is obtained by the same triangle inequality as in \NP{} (expanded in the manuscript appendix), together with the low-rank Lipschitz control of $H_2(c_2)=\sum_{j=1}^r W_{c_2,j}f_j$ and the $\|W\|_{\infty,1}$ bound. This is the precise place where the low-rank channel structure enters the proof and is not verbatim from \NP{}.
 
 \paragraph{(2b) ReLU channel-sum control (used in low-rank coupling bounds).}
 When bounding differences through a ReLU nonlinearity applied to a low-rank sum, we repeatedly use the elementary inequality
@@ -423,19 +415,14 @@ As I mentioned in the Strengths and Weaknesses part, the architecture considered
 \end{verbatim}
 \textit{Answer.} Training both factors removes the fixed heterogeneity that breaks permutation symmetry and complicates the coupling estimates: both the forward map and the backprop signal depend on the evolving mixing, so the clean $\|L\|_{\infty,1}$-based Lipschitz chain no longer applies directly. Moreover, without frozen mixing, symmetry can re-emerge and collapse modes may reappear. We will state this obstacle explicitly and position fully trainable low-rank factors as future work.
 
-\paragraph{(4) Spectral bias universality beyond the mean-field regime.}
+\paragraph{(4)--(5) Spectral bias: universality, regimes, and heuristics (merged).}
 \textit{Question.}\par
 \begin{verbatim}
 I wonder how universal is spectral bias discovered in Section 4 for low-rank training? For example, if we do not consider network in the mean-field regime, do we still have such spectral bias?
-\end{verbatim}
-\textit{Answer.} We will clarify regimes: in the NTK/lazy regime, the bias is governed by the kernel spectrum and classical low-frequency-first behavior persists; our empirical ``high-frequency'' behavior is observed in a richer feature-learning regime and is not claimed as universal. We will revise Section~4 to cleanly separate these statements.
 
-\paragraph{(5) ``Why low-rank maps might carry more high-frequency content?'' (heuristic).}
-\textit{Question.}\par
-\begin{verbatim}
 While I acknowledge the spectral bias for low-rank network could be interesting, the discussions in Section 4.1 seems to be too qualitative, and the results in Section 4.2 seems to be on too simple setting (only two point in the datasets). Could the authors elaborate more on why the low-rank network lead to high-frequency bias, and fully trained network lead to low-frequency bias?
 \end{verbatim}
-\textit{Answer.} We agree Section~4 is currently qualitative. We will (i) tone down claims, (ii) add citations for the CPWL/Fourier picture (Rahaman et al.\ 2019; Mont\'ufar; Raghu), and (iii) present the ``boundary/region-count'' argument strictly as intuition: constraining weights to a low-dimensional subspace reduces the number of effectively independent hinge directions, which changes the geometry of linear-region boundaries and can affect the anisotropy of Fourier decay. We will clearly label this as heuristic and not a theorem.
+\textit{Answer.} We thank the reviewers for connecting this discussion to the broader spectral-bias literature; Rahaman et al.\ (2019) on the spectral bias of neural networks (\texttt{arXiv:1806.08734}) is an apt reference for the standard Fourier / low-frequency-first picture in sufficiently wide, kernel-like regimes. We will revise Section~4 to separate claims by regime: in the NTK / lazy limit the bias is governed by the kernel spectrum and classical low-frequency-first behavior is expected; the empirical tilt we highlight toward comparatively higher-frequency structure is observed in a richer feature-learning setting for our low-rank RF map and is not claimed universal across all scalings (including arbitrary finite widths outside mean-field parameterizations or lazy limits). We agree Section~4 is qualitative and that the two-point analytic anchor is minimal; we will tone down claims and add CPWL/Fourier citations (Rahaman et al.; Mont\'ufar; Raghu et al.). We will present two layers of intuition, both explicitly labeled as heuristic rather than theorem: (i) constraining weights to a low-dimensional subspace reduces the number of effectively independent hinge directions and can change boundary geometry and the anisotropy of Fourier decay; (ii) a ``sum-over-paths'' / polytope picture in depth-$L$ ReLU nets, where lower effective rank loosely reduces co-activated hinge constraints and can alter the balance of region face dimensions, affecting how energy is distributed across spatial frequencies---this complementary route is work in progress and under refinement in the manuscript. We will also clarify that full-rank trained networks are discussed relative to the usual low-frequency bias narrative, while our low-rank observations are regime-dependent and empirical.
 
 
 \subsection*{Reviewer ByWV (experiments, assumptions, typos, related work)}
@@ -459,7 +446,7 @@ There is no convergence guarantee provided for the learning dynamics of low-rank
 \begin{verbatim}
 Derivations heavily rely on a previous work of Nguyen & Pham, 2023. It is very unclear what is actually new in this paper.
 \end{verbatim}
-\textit{Answer.} We will add a dedicated ``What is new'' paragraph: the novelty is the RF-LR architecture that (i) breaks the i.i.d.\ collapse symmetry via frozen mixing, (ii) yields tractable $r$-channel mean-field ODEs, and (iii) changes the coupling/Lipschitz chain through $\|L^{(\ell)}\|_{\infty,1}$ and channel maxima. The proof structure is inherited, but the key step and the modeling target differ.
+\textit{Answer.} We will add a dedicated ``What is new'' paragraph: the novelty is the RF-LR architecture that (i) breaks the i.i.d.\ collapse symmetry via frozen mixing, (ii) yields tractable $r$-channel mean-field ODEs, and (iii) changes the coupling/Lipschitz chain through $\|W^{(\ell)}\|_{\infty,1}$ and channel maxima. The proof structure is inherited, but the key step and the modeling target differ.
 
 \paragraph{(4) Put assumptions in the main text.}
 \textit{Question.}\par
@@ -534,14 +521,18 @@ and similarly for $w_1$, together with an $\mathrm{ess\,sup}$ decay condition on
 \begin{verbatim}
 2. High-dimension extensions. Does the spike learning mechanism extend to higher dimensions with overlapping spikes in feature space?
 \end{verbatim}
-\textit{Answer.} Yes in substance: the mechanism (channel dominance $\leftrightarrow$ amplified backward signal through the mixing matrix and ReLU gates) is dimension-agnostic at the ODE algebra level because it depends on the same identity $H_2=\sum_k L_{c_2,k}f_k$ and the channelwise backprop signals. What is not currently proved in general $d$ is a clean theorem isolating non-overlapping spikes; overlapping features complicate the rigorous argument. We will clarify this distinction and add empirical evidence in higher $d$.
+\textit{Answer.} Yes in substance: the mechanism (channel dominance $\leftrightarrow$ amplified backward signal through the mixing matrix and ReLU gates) is dimension-agnostic at the ODE algebra level because it depends on the same identity $H_2=\sum_k W_{c_2,k}f_k$ and the channelwise backprop signals. What is not currently proved in general $d$ is a clean theorem isolating non-overlapping spikes; overlapping features complicate the rigorous argument. We will clarify this distinction and add empirical evidence in higher $d$.
 
 \paragraph{(3) Sensitivity to the frozen feature draw.}
 \textit{Question.}\par
 \begin{verbatim}
 3. Sensititivity of randomness of fixed feature maps. How sensitive are the convergence guarantees and empirical performance to the initial draw of the frozen feature maps for finite width networks?
 \end{verbatim}
-\textit{Answer.} The theory requires boundedness of the mixing matrices (captured by $\|L\|_{\infty,1}\le rK$) and the frozen-feature diversity condition; it does not require a specific distribution beyond those properties. At finite width, performance can vary with the draw. We will quantify this variance (multiple draws and seeds) and clarify which parts of the theory depend only on boundedness/diversity and which parts are mean-field approximations.
+\textit{Answer.} The \emph{analytical} conditions are not tied to one sampling recipe. Once mixing matrices are frozen, the arguments use an almost-sure channel-aggregation bound (schematically $\|W^{(\ell)}\|_{\infty,1}\le rK$) and a richness/diversity assumption for the frozen first-layer features. In principle, each frozen $\mathbf{W}^{(\ell)}$ can be drawn from \emph{any} law with finite support---equivalently, any distribution satisfying the same $\ell_{\infty,1}$ control almost surely---consistent with how ``bounded mixing'' enters the coupling estimates; there is no Gaussian-specific requirement. In our experiments we often use unbounded Gaussian initializations for simplicity at finite width; that is an engineering choice, while the theorems are phrased through stability/richness predicates.
+
+Design-wise, nonnegative / sign-structured factorizations (\emph{e.g.} NMF-style $\mathbf{W}\ge 0$) match the same boundedness template and are useful intuition for avoiding certain collapse modes; the ReLU caveat (vanishing conditional moments through dead gates vs.\ a true vanilla optimality implication) is separate and is where we only invoke a \emph{high-probability-in-$r$} heuristic, as already clarified in the ReLU discussion tied to Reviewer~VCqo (see also the technical appendix on ReLU below).
+
+At finite width, train/test behavior can still depend on the realized frozen draw (empirical embeddings vs.\ mean-field expectations). We have \emph{not} run a systematic post-review sweep isolating variance over \emph{independent} frozen-feature draws with optimization held fixed. We will state this explicitly in the camera-ready, separate what is proved under boundedness/diversity from what is a mean-field idealization, and either add a compact multi-draw diagnostic if space permits or list it as concrete future work.
 
 
 \section*{Technical appendix (kept for Overleaf brainstorming)}
@@ -564,7 +555,7 @@ so the conditional moment may vanish even when $d_L\neq 0$.
 
 In our RF-LR architecture, the second-layer pre-activation is the low-rank channel sum
 \[
-H_2(c_2;x,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(x;W),
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}\,f_k(x;W),
 \qquad
 f_k(x;W)=\mathbb{E}_{C_1}\!\big[w_1(C_1,k)\,\varphi_1(\langle L^0(C_1),x\rangle)\big].
 \]
@@ -580,11 +571,11 @@ so all neurons receive the same additive ``shift''.
 
 In our RF-LR setting, frozen mixing breaks this symmetry at the level of the forward map:
 \[
-H_2(c_2;x,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(x;W),
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}\,f_k(x;W),
 \]
 so neurons $c_2$ compute distinct channel combinations and thus induce heterogeneous effective coefficients in the backpropagated signals
 \[
-B_k^{(2)}(t;X,W)=\mathbb{E}_{C_2}\!\big[L_{C_2,k}\,\varphi_2'(H_2(t,C_2;X,W))\,w_2(t,C_2)\big].
+B_k^{(2)}(t;X,W)=\mathbb{E}_{C_2}\!\big[W_{C_2,k}\,\varphi_2'(H_2(t,C_2;X,W))\,w_2(t,C_2)\big].
 \]
 This is the architectural analogue of the ``diversity'' mechanisms used in \NP{} to avoid the i.i.d.\ bottleneck.
 
@@ -607,7 +598,7 @@ and uses the pointwise decomposition
 \le |d_L(z;W)-d_L(z;\bar W)|\,|B_k^{(2)}(t;x,W)|
  +|d_L(z;\bar W)|\,|B_k^{(2)}(t;x,W)-B_k^{(2)}(x;\bar W)|.
 \]
-The low-rank channel structure enters when bounding the difference of $B_k^{(2)}$: the argument of $\varphi_2'$ is the channel sum $H_2=\sum_j L_{\cdot,j}f_j$, so differences propagate through $\|L\|_{\infty,1}$ and channelwise discrepancies.
+The low-rank channel structure enters when bounding the difference of $B_k^{(2)}$: the argument of $\varphi_2'$ is the channel sum $H_2=\sum_j W_{\cdot,j}f_j$, so differences propagate through $\|W\|_{\infty,1}$ and channelwise discrepancies.
 
 For ReLU on the \emph{forward} map, we also use the elementary channel-sum bound
 \[

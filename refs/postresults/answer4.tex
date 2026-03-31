@@ -1,0 +1,77 @@
+Rebuttal (Reviewer ByWV)
+
+We thank the reviewer for the thorough assessment, including the listed weaknesses, scores, and key questions. We address items in the same order as the review to ease cross-checking on OpenReview.
+
+Weaknesses
+
+W1 (Need for additional experiments).  
+Question (Weakness). Lack of additional experimental results on the performance of low-rank random-feature neural networks. If they avoid neural collapse in the mean-field regime, we would expect these architectures to outperform multilayer neural networks when gradient-based methods are initialized i.i.d.
+
+Answer. We agree that broader empirical coverage strengthens the paper. Subject to the page budget, we will add further experiments where feasible, emphasize variance over random seeds (and, where relevant, over frozen-feature draws) to quantify robustness, and include a direct comparison in which a full-rank baseline is trained from i.i.d. initialization under the same optimizer and schedule as the RF-LR models. That protocol is the appropriate test of whether avoiding collapse translates into consistent empirical gains relative to a fair full-rank reference.
+
+W2 (Convergence guarantee under i.i.d. initialization).  
+Question (Weakness). There is no convergence guarantee provided for the learning dynamics of low-rank random-feature networks under i.i.d. initialization (see also the key questions below).
+
+Answer. Our main theoretical statement is conditional: if the mean-field dynamics converges to a limit, that limit achieves global optimality within the RF-LR parametrized class under the stated assumptions. We do not claim a general unconditional convergence rate or finite-time guarantee for the training dynamics themselves. We will foreground this distinction in the camera-ready and avoid wording that could be read as an unconditional convergence theorem.
+
+W3 (What is new relative to Nguyen & Pham, 2023).  
+Question (Weakness). Derivations heavily rely on Nguyen & Pham (2023); it is unclear what is actually new.
+
+Answer. We will add a dedicated ``What is new'' paragraph and a short roadmap figure in prose. Conceptually, we study low-rank structure together with random frozen features; Nguyen & Pham (2023) supply the general mean-field analytical vocabulary in which we embed that architecture. To our knowledge, this is the first work that carries their multilayer mean-field program into the RF-LR setting (frozen mixing, r channel bundles, and the induced coupling estimates) rather than reproducing their original full-rank i.i.d. configuration. The manuscript is self-contained on purpose: after the background required to parse Nguyen & Pham (2023), we write the full argument so that every object is defined before convergence claims are made. The opening part of the appendix is devoted to existence, uniqueness, and well-posedness of the mean-field objects---material we spell out explicitly instead of leaving it informal, because global-convergence statements are only meaningful for dynamics that are proved to exist. In our experience, that well-posedness block is largely standard once the RF-LR scaling is fixed; the substantive new difficulty is exactly what the global-optimality step demands once low-rank channel aggregation enters the backward Lipschitz chain---namely, replacing the full-rank contraction route with the ||W^(ell)||_{infty,1}-controlled channelwise estimates and the associated weighted coupled-L1 assumptions. That is the step that is genuinely specific to RF-LR and is not a line-by-line repetition of Nguyen & Pham (2023).
+
+Broader motivation (significance). A central motivation for us is to understand how low-rank parametrizations reshape training and the loss landscape relative to full-rank training across scaling regimes (mean-field, feature learning, kernel-like limits). This paper is a first systematic ``mean-field path'' for that question in the RF-LR architecture: complementary analyses in an NTK-type scaling are pursued in separate concurrent work, whereas the present submission isolates the mean-field scaling where closed channel-resolved ODEs are available. Empirically, we observe that low-rank training trajectories and landscape effects can differ markedly from matched full-rank baselines; we will articulate this interpretive point more clearly in the revision and tie it to the theoretical scope, without overstating what the theorems already imply about arbitrary regimes.
+
+W4 (Assumptions relegated to the appendix).  
+Question (Weakness). The assumptions should be discussed thoroughly in the main paper rather than only in the appendix, because they are central to the analysis.
+
+Answer. We agree. We will move a compact assumption block into the main text and add a short discussion for each item: what it buys in the argument, and whether it is structural (architectural richness) or technical (regularity, couplings).
+
+Review scores (Soundness 2, Presentation 2, Significance 1, Originality 2)
+
+We appreciate the careful read and the fair scores. We take particular note of the concern about significance: we will tighten claims, broaden and clarify experiments where possible (W1), and state more sharply the scope and novelty of the mean-field RF-LR analysis (W3--W4) so that the revision better reflects the paper's intended contribution within optimization-for-structured-ML.
+
+Key questions for authors
+
+KQ1 (Typos and notation).  
+The reviewer reports an extra space after the question mark in a sentence on low rank and global convergence, a broken fragment around ``substantially,'' and a place where a quantity should be written in vector notation.
+
+Answer. We agree; we will correct these issues in the camera-ready.
+
+KQ2 (Global minimizer versus low-rank feasible set).  
+The reviewer asks why improved training performance (as in the cited figure) should support a narrative about convergence to a global minimizer, noting that low-rank factorization changes the feasible set and that full-rank and low-rank global minima need not coincide.
+
+Answer. We agree with the logic. Low-rank and full-rank parametrizations generally induce different feasible sets in function space, so one must not equate global optimality in one problem with global optimality in the other. Our statements concern global optimality within the RF-LR class conditional on mean-field convergence. Empirical curves should be read as evidence about training behavior and landscape effects under that architecture, not as a claim that every full-rank global minimizer is matched or attainable under rank constraints. More broadly, part of our motivation is precisely to relate local and global features of the training landscape under low rank to what we observe in experiments: in our experience the geometry and trajectories for low-rank RF training can differ substantially from matched full-rank training, and the mean-field RF-LR analysis here is one rigorous ``path'' through that question in the feature-learning scaling (see also W3, broader motivation). We will make this interpretive framing clearer in the revision so that figures are not over-read as full-rank global-optimality claims.
+
+KQ3 (Momentum selection across rank in the figures).  
+The reviewer asks how different momentum values are chosen for different rank constraints.
+
+Answer. Momentum and learning-rate values in the paper were obtained from optimizer sweeps over a prescribed grid (we will report the exact ranges and selection rule in the camera-ready). In the main plots we will compare ranks only under matched momentum and matched auxiliary hyperparameters so that rank is not confounded with per-rank tuning; exploratory momentum-versus-rank comparisons, when shown at all, will be relegated to appendix or supplementary material.
+
+KQ4 (Relation to Zhang et al., 2023).  
+The reviewer asks whether low-rank random-feature networks differ from the multi-component multilayer networks of Zhang et al. (2023) only through low rank.
+
+Answer. The multi-component architectural template coincides with Zhang et al. (2023). Our contribution is the mean-field training analysis: we derive mean-field ODEs for the r channel bundles, prove a global-optimality statement conditional on mean-field convergence under RF-LR assumptions, and articulate the channel-specialization mechanism. Zhang et al. do not develop this optimization layer.
+
+KQ5 (Nguyen & Pham (2023) convergence assumptions; summary).  
+The reviewer asks for clarification of the convergence assumptions in Nguyen & Pham (2023) for two-layer and multilayer networks.
+
+Answer. We will add a concise boxed explanation in the manuscript. In brief, Nguyen & Pham (2023) impose convergence to a limit through weighted coupled-L1 functionals under couplings pi_t of finite-width laws with their mean-field limits. These are not statements of bare moment convergence: the integrands pair a nonnegative weight built from downstream magnitudes along the backpropagation chain with a coupled gap between finite-t and limit trajectories, so the condition is tailored to the Lipschitz constants that appear in their global-optimality argument. They also require time-regularity (essential-supremum decay of selected weight velocities) to pass finite-t gradient-flow identities to the limit; this part is proof-relevant, not cosmetic, and Nguyen & Pham (2023) explain why weakening it can invalidate the global-conclusion route. Heuristically, prefactors such as |bar w2(C1)| on the w1-gap reflect sensitivity: large downstream mass makes w1-errors more consequential for the output, so convergence is measured in a topology aligned with the backward map rather than in unweighted L2 of raw weights. Our appendix writes the RF-LR analogue as the weighted integral conditions eq:conv-w1--eq:conv-w2 (and deeper-layer counterparts), with the low-rank modification that channel aggregation enters through max- or sum-type control over the r first-layer channels---the same weighted coupled-L1 object, adapted to r bundles.
+
+KQ6 (SGD versus mean-field ODE).  
+The reviewer notes that Nguyen & Pham (2023) study multilayer networks trained with SGD and asks whether our analysis is also based on SGD.
+
+Answer. Yes. Following Nguyen & Pham (2023), the mean-field ODE is the rigorous continuous-time scaling limit of SGD when the step size is sent to zero together with the mean-field scaling (see in particular their Proposition 23 in the discrete-to-continuous discussion). Our quantitative finite-width statement tracks both the O(1/sqrt(n)) sampling error and the O(sqrt(epsilon)) discretization error alongside the usual Gronwall factors; see the quantitative appendix for the precise bound and the alignment with their SGD-to-flow methodology.
+
+Additional detail (Nguyen & Pham (2023); convergence-to-limit-point template)
+
+For the camera-ready box requested in KQ5: Nguyen & Pham (2023) do not subsume their hypotheses under weak or moment convergence alone; they require vanishing of specific weighted, coupled L1 gaps under pi_t tied to the factorization of constants in the backward/forward Lipschitz chain.
+
+Two-layer mean-field networks (schematic): Limits (bar w1, bar w2) and couplings pi_t of the first-layer marginal with itself exist such that, for (C1, C1') ~ pi_t, E_pi_t[ |bar w2(C1)| |w1(t,C1') - bar w1(C1)| + |w2(t,C1',1) - bar w2(C1)| ] -> 0, with an additional condition such as ess sup_t |partial_t w2(t,C1,1)| -> 0 where needed to commute limits along the flow. Informally, vanishing essential supremum of selected velocities is the analytical analogue of ``weights have stopped moving'' along the relevant coordinates, but the integral conditions are strictly stronger than weak convergence of empirical measures.
+
+Three-layer networks (schematic): A coupling pi_t links the product of the first three layer marginals with itself; weighted integrals of |wi(t,*') - bar wi(*)| vanish with weights given by downstream magnitude products (e.g. terms of the form (1 + |bar w3|) |bar w3| |bar w2| scaling the w1 gap). These prefactors are exactly the polynomials that survive when one closes the backward chain for the gap in H* (they are not chosen for notational convenience alone).
+
+Multilayer depth L (bidirectional diversity): Expectations E_pi_t[ |wi(t,C'_{i-1},C'_i) - bar wi(C_{i-1},C_i)| * (product of |bar wj(C_{j-1},C_j)| over j = i+1,...,L) ] -> 0 for i = 2,...,L, the analogous condition for the first layer, plus essential-supremum decay of the top-layer velocity. This weighted coupled quantity is exactly the object that governs the gap between finite-width and limit drifts in the global-optimality step.
+
+Low-rank RF-LR (schematic): The same template applies with an r-channel first layer: the w1-gap is controlled channelwise and aggregated (max over k or a sum over k with the same downstream weights), matching eq:conv-w1--eq:conv-w2 in the appendix rather than a single-coordinate w1 gap.
+
+Relation to Wasserstein distances and W4 (sufficient technical gate): The assumptions are transport-flavored because they are expressed under pi_t. Nguyen & Pham (2023) also record a clean sufficient route: convergence of the coupled particle tuple in a Wasserstein-4 sense, together with uniform moment bounds on the mean-field solution, implies the weighted L1 integrals by Holder (L4 coupling errors paired with L^{4/3}-integrable polynomial weights). Thus W4 is a standard sufficient input, not the definition of the convergence assumption. In general, the operative definition remains the weighted coupled L1 integrals themselves, not convergence of low-order moments of individual coordinates in isolation.

@@ -1,0 +1,86 @@
+Continuation of Reviewer VCqo answer (<5k chars)
+
+Rebuttal (Reviewer 1)
+
+We thank the reviewer for the careful reading and constructive feedback. Below are point-by-point responses and corresponding camera-ready changes.
+
+Q1 (Figure clarity / momentum comparisons):  
+We agree and will redraw Figure 2 with a cleaner two-color convention and matched full-rank vs low-rank curves at fixed momentum/hyperparameters. Cross-momentum sweeps will be moved to appendix/supplementary. We will also state that these curves diagnose optimization/loss-landscape effects under rank constraints; in our setup, plain SGD (no momentum) can be competitive with momentum variants, consistent with the zero-momentum mean-field gradient-flow view.
+
+Q2 (Citation style consistency):  
+We will standardize citation style throughout the manuscript (consistently either Author-Year or numeric style).
+
+Q3 (Meaning of supp(W^0(C1)) / frozen random features):  
+We will replace this unclear wording with a standard random-feature richness assumption: frozen first-layer features induce a dense span in an appropriate function class (e.g., L2(mu_X)). We will also separate assumptions by depth: richness at layer 0, and bounded mixing for deeper layers. Concretely, for ell > 1, we assume bounded mixing with ||W^(ell)||_{infty,1} <= rK, which controls channel aggregation and stability.
+
+Q4 (Mean-field width limit):  
+This was a wording typo. We mean the infinite-width limit under mean-field parameterization (not NTK/lazy scaling and not muP). We will rephrase this explicitly and state which widths diverge.
+
+Q5 (Matrix-form suggestion in Sec. 3.1):  
+We agree that the compact matrix view is useful and will add it in the main text as a complement. We keep the channelized representation as primary because it explicitly exposes the r channel functions f_k, which are the state variables in the mean-field dynamics and the quantities tracked experimentally.
+
+Q6 (Neuron-index notation / expectations over indices):  
+We use neuronal embedding in the standard probabilistic sense: each layer is defined on an index probability space (Omega_i, rho_i), expectations are integrals under rho_i, and finite-width neurons are i.i.d. draws from rho_i. Under mean-field scaling, empirical averages converge to these expectations. We will remove ambiguous wording (“indices become continuous”) and add the equivalent pushforward-measure interpretation on Euclidean weight space.
+
+Q7 (Loss definition and gradient-flow structure):  
+We will explicitly define the population loss and residual term in Section 3, and state that the mean-field ODE is the gradient flow with schedules xi_ell(t). These definitions are currently in the appendix; in the camera-ready, we will also include concise versions in the main body so the section is self-contained.
+
+Q8 (Learning-rate schedules):  
+We will define xi_ell(t) directly in the ODE and state the Euler correspondence W_{n+1} = W_n - epsilon xi_ell(epsilon n) drift(epsilon n), with mean-field limit epsilon -> 0 and standard width scaling.
+
+Q9 (“Better than null” assumption):  
+We will restate this as a non-degeneracy condition: initialization must perform strictly better than the trivial constant predictor.
+
+Q10 (ReLU, high probability in r, and assumptions):  
+We will clarify that r is the bottleneck rank (number of channels) and that plain ReLU is excluded from the strict non-vanishing-derivative assumption used in the formal implication “vanishing conditional gradient => vanishing residual.” For ReLU, the high-probability-in-r statement is presented as intuition only: under symmetric mixing and non-degenerate channels, full dead-gate alignment is heuristically exponentially unlikely in r (equivalently on an exponentially small input subset). We also mention sign-structured/NMF-style initialization as design intuition to bias H2 positive at initialization and reduce dead-gate behavior.
+
+Q11 (Meaning of mixing):  
+We will define mixing explicitly: W^(ell) recombines r channels into neuron pre-activations, with structural bound ||W^(ell)||_{infty,1} <= rK. We will also state that W^(ell) may be drawn from any bounded-support distribution (or any law satisfying the same almost-sure bound).
+
+Q12 (Notation in Sec. 3.5–3.6):  
+We agree the notation was confusing. In this part, the trainable object is factor A, while the prefactor is a norm of the frozen mixing matrix. We will correct the inequality, explicitly separate trainable vs. frozen quantities, and harmonize notation in the camera-ready to avoid switching between W/L symbols for the same mixing entries.
+
+Q13 (Meaning of solution operator F):  
+We will define F as the Picard integral map whose fixed point is the ODE solution trajectory, and state this clearly where first introduced.
+
+Q14 (Minor punctuation):  
+We will correct the sentence punctuation and improve readability.
+
+---
+
+Rebuttal (Reviewer 2)
+
+We thank the reviewer for the careful and substantive feedback. Below we provide consolidated responses to each point.
+
+Q1 (Novelty, freezing limitation, and scope of Theorem 4.1):  
+We agree with the core concern that our proof template is related to Nguyen & Pham (2023), and that the two-point theorem is a minimal rigorous instance rather than a full high-dimensional representation-learning theory. Our intended contribution is the architecture-level shift and its optimization consequences: frozen low-rank mixing yields a closed deep mean-field description with channel-resolved dynamics and avoids the fully symmetric “same update for all neurons” failure mode highlighted in full-rank i.i.d. settings.  
+Technically, the key non-verbatim step is the channelized forward/backward structure:
+H_ell = sum_{k=1}^r W^{(ell)}_{.,k} f_k^{(ell)},
+with stability/coupling controlled by ||W^{(ell)}||_{infty,1} and channel maxima.  
+We will also make scope explicit in the camera-ready: this is not meant to cover all end-to-end modern deep learning pipelines; it targets a structured low-rank regime relevant to scientific ML/PDE settings.  
+For Theorem 4.1, we will keep the two-point theorem as the formal anchor and add a clear mechanism remark (positive channel feedback through ReLU gating), while labeling high-dimensional extension claims as empirical/ongoing rather than proved.
+
+Q2 (Symmetry sensitivity and exponential factor in finite-width bound):  
+We agree this is important. The exponential prefactor in the finite-width bound (schematically exp(K_T(1+rK))) is a conservative Gronwall artifact and should not be interpreted as a direct causal predictor of observed symmetry outcomes.  
+Empirically, symmetry behavior is setup-dependent (target, batch size, initialization, seed). We therefore added variance-aware reporting and avoid universal claims such as “rank 10 works, rank 20 fails.” In our post-review sweep (fixed width 1024, five seeds, synthetic even target), rank 20 showed lower mean symmetry defect than rank 10 while test MSE remained comparable within noise.  
+We will present symmetry as a protocol-dependent observation/hypothesis, not as a theorem-level guarantee.
+
+Q3 (Scaling with intrinsic dimension and phase-transition question):  
+We agree this is a key open direction. Our current mean-field guarantees are for fixed rank r in the infinite-width limit; they do not by themselves provide a full phase diagram in (d, r, N).  
+We will state this limitation explicitly.  
+On ongoing directions:  
+- kernel/NTK side: structured low-rank kernel concentration in high dimension,  
+- mean-field scaling side: rank-vs-width regimes where ODE descriptions remain faithful,  
+- empirical side: controlled synthetic sweeps over (d, r, N) to test transition behavior.  
+We also clarify the “exponential suppression” intuition: the ReLU failure mode corresponds to joint dead-gate sign alignment; heuristically, the input-region measure where all channels are dead can shrink exponentially in r (under symmetric mixing assumptions). Whether this remains effective as d grows depends on how representation requirements (r) and gating/concentration geometry co-scale.
+
+Q4 (Mechanism beyond the two-point toy theorem):  
+We will include an explicit mechanism paragraph in the camera-ready:  
+- low-rank pre-activation H2(c2; x, W) = sum_{j=1}^r W_{c2,j} f_j(x; W),  
+- ReLU gate indicator 1{H2>0} couples channel strength and activation,  
+- dominant channel alignment increases drift on that channel, creating a reinforcing loop.  
+This is the conceptual mechanism we intend to communicate; the two-point theorem remains the minimal formal proof instance.
+
+Q5 (Limitation wording around frozen mixing):  
+We agree the limitation must be framed carefully. We will revise the text to a precise scope statement: frozen mixing is an architectural assumption of the analyzed class, not a claim that all practical deep networks should be modeled this way.  
+At the same time, we will keep the positive message explicit: low-rank/factorized models can retain strong optimization guarantees in the mean-field regime; this is a meaningful design point rather than merely a restrictive toy case.

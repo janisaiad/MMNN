@@ -1,0 +1,30 @@
+% Shared preamble for OpenReview export PDFs (LuaLaTeX).
+% Proportional font + automatic line breaks (no typewriter overflow).
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\geometry{a4paper,margin=2.5cm}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[Scale=MatchLowercase]
+\lstdefinestyle{openreviewbody}{
+  basicstyle=\small\rmfamily,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=4,
+  linewidth=\linewidth,
+  % Allow breaks after pipes (ASCII tables) and slashes (URLs).
+  literate=*{|}{{|\allowbreak}}1 {/}{{/\allowbreak}}1,
+  frame=lines,
+  framerule=0.3pt,
+  rulecolor=\color{black!30},
+  framesep=8pt,
+  aboveskip=\medskipamount,
+  belowskip=\medskipamount,
+}
+\lstset{style=openreviewbody}
+\sloppy

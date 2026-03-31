@@ -1,0 +1,66 @@
+Rebuttal (Reviewer 1)
+
+We thank the reviewer for the careful reading and highly constructive feedback. The comments helped us identify several places where notation and exposition can be improved. Below we provide point-by-point responses and the corresponding camera-ready changes.
+
+Q1 (Figure clarity / momentum comparisons):  
+We agree and will redraw Figure 2 with a cleaner two-color convention and matched full-rank vs low-rank curves at fixed momentum/hyperparameters. Cross-momentum sweeps will be moved to appendix/supplementary. We will also state that these curves diagnose optimization/loss-landscape effects under rank constraints; in our setup, plain SGD (no momentum) can be competitive with momentum variants, consistent with the zero-momentum mean-field gradient-flow view.
+
+Q2 (Citation style consistency):  
+We will standardize citation style throughout the manuscript (consistently either Author-Year or numeric style).
+
+Q3 (Meaning of supp(W^0(C1)) / frozen random features):  
+We will replace this unclear wording with a standard random-feature richness assumption: frozen first-layer features induce a dense span in an appropriate function class (e.g., L2(mu_X)). We will also separate assumptions by depth: richness at layer 0, and bounded mixing for deeper layers. Concretely, for ell > 1, we assume bounded mixing with ||W^(ell)||_{infty,1} <= rK, which controls channel aggregation and stability.
+
+Q4 (Mean-field width limit):  
+This was a wording typo. We mean the infinite-width limit under mean-field parameterization (not NTK/lazy scaling and not muP). We will rephrase this explicitly and state which widths diverge.
+
+Q5 (Matrix-form suggestion in Sec. 3.1):  
+We agree that the compact matrix view is useful and will add it in the main text as a complement. We keep the channelized representation as primary because it explicitly exposes the r channel functions f_k, which are the state variables in the mean-field dynamics and the quantities tracked experimentally.
+
+Q6 (Neuron-index notation / expectations over indices):  
+We use neuronal embedding in the standard probabilistic sense: each layer is defined on an index probability space (Omega_i, rho_i), expectations are integrals under rho_i, and finite-width neurons are i.i.d. draws from rho_i. Under mean-field scaling, empirical averages converge to these expectations. We will remove ambiguous wording (“indices become continuous”) and add the equivalent pushforward-measure interpretation on Euclidean weight space.
+
+Q7 (Loss definition and gradient-flow structure):  
+We will explicitly define the population loss and residual term in Section 3, and state that the mean-field ODE is the gradient flow with schedules xi_ell(t). These definitions are currently in the appendix; in the camera-ready, we will also include concise versions in the main body so the section is self-contained.
+
+Q8 (Learning-rate schedules):  
+We will define xi_ell(t) directly in the ODE and state the Euler correspondence W_{n+1} = W_n - epsilon xi_ell(epsilon n) drift(epsilon n), with mean-field limit epsilon -> 0 and standard width scaling.
+
+Q9 (“Better than null” assumption):  
+We will restate this as a non-degeneracy condition: initialization must perform strictly better than the trivial constant predictor.
+
+Q10 (ReLU, high probability in r, and assumptions):  
+We will clarify that r is the bottleneck rank (number of channels) and that plain ReLU is excluded from the strict non-vanishing-derivative assumption used in the formal implication “vanishing conditional gradient => vanishing residual.” For ReLU, the high-probability-in-r statement is presented as intuition only: under symmetric mixing and non-degenerate channels, full dead-gate alignment is heuristically exponentially unlikely in r (equivalently on an exponentially small input subset where many weights receive zero gradient through dead gates). We also mention sign-structured/NMF-style initialization as design intuition to bias H2 positive at initialization and reduce dead-gate behavior. This sits alongside the following point on randomness: the proofs ask for bounded frozen mixing and feature richness, not a specific measure---finite-support draws for frozen W suffice; unbounded Gaussians in code are a practical convenience. We have not run a dedicated multi-draw variance study over independent frozen-feature realizations at fixed optimization; see the merged reply “Sensitivity to the frozen feature draw” in the main rebuttal document.
+
+Q11 (Meaning of mixing):  
+We will define mixing explicitly: W^(ell) recombines r channels into neuron pre-activations, with structural bound ||W^(ell)||_{infty,1} <= rK. We will also state that W^(ell) may be drawn from any bounded-support distribution (or any law satisfying the same almost-sure bound).
+
+Q12 (Notation in Sec. 3.5–3.6):  
+We agree the notation was confusing. In this part, the trainable object is factor A, while the prefactor is a norm of the frozen mixing matrix. We will correct the inequality, explicitly separate trainable vs. frozen quantities, and harmonize notation in the camera-ready to avoid switching between W/L symbols for the same mixing entries.
+
+Q13 (Meaning of solution operator F):  
+We will define F as the Picard integral map whose fixed point is the ODE solution trajectory, and state this clearly where first introduced.
+
+Q14 (Minor punctuation):  
+We will correct the sentence punctuation and improve readability.
+
+Q15 (Theorem 3.2 scope in depth/width):  
+The result is intended for arbitrary depth in RF-LR. We will rewrite the theorem statement to specify which widths tend to infinity (all hidden-layer widths under mean-field scaling) and separate this general statement from the depth-2 notation used for the quantitative bound.
+
+Q16 (“High level proof idea” opacity):  
+We will either remove the current high-level paragraph from the main text or rewrite it to mirror the formal proof structure in the appendix (dense-span step, stationarity, conditional expectation, and loss-optimality conclusion).
+
+Q17 (“upstream x local” wording):  
+We will replace this by standard terminology (“backpropagated signal x local derivative”) and provide explicit definitions.
+
+Q18 (Meaning of partial_2 L):  
+We will explicitly define partial_2 L(y, yhat) as the derivative with respect to the second argument (prediction).
+
+Q19 (Meaning of “shifts” and heterogeneous shifts):  
+We will define “shift” as neuron-independent additive translation in collapse regimes of full-rank i.i.d. settings, then contrast with RF-LR where frozen mixing induces neuron-dependent channel combinations, yielding heterogeneous effective updates and preventing the “all neurons move identically” mode.
+
+Q20 (Init index notation in Theorem 3.3):  
+We will rewrite the notation in standard finite-width terms: n1,n2 are finite layer widths, and Init is a width-indexed initialization family. This will remove ambiguity.
+
+Q21 (“coupling procedure” and distance D):  
+We agree the phrase was misleading. We mean the standard finite-width/mean-field embedding comparison (empirical averages vs. expectations under i.i.d. sampled neuron labels), not an additional algorithm. We will define the discrepancy metric explicitly (trajectory-level discrepancy with O(1/sqrt(n_min) + sqrt(epsilon)) scaling, up to the Gronwall factor) and clarify the transport/Wasserstein interpretation.
