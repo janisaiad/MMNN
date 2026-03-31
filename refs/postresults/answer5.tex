@@ -1,40 +1,15 @@
-\medskip
-\noindent\textbf{Q22 (Convergence guarantees).}\quad
-Our main guarantee is conditional on convergence of the mean-field dynamics.
-Unconditional convergence rates for deep RF-LR remain largely open; we will clarify this and avoid implying a general unconditional guarantee.
-We will also point to the sharpest partial results available and clarify which assumptions are sufficient for the global-optimality conclusion given convergence.
+% PDF: answer5-compiled.tex (\input{answer5.tex}). OpenReview = Markdown+MathJax: paste answer5-openreview.md.
+We thank the reviewer for these additional points. They help us sharpen what is proved, what is empirical, and what remains open.
+Several of these points overlap with other reviews, and we will make the overall paper wording consistent across all responses.
 
-\medskip
-\noindent\textbf{Q23 (High-dimensional extensions of the spike mechanism).}\quad
-Yes in substance: the mechanism (channel dominance $\leftrightarrow$ amplified backward signal through the mixing matrix and ReLU gates) is dimension-agnostic at the ODE algebra level because it depends on the same identity
-$$
-H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W)
-$$
-and the channelwise backprop objects that feed the mean-field equations.
-What we do not currently have for general input dimension $d$ is a clean theorem isolating well-separated (non-overlapping) spikes in feature space; overlapping channel contributions when $d>1$ complicate bookkeeping and the rigorous two-point caricature used in Theorem~4.1.
-We will state this distinction clearly in the camera-ready and add empirical evidence in higher $d$ where space permits.
+Q1 (Convergence guarantees). Our main guarantee is conditional on convergence of the mean-field dynamics: given convergence, we can conclude global optimality within the RF-LR class under the stated assumptions. We will revise the abstract/introduction/theorem statements so this reads as “conditional global optimality” rather than as an unconditional convergence-rate claim.
+We do not currently prove an unconditional convergence rate for deep RF-LR, and we agree this remains largely open. In the revision we will be explicit about which assumptions are used for the global-optimality implication (non-degeneracy of the initialization relative to the trivial predictor, and the regularity condition used to pass from a vanishing conditional gradient to a vanishing residual), versus which statements are empirical/heuristic.
 
-\smallskip
-\noindent\textit{Additional context.}\quad
-The explanatory content is not the simplified two-point, two-channel statement itself, but the positive feedback it isolates.
-Fix a second-layer neuron index $c_2$ and recall $H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j} f_j(x;W)$.
-For ReLU, gating enters mean-field gradients through $\varphi'_2(H_2)=\mathbf{1}\{H_2>0\}$.
-The backward signal for channel~$k$ (cf.~the ODE for $\partial_t w_1(\cdot,k)$) is built from expectations over $C_2$ of terms that couple (i)~the mixing weight $W_{C_2,k}$, (ii)~the gate $\mathbf{1}\{H_2(C_2;x,W)>0\}$, and (iii)~upstream factors (output error and later-layer weights).
-When channel $k$ dominates, neurons $c_2$ that contribute to the drift along channel~$k$ are precisely those with the gate ``on.''
-Across $c_2$, the effective weights in the expectation are then positively aligned with $W_{c_2,k}$ and with $\mathbf{1}\{H_2(c_2)>0\}$, producing a large contribution to the drift of the $k$th channel, which in turn pushes $f_k$ further in the same direction: a reinforcing loop.
-The ODE-level mechanism is dimension-agnostic; the two-point theorem is a minimal tractable instance.
+Q2 (High-dimensional spike mechanism). The ODE-level feedback behind channel specialization is dimension-agnostic at the algebraic level: it is driven by the same identity $H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j} f_j(x;W)$ together with gating/backprop terms.
+To make the mechanism more transparent, we will add a short explanation in the main text. For ReLU-type gates, the derivative term is an indicator $\mathbf 1\{H_2>0\}$, so the channel-$k$ drift/backprop signal is built from expectations over $C_2$ of terms that couple (i) the mixing weight $W_{C_2,k}$, (ii) the gate $\mathbf 1\{H_2(C_2;x,W)>0\}$, and (iii) upstream factors (output error and later-layer weights). When one channel becomes slightly dominant on part of the input space, it increases $H_2$ there, turns on more gates for neurons aligned with that channel, and thereby increases the channel-$k$ drift. This in turn pushes $f_k$ further in the same direction: a reinforcing feedback loop. The two-point theorem is a minimal tractable instance where this loop can be proved cleanly.
+What we currently prove is a minimal two-point anchor; for general $x\in\mathbb R^d$, overlapping channel contributions complicate the rigorous isolation of “well-separated spikes”. We will state this distinction clearly, keep the high-$d$ discussion honest as primarily empirical, and add higher-$d$ experiments/diagnostics as space permits. We will also note that $d=1$ is used mainly for visualization clarity; the algebraic structure above does not rely on $d=1$.
+For ReLU specifically, we will also clarify the main degenerate failure mode: convergence to a stationary point where gates are off on a large set (so $\phi_2'(H_2)=0$ despite nonzero residual). In RF-LR, $H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k} f_k(x;W)$ is a sum over $r$ channels, so the event that all channels are simultaneously “dead” is a joint sign-alignment event across channels. Under symmetric random mixing and non-degenerate channel features, one can heuristically view this as exponentially unlikely in $r$ (e.g. on the order of $2^{-r}$ pointwise), which motivates the “high probability in $r$” intuition. We will keep this strictly as intuition (not as a proof step) and will be careful about how it is stated.
 
-\smallskip
-\noindent\textit{Visualization note.}\quad
-The figures emphasize $d=1$ mainly for clarity of visualization; the same feedback loop operates when $x\in\mathbb{R}^d$.
-Overlapping spikes mainly affect how we illustrate and formally isolate regimes, not the core mean-field structure above.
-
-\medskip
-\noindent\textbf{Q24 (Sensitivity to the frozen feature draw).}\quad
-The analytical conditions are not tied to one sampling recipe.
-Once mixing matrices are frozen, the arguments use an almost-sure channel-aggregation bound (schematically $\|W^{(\ell)}\|_{\infty,1}\le rK$) and a richness/diversity assumption for the frozen first-layer features.
-In principle each frozen $W^{(\ell)}$ can be drawn from any law with finite support (or any law satisfying the same $\ell_{\infty,1}$ control almost surely); there is no Gaussian-specific requirement.
-In experiments we often use unbounded Gaussian initializations for simplicity at finite width; that is an engineering choice while the theorems use stability/richness predicates.
-Nonnegative / NMF-style $W\ge 0$ matches the same boundedness template and is intuition for some collapse modes; the ReLU dead-gate caveat is separate (high probability in $r$ only as a heuristic; cf.~Q10).
-At finite width, performance can vary with the draw.
-We have not run a systematic post-review sweep over independent frozen-feature draws with optimization held fixed; we will state this in the camera-ready, separate proved assumptions from mean-field idealization, and add compact multi-draw diagnostics if space permits or list them as future work.
+Q3 (Sensitivity to the frozen draw). The analytical conditions are not tied to one sampling recipe: once mixing matrices are frozen, the arguments use bounded mixing and a richness/diversity assumption for the frozen first-layer features, not Gaussianity. Concretely, a convenient sufficient form is: for all $c,k$, $|W^{(\ell)}_{c,k}|\le K$, hence $||W^{(\ell)}||_{\infty,1}:=\sup_c\sum_{k=1}^r |W^{(\ell)}_{c,k}|\le rK$ almost surely. This can be satisfied by any bounded-support mixing distribution (and is also compatible with nonnegative/NMF-style mixing); there is no Gaussian-specific requirement in the theory.
+At finite width, performance can vary with the frozen draw. In our current experiments we often use Gaussian/Xavier initializations for convenience, even though those are unbounded; in the camera-ready we will clearly separate the theorem assumptions from this engineering choice, and where feasible we will include multi-draw variability (multiple frozen draws, multiple seeds) in addition to the usual seed variability. We will also clarify that any ReLU “dead-gate across all channels” probability discussion is heuristic: in a symmetric mixing picture it can be exponentially small in $r$, but we treat this as intuition, not as a proof step.
+We have not yet run a systematic post-review sweep over independent frozen draws with optimization held fixed; in the revision we will either add a compact version (if space permits) or state this explicitly as a limitation/future-work item.
