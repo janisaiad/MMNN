@@ -1,24 +1,47 @@
 
+Rebuttal (Reviewer Z9GA)
+
+We thank the reviewer for the careful reading and thoughtful questions. We respond below to the main concerns on technical novelty and the spectral-bias discussion.
+
+Q1 (Technical novelty)
+
+We apologize for not being precise enough in the coupling argument presentation: one intermediate step was missing in the draft wording.
+
+More precisely, following the Nguyen--Pham coupling template (their three-layer assumption / coupling display), after introducing the coupling $\pi_t$ and using bounded first-layer activation, one obtains a bound of the form
+$$
+\mathbb{E}_{\pi_t}\left[\left|\left\langle \mathbb{E}_{Z}\left[\Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\mid X=x\right],\varphi_{1}(\langle u,x\rangle)\right\rangle\right|\right]
+\le K\,\mathbb{E}_{\pi_t}\left[\left|\Delta_{2}^{H*}(t,\cdot)-\Delta_{2}^{H*}(\cdot;\bar w)\right|\right]
+$$
+and then controls the right-hand side by weighted coupled gaps (same logic as Nguyen \& Pham), with low-rank-specific channel aggregation.
+
+Our low-rank translation of this missing step is that the main coupling term is controlled through a channel sum under $\pi_t$:
+$$
+\mathbb{E}_{\pi_t}\Big[(1+|\bar w_2|)\,|\bar w_2|\,\sum_{k=1}^{r} |\bar w_{1,k}|\,|w_{1,k}-\bar w_{1,k}|\Big]\to 0
+$$
+with notation matched to our neuronal embedding variables in Eq.~(1). This is exactly the place where the RF-LR structure replaces the fully connected contraction chain by channelwise control plus mixing bounds.
+
+We will make this explicit in the appendix by adding (i) the post-"translates to" display, (ii) the time-regularity condition for each channel
+$$
+\operatorname*{ess\,sup}_{t}\left|\partial_t w_1(t,U_k)\right|\to 0,\qquad k=1,\dots,r,
+$$
+and (iii) the bi-Lipschitz/bounded-mixing constants used to close the backward estimate.
+
+For ReLU, the closure step uses the sharp inequality
+$$
+\left|\operatorname{ReLU}\left(\sum_{i=1}^{r}x_i\right)-\operatorname{ReLU}\left(\sum_{i=1}^{r}y_i\right)\right|
+\le \left|\sum_{i=1}^{r}(x_i-y_i)\right|
+\le \sum_{i=1}^{r}|x_i-y_i|
+$$
+rather than any extra factor-$r$ slack. We will state this explicitly (with compact-support / boundedness assumptions for pre-activations) to clarify why $r$-channel coupling closes.
 
 
 
 
 
 
+Q2 (Spectral bias and Section~4)
 
-
-
-Spectral bias --- Section~4 (merged reply to related reviewer threads)
-
-Q4 (Universality beyond mean-field):
-
-I wonder how universal is spectral bias discovered in Section~4 for low-rank training? For example, if we do not consider network in the mean-field regime, do we still have such spectral bias?
-
-Q5 (Qualitative discussion, two-point setting, high- vs.\ low-frequency tilt):
-
-While I acknowledge the spectral bias for low-rank network could be interesting, the discussions in Section~4.1 seems to be too qualitative, and the results in Section~4.2 seems to be on too simple setting (only two point in the datasets). Could the authors elaborate more on why the low-rank network lead to high-frequency bias, and fully trained network lead to low-frequency bias?
-
-Answer (merged):
+This reply merges the reviewer’s questions on universality beyond the mean-field regime and on the qualitative discussion around the two-point setting / high- vs.\ low-frequency behavior.
 
 We thank the reviewers for connecting this discussion to the broader spectral-bias literature. In particular, Rahaman et al., ``On the Spectral Bias of Neural Networks'' (2019), arXiv:1806.08734, \url{https://arxiv.org/abs/1806.08734}, is an apt reference for the standard Fourier / low-frequency-first picture in sufficiently wide, kernel-like regimes.
 

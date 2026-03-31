@@ -1,40 +1,164 @@
 Rebuttal (Reviewer 1)
 
-We thank the reviewer for the careful reading and highly constructive feedback. The comments helped us identify several places where notation and exposition can be improved. Below we provide point-by-point responses for Q1--Q6 (Q7--Q21 are continued in answer5.tex to satisfy OpenReview length constraints).
+We thank the reviewer for the careful reading and highly constructive feedback. The comments helped us identify several places where notation and exposition can be improved. Below we provide point-by-point responses for Q1--Q6. The continuation (Q7--Q21) is provided in answer5.tex to satisfy OpenReview length constraints.
 
-1.
+Q1 (Figure clarity / momentum comparisons)
 
 We agree and will redraw Figure~2 with a cleaner two-color convention and matched full-rank vs.\ low-rank curves at fixed momentum/hyperparameters. Cross-momentum sweeps will be moved to appendix/supplementary. We will also state that these curves diagnose optimization/loss-landscape effects under rank constraints; in our setup, plain SGD (no momentum) can be competitive with momentum variants, consistent with the zero-momentum mean-field gradient-flow view.
 
-2.
+Q2 (Citation style consistency)
 
 We will standardize citation style throughout the manuscript (consistently either Author--Year or numeric style).
 
-3.
+Q3 (Meaning of $\operatorname{supp}(W^0(C_1))$ / frozen random features)
 
-We agree the wording is unclear. What we intend is a standard random-feature richness assumption: with frozen first-layer features, universal approximation can be formulated via integral representations, so that the linear span of $\{\phi_1(\langle L^0(c_1),\cdot\rangle)\}$ is dense in a suitable function class (for example $L^2(\mu_X)$ under the data distribution). This is the correct replacement for the informal "$\operatorname{supp}(W^0(C_1))$" phrasing.
+We agree the wording is unclear. What we intend is a standard random-feature richness assumption: with frozen first-layer features, universal approximation can be formulated via integral representations, so that the linear span of
+$$
+\left\{\phi_1(\langle L^0(c_1),\cdot\rangle)\right\}
+$$
+is dense in a suitable function class, for example $L^2(\mu_X)$ under the data distribution. This is the correct replacement for the informal "$\operatorname{supp}(W^0(C_1))$" phrasing.
 
-We will also disentangle this from assumptions on later layers, because the manuscript was easy to misread as requiring the same non-degeneracy at every depth. The camera-ready assumption block will read along the following lines: for the first layer/random feature draw ($\ell=0$), we assume the richness condition needed for dense spans in the induced feature space; for layers $\ell>1$, we do not need an analogous "full support in $\mathbb{R}^d$" statement for the trained objects. Instead, the deep part of the analysis is driven by bounded mixing: $|W^{(\ell)}_{c,k}|\le K$ and hence $\|W^{(\ell)}\|_{\infty,1}\le rK$, which controls channel aggregation and stability. Intuitively, bounded later-layer mixing interacts with first-layer richness rather than substituting for it. This matches the proof: dense random features provide approximation capacity at the input, while bounded $W^{(\ell)}$ controls the channelized Lipschitz/coupling chain.
+We will also disentangle this from assumptions on later layers, because the manuscript was easy to misread as requiring the same non-degeneracy at every depth. The camera-ready assumption block will read along the following lines: for the first layer/random feature draw ($\ell=0$), we assume the richness condition needed for dense spans in the induced feature space; for layers $\ell>1$, we do not need an analogous "full support in $\mathbb{R}^d$" statement for the trained objects. Instead, the deep part of the analysis is driven by bounded mixing,
+$$
+|W^{(\ell)}_{c,k}|\le K,
+\qquad
+\|W^{(\ell)}\|_{\infty,1}\le rK,
+$$
+which controls channel aggregation and stability. Intuitively, bounded later-layer mixing interacts with first-layer richness rather than substituting for it. This matches the proof: dense random features provide approximation capacity at the input, while bounded $W^{(\ell)}$ controls the channelized Lipschitz/coupling chain.
 
-4.
+Q4 (Mean-field width limit)
 
 Yes: this is a typo. By "mean-field width limit" we mean the infinite-width limit under the mean-field parameterization (in the neuronal-embedding sense), where empirical averages over neurons converge to expectations under a limiting neuron measure, yielding a deterministic mean-field ODE. We will reword this explicitly in the camera-ready as "infinite-width (mean-field) limit" and clarify that this refers to the mean-field scaling, not to NTK/lazy scaling and not to $\mu\text{P}$.
 
-5.
+Q5 (Matrix-form suggestion in Sec.~3.1)
 
 This is a good suggestion, and we agree the compact matrix view can help readers parse the architecture quickly. One can indeed rewrite the layer map as
-\[
+$$
 \phi(W^\top(Ax+c)+b)=\phi(Rx+d),\qquad R:=W^\top A,\ d:=W^\top c+b,
-\]
+$$
 where $R:=W^\top A$ is low-rank, and the effective bias term $d:=W^\top c+b$ lives in a low-rank affine subspace (for fixed rank) and can be interpreted as a structured shift at each layer.
 
-Our reason for nevertheless keeping the channelized form in the paper is that it exposes the $r$ partial functions $f_k$ (the channel features) that are the natural state variables of the mean-field limit and the objects we visualize/track experimentally. Concretely, the second-layer pre-activation is
-\[
-H_2(t,c_2;X,W(t))=\sum_{k=1}^r W_{c_2,k}f_k(t;X,W(t)),\qquad
-f_k(t;X,W)=\mathbb{E}_{C_1}\!\left[w_1(t,C_1,k)\phi_1(\langle W^0(C_1),X\rangle)\right],
-\]
+Our reason for nevertheless keeping the channelized form in the paper is that it exposes the $r$ partial functions $f_k$ (the channel features) that are the natural state variables of the mean-field limit and the objects we visualize and track experimentally. Concretely, the second-layer pre-activation is
+$$
+H_2(t,c_2;X,W(t))=\sum_{k=1}^r W_{c_2,k}f_k(t;X,W(t)),
+$$
+with
+$$
+f_k(t;X,W)=\mathbb{E}_{C_1}\left[w_1(t,C_1,k)\phi_1(\langle W^0(C_1),X\rangle)\right].
+$$
 as used throughout our analysis. We will add the compact matrix form in the main text as a complement, while keeping the channel decomposition as the primary analytical representation.
 
-6.
+Q6 (Neuron-index notation / expectations over indices)
 
 We use the neuronal-embedding formalism of Nguyen \& Pham (2023): each layer is represented by measurable maps $c\mapsto w(\cdot,c)$ on $(\Omega_i,\rho_i)$, and $\mathbb{E}_{C_i}[\cdot]$ is integration under $\rho_i$. At finite width, neuron labels $C_i(j_i)$ are i.i.d. draws from $\rho_i$, so empirical averages converge to $\mathbb{E}_{C_i}[\cdot]$ under mean-field scaling. This is a continuum law-of-parameters representation (not a combinatorial "expectation over indices"); equivalently, one may use the pushforward measure on Euclidean weights. In the camera-ready, we will remove ambiguous wording (e.g., "indices become continuous") and add a short explicit paragraph with this pushforward equivalence.
+
+
+Rebuttal (Reviewer VCqo, continued)
+
+We thank the reviewer again. The first message covered Q1--Q6. Below is the continuation (Q7--Q21), followed by three additional points raised by Reviewer A6kZ.
+
+Q7 (Write the loss and make the gradient-flow structure explicit):
+
+We thank the reviewer for this suggestion and will make the statement explicit. We will define the population loss
+\[
+\mathcal L(W)=\mathbb E_Z[\mathcal L(Y,\hat y(X;W))],\qquad
+d\mathcal L(Z;W)=\partial_{\hat y}\mathcal L(Y,\hat y(X;W)),
+\]
+and state that the mean-field ODE is the gradient flow (with learning-rate schedules $\xi_\ell(t)$) of $\mathcal L$ in the mean-field parameterization. These definitions are currently spelled out in the appendix; for the camera-ready, we will also add them in the main body (with concise notation) so Section 3 is self-contained.
+
+Q8 (Learning-rate schedules):
+
+We will define $\xi_\ell(t)\ge 0$ as the learning-rate prefactor in the mean-field ODE (allowing time-dependent schedules such as constant, piecewise, exponential, or cosine forms). We will also state the discrete-time correspondence explicitly: with step size $\varepsilon$ and iteration index $n$, Euler discretization gives
+\[
+W_{n+1}=W_n-\varepsilon\,\xi_\ell(\varepsilon n)\,(\text{drift at time }\varepsilon n),
+\]
+and the mean-field limit is $\varepsilon\to 0$ with $t=\varepsilon n$ (plus the usual width scaling). In the classical mean-field parameterization, this corresponds to the familiar $1/n$ learning-rate scaling at width $n$.
+
+Q9 ("Better than null" assumption):
+
+We will restate this as a non-degeneracy condition: the initial predictor should perform strictly better than the trivial constant predictor (e.g. $\hat y\equiv \phi_L(0)$). In the manuscript appendix, this appears as a sufficient condition ensuring the limit point is not identically zero (the Non-Degeneracy assumption: $\mathcal L(W(0))<\mathbb E[\mathcal L(Y,\phi_L(0))]$).
+
+Q10 (ReLU vs. $\phi_2'$ bounded away from zero; high probability in $r$):
+
+We will clarify both points.
+
+- Meaning of $r$. $r$ is the rank (number of channels) in the low-rank bottleneck. The second-layer pre-activation is a sum over $r$ channels:
+\[
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W).
+\]
+
+- Why ReLU is excluded in the formal global-convergence proof. Our regularity assumption in the manuscript appendix requires $\inf_u |\phi_2'(u)|>0$, which excludes plain ReLU (since $\phi'(u)=0$ for $u\le 0$). This is used in the step "vanishing conditional gradient implies vanishing residual".
+
+- What we can still say for ReLU (high-level). The only problematic case is convergence to a degenerate stationary point where all gates are off ($H_2\le 0$ almost everywhere). In our architecture, this corresponds to a rare alignment event across $r$ channels; we treat the resulting high-probability-in-$r$ claim as intuition, not as a theorem.
+
+To make the logical use of the nonzero-derivative condition explicit, the global-optimality proof uses the implication
+\[
+\mathbb E[d\mathcal L(Z;W)\cdot\phi_2'(H_2(c_2;X,W))\mid X=x]=0
+\Rightarrow
+\mathbb E[d\mathcal L(Z;W)\mid X=x]=0,
+\]
+which holds when $\phi_2'$ is bounded away from $0$ on the relevant set. For ReLU, the failure mode is the dead-gate event: $\phi_2'(H_2)=0$ even though $d\mathcal L\neq 0$, so the conditional moment can vanish at a non-optimal point.
+
+In RF-LR, $H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W)$ is a sum over $r$ channels. A design intuition is that sign-structured/NMF-style initialization can bias $H_2$ positive on target regions and reduce dead-gate behavior (not a proof step). Under symmetric random mixing (e.g., Xavier/Gaussian draws for $W_{c_2,k}$) and non-degenerate $f_k(x)$, one-neuron off probability is approximately $1/2$; therefore the event that all channels are simultaneously dead is heuristically exponentially unlikely in $r$ (informally $e^{-O(r)}$), i.e., concentrated on an input subset of exponentially small measure. We keep this as intuition, not theorem (GeLU satisfies assumptions directly).
+
+We will also add a precise definition of mixing and the seminorm $\|W\|_{\infty,1}$.
+
+Q11 (What is mixing?):
+
+We will define mixing explicitly: $W^{(\ell)}$ recombines $r$ channels into neuron pre-activations, with structural bound $\|W^{(\ell)}\|_{\infty,1}\le rK$. We will also state that $W^{(\ell)}$ may be drawn from any bounded-support distribution (or any law satisfying the same almost-sure bound).
+
+Q12 (Lipschitz notation in Sec. 3.5--3.6):
+
+We agree the notation was confusing. In this part, the trainable object is factor $A$, while the prefactor is a norm of the frozen mixing matrix. We will correct the inequality, explicitly separate trainable vs.\ frozen quantities, and harmonize notation in the camera-ready to avoid switching between $W$/$L$ symbols for the same mixing entries.
+
+Q13 (Solution operator $F$):
+
+We will define $F$ as the Picard integral map whose fixed point is the ODE solution trajectory, and state this clearly where first introduced.
+
+Q14 (Minor punctuation):
+
+We will correct the sentence punctuation and improve readability.
+
+Q15 (Theorem~3.2 scope in depth/width):
+
+Thank you for this clarification request. The result is intended to hold for arbitrary depth in our RF-LR architecture, with the multilayer extension detailed in the appendix. In the camera-ready version, we will rewrite the theorem statement to specify explicitly which widths tend to infinity (all hidden-layer widths under mean-field scaling) and to separate this general statement from the depth-$2$ notation used for the quantitative bound.
+
+Q16 ("High level proof idea" opacity):
+
+Thank you for this suggestion. In the camera-ready version, we will either remove this high-level paragraph from the main text or rewrite it so that it mirrors the formal proof structure in the appendix (dense-span argument, stationary condition, conditional-expectation step, and loss-optimality conclusion).
+
+Q17 ("upstream $\times$ local" wording):
+
+We will replace this by the standard phrasing "backpropagated (upstream) signal $\times$ local derivative", and we will include the explicit definition of the backprop signal. In our notation, the channel backprop signal is
+\[
+B_k^{(\ell)}(t;X,W)=\mathbb E_{C_\ell}\!\left[W_{C_\ell,k}^{(\ell)}\,\phi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\right].
+\]
+
+Q18 (Meaning of $\partial_2 \mathcal{L}$):
+
+Yes. We will define $\partial_2\mathcal L(y,\hat y)$ as the partial derivative with respect to the second argument (prediction).
+
+Q19 (Meaning of "shifts" and heterogeneous shifts):
+
+By shift we mean the additive translation behavior of intermediate-layer weights under i.i.d. initialization in the full-rank setting. In Nguyen \& Pham (2023) (Section 5.1.2, degeneracy discussion), intermediate-layer dynamics can collapse so that weights evolve essentially by a neuron-independent translation:
+\[
+w_i^\infty(t,C_{i-1},C_i)-w_i^\infty(0,C_{i-1},C_i)=w_i^\#(t),
+\]
+under constant initial biases and standard architectures. This is a precise identical-shift phenomenon.
+
+In our RF-LR architecture, the frozen mixing matrix $L$ breaks this symmetry at the level of pre-activations:
+\[
+H_2(c_2;x,W)=\sum_{k=1}^r W_{c_2,k}f_k(x;W),
+\]
+so different neurons $c_2$ compute different linear combinations of channel partial functions. In the full-rank infinite-width limit (Nguyen \& Pham (2023), Theorem 54 and Corollary 30), intermediate layers can exhibit collapse: pre-activations become neuron-independent under i.i.d. initialization, and weights receive identical additive shifts (a neuron-independent translation). Here $W$ enforces heterogeneity across neurons by construction: each neuron $c_2$ computes a distinct channel combination $\sum_k W_{c_2,k}f_k$. Consequently, the backprop signal aggregated through $W_{C_2,k}$ (the $B_k$ term above) differs across neurons/channels, preventing the all-neurons-move-by-the-same-increment mode. This plays the same conceptual role as Nguyen \& Pham (2023)'s bidirectional diversity achieved through correlated initializations (Theorem 38), but realized architecturally rather than initializationally.
+
+Q20 (Init index notation in Theorem~3.3):
+
+Thank you for highlighting this ambiguity. Here, $\{n_1,n_2\}$ are exactly the numbers of neurons in the first and second hidden layers in the depth-2 quantitative theorem, and $\mathsf{Init}$ denotes a width-indexed family of initialization laws. This matches the neuronal-embedding setup used in Nguyen \& Pham (2023) (Section 4.1, Definition 1), where widths index the initialization family. We will rewrite the theorem in standard finite-width language (take widths $n_1,n_2$ and initialize i.i.d.) and remove the potentially confusing index-set wording in the main text. We will also state explicitly that the detailed quantitative proof is written for depth 2, while the underlying argument extends naturally to deeper architectures.
+
+Q21 ("coupling procedure" and distance $D$):
+
+We apologize for the confusing phrase "coupling procedure" in the submission: it was an editorial artifact and not intended to refer to a separate algorithm beyond the standard Nguyen \& Pham (2023) construction. What we mean is the usual finite-width initialization + embedding viewpoint: neurons are labeled by i.i.d. draws $C_i(j_i)$ from the limiting laws, and one compares empirical neuron averages to their mean-field expectations. There is no additional ad hoc coupling step beyond what is already implicit in the mean-field scaling.
+
+For the distance denoted schematically by $D$ in the informal theorem statement, we will align notation with Nguyen \& Pham (2023) and with our manuscript appendix: the quantitative object is a supremum-norm-type discrepancy $D_T$ between finite and mean-field trajectories on $[0,T]$, and the final bound scales as $\mathcal O(1/\sqrt{n_{\min}}+\sqrt{\varepsilon})$ up to the usual exponential Gr\"onwall prefactor. When we refer to Wasserstein-type metrics in prose, we mean the transport viewpoint underlying those coupled $L^1$ integral assumptions, not a separate ad hoc metric introduced only for exposition.
+

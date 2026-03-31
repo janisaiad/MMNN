@@ -1,19 +1,15 @@
-Continuation of Reviewer VCqo answer
+Rebuttal (Reviewer RZVa)
 
----
-
-Rebuttal (Reviewer 2 --- full answers, matching \texttt{answers.tex})
-
-We thank the reviewer for the careful and substantive feedback. What follows is the complete response text we stand behind (we do not compress here).
+We thank the reviewer for the careful and substantive feedback. We respond below point by point.
 
 Q1 (Novelty, freezing, applicability, Theorem~4.1)
 
 We agree with the spirit of this comment: the proof template is recognizably related to Nguyen \& Pham (2023), and the two-point theorem is a minimal rigorous instance rather than a full theory of representation learning on natural data. Where we respectfully disagree is the framing that freezing is only a limitation. For our goals, freezing the mixing matrices is simultaneously a modeling choice and a technical enabler. It is what makes the deep mean-field description closed while still producing nontrivial, channel-resolved dynamics; it enforces enough heterogeneity across neurons that the degenerate ``everyone receives the same effective update'' modes emphasized in Nguyen \& Pham (2023) are not the right mental model for the architecture we analyze.
 
 Concretely, the non-verbatim mathematical content relative to Nguyen \& Pham (2023) is not a single lemma in isolation but the redefinition of the forward and backward objects: the channelized map
-\[
-  H_\ell=\sum_{k=1}^r W^{(\ell)}_{\cdot,k}\,f_k^{(\ell)}
-\]
+$$
+H_\ell=\sum_{k=1}^r W^{(\ell)}_{\cdot,k}\,f_k^{(\ell)}
+$$
 propagates discrepancies through $\|W^{(\ell)}\|_{\infty,1}$ and $\max_{k\le r}$ over channels (Bi-Lipschitz / coupling chain in our manuscript appendix). Frozen first-layer features also remove one delicate homotopy step used in full-rank analyses to keep first-layer support from collapsing during training, because dense-span random-feature richness can be enforced at initialization and preserved by freezing $W^0$.
 
 We will revise the introduction and discussion to make the target domain explicit. We do not claim to subsume contemporary end-to-end training of billion-parameter models; we aim to contribute a theoretically grounded route to low-rank / structured training that is especially relevant when oscillatory or multiscale structure matters (scientific machine learning, PDE learning, and other settings where aggressively orthogonalized optimizers and full-rank dynamics are not the only relevant reference class). In that sense, the ``restriction'' is also an assumption that matches a family of applications where random features and factorized weights are already standard engineering tools.
@@ -30,16 +26,15 @@ On rank $10$ vs.\ $20$ and robustness. We agree that any phenomenon that exists 
 
 To make this concrete, we ran a focused reproducibility sweep after the review (fixed hidden width $1024$, varying rank, multiple seeds) and measured an even-function symmetry diagnostic on a synthetic even target (sum of cosines). The table below reports mean$\pm$std over five seeds ($42$--$46$). The quantitative story is not monotonic in the way one might guess from a single pilot run: in this protocol, $r=20$ produced lower mean symmetry error than $r=10$, while test MSE was comparable within noise. This does not refute your experience---it underscores that the symmetry observable is setup-dependent---but it motivates us to report variance and to tone down any universal claim about ``rank $10$ good, rank $20$ bad.''
 
-Table (post-review symmetry diagnostic sweep; synthetic even target; MMNN with frozen features; width $1024$). $D_{\mathrm{sym}}=\mathbb{E}\bigl[(f(x)-f(-x))^2\bigr]$ on a positive $x$ grid; ``rel.'' divides by mean output energy. Exact replication details will be in supplementary material.
-
-\begin{center}
-\begin{tabular}{r|l|l|l}
-Rank $r$ & test MSE (mean$\pm$std) & $D_{\mathrm{sym}}$ (mean$\pm$std) & rel.\ $D_{\mathrm{sym}}$ (mean$\pm$std) \\
+Table (post-review symmetry diagnostic sweep; synthetic even target; MMNN with frozen features; width $1024$). $D_{\mathrm{sym}}=\mathbb{E}[(f(x)-f(-x))^2]$ on a positive $x$ grid; "rel." divides by mean output energy. Values are:
+$$
+\begin{array}{c|c|c|c}
+r & \text{MSE} & D_{\mathrm{sym}} & \text{rel. }D_{\mathrm{sym}} \\
 \hline
-$10$ & $1.10\pm0.26 \times 10^{-3}$ & $1.89\pm1.73 \times 10^{-4}$ & $1.57\pm1.42 \times 10^{-4}$ \\
-$20$ & $1.00\pm0.22 \times 10^{-3}$ & $4.18\pm0.58 \times 10^{-5}$ & $3.49\pm0.48 \times 10^{-5}$
-\end{tabular}
-\end{center}
+10 & 1.10\pm0.26\cdot10^{-3} & 1.89\pm1.73\cdot10^{-4} & 1.57\pm1.42\cdot10^{-4} \\
+20 & 1.00\pm0.22\cdot10^{-3} & 4.18\pm0.58\cdot10^{-5} & 3.49\pm0.48\cdot10^{-5}
+\end{array}
+$$
 
 We will fold a shorter version of this discussion into the camera-ready (or supplement), and we will phrase symmetry observations as hypotheses supported by particular protocols rather than as necessary consequences of low rank.
 
@@ -58,9 +53,9 @@ Q4 (Mechanism behind the channel spike --- beyond the two-point toy)
 The explanatory content is not the simplified two-point, two-channel statement itself, but the positive feedback it isolates.
 
 Fix a second-layer neuron index $c_2$ and recall the low-rank pre-activation
-\[
-  H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W).
-\]
+$$
+H_2(c_2;x,W)=\sum_{j=1}^r W_{c_2,j}\,f_j(x;W).
+$$
 For ReLU, gating enters mean-field gradients through $\varphi'_2(H_2)=\mathbf{1}\{H_2>0\}$. The channel-$k$ backward signal (cf.\ the ODE for $\partial_t w_1(\cdot,k)$) is built from expectations over $C_2$ of terms that couple (i) the mixing weight $W_{C_2,k}$, (ii) the gate $\mathbf{1}\{H_2(C_2;x,W)>0\}$, and (iii) upstream factors (output error and later-layer weights).
 
 When channel $k$ dominates, those neurons $c_2$ that contribute to the channel-$k$ drift are precisely those with the gate ``on.'' Across $c_2$, the effective weights in the expectation are then positively aligned with $W_{c_2,k}$ and with $\mathbf{1}\{H_2(c_2)>0\}$, producing a large contribution to the drift of the $k$-th channel, which in turn pushes $f_k$ further in the same direction: a reinforcing loop. The ODE-level mechanism is dimension-agnostic; the two-point theorem is a minimal tractable instance.
