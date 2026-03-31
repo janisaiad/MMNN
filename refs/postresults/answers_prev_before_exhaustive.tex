@@ -1,0 +1,133 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Backup snapshot (before rebuilding exhaustive rebuttal)
+% Source: refs/postresults/answers.tex as of 2026-03-30
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{mathrsfs}
+\usepackage{enumitem}
+\setlist[itemize]{nosep,leftmargin=*}
+
+\newcommand{\NP}{Nguyen \& Pham (2023)}
+
+\title{Author response (draft, detailed) --- backup snapshot}
+\author{Submission 25189}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Backup snapshot of a previous intermediate rebuttal draft.
+\end{abstract}
+
+\section*{Author response --- Reviewer VCqo}
+
+\textbf{Comment:}
+\begin{verbatim}
+Some of the figures could be cleaner and clearer. As an example of this, in Figure 2, it is not clear. Why not keep a two color code. Show the high rank curve in one color (e.g. blue) and the low rank curves in another (or shades of another) color. Also if you have a low rank and a high rank curve at the same momentum, wouldn't it make sense to only keep those two curves? Does it make sense to compare curves with different momentums ?
+
+Section 2,
+
+you should keep the same citation style throughout the paper. Before line 126 you cite works by mentioning the authors and then providing the reference in the bibliography but then on line 130 (left column), you only provide the citation in the bibliography
+line 139, frozen random features ensure supp(W^0(C_1)) —> this is not clear
+line 110, second column, what do you mean by the mean-field width limit ? Do you mean the limit of infinite width networks?
+Section 3.1.
+
+I understand that the low rank factorization appears from the stacking of W_j^{(\ell)} and h^{(\ell-1)} but wouldn’t it be clearer to write x’ = \varphi(W^T A x + b) ?
+Section 3.2.
+
+Line 166, your notations with the lower and uppercase case c_1 in W^0(c_1) is not really clear. Why put that C_i ? Why not just keep the notation of Eq. 1, W_0^{(i)} ?
+Your expectation is taken with respect to the neurons indices ? which is strange to me ? You also say that in the infinite width limit, the neurons indices are continuous. Isn’t the norm to work with a measure on the weight vectors associated to each neuron ? I.e whose support would be non zero at the points W(C_i) ?
+Section 3.3.
+
+lines 187-188, I strongly recommend writing down the expression of the loss at least and recall that the system corresponds to a simple gradient descent on this loss? Because the way you introduce (2) is a little rough
+lines 187-188: What are the learning rate schedules?
+Section 3.4.
+
+On lines 166 - 168, you say that the “Better than null” assumption requires the initial loss to be better than the null function.. What does that mean ?
+Line 178, second column, you say that for Relu, the same holds with high probability in r. I would recall the meaning of r here
+I don’t know how easily this can be done but I would recommend laying out the assumptions cleary on lines 215 - 216. Some of them are not very clear. E.g. what do you mean by bounded activation and MIXING (i.e the mixing part)?
+Section 3.5 - 3.6
+
+lines 207 - 210, second column, you have |H_\ell(W’) - H_\ell(W’’)|< K||W^{\ell}||_{\infty, 1}. What is W^{\ell} in this setting? Does that mean all the weights from layer ell ? but then how does this relate to W’ and W’’? That notation does not make sense to me.
+lines 218 - 219, what is the solution operator F?
+lines 220 - 223: “After defining norms, the solution operator F,… and the contraction operator …” —> “After defining norms, F and bounds, and the contraction, the argument proceeds… ” (I think you want to add a coma here)
+Section 3.7
+
+In the statement of Theorem 3.2., when you talk about the mean field limit, you are referring to n_1, n_2 —> infinity right? A depth 2 network as in Theorem 3.3. Or does it hold for an arbitrary number of layers?
+lines 269 -, What you call “High level proof idea” is pretty opaque. I think I would remove it. Or I would remove lines 227 - 243, second column and expand a little bit on the proof.
+lines 272 - 273, “this yields \mathbb{E}_Z[upstream\times local]” —> what does that mean? I understand you are referring to the expressions in (2) but what do the terms upstream and local refer to?
+lines 220 - 223: What does \partial_2 \mathcal{L} mean here? Does that mean the partial derivative with respect to the second argument of \mathcal{L}?
+lines 239 - 241, second column, it is not clear to me why the frozen random features yield heterogeneous shifts across neurons. In fact, even before this, what do you mean by “shifts” in this setting?
+Section 3.8
+
+In the statement of Theorem 3.3. Here as well, it is not clear why/how you initialize over the indices.. you have a tuple {n1, n2} that is in the index set of Init ? What does that mean concretely ? Why just a two tuple? What do n1 and n2 represent ? do they refer to the number of neurons in the first and second layers ? Does the result only hold for depth 2 then?
+Same Theorem, what do you mean by the “coupling procedure”?
+Same, What does 
+ refer to here ? If I’m not wrong, you don’t introduce it. I understand it measures the deviation between the mean field solution and the finite solution but what measure do you use?
+\end{verbatim}
+\textbf{Response:} We agree the submission is too compressed. Below are concrete camera-ready edits and clarifications.
+\begin{itemize}
+  \item \textbf{Presentation.} Redraw Fig.~2 with a two-color scheme and matched-momentum comparisons; unify citation style; fix minor typos/phrasing.
+  \item \textbf{Definitions.} Add explicit loss $\mathscr{L}$/$\mathcal{L}$, define $\partial_2\mathcal{L}$, define $F$ (Picard limit / flow map), and clarify the ODE--SGD discretization and learning-rate schedules $\xi(t)$.
+  \item \textbf{Frozen features.} Restate the frozen-feature richness assumption in standard terms (random-feature density) and remove ambiguous ``$\operatorname{supp}$'' wording.
+  \item \textbf{Assumptions.} Define ``better than null'', define ``mixing'' ($L^{(\ell)}$, $\|L^{(\ell)}\|_{\infty,1}\le rK$), and clarify ReLU vs.\ the nonzero-derivative assumption (GeLU satisfies; ReLU has a high-probability-in-$r$ heuristic under symmetric mixing).
+  \item \textbf{Lipschitz bound.} Fix the main-text inequality to match the appendix: the prefactor is $\|L^{(\ell)}\|_{\infty,1}$; clarify what the trainable tuple $W$ contains.
+  \item \textbf{Theorems / proof sketches.} Clarify that Theorem~3.2 is for arbitrary depth in our architecture and specify which widths diverge; shorten/move the high-level proof sketch; replace ``upstream$\times$local'' by ``backward$\times$forward''; define ``shifts'' and explain heterogeneity via frozen mixing; rewrite Theorem~3.3 initialization language and define $D$ (Wasserstein-type distance as in \NP{}).
+\end{itemize}
+
+\paragraph{Key technical clarification (Lipschitz constant).}
+In \texttt{refs/icml\_sgdadamlandscapedynamical/tofill.tex} (Appendix \texttt{app:bilipschitz}), the forward map is controlled by the frozen mixing seminorm, not by a norm of ``all weights'':
+\[
+\|L^{(\ell)}\|_{\infty,1}\equiv \sup_{c_\ell}\sum_{k=1}^r |L^{(\ell)}_{c_\ell,k}|\le rK,
+\qquad
+H_\ell(c_\ell;x,W)=\sum_{k=1}^r L^{(\ell)}_{c_\ell,k} f_k^{(\ell)}(x;W).
+\]
+For example for $\ell=2$ the appendix states:
+\[
+\big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big|
+\le
+K\,\|L^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\mathbb{E}_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+\]
+
+\section*{Author response --- Reviewer RZVa}
+\textbf{Comment:}
+\begin{verbatim}
+While symmetry is preserved at 
+, it becomes largely imperceptible at 
+. Since 
+ remains an extremely low-rank constraint relative to a width of 
+, this sensitivity challenges the practical robustness of the feature learning mechanism .
+\end{verbatim}
+\textbf{Response:} See newer drafts.
+
+\section*{Author response --- Reviewer Z9GA}
+\textbf{Comment:}
+\begin{verbatim}
+I wonder how universal is spectral bias discovered in Section 4 for low-rank training?
+\end{verbatim}
+\textbf{Response:} See newer drafts.
+
+\section*{Author response --- Reviewer ByWV}
+\textbf{Comment:}
+\begin{verbatim}
+Do low-rank random feature networks differ from the multi-component multilayer neural networks proposed by Zhang et al. (2023) only in their low-rank structure?
+\end{verbatim}
+\textbf{Response:} See newer drafts.
+
+\section*{Author response --- Reviewer A6kZ}
+\textbf{Comment:}
+\begin{verbatim}
+1. Convergence guarentees. Are there conditions under which convergence is guaranteed for RF-LR models (those mentioned in section 3.5 or otherwise)?
+\end{verbatim}
+\textbf{Response:} See newer drafts.
+
+\end{document}
+

@@ -1,0 +1,102 @@
+{
+  "depth": 1,
+  "num_heads": 2,
+  "d_k": 10,
+  "rank_ff": 10,
+  "seq_len": 32,
+  "d_model": 20,
+  "use_residual": true,
+  "factor": 3,
+  "x_scale": 4.8,
+  "n_train": 768,
+  "batch_size": 8,
+  "lr": 0.05,
+  "max_epochs": 3000,
+  "grad_clip": 1.0,
+  "early_patience": 50,
+  "early_min_delta": 1e-05,
+  "smooth_window": 5,
+  "save_every": 0,
+  "lr_floor": 1e-06,
+  "lr_schedule": "halve_on_plateau_no_early_stop",
+  "optimizer": "sgd",
+  "momentum": 0.0,
+  "target": "sum_cos_2pi_k",
+  "interval": [
+    -1.0,
+    1.0
+  ],
+  "seed": 42,
+  "epochs_run": 3000,
+  "final_train_mse": 0.013303575214270799,
+  "best_smooth_train_mse": 0.013306995605838288,
+  "final_lr": 4.8828125e-05,
+  "lr_decay_events": [
+    {
+      "epoch": 173,
+      "lr_after": 0.025,
+      "smooth_at_decay": 1.4437158980717262
+    },
+    {
+      "epoch": 894,
+      "lr_after": 0.0125,
+      "smooth_at_decay": 0.5559314059714476
+    },
+    {
+      "epoch": 1504,
+      "lr_after": 0.00625,
+      "smooth_at_decay": 0.13162528849206864
+    },
+    {
+      "epoch": 1837,
+      "lr_after": 0.003125,
+      "smooth_at_decay": 0.055584506608041304
+    },
+    {
+      "epoch": 2458,
+      "lr_after": 0.0015625,
+      "smooth_at_decay": 0.0239538794385832
+    },
+    {
+      "epoch": 2528,
+      "lr_after": 0.00078125,
+      "smooth_at_decay": 0.018055124494518775
+    },
+    {
+      "epoch": 2695,
+      "lr_after": 0.000390625,
+      "smooth_at_decay": 0.015478413580907121
+    },
+    {
+      "epoch": 2805,
+      "lr_after": 0.0001953125,
+      "smooth_at_decay": 0.014332952140951722
+    },
+    {
+      "epoch": 2924,
+      "lr_after": 9.765625e-05,
+      "smooth_at_decay": 0.01369528161829597
+    },
+    {
+      "epoch": 2980,
+      "lr_after": 4.8828125e-05,
+      "smooth_at_decay": 0.013448254218565126
+    }
+  ],
+  "test_mse": 0.0132383331656456,
+  "seconds": 264.0653841495514,
+  "n_params": 4131,
+  "early_stopped": false,
+  "stopped_reason": "max_epochs",
+  "artifacts": [
+    "config.json",
+    "result.json",
+    "losses.json",
+    "best_model.pt",
+    "final_model.pt",
+    "plot_loss.png",
+    "plot_fit.png",
+    "plot_token_partials_dim0.png",
+    "token_partials.npz"
+  ]
+}

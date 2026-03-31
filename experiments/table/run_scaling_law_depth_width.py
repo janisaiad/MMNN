@@ -626,11 +626,12 @@ def train_baseline_sweep_one(config, output_dir):
     min_loss_divisor = config["min_loss_divisor"]
     momentum = config.get("momentum", 0.0)
     factor = config.get("factor", BASELINE_FACTOR)
+    seed = int(config.get("seed", 42))
 
-    torch.manual_seed(42)
-    np.random.seed(42)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(42)
+        torch.cuda.manual_seed_all(seed)
 
     ranks = [1] + [hidden_rank] * num_layers + [1]
     widths = [hidden_width] * (num_layers + 1)
