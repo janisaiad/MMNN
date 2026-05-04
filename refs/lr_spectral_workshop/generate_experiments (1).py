@@ -478,8 +478,8 @@ def plot_main_figures():
     fig,axs=plt.subplots(1,4,figsize=(13.0,3.8))
     labels_plot=['full' if label=='full' else label for label in labels]
     panel_specs=[
-        ('junction8','high-codim junctions','relative freq.','8-region proxy'),
-        ('junction4','medium-codim junctions','relative freq.','4-region proxy'),
+        ('junction8','high-codim junctions','empirical fraction','8-region proxy'),
+        ('junction4','medium-codim junctions','empirical fraction','4-region proxy'),
         ('unique_regions','linear regions','count','CPWL expressivity'),
         ('shell_slope','Fourier shell slope','slope','less negative = flatter'),
     ]
@@ -541,6 +541,7 @@ def plot_main_figures():
         axs[0].semilogy(ranks,mse,lw=2.8,color=color,label=f"{row['label']}: $r^\\star={int(best_rank)}$")
         axs[0].axhline(full,ls='--',lw=1.0,color=color,alpha=0.50)
         axs[0].scatter([best_rank],[float(row['best_mse'])],s=42,color=color,zorder=5)
+    axs[0].plot([],[],ls='--',lw=1.3,color='#555555',label='dashed: full-rank MSE')
     labels=[row['label'] for row in shift_summary]
     best_ranks=[float(row['best_rank']) for row in shift_summary]
     x=np.arange(len(labels))
@@ -580,16 +581,20 @@ def plot_main_figures():
         for label,style in [('4','-'),('8','-.'),('full','--')]:
             rec=read_dicts(f'wide32768_recovery_{task}_{label}.csv')
             xrec=as_float(rec,'frequency'); yrec=as_float(rec,'recovery')
-            label_fr='full' if label=='full' else f'r={label}'
+            log_x=np.log(xrec)
+            log_y=np.log(np.maximum(yrec, 1e-12))
+            beta=float(np.polyfit(log_x, log_y, 1)[0])
+            label_fr=f"full, $\\beta={beta:.2f}$" if label=='full' else f"$r={label}$, $\\beta={beta:.2f}$"
             axs[0,col].loglog(xrec,yrec,style,lw=2.6,label=label_fr)
             cur=read_dicts(f'wide32768_curve_{task}_{label}.csv')
-            axs[1,col].loglog(as_float(cur,'step'),as_float(cur,'excess_test_mse'),style,lw=2.6,label=label_fr)
+            train_label='full' if label=='full' else f'r={label}'
+            axs[1,col].loglog(as_float(cur,'step'),as_float(cur,'excess_test_mse'),style,lw=2.6,label=train_label)
         task_fr='sparse mixture' if task=='sparse' else 'dense mixture'
         axs[0,col].set_title(f'{task_fr}: Fourier recovery')
         axs[1,col].set_title(f"{task_fr}: normalized training decay")
-        guide_x=np.array([8,32],dtype=float)
-        guide_y=0.42*(guide_x/8.0)**(-0.30)
-        axs[0,col].loglog(guide_x,guide_y,ls='--',lw=1.3,color='black',label='visual slope guide')
+        axs[0,col].text(0.97,0.08,'higher = better',transform=axs[0,col].transAxes,
+                        ha='right',va='bottom',fontsize=12,color='#1b6e3a',
+                        bbox=dict(boxstyle='round,pad=0.25',fc='white',ec='#1b6e3a',alpha=0.85))
         axs[0,col].set_xlabel('frequency')
         axs[0,col].set_ylabel('recovery ratio')
         axs[1,col].set_xlabel('iteration')

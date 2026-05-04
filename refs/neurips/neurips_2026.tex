@@ -549,7 +549,7 @@ This explains why the comparison to the classical spectral-bias paper must be ma
 \section{Experiments}
 \label{sec:experiments}
 
-We keep the experimental evidence deliberately short and defer settings to Appendix~\ref{app:exp-details}. The high-frequency MMNN sweeps use rank-$10$, width-$512$ networks on \texttt{chirp1d} and \texttt{sumcos} targets at frequencies $8,16,32$, depths $3$ and $6$, with both frozen and trainable random-feature modes. They confirm that low-rank models can learn oscillatory targets, while optimizer choice and feature freezing remain important: AdamW is strongest on several trainable-feature \texttt{chirp1d} runs, whereas Muon and HT-Muon are competitive on some frozen-feature \texttt{sumcos} settings.
+We keep the experimental evidence deliberately short and defer the full setup of every generated plot to Appendix~\ref{app:exp-details}. The main figures are controlled CPWL and Fourier/kernel-limit diagnostics: they test the mechanism predicted by Proposition~\ref{prop:shell-law}, namely that rank changes the face-moment coefficients $M_q(f)$ and the finite-time recovery of Fourier modes. Separate finite-network MMNN sweeps on high-frequency targets are used only as supporting evidence that low-rank models can fit oscillatory functions and that optimizer choice and feature freezing matter in practice.
 
 The CPWL theory also dictates how the experiments should be read. In one dimension, a ReLU network is a linear spline, and for derivative jumps $\Delta_j$ at knots $t_j$,
 \begin{equation}
@@ -587,21 +587,21 @@ The spectral-bias experiment isolates the rank effect. In a width-$2^{15}$ Fouri
 \begin{figure*}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{../lr_spectral_workshop/figures/cpwl3d_summary.png}
-\caption{Three-dimensional CPWL geometry proxy. Theory predicts that increasing rank creates more linear regions but also more independent switching constraints, so multi-region junctions, especially the high-codimension proxy in Panel A, become more frequent. Panel C checks expressivity through the number of linear regions. Panel D estimates the shell-averaged Fourier slope: as high-codimension moments grow, the effective finite-shell slope becomes more negative; reducing rank suppresses these intersections and flattens the spectrum until approximation becomes limiting.}
+\caption{Three-dimensional CPWL geometry proxy. Theory predicts that increasing rank creates more linear regions but also more independent switching constraints, so multi-region junctions, especially the high-codimension proxy in Panel A, become more frequent. The ``empirical fraction'' axis is not a Fourier frequency: it is the fraction of sampled grid locations whose local neighborhood behaves like a multi-region junction. Panel C checks expressivity through the number of linear regions. Panel D estimates the shell-averaged Fourier slope: as high-codimension moments grow, the effective finite-shell slope becomes more negative; reducing rank suppresses these intersections and flattens the spectrum until approximation becomes limiting.}
 \label{fig:cpwl3d-main}
 \end{figure*}
 
 \begin{figure*}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{../lr_spectral_workshop/figures/rank_shift_control.png}
-\caption{Rank-shift control. The best rank is task-dependent: broadening the target spectrum or increasing the finite-budget weight on high frequencies moves the optimum from the baseline value to much larger ranks, up to about $20$ or $40$ in the strongest controls. The Sobolev-weighted setting means that the loss gives larger weight to high-frequency modes, as in Sobolev or Fourier training objectives; this makes additional rank useful for recovering oscillatory components.}
+\caption{Rank-shift control. The best rank is task-dependent: broadening the target spectrum or increasing the finite-budget weight on high frequencies moves the optimum from the baseline value to much larger ranks, up to about $20$ or $40$ in the strongest controls. Horizontal dashed colored lines show the corresponding full-rank MSE baselines for each setting. The Sobolev-weighted setting means that the loss gives larger weight to high-frequency modes, as in Sobolev or Fourier training objectives; this makes additional rank useful for recovering oscillatory components.}
 \label{fig:rank-shift-control}
 \end{figure*}
 
 \begin{figure*}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{../lr_spectral_workshop/figures/recovery_training.png}
-\caption{Mode-wise recovery and training curves. The recovery ratio is $R_r(k,t)=|\widehat f_{r,t}(k)|/|\widehat f^\star(k)|$: values near one mean that a Fourier mode is recovered, while values near zero mean that it is missing. A steep negative log-log slope indicates that high frequencies are much less recovered than low frequencies. The black line is only a visual slope guide, not an additional experimental prediction. In these baselines, the rank-$4$ model gives a flatter recovery law and lower test error at the same training budget than the full endpoint.}
+\caption{Mode-wise recovery and training curves. The recovery ratio is $R_r(k,t)=|\widehat f_{r,t}(k)|/|\widehat f^\star(k)|$: values near one mean that a Fourier mode is recovered, while values near zero mean that it is missing. The legend reports the fitted log-log recovery slope $\beta$ for each displayed curve. A steep negative slope indicates that high frequencies are much less recovered than low frequencies. The theory predicts the direction of these finite-resolution slopes through the face moments $M_q$ and spectral transfer coefficients, but not a universal numerical slope independent of task, budget, and frequency window.}
 \label{fig:recovery-training-main}
 \end{figure*}
 
@@ -615,7 +615,7 @@ A r^{-2s}
 \sum_{k\in\Omega}|\wh f^\star(k)|^2 e^{-2t\lambda_r(k)}.
 \label{eq:rank-risk}
 \end{equation}
-The first term says rank cannot be too small; the second measures effective dimension; the third measures finite-time spectral transfer. The useful rank is the first rank that avoids the approximation bottleneck while keeping the recovery scaling flat.
+Here $A r^{-2s}$ is the approximation term: if the target has effective smoothness or compressibility $s$, increasing rank reduces the error made by forcing the representation through an $r$-dimensional bottleneck. Thus very small ranks are bad because this term is large. The term $B d_{\rm eff}(r)/n$ is the statistical or effective-dimension cost: $d_{\rm eff}(r)$ counts the number of degrees of freedom effectively used at rank $r$, so this term grows when rank makes the model too flexible for the sample size $n$. The last term is the finite-time spectral-transfer error. Each Fourier mode $k$ of the target has energy $|\wh f^\star(k)|^2$ and is learned at rate $\lambda_r(k)$; after time $t$, the residual contribution of that mode is weighted by $e^{-2t\lambda_r(k)}$. A useful rank is therefore not the smallest rank or the largest rank: it is the first rank for which the approximation term is already controlled, while the spectral rates $\lambda_r(k)$ remain balanced enough that high frequencies are not much slower than low frequencies.
 
 The figures should therefore be read as follows. Figure~\ref{fig:theory-proxy-main} is a theory proxy: it checks whether the high-codimension face moments that appear in Proposition~\ref{prop:shell-law} grow with rank, which would explain why full rank can move away from the facet-dominated regime. Figure~\ref{fig:cpwl3d-main} is a geometry proxy: it counts linear regions and high-codimension junctions in a CPWL complex, showing that larger rank creates more independent switching geometry. Figure~\ref{fig:rank-shift-control} is a control showing that the best rank moves when the target spectrum or the loss weighting changes. Finally, Figure~\ref{fig:recovery-training-main} is the Fourier-learning diagnostic: it shows which frequencies are recovered at a fixed budget and why the recovery slope must be interpreted together with test MSE.
 
