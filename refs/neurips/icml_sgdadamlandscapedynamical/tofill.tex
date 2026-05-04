@@ -1,0 +1,2146 @@
+%%%%%%%% ICML 2026 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+\documentclass[nohyperref]{article}
+%%%%%
+\input{preamble}
+%%%%%%%%%%%%%%%%%
+%% Recommended, but optional, packages for figures and better typesetting:
+%\usepackage{microtype}
+%\usepackage{graphicx}
+%\usepackage{subfigure}
+%\usepackage{booktabs} % for professional tables
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackage line and replace
+% \usepackage{icml2026} with \usepackage[nohyperref]{icml2026} above.
+%\usepackage{hyperref}
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Use the following line for the initial blind version submitted for review:
+% \usepackage{icml2026}
+
+% If accepted, instead use the following line for the camera-ready submission:
+% \usepackage[accepted]{icml2026}
+\newif\ifarXiv
+\arXivtrue
+
+%%%%%%%%%%%%%%%%%%%%%%
+% % %%% initial submission
+% \arXivfalse
+% \usepackage{icml2026}
+
+% % % %%%% preprint
+% \arXivtrue
+% \usepackage[accepted]{icml2026}
+
+%%% ICML initial submission (with line numbers)
+\arXivfalse
+\usepackage{icml2026}
+
+
+
+\usepackage{xurl}
+\usepackage[bookmarks,colorlinks,breaklinks=true]{hyperref}
+\definecolor{mydarkblue}{rgb}{0,0.08,0.45}
+\hypersetup{ %
+	pdftitle={Mean-Field Global Convergence for Low-Rank Neural Networks},
+	pdfauthor={Your Name},
+	pdfsubject={Proceedings of the International Conference on Machine Learning 2026},
+	pdfkeywords={mean-field theory, low-rank neural networks, random features, convergence to global minimizer, non-convex optimization, function approximation},
+	pdfborder=0 0 0,
+	pdfpagemode=UseNone,
+	colorlinks=true,
+	linkcolor=mydarkblue,
+	citecolor=mydarkblue,
+	filecolor=mydarkblue,
+	urlcolor=mydarkblue,
+}
+
+\makeatletter\ifarXiv
+\def\ICML@appearing{\vspace*{-22.5pt}}
+% \cfoot{\raisebox{-31pt}{\thepage}}
+% \fancypagestyle{myplain}
+% {\fancyhf{}
+% 	\renewcommand\headrulewidth{0pt}
+% 	\renewcommand\footrulewidth{0pt}
+% 	\fancyfoot[C]{\raisebox{-31pt}{\thepage}}
+% }
+\fi\makeatother
+
+% For theorems and such
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+% if you use cleveref..
+\usepackage[capitalize,noabbrev]{cleveref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THEOREMS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+
+% Todonotes is useful during development; simply uncomment the next line
+%    and comment out the line below the next line to turn off comments
+%\usepackage[disable,textsize=tiny]{todonotes}
+\usepackage[textsize=tiny]{todonotes}
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Mean-Field Global Convergence for Low-Rank Neural Networks}
+
+
+\begin{document}
+
+\twocolumn[
+% \icmltitle{Mean-Field Global Convergence for Low-Rank Neural Networks}
+
+% \icmltitle{Mean-Field Global Convergence for\\ Low-Rank Neural Networks}
+
+\icmltitle{Low-Rank Neural Network Structure Is Sufficient for Global\\ Convergence: A Mean-Field Perspective}
+
+% It is OKAY to include author information, even for blind
+% submissions: the style file will automatically remove it for you
+% unless you've provided the [accepted] option to the icml2026
+% package.
+
+% List of affiliations: The first argument should be a (short)
+% identifier you will use later to specify author affiliations
+% Academic affiliations should list Department, University, City, Region, Country
+% Industry affiliations should list Company, City, Region, Country
+
+% You can specify symbols, otherwise they are numbered in order.
+% Ideally, you should not use this facility. Affiliations will be numbered
+% in order of appearance and this is the preferred way.
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+\icmlauthor{Anonymous Author(s)}{affil1}
+\end{icmlauthorlist}
+
+\icmlaffiliation{affil1}{Anonymous Institution, Anonymous City, Anonymous Region, Anonymous Country}
+
+\icmlcorrespondingauthor{Anonymous Author}{anon.email@domain.com}
+
+% You may provide any keywords that you
+% find helpful for describing your paper; these are used to populate
+% the "keywords" metadata in the PDF but will not be shown in the document
+\icmlkeywords{mean-field theory, low-rank neural networks, random features, convergence to global minimizer, non-convex optimization, function approximation}
+
+\vskip 0.3in
+]
+
+% this must go after the closing bracket ] following \twocolumn[ ...
+
+% This command actually creates the footnote in the first column
+% listing the affiliations and the copyright notice.
+% The command takes one argument, which is text to display at the start of the footnote.
+% The \icmlEqualContribution command is standard text for equal contribution.
+% Remove it (just {}) if you do not need this facility.
+
+\printAffiliationsAndNotice{}
+
+
+
+\begin{abstract}
+This work studies the training dynamics of low-rank neural networks with frozen random features in the mean-field regime.
+When the mean-field dynamics converges, the limit is shown to be a global minimizer; this holds for gradient-based training under standard independent and identically distributed initialization, despite low-rank constraints and nonconvex loss functions.
+By explicitly incorporating low-rank structure into the network architecture, a tractable mean-field evolution system is derived. Its well-posedness is established, and it is shown that with frozen random features $L^0$, frozen mixing matrices $L^{(\ell)}$, and only the channel weights $w_\ell$ trained, the universal approximation property is preserved while the learning dynamics are simplified.
+The analysis identifies a rank-channel feature learning mechanism, in which different low-rank channels specialize to distinct spatial locations and progressively capture higher-frequency components. This mechanism explains both the persistence of global convergence and the emergence of hierarchical frequency learning.
+Numerical experiments demonstrate that low-rank networks achieve faster convergence and higher accuracy on highly oscillatory targets, while using substantially fewer parameters than full-rank networks.
+
+% Recent work has established convergence to a global minimizer for full-rank multi-layer mean-field neural networks under ad-hoc initialization, but it remained unclear whether this persists under low-rank constraints. We show it does with standard i.i.d. initialization. We combine random features with low-rank architectures to derive 
+% a new mean-field system. We show that alternating trained and frozen layers preserves universal approximations while the low-rank structure creates analytically tractable dynamics, with linear in width. We prove well-posedness of the mean-field ODE system and prove convergence to a global minimizer under small data assumptions.  
+%  Through the new coupled mean-field equations, we prove low rank networks learn high-frequency features
+%  through a rank-channel feature learning mechanism. Through numerical experiments, we observe that different channels learn different spatial-frequency features:
+%  each channel learns a spike at a different spatial value (localization), and channels separate by frequency (low then high).
+%   We discuss how this channel feature learning explains both why convergence to a global minimizer persists and how practical hierarchical frequency learning occurs, 
+%   revealing that low-rank architectures learn representations that full-rank networks cannot.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% introduction
+\section{Introduction}
+\label{sec:intro}
+
+Neural networks have achieved remarkable success across a wide range of applications, including computer vision, natural language processing, scientific computing, and data-driven modeling. These advances have reshaped modern machine learning practice and enabled solutions to problems that were previously considered intractable. Despite this empirical success, theoretical understanding of neural network training remains limited.
+A central difficulty lies in the highly non-convex nature of the learning landscape. For most architectures and problem settings, the optimization process is poorly understood: it is generally unclear why gradient-based methods succeed in practice, how representations evolve during training, or under what conditions convergence can be guaranteed. As a result, much of current understanding relies on empirical observations rather than rigorous analysis.
+
+
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \scalebox{0.5}{
+    \begin{tikzpicture}[
+        node distance=2cm and 3cm,
+        neuron/.style={circle, draw, fill=blue!20, minimum size=15pt},
+        input/.style={circle, draw, fill=green!20, minimum size=15pt},
+        output/.style={circle, draw, fill=red!20, minimum size=15pt},
+        hidden/.style={circle, draw, fill=yellow!20, minimum size=15pt},
+        bottleneck/.style={circle, draw, fill=orange!30, minimum size=15pt},
+        thick
+    ]
+    
+    % Input layer
+    \node[input] (x1) at (0,2) {$x_1$};
+    \node[input] (x2) at (0,1) {$x_2$};
+    \node[input] (x3) at (0,0) {$x_3$};
+    \node[input] (xd) at (0,-1) {$x_d$};
+    \node at (0,-1.5) {$\vdots$};
+    
+    % First hidden layer (random features - frozen)
+    \node[hidden] (h11) at (3,2.5) {$h_1^{(1)}$};
+    \node[hidden] (h12) at (3,1.5) {$h_2^{(1)}$};
+    \node[hidden] (h13) at (3,0.5) {$h_3^{(1)}$};
+    \node[hidden] (h14) at (3,-0.5) {$h_4^{(1)}$};
+    \node[hidden] (h15) at (3,-1.5) {$h_5^{(1)}$};
+    \node at (3,-2) {$\vdots$};
+    
+    % Bottleneck layer (low rank)
+    \node[bottleneck] (b1) at (6,1) {$b_1$};
+    \node[bottleneck] (b2) at (6,0) {$b_2$};
+    \node at (6,-0.5) {$\vdots$};
+    
+    % Second hidden layer
+    \node[hidden] (h21) at (9,2.5) {$h_1^{(2)}$};
+    \node[hidden] (h22) at (9,1.5) {$h_2^{(2)}$};
+    \node[hidden] (h23) at (9,0.5) {$h_3^{(2)}$};
+    \node[hidden] (h24) at (9,-0.5) {$h_4^{(2)}$};
+    \node[hidden] (h25) at (9,-1.5) {$h_5^{(2)}$};
+    \node at (9,-2) {$\vdots$};
+    
+    % Output layer
+    \node[output] (y1) at (12,1.5) {$y_1$};
+    \node[output] (y2) at (12,0.5) {$y_2$};
+    \node[output] (yk) at (12,-0.5) {$y_k$};
+    \node at (12,-1) {$\vdots$};
+    
+    % Connections input to first hidden
+    \foreach \i in {1,2,3,d} {
+        \foreach \j in {11,12,13,14,15} {
+            \draw[->, gray] (x\i) -- (h\j);
+        }
+    }
+    
+    % Connections first hidden to bottleneck
+    \foreach \i in {11,12,13,14,15} {
+        \foreach \j in {1,2} {
+            \draw[->] (h\i) -- (b\j);
+        }
+    }
+    
+    % Connections bottleneck to second hidden
+    \foreach \i in {1,2} {
+        \foreach \j in {21,22,23,24,25} {
+            \draw[->] (b\i) -- (h\j);
+        }
+    }
+    
+    % Connections second hidden to output
+    \foreach \i in {21,22,23,24,25} {
+        \foreach \j in {1,2,k} {
+            \draw[->] (h\i) -- (y\j);
+        }
+    }
+    
+    % Layer labels
+    \node at (0,-2.5) {\textbf{Input}};
+    \node at (0,-3) {$d_0 = d$};
+    
+    \node at (3,-2.5) {\textbf{Random Features}};
+    \node at (3,-3) {Frozen, $N$ neurons};
+    
+    \node at (6,-1) {\textbf{Low-Rank}};
+    \node at (6,-1.5) {Rank $r \ll N$};
+    
+    \node at (9,-2.5) {\textbf{Trainable}};
+    \node at (9,-3) {$N$ neurons};
+    
+    \node at (12,-1.5) {\textbf{Output}};
+    \node at (12,-2) {$d_L = k$};
+    
+    % Mathematical notation
+    \node at (1.5,3) {$\varphi_1(\ip{L^0}{X})$};
+    \node at (4.5,2) {$\bm{w}_1$};
+    \node at (7.5,2) {$\bm{L_1}$};
+    \node at (10.5,1.5) {$\bm{w}_2$};
+    
+    % Highlight low rank structure
+    \draw[red, thick, dashed] (5.5,1.5) rectangle (6.5,-0.75);
+    \node[red] at (6,-2.5) {\textbf{Low Rank}};
+    \node[red] at (6,-2.8) {\textbf{Channel}};
+    
+    \end{tikzpicture}
+    }
+    \caption{Architecture of a three-layer low-rank random feature network. The first layer consists of frozen random features, the second layer employs a low-rank mixing matrix $L$ of rank $r \ll N$, and the third layer contains trainable weights $w_2$. The red dashed box highlights the low-rank bottleneck that reduces dimensionality from $N$ to $r$ channels.}
+    \label{fig:architecture}
+\end{figure}
+
+
+However, full-rank models are heavily over-parameterized. The number of trainable parameters and the associated computational cost can be far larger than what is effectively needed to represent the target function. From both computational and modeling perspectives, it is natural to seek more structured and efficient alternatives. 
+Low-rank neural networks offer such a possibility by reducing parameter redundancy and computation while retaining expressive power. 
+As illustrated in Figure~\ref{fig:four-setups-loss}, low-rank models achieve comparable or better training loss with 99\% fewer parameters than full-rank networks.
+
+
+
+This raises a fundamental question: \textit{is low rank all we need for global convergence ?} Low-rank networks factorize weights as $W=LR^{\top}$ with $r\ll\min\{n,m\}$, substantially reducing parameters; when such factorizations replace full-rank matrices, can gradient-based training still converge to a global minimizer, or is full rank essential? It is unclear whether the favorable optimization and convergence properties of full-rank mean-field analyses extend to this setting. We therefore conduct a systematic theoretical investigation of low-rank neural networks from optimization and representation learning: This question is resolved in the present work, as summarized by the following informal theorem.
+
+\begin{theorem}[(informal) Convergence to a global minimizer for any depth with i.i.d.\ init.]
+    \label{thm:convergence-informal}
+    For any depth $L \ge 2$, low-rank random feature networks with standard initialization and non-negative loss function, and if the weights in all layers $(w_1,\ldots,w_{L-1})$ converge as $t\to\infty$, then the limit is a global minimizer of the population loss.
+\end{theorem}
+    
+
+Theorem~\ref{thm:convergence-informal} is an informal statement of the main
+convergence result proved rigorously in
+Theorem~\ref{thm:convergence}. Beyond global convergence, the analysis further
+establishes a hierarchical frequency learning phenomenon for low-rank neural
+networks, revealing how learned representations are organized across different
+low-rank channels.
+The main contributions of this work are summarized as follows.
+
+\begin{itemize}\setlength\itemsep{4pt}
+	\item \textbf{Global convergence under low-rank constraints}
+	(Theorem~\ref{thm:convergence}).  
+	It is shown that when the dynamics of low-rank random feature neural networks converges, it converges only to global minimizers of the population loss, for any depth
+	$L \ge 2$ under standard independent and identically distributed
+	initialization.
+	Unlike previous full-rank analyses, the result requires no special or
+	ad-hoc initialization.
+
+	\item \textbf{Mean-field feature learning}
+	(Theorem~\ref{thm:r2-logratio-criterion-main}).  
+	A theoretical characterization of feature learning mechanism is established.
+	A rigorously analyzed toy model demonstrates that each low-rank channel
+	learns a spatially localized feature at a \emph{distinct location}.
+	The spatial features distribution (Figure~\ref{fig:logratio-heatmap}) is an important
+	diagnostic for this mechanism and is strongly confirmed through numerical
+	experiments.
+\end{itemize}
+
+% \begin{itemize}\setlength\itemsep{4pt}
+% 	\item \textbf{Convergence-to-global-minimizer-only theorem}
+% 	(Theorem~\ref{thm:convergence}).  
+% 	It is proved that low-rank random feature neural networks converge
+% 	exclusively to global minimizers for any depth $L \ge 2$ under standard
+% 	independent and identically distributed initialization.
+% 	In contrast to existing full-rank results, no special or ad-hoc
+% 	initialization is required.
+
+% 	\item \textbf{Channel-wise feature learning mechanism}
+% 	(Theorem~\ref{thm:r2-logratio-criterion-main}).  
+% 	A theoretical explanation is provided for how features are organized at
+% 	convergence in low-rank networks.
+% 	A tractable toy model is analyzed rigorously, showing that each low-rank
+% 	channel learns a localized feature centered at a \emph{distinct spatial
+% 	location}, while different channels separate across \emph{frequency}.
+% 	Lower-frequency components are captured earlier, followed by higher-frequency
+% 	components, yielding representations that are both spatially localized and
+% 	frequency-separated across channels.
+% \end{itemize}
+
+
+
+On MNIST, low-rank networks with frozen random features reach $\sim$97\% test accuracy with 13k--31k trainable parameters, 
+while matching a ReLU MLP at $\sim$98\% when all parameters are trained (Table~\ref{tab:mnist}).
+
+
+\begin{table}[htbp]
+\centering
+\caption{MNIST: MLP baseline vs low-rank vs random features; LR = low-rank, RF = frozen random features.}
+\label{tab:mnist}
+\begin{tabular}{llllrr}
+\toprule
+Model & Rank & Trainable & Test acc (\%)  \\
+\midrule
+MLP & -- & 669,706 & 98.39  \\
+RF-LR & 5  & 7,695    & 93.72  \\
+RF-LR & 10 & 10,260   & 96.24  \\
+RF-LR & 15 & 12,825   & 96.97  \\
+RF-LR & 25 & 17,955   & 97.00  \\
+RF-LR & 50 & 30,780   & 97.01  \\
+LR Only & 32 & 440,362  & 98.30  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Numerical experiments confirm that this theoretical structure translates into
+practical benefits.
+On highly oscillatory function, low-rank networks achieve
+substantially faster convergence and significantly higher accuracy, reaching
+MSE $\sim 10^{-6}$, compared to approximately $10^{-5}$ for full rank networks.
+\textbf{At the same time, the number of trainable parameters is reduced by
+$95\%$--$99\%$}
+These results suggest a fundamental insight into the loss landscape:
+appropriately structured low-rank parameterizations can improve optimization
+behavior, rather than merely restricting expressivity.
+
+
+
+
+
+
+The remainder of the paper is organized as follows.
+Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:theory} presents the main theoretical results and proof ideas.
+Section~\ref{sec:channel-specialization} studies hierarchical frequency
+learning and channel specialization.
+Section~\ref{sec:experiments} reports numerical experiments, and
+Section~\ref{sec:conclusion} concludes.
+
+
+
+
+% \paragraph{Our Contribution}
+% Our key contributions: (1) \textbf{Convergence-to-global-minimizer-only theorem} (Theorem~\ref{thm:convergence}): We prove that low-rank random feature networks only converges to global minimizers for any depth $L \ge 2$ with standard i.i.d. initialization, eliminating the ad-hoc initialization required for full-rank networks. (2) \textbf{Channel feature learning mechanism} (Theorem~\ref{thm:r2-logratio-criterion-main}): We explain intuition on how features are learned at convergence, and proveide a toy model with rigorous proof that each low-rank channel learns a spike at a \emph{different spatial value} (localization), and channels separate across \emph{frequency}: lower-frequency components are captured first, then higher ones, so that the learned representation is both spatially localized and frequency-separated across channels.
+
+
+% \begin{theorem}[Convergence to a global minimizer for any depth with i.i.d. initialization (informal)]
+%     \label{thm:convergence-informal}
+%     For any depth $L \ge 2$, low-rank random feature networks with standard i.i.d. initialization only converges to a global minimizer of the population loss.
+%     \end{theorem}
+    
+%   \red{
+%   thm~\ref{thm:convergence-informal} is informal version of thm~\ref{thm:convergence}
+%   }  
+
+
+% A key breakthrough: we eliminate the ad-hoc initialization that limits full-rank multilayer proofs to $L=3$ \cite{nguyen2023rigorousframeworkmeanfield}. Frozen random features maintain $\text{supp}(L^0(C_1)) = \mathbb{R}^d$ throughout training, so standard i.i.d. initialization suffices and convergence to a global minimizer holds for \emph{any} depth $L$.
+
+% Chizat and Bach \cite{chizat2018globalconvergencegradientdescent} prove an informal result (Theorem~2): if the support of the initial distribution includes all directions in $\mathbb{R}^{d+1}$ and the function $\Psi$ is positively $2$-homogeneous, then if the Wasserstein gradient flow weakly converges to a distribution, it can only be to a global optimum of $F$. We extend this to low-rank, multi-layer networks:
+
+% We adapt mean-field theory for low-rank random feature networks, building on \cite{pham2021globalconvergencethreelayerneural} and \cite{nguyen2023rigorousframeworkmeanfield}. Frozen random features allow us to remove the ad-hoc initialization from \cite{nguyen2023rigorousframeworkmeanfield} (see Remark~\ref{rem:correlated-init}). We refer to \cite{nguyen2023rigorousframeworkmeanfield} for the full picture. We prove a channel feature learning mechanism (Theorem~\ref{thm:r2-logratio-criterion-main}) that explains how channels establish and maintain dominance, providing theoretical grounding for the hierarchical frequency learning observed in practice: each channel localizes to a different spatial value (learning spikes at distinct $x$), and channels separate by frequency (low first, then high), yielding both spatial localization and frequency separation across the $r$ channels.
+
+% Our experimental validation demonstrates that this theoretical structure translates to practical benefits: low-rank configurations enable super convergence (relative MSE $\sim 10^{-6}$ for highly oscillating functions) compared to fully connected networks ($\sim 10^{-3}$) on frequency-dependent function approximation tasks, while reducing parameters by 95-99\% in practice compared to full-rank networks. \textbf{These results reveal a fundamental insight on the loss landscape: fewer parameters enable better convergence.} Low-rank architectures reveal a fundamental learning structure that explains both theoretical convergence and practical performance, rather than merely constraining full-rank networks.
+
+% The rest of this paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:theory} presents our main results and proof ideas. 
+% sec\ref{sec:channel-specialization} Hierarchical Frequency Learning. Section~\ref{sec:experiments} contains numerical experiments. Section~\ref{sec:conclusion} concludes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% related work
+\subsection{Related work}
+
+\paragraph{Mean-Field Theory for Neural Networks}
+\label{sec:related}
+
+
+Mean-field theory rigorously analyzes neural network training dynamics in the large-width limit (typically $N \ge 1000$ neurons per layer). In this regime, the empirical distribution of parameters evolves deterministically, leading to powerful tools for understanding optimization and generalization. Foundational results by \cite{mei2018mean}, \cite{chizat2018globalconvergencegradientdescent}, \cite{rotskoff2019neural}, and \cite{wei2019regularization} established global convergence for two-layer networks under convex loss assumptions—crucially leveraging convexity to guarantee that all stationary points are global minimizers.
+
+Progress beyond the convex case has accelerated. \cite{pham2021globalconvergencethreelayerneural} proved global convergence for three-layer networks without assuming convex loss functions. Mean-field analyses of residual networks \cite{lu2020mean} and multilayer networks \cite{sirignano2019mean} further clarify when global optima arise from stationary points, but these results so far apply only to full-rank networks. Whether such convergence persists in computationally efficient, low-rank architectures remained open.
+
+We address this gap: we train only the right factor $R$, keeping $L$ frozen as random features---avoiding both RGD and the full-rank mean-field collapse to one parameter per intermediate layer under i.i.d.\ initialization \cite{nguyen2023rigorousframeworkmeanfield}. By leveraging frozen random features, we prove that channel feature learning (in which $r$ independent channels capture hierarchical frequency structure) leads to both global convergence and practical representational learning.
+
+The present analysis extends the framework of Chizat and Bach \cite{chizat2018globalconvergencegradientdescent} (Theorem~2: if the initial support spans $\mathbb{R}^{d+1}$ and $\Psi$ is positively $2$-homogeneous, any weak limit of the Wasserstein gradient flow is a global minimizer) to \emph{low-rank, multi-layer} networks. We build on \cite{pham2021globalconvergencethreelayerneural,nguyen2023rigorousframeworkmeanfield}.
+
+A key theoretical advance is the elimination of ad-hoc initialization. For standard fully-connected or convolutional networks, \cite{nguyen2023rigorousframeworkmeanfield} prove that under i.i.d.\ initialization and constant initial biases the mean-field limit \emph{collapses}: at each intermediate layer the weight dynamics reduces to a single deterministic translation parameter (independent of neuronal indices). To obtain global convergence they therefore require an ad-hoc initialization that avoids this degeneracy. We do \emph{less} by way of initialization---we impose an architectural restriction (frozen random features and low-rank layers) and assume only standard i.i.d.\ initialization---and prove \emph{more}: frozen random features ensure $\operatorname{supp}(L^0(C_1)) = \mathbb{R}^d$ throughout training, so the dynamics does not collapse and standard i.i.d.\ suffices; when the dynamics converges, the limit is a global minimizer for \emph{arbitrary depth} $L \ge 2$. See Remark~\ref{rem:correlated-init} and \cite{nguyen2023rigorousframeworkmeanfield} for the full-rank setting.
+\paragraph{Low-Rank and Random Features}
+
+Our RF-LR architecture is based on \cite{zhang2025structuredbalancedmulticomponentmultilayer}. Low-rank methods such as LoRA \cite{hu2021loralowrankadaptationlarge} are widely used; most theory focuses on expressivity rather than training dynamics. \cite{kamalakara2022exploringlowranktraining} study end-to-end low-rank training via reparameterization gradient descent (RGD); we train only post-activation parameters and freeze the other factor as random features. That choice yields convergence only to global minimizers and clarifies channel feature learning: each channel specializes to distinct spatial and frequency patterns.
+
+Random features provide a bridge between neural networks and kernel methods. In the mean-field width limit, fixing the first layer as random features connects the network to kernel methods governed by the neural tangent kernel (NTK) \cite{jacot2018neural}, offering tractable analyses of optimization and generalization. Our architecture embraces this by freezing the first-layer weights, so that low-rank mixing layers can learn task-specific representations atop a fixed random feature basis. Recent work establishes that low-rank structure suffices for the MLP NTK \cite{author2024lowrankntk}, while our results extend this to mean-field dynamics and global convergence. Together, these advances show that, both in NTK and mean-field regimes, low-rank networks can match the optimization guarantees of their full-rank counterparts.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% mean-field theory and proof ideas
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Main Results and Proof Ideas}
+\label{sec:theory}
+
+% TODO: Incorporate content from meanfield_lowrank.tex
+% This section should be ~2.5 pages
+\subsection{Low-Rank Random Feature Architecture}
+\label{sec:setup}
+
+We consider a low-rank random feature (RF-LR) network architecture. Let $h^{(0)}(x) = x \in \mathbb{R}^{d_0}$. For layers $\ell = 1, \ldots, L$:
+\begin{equation}
+\label{eq:RF-LR}
+h^{(\ell)}(x) = \frac{1}{n_\ell} \sum_{j=1}^{n_\ell} w^{(\ell)}_j\,\varphi_\ell\!\left(L^{(\ell)\top}_j\,h^{(\ell-1)}(x) + b^{(\ell)}_j\right) + c_{\ell},
+\end{equation}
+where $n_\ell$ is the width of layer $\ell$, $w^{(\ell)}_j \in \mathbb{R}^{d_\ell}$ are trainable coefficient vectors, $L^{(\ell)}_j \in \mathbb{R}^{d_{\ell-1}}$ and $b^{(\ell)}_j \in \mathbb{R}$ are frozen random features (i.i.d. uniform or Gaussian), and $c$ is a trainable scalar output bias. The $1/n_\ell$ scaling ensures a well-defined mean-field width limit. In the mean-field width limit (typically $N \ge 1000$ neurons per layer), where $N$ denotes the width of each layer, under the mean-field parameterization with i.i.d. initialization (uniform or Gaussian), the empirical distribution of weights converges to a deterministic measure-valued evolution.
+
+\textbf{Training policy:} $w^{(\ell)}$ and $c_{\ell}$ are trained; $L^{(\ell)}$ and $b^{(\ell)}$ are frozen random draws. In the mean-field formulation, biases $b^{(\ell)}_j$ are encoded by augmenting the input data with a constant component (adding 1 to the input vector).
+
+\subsection{Mean-Field Forward Equations}
+\label{subsec:forward-equations}
+
+We use the \emph{neuronal embedding} framework of \cite{nguyen2023rigorousframeworkmeanfield}: each neuron is indexed by a label $C$ lying in a probability space (countable or uncountable), which we specify when sampling or constructing the network. In the finite-width case, $C$ corresponds to discrete neuron indices; in the mean-field limit, $C$ runs over the support of a measure, and expectations $\E_C[\cdot]$ replace empirical averages over neurons.
+
+\paragraph{Definition.}
+We define the mean-field forward pass layer by layer. The \emph{frozen} first-layer feature map is $L^0(c_1) \in \mathbb{R}^{d_0}$; we specify the law of $L^0(C_1)$ when sampling the network. In layers $i \ge 2$, the low-rank structure is given by a \emph{frozen} mixing matrix $L$ (entries $L_{c_2,k}$, or $L^{(i)}_{c_i,k}$ for intermediate layers), also fixed random features drawn at initialization; we call it \emph{mixing} in those layers. All other layer-wise quantities are defined exactly as follows.
+
+\begin{itemize}
+\item \textbf{Input ($i=0$):} $h^0(X)=X \in \mathbb{R}^{d_0}$; no neuronal index.
+\item \textbf{Hidden ($i=1,\ldots,L-1$):} Index $C_i$. At $i=1$: frozen $L^0(c_1)$; $H_1=\ip{L^0(C_1)}{X}$; $f_k^{(1)}=\E_{C_1}[w_1\,\varphi_1(H_1)]$. For $i\ge 2$: $H_i=\sum_k L^{(i)}_{c_i,k}\,f_k^{(i)}$ with $f_k^{(i)}=\E_{C_{i-1}}[w_{i-1}\,\varphi_{i-1}(H_{i-1})]$. Activation $\varphi_i(H_i)$.
+\item \textbf{Output ($i=L$):} $\hat{y}=\E_{C_{L-1}}[w_{L-1}\,\varphi_{L-1}(H_{L-1})]$.
+\end{itemize}
+\subsection{Mean-Field Backward Equations (ODEs)}
+\label{sec:derivation}
+
+The mean-field ODE system (backward equations) for the weights takes the form, for all layers $i=1,\ldots,L-1$:
+\begin{equation}
+\begin{split}
+\partial_t w_1(t,c_1,k) &= -\xi_1(t)\,\E_Z[d_L\,\varphi_1(\ip{L^0}{X})\,B_k^{(2)}], \\
+\partial_t w_i(t,c_i) &= -\xi_i(t)\,\E_Z[D_i\,\varphi_i(H_i(t,c_i;X,W))],
+\end{split}
+\label{eq:ode-w1}
+\end{equation}
+where $\E_Z[\cdot]$ denotes expectation over $Z=(X,Y)$; $d_L(Z;W(t)) = \partial_{\hat{y}} \mathscr{L}(Y, \hat{y}(X;W(t)))$ is the loss derivative; $\xi_i(t) \ge 0$ are the learning-rate schedules. In \eqref{eq:ode-w1}, $D_{L-1}=d_L$; for $i \le L-2$, $D_i$ is the back-propagated pre-activation gradient at $H_i$ \cite{nguyen2023rigorousframeworkmeanfield}:
+\begin{equation}
+\label{eq:Di-recursion}
+\begin{split}
+D_i &= \varphi_i'(H_i)\,\sum_k w_i\,\E_{C_{i+1}}[ D_{i+1}\,L^{(i+1)}_{C_{i+1},k} ]\\
+D_{L-1} &= d_L\,w_{L-1}\,\varphi_{L-1}'(H_{L-1}).
+\end{split}
+\end{equation}
+The channel-wise backpropagated signals are
+\begin{align*}
+B_k^{(\ell)}(t;X,W) &= \E_{C_\ell}\!\big[L^{(\ell)}_{C_\ell,k}\,\varphi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)\big].
+\end{align*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Assumptions}
+\label{sec:assumptions}
+
+The applicability of our results depends crucially on the following assumptions, which we state explicitly in Appendix~\ref{app:assumptions} and are \textbf{satisfied by standard MLP architectures}
+
+The main assumptions are: \emph{Bounded Activations and Mixing} (Assumption~\ref{assump:regularity}), \emph{Sub-Gaussian Initialization} (Assumption~\ref{assump:init}), \emph{Data Distribution and Loss Regularity} (Assumption~\ref{assump:data}), \emph{Diversity of Random Features} (Assumption~\ref{assump:diversity}), \emph{Non-Degeneracy} (Assumption~\ref{assump:lr}), and \emph{Training convergence to limit point} (Assumption~\ref{assump:convergence}). The \emph{Non-Degeneracy} assumption requires that the initial loss is better than the trivial zero predictor, ensuring the network learns a non-trivial solution. The \emph{Convergence to Limit Point} assumption states that training reaches a limit point, which is a natural condition for analyzing convergence.
+
+These assumptions are satisfied by Leaky ReLU or sigmoid (or tanh) networks on bounded data with standard initialization (Gaussian/Xavier): those activations have $\varphi'$ bounded and bounded away from zero, and bounded inputs plus Gaussian/Xavier fulfill the remaining regularity, sub-Gaussian, and non-degeneracy conditions; for ReLU, the same holds with high probability in $r$ (Appendix~\ref{app:relu-activation-remark}).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Mean-Field ODEs are well posed}
+\label{sec:wellposed}
+
+We establish well-posedness of the mean-field ODE system \eqref{eq:ode-w1} by adapting the proof from \cite{nguyen2023rigorousframeworkmeanfield} to account for the low-rank structure.
+
+\begin{theorem}[Well-posedness of mean-field ODEs]
+\label{thm:wellposed}
+Under \emph{Bounded Activations and Mixing} (Assumption~\ref{assump:regularity}), \emph{Sub-Gaussian Initialization} (Assumption~\ref{assump:init}), \emph{Data Distribution and Loss Regularity} (Assumption~\ref{assump:data}), and \emph{Diversity of Random Features} (Assumption~\ref{assump:diversity}), there exists a unique solution to the mean-field ODE system \eqref{eq:ode-w1} on $t\in[0,\infty)$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+We first states the bi-Lipschitz property of $H_\ell$ and $\varphi_\ell(H_\ell)$ in $W$ (Lemma~\ref{lem:bilipschitz-H2}, Appendix~\ref{app:bilipschitz}): $|H_\ell(W')-H_\ell(W'')|$ and $|\varphi_\ell(H_\ell(W'))-\varphi_\ell(H_\ell(W''))|$ are bounded by $K\|L^{(\ell)}\|_{\infty,1}\le rK$ times weight differences. This is the simple but key adaptation to the low-rank case. \emph{From this}, we adapt and introduce weight-space Orlicz sub-gaussian norms accounting for the $r$ channels ($\max_{1\le k\le r}$ over channel index $k$, see Appendix~\ref{app:wellposed-norms}), update $K_0(t)$ with a factor $(1+rK)^{1/2}$, establish sub-Gaussian a priori bounds with $r$-factors, and show the solution operator $F$ is contractive in these spaces; Banach fixed point yields existence and uniqueness. Details in Appendix~\ref{app:wellposed-proof}.
+\end{proof}
+
+
+
+
+\subsection{Global convergence}
+\label{sec:convergence}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\columnwidth]{figures/four_setups_loss_with_lr_bars.png}
+    \caption{Low-rank (rank $r{=}10$) vs full-rank ($r{=}1024$) on $y=\cos(2\pi x)$, $x\in[-1,1]$, 3 layers, width 1024, $n{=}5000$, batch=4, SGD lr 0.01 with red-bar decay. (momentum $\eta\in\{0,0.3,0.6,0.7\}$) and one full-rank ($\eta{=}0$). Red bars: SGD lr reductions for $\eta{=}0$. Low-rank uses 99\% fewer parameters and vanilla SGD performs best.}
+    \label{fig:four-setups-loss}
+\end{figure}
+
+
+
+Frozen random features with full support $\text{supp}(L^0(C_1)) = \mathbb{R}^d$ ensure that $\{\varphi_1(\langle L^0(c_1), \cdot\rangle) : c_1 \in \Omega_1\}$ has dense span in $L^2(\mathcal{P}_X)$ when $\varphi_1$ is non-polynomial (e.g.\ Leaky ReLU or sigmoid); $\varphi_1(af+b)$ for random $a,b$ then forms a dense span. This property is maintained throughout training because $L^0(C_1)$ are frozen. For well-posedness (Theorem~\ref{thm:wellposed}), each $H_\ell(t,c_\ell;X,W)$ bi-Lipschitz in $W$ is sufficient and equivalent to $\varphi_\ell$ Lipschitz; it is the only thing that matters. After defining norms, we update $K_0(t)$ with a factor $(1+rK)^{1/2}$; the solution operator $F$, a priori bounds, and the contraction argument then proceed as in the full-rank framework \cite{nguyen2023rigorousframeworkmeanfield}.
+
+\begin{theorem}[RF-LR training only converges to global minimizers]
+\label{thm:convergence}
+Under all assumptions from \emph{Bounded Activations and Mixing} (Assumption~\ref{assump:regularity}) through \emph{Convergence to Limit Point} (Assumption~\ref{assump:convergence}), and the \emph{loss condition} in \emph{Data Distribution and Loss Regularity} (Assumption~\ref{assump:data}) ($\partial_2\mathcal{L}=0\Rightarrow\mathcal{L}=0$), if the mean-field dynamics for low-rank random feature networks converges, then it is to a global minimizer of the population loss: $\lim_{t\to\infty} W(t)=W^*$ where $W^*$ minimizes $\mathscr{L}$. For any depth $L\ge 2$, this holds with standard i.i.d.\ initialization.
+\end{theorem}
+
+Equivalently, any limit point of the mean-field dynamics is a global minimizer of the population loss under the loss condition in Assumption~\ref{assump:data}.
+
+\paragraph{High-level proof idea (improving \cite{nguyen2023rigorousframeworkmeanfield}, Sec.~6.2.1).}
+At a limit point $\bar W$, the gradient-flow ODE has zero time derivative. For the top layer (and, by backprop, at each layer), this yields $\E_Z[\text{upstream} \times \text{local}] = 0$ over the support of the layer's neuron measure. The crucial step: if the first-layer features $\{\varphi_1(\langle \theta, \cdot \rangle) : \theta \in \text{supp}(\text{feature measure})\}$ have dense span in $L^2(\mathcal{P}_X)$, then one deduces $\E_Z[\partial_{\hat{y}}\mathscr{L}(Y,\hat{y}(X;\bar W)) \mid X=x]=0$ for $\mathcal{P}_X$-a.e.\ $x$. Under the loss condition in Assumption~\ref{assump:data}, $\mathbb{E}[\partial_2\mathcal{L}(Y,u)|X=x]=0$ implies $\mathbb{E}[\mathcal{L}(Y,u)|X=x]=0$, so $\mathscr{L}(\bar W)=0$ and $\bar W$ is a global minimizer.
+
+In \cite{nguyen2023rigorousframeworkmeanfield}, the first-layer weights $w_1$ are \emph{trained}, so $\text{supp}(\bar w_1(U_1)) = \mathbb{R}^d$ at the limit may fail (e.g., solutions may become sparse or concentrated). Their proof therefore relies on a homotopy argument to show that $\text{supp}(w_1(t, U_1)) = \mathbb{R}^d$ is preserved for all finite $t \ge 0$, so the limit retains enough richness. 
+
+We \emph{freeze} the feature maps $L^0(C_i)$ for all layers $i$; they are not trained, so $\text{supp}(L^0(C_i)) = \mathbb{R}^d$ for every $i$ and all $t$, and $\{\varphi_i(\langle L^0(c_i), \cdot \rangle) : c_i \in \Omega_i\}$ has dense span in $L^2(\mathcal{P}_{H_{i-1}})$ for every layer. Thus we can apply the global-optimality argument of \cite{nguyen2023rigorousframeworkmeanfield} \emph{without} the homotopy step: at a limit point, zero derivative plus dense span at each layer gives $\E_Z[\partial_{\hat{y}}\mathscr{L} \mid X = x] = 0$ a.e.\ and hence a global minimizer. The low-rank form ($H_i = \sum_k L_{c_i,k} f_k$, etc.) only changes upstream and local terms; the gradient-flow logic is unchanged. For $L \geq 3$, the layer-by-layer argument works by virtue of the frozen $L^0$. Unlike full-rank $L \geq 3$, which requires ad-hoc init to avoid collapse, we need only standard i.i.d.\ init (Remark~\ref{rem:correlated-init}).
+
+\begin{remark}[Avoiding ad-hoc initialization]
+\label{rem:correlated-init}
+Full-rank $L \geq 3$ needs ad-hoc init in \cite{nguyen2023rigorousframeworkmeanfield} (else intermediate layers collapse). Frozen $L^0$ keeps $\text{supp}(L^0(C_1)) = \mathbb{R}^d$, so standard i.i.d.\ suffices and any limit is a global minimizer.
+\end{remark}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Quantitative Guarantees}
+\label{sec:rate}
+
+We provide a quantitative approximation theorem that bounds the error between finite-width networks and the mean-field limit. The detailed proof are provided in Appendix~\ref{app:quantitative}; here we summarize the key result.
+
+\begin{theorem}[Finite-width approximation error bound]
+\label{thm:quantitative-main}
+Given a family $\mathsf{Init}$ of initialization laws and a tuple $\{n_1, n_2\}$ that is in the index set of $\mathsf{Init}$, perform the coupling procedure for the low-rank architecture as described in Section~\ref{sec:setup}. Fix a terminal time $T \in \epsilon\mathbb{N}_{\ge 0}$. Under Assumptions~\ref{assump:regularity}, \ref{assump:quant-init} (see Appendix~\ref{app:quantitative}), and the low-rank structure with mixing matrix $L$ satisfying $\|L\|_{\infty,1} \le rK$, for $\epsilon \le 1$, we have with probability at least $1-2\delta$,
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le C_{\exp} \cdot C_{\text{width}} \cdot C_{\log},
+\]
+where $C_{\exp} = e^{K_T(1+rK)}$, $C_{\text{width}} = 1/\sqrt{n_{\min}} + \sqrt{\epsilon}$, $C_{\log} = \sqrt{\log(3(T+1)n_{\max}^2/\delta + e)}$, with $n_{\min} = \min\{n_1, n_2\}$, $n_{\max} = \max\{n_1, n_2\}$, $K_T = K(1+T^K)$, and the factor $(1+rK)$ accounts for the low-rank structure through $\|L\|_{\infty,1} \le rK$.
+
+
+\end{theorem}
+
+\textbf{Training in practice.} The theorem (Appendix~\ref{app:quantitative}) links $\mathbf{W}(\lfloor t/\epsilon\rfloor)$ to $W(t)$ with error $O(1/\sqrt{n_{\min}}+\sqrt{\epsilon})$, independent of $d$; proof in Appendix. The factor $(1+rK)$ in the Grönwall constant $e^{K_T(1+rK)}$ arises in the ODE drift bounds (from the $r$ channels and $\|L\|_{\infty,1}\le rK$) and is then exponentiated by Grönwall; vs.\ full-rank \cite{nguyen2023rigorousframeworkmeanfield} one has $e^{K_T(1+rK)}$ instead of $e^{K_T}$. Worst-case, the bound is exponential in $rK$; in practice, channel specialization often restricts to a subset and yields faster convergence (future work, Section~\ref{sec:conclusion}).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Feature Learning}
+\label{sec:channel-specialization}
+
+The low-rank structure enables channel feature learning where different channels learn different spatial-frequency features. In particular, each channel learns a spike at a \emph{different spatial value} (localization): e.g.\ channel $k$ dominates near some $x_k$ while others remain small there. Empirically, channels also separate by \emph{frequency}---lower frequencies are captured first, higher ones progressively---so that the $r$ channels jointly provide both spatial localization and frequency separation. Theorem~\ref{thm:r2-logratio-criterion-main} below provides a rigorous, conditional characterization of how channels establish and maintain dominance (when the stated hypothesis holds on an interval $I$), explaining the feature learning in practice.
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.455]
+        % Plot 1: f(x) at t=t0
+        \begin{scope}[xshift=0cm]
+            % Axes
+            \draw[->] (0,0) -- (4,0) node[right, font=\scriptsize] {$x$};
+            \draw[->] (0,0) -- (0,3) node[above, font=\scriptsize] {$f_k(x)$};
+            \draw[dashed] (2,0) -- (2,3);
+            
+            % f1 at t0 - has spike at x0 (2x less sharp)
+            \draw[thick, blue] plot[smooth, tension=0.5] coordinates {
+                (0,0.3) (0.7,0.4) (1.3,0.5) (1.6,1.0) (2,1.5) (2.4,1.0) (2.7,0.5) (3.3,0.4) (4,0.3)
+            };
+            
+            % f2 at t0 - no spike, smooth
+            \draw[thick, red] plot[smooth, tension=0.7] coordinates {
+                (0,0.2) (0.7,0.25) (1.3,0.3) (2,0.35) (2.7,0.3) (3.3,0.25) (4,0.2)
+            };
+            
+            % Labels
+            \node[blue, right, font=\tiny] at (4,1.5) {$f_1$};
+            \node[red, right, font=\tiny] at (4,0.3) {$f_2$};
+            \node[below, font=\tiny] at (2,-0.2) {$x_0$};
+            \node[above, font=\tiny] at (2,3.2) {$t_0$};
+        \end{scope}
+        
+        % Plot 2: f(x) at t=t0+dt (intermediate)
+        \begin{scope}[xshift=5.5cm]
+            % Axes
+            \draw[->] (0,0) -- (4,0) node[right, font=\scriptsize] {$x$};
+            \draw[->] (0,0) -- (0,3) node[above, font=\scriptsize] {$f_k(x)$};
+            \draw[dashed] (2,0) -- (2,3);
+            
+            % f1 at t - spike grows (1.5x less sharp)
+            \draw[thick, blue] plot[smooth, tension=0.5] coordinates {
+                (0,0.3) (0.7,0.4) (1.3,0.5) (1.8,1.2) (2,2.2) (2.2,1.2) (2.7,0.5) (3.3,0.4) (4,0.3)
+            };
+            
+            % f2 at t - still no spike
+            \draw[thick, red] plot[smooth, tension=0.7] coordinates {
+                (0,0.2) (0.7,0.25) (1.3,0.3) (2,0.38) (2.7,0.3) (3.3,0.25) (4,0.2)
+            };
+            
+            % Labels
+            \node[blue, right, font=\tiny] at (4,1.8) {$f_1$};
+            \node[red, right, font=\tiny] at (4,0.3) {$f_2$};
+            \node[below, font=\tiny] at (2,-0.2) {$x_0$};
+            \node[above, font=\tiny] at (2,3.2) {$t_0+\Delta t$};
+        \end{scope}
+        
+        % Plot 3: f(x) at t=t1 (later)
+        \begin{scope}[xshift=11cm]
+            % Axes
+            \draw[->] (0,0) -- (4,0) node[right, font=\scriptsize] {$x$};
+            \draw[->] (0,0) -- (0,3) node[above, font=\scriptsize] {$f_k(x)$};
+            \draw[dashed] (2,0) -- (2,3);
+            
+            % f1 at t1 - very sharp spike
+            \draw[thick, blue] plot[smooth, tension=0.3] coordinates {
+                (0,0.3) (0.7,0.4) (1.3,0.5) (1.9,1.4) (2,2.9) (2.1,1.4) (2.7,0.5) (3.3,0.4) (4,0.3)
+            };
+            
+            % f2 at t1 - still no spike
+            \draw[thick, red] plot[smooth, tension=0.7] coordinates {
+                (0,0.2) (0.7,0.25) (1.3,0.3) (2,0.4) (2.7,0.3) (3.3,0.25) (4,0.2)
+            };
+            
+            % Labels
+            \node[blue, right, font=\tiny] at (4,2.2) {$f_1$};
+            \node[red, right, font=\tiny] at (4,0.3) {$f_2$};
+            \node[below, font=\tiny] at (2,-0.2) {$x_0$};
+            \node[above, font=\tiny] at (2,3.2) {$t_1$};
+        \end{scope}
+    \end{tikzpicture}
+    \caption{Channel spike learning (Theorem~\ref{thm:r2-logratio-criterion-main}). Functions $f_1(x)$ (blue) and $f_2(x)$ (red) at $t_0$, $t_0+\Delta t$, and $t_1$. $f_1$ has a spike at $x_0$ that becomes more pronounced over time, while $f_2$ has no spike.}
+    \label{fig:channel-specialization}
+\end{figure}
+
+
+
+\subsection{Mechanism of Spike Learning}
+\label{rem:dominance-mechanism}
+The log-ratio growth in Theorem~\ref{thm:r2-logratio-criterion-main} arises from a self-reinforcing dominance loop. The evolution $\partial_t f_k(t,x)=-\xi_1(t)\,\E_{Z=(X,Y)}[d_L(Z;W(t))\,B_k(t;X)\,K_{\mu_0}(x,X)]$ is an integral over the data distribution, where $k\in\{1,\ldots,r\}$ is the channel index and $K_{\mu_0}(x,X)$ is the kernel. When channel $k$ dominates at $x_0$,
+\[
+H_2 = \sum_{j=1}^r L_{c_2,j}f_j = \underbrace{L_{c_2,k}f_k}_{\text{large}} + \underbrace{\sum_{j \neq k} L_{c_2,j}f_j}_{\text{small}},
+\]
+so the pre-activation and hence $\varphi_2'(H_2)$ (bounded away from zero under Assumption~\ref{assump:regularity}) are effectively driven by that channel. The backpropagated signal $B_k(t;X)=\E_{C_2}[L_{C_2,k}\,w_2(t,C_2)\,\varphi_2'(H_2(t,C_2;X))]$ is a mixture over the second layer. The precise signs of $L_{c_2,k}$ or $w_2(t,c_2)$ need not matter: once a channel dominates, the activation derivative $\varphi_2'$ modulates the contribution (e.g.\ by half-space for Sigmoid/ReLU/Leaky ReLU), $w_2$ evolves on that set via the mean-field $w_2$-ODE, and the dynamics create an \emph{emergent} sign-coherence rather than requiring it a priori. If the activation (gate) is correlated with a channel, that correlation \emph{amplifies}: the channel gets a larger $B_k$, hence a larger $\partial_t f_k$, so the channel and the gate become even more correlated. Under sign-coherence ($B_{k,1}$ has the same sign as $f_k$), the integral contribution from the dominant channel is larger, yielding a single self-reinforcing loop: larger dominance $\to$ larger $B_k$ $\to$ larger $\partial_t f_k$ $\to$ further amplified dominance. Theorem~\ref{thm:r2-logratio-criterion-main} shows that \emph{when} the conditions (i)--(iii) in its hypothesis hold on an interval $I$, this loop implies $\partial_t R_{12}\ge 0$ and thus that dominance cannot be lost on $I$; see Appendix~\ref{app:r2-logratio-proof}.
+
+
+
+
+
+\subsection{Toy model with spike feature learning}
+\label{sec:fourier-toy}
+
+The full mean-field system for discrete regression in Spatial-Fourier space is infinite dimensional; the two-point ($m=2$) dynamics nonetheless capture the essential mechanism for feature learning.
+We state and prove this intuition for the \emph{two-sided step} toy model: $m=2$ support points $x^{(1)}=x_0=-\delta$, $x^{(2)}=x_1=+\delta$ ($\delta>0$) with $y^{(1)}=+A$, $y^{(2)}=-A$. The target $y(x)$ is supported on $\{x_0,x_1\}$ with values $\pm A$ (Figure~\ref{fig:twostep}). For finitely-supported data, the $w_1$-evolution is linear in feature space once residuals and backprop signals are fixed; one obtains closed-form $f_k$ as a superposition of kernel bumps. Define $d_p(t)=d_L((x^{(p)},y^{(p)});W(t))$, $B_{k,p}(t)=B_k(t;x^{(p)})$, and
+\[
+\Gamma_{k,p}(t) \equiv \int_0^t \xi_1(s)\,d_p(s)\,B_{k,p}(s)\,ds.
+\]
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.7, every node/.style={font=\scriptsize}]
+  \draw[->] (-0.3,0) -- (4.5,0) node[right] {$x$};
+  \draw[->] (0,-2.2) -- (0,2.2) node[above] {$y$};
+  \draw (0,0) -- (4.2,0);
+  \node[below] at (1.2,-0.05) {$x_0\!=\!-\delta$};
+  \node[above] at (3.2,+0.05) {$x_1\!=\!+\delta$};
+  \node[left] at (-0.1,1.2) {$+A$};
+  \node[left] at (-0.1,-1.2) {$-A$};
+  \draw[thick, blue] (1.2,0) -- (1.2,1.2);
+  \draw[thick, blue] (3.2,0) -- (3.2,-1.2);
+  \fill[blue] (1.2,1.2) circle (2pt);
+  \fill[blue] (3.2,-1.2) circle (2pt);
+  \node[above] at (1.2,1.25) {$(x_0,+A)$};
+  \node[below] at (3.2,-1.25) {$(x_1,-A)$};
+\end{tikzpicture}
+\caption{Two-sided step: $x_0=-\delta$, $x_1=+\delta$ with $y(x_0)=+A$, $y(x_1)=-A$.}
+\label{fig:twostep}
+\end{figure}
+Then
+\begin{equation}
+\label{eq:fk-twostep}
+f_k(t,x) = f_k(0,x) - \Gamma_{k,1}(t)\,K_{\mu_0}(x,x_0) - \Gamma_{k,2}(t)\,K_{\mu_0}(x,x_1).
+\end{equation}
+The spike shape is determined by $K_{\mu_0}$; all learning dynamics reduce to the \emph{scalar} coefficients $\Gamma_{k,1}(t)$, $\Gamma_{k,2}(t)$. The kernel $K_{\mu_0}$ (NNGP, \cite{jacot2018neural}) satisfies $K_{\mu_0}(x_p,x_p)=K_0>0$ for $p\in\{0,1\}$ (same by symmetry). The off-diagonal $K_{\mu_0}(x_0,x_1)=K_{\mu_0}(-\delta,+\delta)$ is \emph{positive} and \emph{fastly decaying} in $\delta$: $0<K_{\mu_0}(x_0,x_1)\le \psi(\delta)$ for some $\psi(\delta)$ with $\psi(\delta)\to 0$ rapidly as $\delta\to\infty$. Thus the cross-term is small for separated points and, being positive, reinforces the leading local term and yields even better positivity in the log-ratio dynamics.
+
+The full evolution has \emph{two terms} (local plus non-local):
+\begin{equation}
+\label{eq:dtfk-full-delta}
+\partial_t f_k(t,x_p) = -\xi_1(t)\,K_{\mu_0}(x_p,x_p)\,d_p(t)\,B_{k,p+1}(t) + E_p(t),
+\end{equation}
+where the non-local remainder $E_p(t)$ satisfies $|E_p(t)|\le C'\,\psi(\delta)$ with $\psi(\delta)$ fastly decaying in $\delta$. We state the theorem for $x_0$ only; the result is symmetrical at $x_1$ (Appendix~\ref{app:finite-support-scalar}).
+
+
+
+
+
+
+\begin{figure}[htbp!]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/trajectory_max_ratio.png}
+    \caption{Trajectory of $\max_{i,j} R_{i,j}(x=0)$ vs.\ epoch (layer-3 channels). Channel specialization at $x=0$ as in Theorem~\ref{thm:r2-logratio-criterion-main}. Setup: $n=1024$, $r=15$, $\cos(8\pi x)$, 20 epochs.}
+    \label{fig:trajectory-max-ratio}
+\end{figure}
+
+
+\begin{figure}[htbp!]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/logratio_statistics_x0.png}
+    \caption{Log-ratios $R_{i,\tilde{j}}$ at $x=0$ over training (all activation pairs; layer-2 $H_k$).}
+    \label{fig:logratio-heatmap}
+\end{figure}
+
+
+
+\begin{theorem}[Two-sided step: log-ratio growth at $x_0$ (conditional)]
+\label{thm:r2-logratio-criterion-main}
+\medskip
+\textbf{Setting:} The two-sided step with $r=2$ channels and a 3-layer RF-LR; the dynamics are \eqref{eq:fk-twostep} and the full evolution \eqref{eq:dtfk-full-delta}. The result is \textbf{conditional}: \emph{if} the three conditions in (Hypothesis) hold on an interval $I \subseteq [0,\infty)$, \emph{then} the stated conclusion holds on $I$.
+
+\medskip
+\noindent\textbf{Definition (log-ratio criterion).} At $x_0$: $d_0(t)$ is the residual and $B_{k,1}(t)=B_k(t;x_0)$ the backprop signal; at $x_1$: $d_1(t)$ and $B_{k,2}(t)=B_k(t;x_1)$. Define
+\[
+R_{12}(t,x_0) = \log\frac{|f_1(t,x_0)|}{|f_2(t,x_0)|}.
+\]
+
+\medskip
+And under the hypothesis that backpropagated signals are stable
+\noindent\textbf{Hypothesis (at $x_0$, for all $t\in I$):} (i)~$-d_0(t)\ge 0$; (ii)~$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$; (iii)~there exists $\rho_0\in[0,1)$ such that $|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$.
+
+\medskip
+\noindent\textbf{Conclusion:} For $t\in I$,
+\[
+\begin{aligned}
+\partial_t R_{12}(t,x_0) &= (1-\rho_0)\,\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t,x_0)|} \\
+&\quad + \varepsilon_0(t),
+\end{aligned}
+\]
+with $|\varepsilon_0(t)|\le C''\,\psi(\delta)$ for $\psi(\delta)$ fastly decaying in $\delta$ (from $E_p$). Hence $\partial_t R_{12}(t,x_0)\ge 0$ whenever the leading term dominates $|\varepsilon_0|$; since $K_{\mu_0}(x_0,x_1)>0$, the off-diagonal coupling contributes with a favorable sign and reinforces the leading term, yielding even better positivity. Strict dominance of channel~1 at $x_0$ cannot be lost on $I$ and is amplified whenever $|B_{1,1}|$ is not too small. The result is symmetrical at $x_1$ (channel~2 dominates there).
+\end{theorem}
+
+\begin{remark}[On the hypothesis]
+The theorem does \emph{not} assert that (i)--(iii) hold for the canonical two-sided step ($y=\pm A$ at $x=\pm\delta$) from generic initial conditions; it only establishes that \emph{when} they hold on $I$, the conclusion follows. Verifying (i)--(iii) from the ODEs for specific initial conditions and $A,\delta$ is outside the scope of this result. See Appendix~\ref{app:logratio-hypothesis-practice} for a discussion of when (i)--(iii) hold in practical settings.
+\end{remark}
+
+\begin{proof}[Proof sketch]
+The proof  is deferred to Appendix~\ref{app:r2-logratio-proof} and only uses \cref{eq:dtfk-full-delta} and the log-ratio calculus at $x_0$.
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%% numerical experiments
+\section{Numerical Results}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\columnwidth]{figures/final_prediction.png}
+    \caption{Final prediction vs. target $f(x)=\cos(36\pi x^2)-0.8\cos(12\pi x^2)$. 4-layer, $n{=}1024$, $r{=}50$, $N{=}1000$, RF-LR MSEs are within $10^{-8}$ to $\sim10^{-4}$}
+    \label{fig:nonsymmetry}
+\end{figure}
+
+
+\begin{figure*}[htbp]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/mlp_asymmetry_layer7.png}\hfill
+    \includegraphics[width=0.45\textwidth]{figures/mlp_asymmetry_layer16.png}
+    \caption{Asymmetry when RF is removed (a) (b) Asym. Layer~7. (c) Asym. Layer~16; $r{=}20$. (b)--(c) ; $f_1=144$, $f_2=48$.}
+    \label{fig:channel-combined}
+    \label{fig:spike-in-H}
+    \label{fig:mlp-asymmetry-L7}
+    \label{fig:mlp-asymmetry}
+\end{figure*}
+
+\begin{figure*}[htbp]
+    \centering
+    \includegraphics[width=0.32\textwidth]{figures/channel_partials_layer5.png}\hfill
+    \includegraphics[width=0.32\textwidth]{figures/spike_in_H_layer9.png}\hfill
+    \includegraphics[width=0.32\textwidth]{figures/channel_partials_layer16.png}
+    \caption{(symmetric) with bigger spikes. (a) $f_1^{(5)}$. (b) ReLU($H_8$) (c) ReLU($H_{16}$).}
+    \label{fig:activations-combined}
+    \label{fig:channel-partials-L1}
+    \label{fig:channel-partials-L5}
+    \label{fig:channel-partials}
+\end{figure*}
+
+
+
+\label{sec:experiments}
+\captionsetup{font=small}
+Our experiments focus on 1-dimensional data for three reasons: (i)~large sample sizes ensure that convergence of $\E_Z[\cdot]$ is achieved, so optimization dynamics are not confounded by overfitting or sample complexity; (ii)~the frequency-dependent target $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$ provides a controlled setting to study hierarchical frequency learning, with a direct link to the two-sided step and Theorem~\ref{thm:r2-logratio-criterion-main}; (iii)~1D allows clear interpretability of channel specialization (spatial location and frequency) and of the log-ratio evolution.
+
+
+
+\begin{table}[h!]
+    \centering
+    \caption{Hyperparameters for all figures in this section. Symmetry runs (Figs.~\ref{fig:spike-in-H}, \ref{fig:channel-partials}, \ref{fig:mlp-asymmetry}) and Fig.~\ref{fig:nonsymmetry}: Adam \cite{kingma2015adam}, batch 100, lr $0.001$, $\gamma{=}0.9$ every 100 steps; test 4936 for symmetry. Log-ratio (Figs.~\ref{fig:trajectory-max-ratio}, \ref{fig:logratio-heatmap}): SGD, lr $0.01$, batch 160. Target $(f_1,f_2)$ denotes $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$.}
+    \label{tab:num-hparams}
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{@{}llccclccc@{}}
+    \toprule
+    Figure & $L$ & $n$ & $r$ & Target & $N_\textrm{train}$ & Epochs & batch & RF \\
+    \midrule
+    \ref{fig:trajectory-max-ratio}, \ref{fig:logratio-heatmap} & 3 & 1024 & 15 & $\cos(8\pi x)$ & 5k & 10k & 160 & -- \\
+    \ref{fig:spike-in-H} & 4 & 1024 & 8 & (36,12) & 2k & 5k & 100 & True \\
+    \ref{fig:channel-partials} & 8 & 1024 & 15 & (144,48) & 4k & 10k & 100 & True \\
+    \ref{fig:mlp-asymmetry} & 8 & 1024 & 20 & (144,48) & 4k & 10k & 100 & False \\
+    \ref{fig:nonsymmetry} & 4 & 1024 & 50 & (36,12) & 1k & 1k & 100 & False \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsection{Log-ratio growth and spike features}
+\label{sec:meanfield-analysis}
+
+We validate our theoretical predictions on frequency-dependent function approximation. Assumption~\ref{assump:regularity} (Appendix~\ref{app:assumptions}) requires $\varphi_2'$ bounded away from zero and thus excludes ReLU; in practice this can be relaxed with high probability, exponentially in $r$ (Appendix~\ref{app:relu-activation-remark}). We train 3-layer low-rank ReLU networks on $f(x)=\cos(8\pi x)$ with $n=1024$ neurons, $r=15$ channels, and $N=5000$ samples. At $x=0$ we measure layer-2 low-rank channels $f_k$, log-ratios $R_{i,j}=\log|f_i|-\log|f_j|$, and pre-activations $H_k$ (with $H_2$ revealing the half-space separation that drives spike learning). We track $\max_{i,j}R_{i,j}(x=0)$ during training (Figure~\ref{fig:trajectory-max-ratio}) and the distribution over all pairs (Figure~\ref{fig:logratio-heatmap}); the sustained growth indicates that one channel increasingly dominates at $x=0$, consistent with Theorem~\ref{thm:r2-logratio-criterion-main}. The mean-field weight distribution over training is shown in Figure~\ref{fig:meanfield-density}, and spike-like specialization in Figure~\ref{fig:channel-combined}(a). Experimental setup and further details are in Appendix~\ref{app:exp-details}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\columnwidth]{figures/meanfield_density_epoch0.png}\\[1em]
+    \includegraphics[width=0.75\columnwidth]{figures/meanfield_density_epoch50.png}
+    \caption{$w_2$ density at epoch 0 (top) and symmetric at 50 (bottom).}
+    \label{fig:meanfield-density}
+\end{figure}
+
+\subsection{Channel and activations learn symmetric spikes}
+\label{sec:symmetry-preservation}
+
+
+
+We examine symmetry preservation by RF-LR on highly oscillating targets. Under batched optimization, markedly non-symmetrical features can be learned for symmetric targets. Specifically, all our targets are symmetric about $x=0$ since both terms are even in $x$. When trained with SGD, low-rank networks maintain this symmetry, whereas full-rank networks show asymmetric structures. Channel feature learning in low-rank networks thus preserves geometric properties of the target, likely due to the implicit regularization of the low-rank constraint.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% conclusion
+\section{Conclusion}
+\label{sec:conclusion}
+
+% Summary of contributions:
+% - Mean-field theory for low-rank RF networks
+% - Proof ideas for convergence
+% - Experimental validation
+
+% Limitations:
+% - Proofs are ideas, not complete (if applicable)
+% - Assumptions on data/initialization
+
+% Future directions:
+% - Complete proofs
+% - Extensions to deeper networks
+% - Applications to PDEs, etc.
+
+We have shown that when the mean-field dynamics converges, the limit is a global minimizer; this \emph{persists} under low-rank constraints for mean-field networks of depth $L \ge 2$. Recent work has established convergence to a global minimizer for full-rank three-layer networks without assuming loss convexity, but it remained open whether these guarantees hold for more layers. Our key insight is that the low-rank and random features structure are minimal to maintain the universal approximation property throughout training, which preserves the conditions needed for the limit to be a global minimizer when training converges.
+
+% Do not include acknowledgements in the initial version submitted for blind review.
+% Add acknowledgements only for the camera-ready version.
+
+% In the unusual situation where you want a paper to appear in the
+% references without citing it in the main text, use \nocite
+%\nocite{langley00}
+% TODO: Update bibliography file name if needed
+\bibliography{example_paper}
+\bibliographystyle{icml2026}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\onecolumn
+\appendix
+
+\section{Appendix Overview: Our Results and Their Correspondence to Nguyen et al.}
+\label{app:lemma-mapping}
+
+This section lists all lemmas, theorems, and corollaries in our appendix and, for each, states the corresponding result in \cite{nguyen2023rigorousframeworkmeanfield} of which it is an adaptation. Our proofs follow their structure and are modified to account for the low-rank mixing $H_\ell=\sum_{k=1}^r L^{(\ell)}_{c_\ell,k}f_k^{(\ell)}$, the $\|L^{(\ell)}\|_{\infty,1}\le rK$ bounds, and the $\max_{1\le k\le r}$ over channels in norms.
+
+\paragraph{Assumptions.} Our Assumptions~\ref{assump:regularity}--\ref{assump:convergence} (Appendix~\ref{app:assumptions}) and \ref{assump:quant-init} (Appendix~\ref{app:quantitative}) adapt the forward, backward, init, lrSchedule, and neuronal-embedding assumptions and the initialization/regularity framework in \cite{nguyen2023rigorousframeworkmeanfield}. The low-rank mixing bound in \ref{assump:regularity} and their diversity-of-random-features assumption are specific to our RF-LR setting.
+
+Theorem~\ref{thm:r2-logratio-criterion-main} and Appendices~\ref{app:r2-logratio-proof} and \ref{app:logratio-hypothesis-practice} are original to this work.
+
+\small
+\begin{table}[h!]
+\centering
+\caption{Our appendix lemmas/theorems/corollary and the Nguyen et al.\ \cite{nguyen2023rigorousframeworkmeanfield} result each adapts.}
+\label{tab:our-appendix-mapping}
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}llp{4.2cm}p{4.4cm}@{}}
+\toprule
+Ours & Type & One-line statement & Adaptation of (Nguyen et al.) \\
+\midrule
+\ref{lem:bilipschitz-H2} & Lemma & Bi-Lipschitz of $H_\ell$, $\varphi_\ell(H_\ell)$ in $W$ with $\|L^{(\ell)}\|_{\infty,1}\le rK$. & Lemmas 46, 48 (Lipschitz forward MF, -general) \\
+\ref{lem:bounds-a-priori} & Lemma & A priori ${\interleave{W}}_t\le K_0(t)$ with $(1+rK)^{1/2}$ factor. & Lemma 8 (bounds MF a priori) \\
+\ref{lem:invariance-F} & Lemma & $F(\mathcal{W}_T^0)\subseteq \mathcal{W}_T^0$. & Invariance in proof of Theorem 7 (existence ODE) \\
+\ref{lem:difference-F} & Lemma & Solution operator $F$ contractive in $\|\cdot\|_t$. & Lemma 10 (difference MF) \\
+\ref{lem:lowrank-psi-app} & Lemma & Sub-Gaussian bounds for $\sum_k a_k U_k$ (low-rank sums). & Lemma 51, Theorem 45 (initialization compare, iid-hilbert-higher-moment) \\
+\ref{lem:H2-row-norm-app} & Lemma & $|H_2|$, $|f_k|$ bounds scale with $\|L\|_{\infty,1}$. & Lemma 48 (Lipschitz forward MF - general) \\
+\ref{lem:lowrank-moment} & Lemma & Moment bounds for $H_2=\sum_k L_{c_2,k}f_k$. & Lemma 52 (bounds NN a priori) \\
+\ref{lem:particle-lowrank} & Lemma & $\mathscr{D}_T(W,\tilde{W})\le \cdots e^{K_T(1+rK)}$. & Proposition 22 (particle coupling - bounded) \\
+\ref{lem:gradient-lowrank} & Lemma & $\mathscr{D}_T(\tilde{W},\mathbf{W})\le \cdots e^{K_T(1+rK)}$. & Proposition 23 (gradient descent - bounded) \\
+\ref{thm:uap-automatic} & Theorem & Dense span $\{\varphi_1(\langle L^0(c_1),\cdot\rangle)\}$ maintained (frozen $L^0$). & Assumption (diversity); no direct lemma (specific to frozen RF) \\
+\ref{thm:quantitative-lowrank} & Theorem & $\mathscr{D}_T(W,\mathbf{W})\le C_{\exp}\cdot C_{\text{width}}\cdot C_{\log}$. & Corollary 17 and full quantitative framework \\
+\ref{cor:gradient-descent-quality-lowrank} & Corollary & $|\mathbb{E}_Z[\psi(Y,\hat{\mathbf{y}})]-\mathbb{E}_Z[\psi(Y,\hat{y})]|\le \cdots$. & Corollary 17 (gradient descent quality) \\
+\bottomrule
+\end{tabular}
+\end{table}
+\normalsize
+
+\paragraph{Reference: Nguyen et al.} In \cite{nguyen2023rigorousframeworkmeanfield}, thm/lem/prop/cor share one counter. \textbf{Main text} (proofs in appendix): Lemma 8 (bounds MF a priori), Lemma 10 (difference MF). \textbf{Appendix:} Theorems 43--45; Lemmas 46--49 (Lipschitz forward/backward MF, general); Lemmas 50--53 (square Hoeffding; initialization compare; bounds NN a priori; a priori MF time difference); Theorem 54 (iid dynamics-full); Lemma 55 (full-support-2); Propositions 22, 23 (particle coupling bounded; gradient descent bounded); Corollary 17 (gradient descent quality).
+
+
+
+
+
+
+\section{Notation and Neuronal Embedding Framework}
+\label{app:notation}
+
+We keep the notation and neuronal embedding framework of \cite{nguyen2023rigorousframeworkmeanfield}. In the mean-field framework, neurons are indexed by continuous random variables rather than discrete indices. This \emph{neuronal embedding} approach treats each neuron as a sample from a probability measure, enabling rigorous analysis in the infinite-width limit.
+
+\textbf{Neuronal indices:} We use $C_1 \in \mathcal{C}_1$ and $C_2 \in \mathcal{C}_2$ to denote random variables indexing neurons in the first and second layers, respectively. These are drawn from probability measures $\mu_1$ and $\mu_2$ on spaces $\mathcal{C}_1$ and $\mathcal{C}_2$. In the finite-width case, $C_1(j_1)$ and $C_2(j_2)$ correspond to countable or uncountable neuron indices $j_1 \in \{1,\ldots,n_1\}$ and $j_2 \in \{1,\ldots,n_2\}$.
+
+\textbf{Weight functions:} The weights are functions of time and neuronal indices:
+\begin{itemize}
+\item $w_1(t, C_1, k) \in \mathbb{R}$: weight for channel $k \in \{1,\ldots,r\}$ of neuron $C_1$ in the first layer at time $t$.
+\item $w_2(t, C_2) \in \mathbb{R}$: weight for neuron $C_2$ in the second layer at time $t$.
+\item $W(t) = (w_1(t, \cdot, \cdot), w_2(t, \cdot))$: the full weight configuration at time $t$.
+\end{itemize}
+
+\textbf{Feature maps and activations:}
+\begin{itemize}
+\item $L^0(C_1) \in \mathbb{R}^{d_0}$: frozen random feature vector for neuron $C_1$ (drawn i.i.d. from a Gaussian measure); we specify the law of $L^0(C_1)$ when sampling the network.
+\item $\varphi_1: \mathbb{R} \to \mathbb{R}$: activation function for the first layer (e.g., Leaky ReLU or sigmoid).
+\item $\varphi_2: \mathbb{R} \to \mathbb{R}$: activation function for the second layer.
+\item $H_2(t, c_2; X, W(t)) = \sum_{k=1}^r L_{c_2,k}\,f_k(t; X, W(t))$: second-layer pre-activation, where $f_k(t; X, W(t)) = \E_{C_1}[w_1(t, C_1, k)\,\varphi_1(\ip{L^0(C_1)}{X})]$ are the channel-wise partial functions.
+\end{itemize}
+
+\textbf{Backpropagation signal (all layers):}
+The gradient $\partial\mathscr{L}/\partial w$ at each layer is (upstream backpropagated signal) $\times$ (local derivative). Deriving $\partial_t w$ from $-\xi\,\E_Z[\cdots]$ at each layer yields:
+\begin{itemize}
+\item \textbf{Top layer (layer $L-1$):} The backpropagated signal from the loss is $D_{L-1}=d_L=\partial_{\hat{y}}\mathscr{L}(Y,\hat{y}(X;W(t)))$; it is used in the $w_{L-1}$-ODE.
+\item \textbf{Channel-$k$ signal from layer $\ell$ to the layer below} ($\ell=2,\ldots,L-1$): $B_k^{(\ell)}(t;X,W) = \E_{C_\ell}[L^{(\ell)}_{C_\ell,k}\,\varphi_\ell'(H_\ell(t,C_\ell;X,W))\,w_\ell(t,C_\ell)]$, $k\in\{1,\ldots,r\}$. This aggregates gradient information from layer $\ell$ through the mixing matrix $L^{(\ell)}$ and the activation derivative $\varphi_\ell'$; for Leaky ReLU, $\varphi_\ell'(u)=\mathds{1}\{u>0\}+\alpha\mathds{1}\{u\le 0\}$ with $\alpha\in(0,1)$. In the 3-layer case, $B_k:=B_k^{(2)}$.
+\end{itemize}
+
+\textbf{Loss and learning rates:}
+\begin{itemize}
+\item $d_L(Z; W(t)) = \partial_{\hat{y}} \mathscr{L}(Y, \hat{y}(X; W(t)))$: loss derivative with respect to the network output, where $Z = (X, Y)$ is a data sample and $\hat{y}(X; W(t))$ is the network output.
+\item $\xi_1(t), \xi_2(t) \ge 0$: learning rate schedules for the first and second layers, respectively.
+\end{itemize}
+
+\textbf{Kernel function:}
+\begin{itemize}
+\item $K_{\mu_0}(x,X)$: kernel that measures similarity between input locations $x$ and $X$, induced by the untrained first-layer feature measure $\mu_0$ (the pushforward of the initial first-layer weights). It is defined by
+\[
+K_{\mu_0}(x,x') \equiv \int_{\R^d}\varphi_1(\ip{\theta}{x})\,\varphi_1(\ip{\theta}{x'})\,\mu_0(d\theta).
+\]
+For Leaky ReLU or sigmoid $\varphi_1$ and $\mu_0$ the pushforward of i.i.d.\ Gaussian or uniform-on-sphere first-layer weights, $K_{\mu_0}$ coincides with the first-layer NNGP kernel \cite{jacot2018neural}. This kernel appears in the evolution equation for the partial functions $f_k(t,x)$.
+\end{itemize}
+
+\textbf{Expectations:} $\E_Z[\cdot]$ denotes expectation over the data distribution, $\E_{C_1}[\cdot]$ over the first-layer neuron measure, and $\E_{C_2}[\cdot]$ over the second-layer neuron measure.
+
+
+
+
+
+\section{Assumptions}
+\label{app:assumptions}
+
+This section contains the complete statement of all assumptions used in our theoretical analysis. These assumptions are referenced in the main text with their names in italics.
+
+\begin{assumption}[Bounded Activations and Mixing]
+\label{assump:regularity}
+There exists a constant $K\ge 1$ such that:
+\begin{itemize}
+\item \textbf{Activation functions}: $\varphi_1$ and $\varphi_2$ are $K$-Lipschitz; $\|\varphi_2'\|_\infty\le K$; and $\varphi_2'$ is \textbf{bounded away from zero}, i.e.\ $\inf_u |\varphi_2'(u)|\ge 1/K$. For well-posedness, $\varphi_\ell(H_\ell)$ must be bounded in the analysis; this holds for \textbf{sigmoid} and \textbf{tanh} ($\|\varphi_\ell\|_\infty\le K$); for \textbf{Leaky ReLU} $\varphi(u)=\max(u,\alpha u)$ with $\alpha\in(0,1)$, $\varphi$ is unbounded but $\varphi(H_\ell)$ is bounded when pre-activations $H_\ell$ are (as in our a priori ODE bounds). \textbf{ReLU is excluded} because $\varphi'$ vanishes on $(-\infty,0]$. For ReLU and a high-probability relaxation in practice, see Appendix~\ref{app:relu-activation-remark}.
+\item \textbf{Low-rank mixing matrix}: The mixing matrix entries $L_{c_2,k}$ are random variables (e.g., Uniform) with $\sup_{c_2,k}|L_{c_2,k}|\le K$ almost surely, and $k\mapsto L_{c_2,k}$ is measurable for each $c_2$. This implies $\|L\|_{\infty,1}\equiv \sup_{c_2}\sum_{k=1}^r |L_{c_2,k}|\le rK$ almost surely.
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Sub-Gaussian Initialization]
+\label{assump:init}
+The initial weights satisfy sub-Gaussian moment bounds:
+\begin{itemize}
+\item For the first-layer weights: $\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_1}\!\left[|w_1^0(C_1,k)|^m\right]^{1/m}\le K$ for some $K>0$.
+\item For the second-layer weights: $\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_2}\!\left[|w_2^0(C_2)|^m\right]^{1/m}\le K$.
+\item Equivalently, in terms of $\psi_2$ norms: $\llbracket w_1(0)\rrbracket_{\psi}<\infty$ and $\llbracket w_2(0)\rrbracket_{\psi}<\infty$, where $\llbracket\cdot\rrbracket_{\psi}$ denotes the $\psi_2$ norm controlling moment growth.
+\end{itemize}
+This ensures that the initial weight distributions have controlled tail behavior, which is essential for the well-posedness argument.
+\end{assumption}
+
+\begin{assumption}[Data Distribution and Loss Regularity]
+\label{assump:data}
+\begin{itemize}
+\item \textbf{Bounded inputs}: $|X|\le K$ with probability 1, and the feature map satisfies $\|L^0(c_1)\|\le K$ for all $c_1\in\Omega_1$.
+\item \textbf{Loss}: $\partial_2\mathcal{L}(y,\cdot)$ is $K$-bounded and $K$-Lipschitz for all $y$ in the support of $\mathcal{P}$ (for well-posedness and continuity of $\mathscr{L}$). \textbf{Loss condition:} $\partial_2\mathcal{L}(y,\hat{y})=0$ implies $\mathcal{L}(y,\hat{y})=0$. For non-negative $\mathcal{L}$, whenever $\mathbb{E}[\partial_2\mathcal{L}(Y,u)|X=x]=0$ we then have $\mathbb{E}[\mathcal{L}(Y,u)|X=x]=0$, so the first-order condition identifies global minimizers. Examples: MSE ($\partial_2\mathcal{L}=0$ iff $\hat{y}=y$, and $\mathcal{L}(y,y)=0$); many classification losses.
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[Diversity of Random Features]
+\label{assump:diversity}
+The support of $\rho^1$ (the measure on $\Omega_1$ indexing the first-layer random features) is $\R^d$ (or dense in $\R^d$). This ensures that the random features $\{\varphi_1(\ip{L^0(c_1)}{\cdot}): c_1\in\Omega_1\}$ have dense span in $L^2(\mathcal{P}_X)$, which is essential for the universal approximation property.
+\end{assumption}
+
+\begin{assumption}[Non-Degeneracy]
+\label{assump:lr}
+To ensure that the limit point $(\bar{w}_1,\ldots,\bar{w}_L)$ is non-degenerate (e.g., $\max_{1\le k\le r}\Pp(\bar{w}_1(C_1,k)\ne 0)>0$ for the first layer and $\Pp(\bar{w}_\ell(C_\ell)\ne 0)>0$ for $\ell=2,\ldots,L$), we require one of the following:
+\begin{enumerate}
+\item The initial loss satisfies $\mathscr{L}(w_1^0,\ldots,w_L^0) < \E_Z[\mathcal{L}(Y,\varphi_L(0))]$. Then by the gradient flow property, the limit point must have non-zero mass for each of $\bar{w}_1,\ldots,\bar{w}_L$ (e.g.\ $\max_{1\le k\le r}\Pp(\bar{w}_1(C_1,k)\ne 0)>0$ and $\Pp(\bar{w}_\ell(C_\ell)\ne 0)>0$ for $\ell=2,\ldots,L$), so $(\bar{w}_1,\ldots,\bar{w}_L)$ is non-degenerate. This condition requires that the initial network performs better than the trivial predictor $\hat y=0$, which is satisfied for most reasonable initializations (e.g., small random weights) with high probability.
+
+\end{enumerate}
+\end{assumption}
+
+\begin{theorem}[Universal approximation automatically maintained]
+\label{thm:uap-automatic}
+The learning trajectory automatically maintains the universal approximation property of the function class represented by the first layer's neurons throughout training. Specifically, if $\text{supp}(L^0(C_1)) = \mathbb{R}^d$ and $\varphi_1$ is Leaky ReLU or sigmoid (or any non-polynomial activation), then the function class $\{\varphi_1(\ip{L^0(c_1)}{\cdot}): c_1\in\Omega_1\}$ has dense span in $L^2(\mathcal{P}_X)$ throughout training.
+
+This follows from the fact that since $L^0(C_1)$ are frozen random features with full support, and Leaky ReLU or sigmoid is non-polynomial, the dense span property is automatically maintained: $\varphi_1(af+b)$ for random $a,b$ always forms a dense span. This is the key property that, combined with low-rank structure and the loss condition in Assumption~\ref{assump:data}, enables convergence to a global minimizer.
+\end{theorem}
+
+\begin{assumption}[Convergence to Limit Point]
+\label{assump:convergence}
+There exist functions $\bar{w}_1:\Omega_1\times\{1,\dots,r\}\to\R$ and $\bar{w}_2:\Omega_2\to\R$ such that as $t\to\infty$, there exists a coupling $\pi_t$ of $\rho^1\times\rho^2$ and itself such that:
+\begin{align}
+\int (1+|\bar{w}_2(c_2)|)|\bar{w}_2(c_2)|\max_{1\le k\le r}|\bar{w}_1(c_1,k)|\,|w_1^*(t,c_1',k)-\bar{w}_1(c_1,k)|\,d\pi_t(c_1,c_2,c_1',c_2') &\to 0, \label{eq:conv-w1}\\
+\int (1+|\bar{w}_2(c_2)|)|\bar{w}_2(c_2)|\,|w_2^*(t,c_2')-\bar{w}_2(c_2)|\,d\pi_t(c_1,c_2,c_1',c_2') &\to 0, \label{eq:conv-w2}
+\end{align}
+where $W^*(t)=(w_1^*(t,\cdot,\cdot),w_2^*(t,\cdot))$ is the solution to the mean-field ODEs \eqref{eq:ode-w1}. This assumption ensures that the training dynamics converge to a well-defined limit point in a Wasserstein-like sense.
+\end{assumption}
+
+\begin{remark}[On the assumptions]
+Universal approximation is automatically maintained (Theorem~\ref{thm:uap-automatic}), which is the crucial difference from previous work. We do not assume loss convexity; the function class maintains its approximation power throughout training. The frozen random features in the first layer with full support automatically ensure dense span: since $\varphi_1(af+b)$ for random $a,b$ and non-polynomial $\varphi_1$ (e.g.\ Leaky ReLU or sigmoid) always forms a dense span, this property is automatically maintained rather than assumed, providing a rich fixed basis independent of the low-rank structure in subsequent layers.
+
+The \emph{Convergence to Limit Point} assumption is typically verified by showing that the loss decreases along trajectories (gradient flow property), establishing compactness of the trajectory set, and using stability arguments such as LaSalle's invariance principle. The low-rank structure enters through the $\max_k$ over $r$ channels in \eqref{eq:conv-w1}, but the overall structure remains similar to the full-rank case.
+\end{remark}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Technical Lemmas and Proofs for Well-Posedness}
+\label{app:wellposed-proof}
+
+The lemmas below and the techniques underlying the assumptions in the previous section are from the rigorous mean-field framework of \cite{nguyen2023rigorousframeworkmeanfield}. We adapt them to the low-rank case by accounting for the $r$ channels and the mixing matrix $L$ (e.g., through $\|L\|_{\infty,1}\le rK$).
+
+\subsection{Key New Trick: Bi-Lipschitz Property}
+\label{app:bilipschitz}
+
+Before proving well-posedness, we establish a key technical lemma that will be used throughout the proof.
+
+\begin{lemma}[Bi-Lipschitz property of $H_\ell$, $\ell=2,\ldots,L-1$]
+\label{lem:bilipschitz-H2}
+For any $W'=(w_1',\ldots,w_{L-1}')$ and $W''=(w_1'',\ldots,w_{L-1}'')$ (in the 3-layer case $W=(w_1,w_2)$) satisfying the regularity assumptions, we have the following for each $\ell=2,\ldots,L-1$.
+
+\textbf{Layer $\ell=2$.}
+\[
+\big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big| \le K\,\|L^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big],
+\]
+where $\|L^{(\ell)}\|_{\infty,1}\equiv \sup_{c_\ell}\sum_{k=1}^r |L^{(\ell)}_{c_\ell,k}|\le rK$ under the entrywise bound ($L^{(2)}=L$). If $\varphi_2$ is Leaky ReLU or Lipschitz, then
+\[
+\big|\varphi_2(H_2(t,c_2;X,W'))-\varphi_2(H_2(t,c_2;X,W''))\big| \le K\,\|L^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+\]
+
+\textbf{Layers $\ell=3,\ldots,L-1$.}
+\[
+\big|H_\ell(t,c_\ell;X,W')-H_\ell(t,c_\ell;X,W'')\big| \le K\,\|L^{(\ell)}\|_{\infty,1}\,
+\Big( \E_{C_{\ell-1}}\big[|w_{\ell-1}'(t,C_{\ell-1})-w_{\ell-1}''(t,C_{\ell-1})|\big]
++ {\interleave{w_{\ell-1}''}}_t \cdot \mathscr{B}_{\ell-1}(W',W'')\Big),
+\]
+where $\mathscr{B}_{\ell-1}(W',W'')$ is the RHS of the bi-Lipschitz inequality for $H_{\ell-1}$ above. If $\varphi_\ell$ is Leaky ReLU or Lipschitz, the same bound holds for $|\varphi_\ell(H_\ell(t,c_\ell;X,W'))-\varphi_\ell(H_\ell(t,c_\ell;X,W''))|$.
+\end{lemma}
+
+\begin{proof}
+\textbf{Layer $\ell=2$.}
+By definition $H_2(t,c_2;X,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(t;X,W)$ with $f_k(t;X,W)=\E_{C_1}[w_1(t,C_1,k)\,\varphi_1(\ip{L^0(C_1)}{X})]$. Then
+\begin{align*}
+H_2(t,c_2;X,W')-H_2(t,c_2;X,W'') &= \sum_{k=1}^r L_{c_2,k}\big(f_k(t;X,W')-f_k(t;X,W'')\big)\\
+&= \sum_{k=1}^r L_{c_2,k}\E_{C_1}\big[(w_1'(t,C_1,k)-w_1''(t,C_1,k))\,\varphi_1(\ip{L^0(C_1)}{X})\big].
+\end{align*}
+Taking absolute values and using boundedness of $\varphi_1$:
+\begin{align*}
+\big|H_2(t,c_2;X,W')-H_2(t,c_2;X,W'')\big| &\le \sum_{k=1}^r |L_{c_2,k}|\,\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big]\,|\varphi_1(\ip{L^0(C_1)}{X})|\\
+&\le K\,\sum_{k=1}^r |L_{c_2,k}|\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big]\\
+&\le K\,\|L^{(2)}\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\big[|w_1'(t,C_1,k)-w_1''(t,C_1,k)|\big].
+\end{align*}
+The $\varphi_2(H_2)$ part follows from the Lipschitz property of $\varphi_2$.
+
+\textbf{Layers $\ell\ge 3$.}
+We have $H_\ell(t,c_\ell;X,W)=\sum_{k=1}^r L^{(\ell)}_{c_\ell,k}\,f_k^{(\ell)}(t;X,W)$ with
+$f_k^{(\ell)}(t;X,W)=\E_{C_{\ell-1}}[w_{\ell-1}(t,C_{\ell-1},k)\,\varphi_{\ell-1}(H_{\ell-1}(t,C_{\ell-1};X,W))]$
+(and $w_{\ell-1}(t,C_{\ell-1},k)\equiv w_{\ell-1}(t,C_{\ell-1})$ when the layer has no channel index). Then
+\begin{align*}
+f_k^{(\ell)}(W')-f_k^{(\ell)}(W'')
+&=\E_{C_{\ell-1}}\big[(w_{\ell-1}'-w_{\ell-1}'')\,\varphi_{\ell-1}(H_{\ell-1}(W'))
++w_{\ell-1}''\,\big(\varphi_{\ell-1}(H_{\ell-1}(W'))-\varphi_{\ell-1}(H_{\ell-1}(W''))\big)\big].
+\end{align*}
+Using $|\varphi_{\ell-1}|\le K$, $|\varphi_{\ell-1}(a)-\varphi_{\ell-1}(b)|\le K|a-b|$, and the inductive bound for $|H_{\ell-1}(W')-H_{\ell-1}(W'')|$:
+\begin{align*}
+|f_k^{(\ell)}(W')-f_k^{(\ell)}(W'')|
+&\le K\,\E_{C_{\ell-1}}\big[|w_{\ell-1}'-w_{\ell-1}''|\big]
++K\,\E_{C_{\ell-1}}\big[|w_{\ell-1}''|\,|H_{\ell-1}(W')-H_{\ell-1}(W'')|\big]\\
+&\le K\,\E_{C_{\ell-1}}\big[|w_{\ell-1}'-w_{\ell-1}''|\big]
++K\,{\interleave{w_{\ell-1}''}}_t\,\mathscr{B}_{\ell-1}(W',W'').
+\end{align*}
+Thus $|H_\ell(W')-H_\ell(W'')|\le \|L^{(\ell)}\|_{\infty,1}\max_k|f_k^{(\ell)}(W')-f_k^{(\ell)}(W'')|$ yields the claim. The $\varphi_\ell(H_\ell)$ part follows from the Lipschitz property of $\varphi_\ell$.
+\end{proof}
+
+\paragraph*{From here, the proof follows as usual.} For each $\ell=2,\ldots,L-1$, $H_\ell(t,c_\ell;X,W)$ bi-Lipschitz in $W$ is \emph{sufficient and equivalent to} $\varphi_\ell$ Lipschitz; that is the only thing that matters. The remaining is simple: after defining norms, we update $K_0(t)$ with a factor $(1+rK)^{1/2}$; the solution operator $F$, a priori bounds, and the contraction argument then proceed as in the full-rank framework \cite{nguyen2023rigorousframeworkmeanfield}.
+
+\subsection{Norms and Spaces}
+\label{app:wellposed-norms}
+
+We equip the mean-field parameters with several norms. For the low-rank case: ${\interleave{w_1}}_t = \max_{1\le k\le r}\E_{C_1}[\sup_{s\le t}|w_1(s,C_1,k)|^{50}]^{1/50}$, ${\interleave{w_2}}_t = \E_{C_2}[\sup_{s\le t}|w_2(s,C_2)|^{50}]^{1/50}$, ${\interleave{W}}_t = \max({\interleave{w_1}}_t, {\interleave{w_2}}_t)$. $L^2$-type: $\|w_1\|_t = \max_{1\le k\le r}\E_{C_1}[\sup_{s\le t}|w_1(s,C_1,k)|^2]^{1/2}$, $\|w_2\|_t = \E_{C_2}[\sup_{s\le t}|w_2(s,C_2)|^2]^{1/2}$, $\|W\|_t = \max(\|w_1\|_t, \|w_2\|_t)$. $\psi_2$-type: $\llbracket w_1\rrbracket_{\psi,t} = \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_1}[\sup_{s\le t}|w_1(s,C_1,k)|^m]^{1/m}$, $\llbracket w_2\rrbracket_{\psi,t} = \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_2}[\sup_{s\le t}|w_2(s,C_2)|^m]^{1/m}$, $\llbracket W\rrbracket_{\psi,t} = \max(\llbracket w_1\rrbracket_{\psi,t}, \llbracket w_2\rrbracket_{\psi,t})$. The factor $\sqrt{50}$ ensures $\llbracket W\rrbracket_{\psi,t}\ge {\interleave{W}}_t$ and $\llbracket W\rrbracket_{\psi,t}\ge \|W\|_t$. Random variables: $\mathsf{max}_t^w(W) = \max_{1\le k\le r}\sup_{s\le t}|w_1(s,C_1,k)|$, $\mathsf{max}_t^{w_2}(W) = \sup_{s\le t}|w_2(s,C_2)|$. Distance for $W,W'$:
+\begin{equation}\label{eq:def-MF-distance-app}\|W-W'\|_t = \max(\|w_1-w_1'\|_t, \|w_2-w_2'\|_t),\end{equation}
+with $\|w_1-w_1'\|_t = \max_{1\le k\le r}\E_{C_1}[\sup_{s\le t}|w_1(s,C_1,k)-w_1'(s,C_1,k)|^2]^{1/2}$ and $\|w_2-w_2'\|_t = \E_{C_2}[\sup_{s\le t}|w_2(s,C_2)-w_2'(s,C_2)|^2]^{1/2}$.
+
+\subsection{Solution Operator and Fixed Point Formulation}
+
+Denote by $\mathfrak{W}_T$ the space of mean-field parameters $W$ with $\|W\|_T<\infty$. Given $T\ge 0$ and $W(0)$, we define $F$ mapping $W'\in\mathfrak{W}_T$ to $F(W')(t) = \{F_1(W')(t,\cdot,\cdot), F_2(W')(t,\cdot)\}$, where $F_1(W')(t,c_1,k) = w_1(0,c_1,k) - \int_0^t \xi_1(s)\E_{Z}[d_L(Z;W'(s))\,\varphi_1(\ip{L^0(c_1)}{X})\,B_k(s;X,W'(s))]ds$ and $F_2(W')(t,c_2) = w_2(0,c_2) - \int_0^t \xi_2(s)\E_{Z}[d_L(Z;W'(s))\,\varphi_2(H_2(s,c_2;X,W'(s)))]ds$, with $B_k(s;X,W')=\E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(s,C_2;X,W'))\,w_2'(s,C_2)]$. At initialization $F(W')(0,\cdot,\cdot)=W(0)$; the time integrals use $W'$. A solution on $[0,T]$ is $W\in\mathfrak{W}_T$ with $F(W)=W$. We say $W$ is a solution on $[0,\infty)$ if its restriction to $[0,T]$ is a solution for all $T>0$.
+
+\subsection{A Priori Bounds}
+
+\begin{lemma}[Weight bounds]
+\label{lem:bounds-a-priori}
+Under Assumptions~\ref{assump:regularity} and \ref{assump:data}, given an initialization $W(0)$, a solution $W$ to the mean-field ODEs, if it exists, must satisfy that for any $t\in[0,\infty)$:
+\[
+{\interleave{W}}_t \le K_0(t),
+\]
+where $K_0(t)$ is a non-decreasing function of the form
+\[
+K_0(t) = (1+rK)^{1/2}\,K^{\kappa}(1+t^{\kappa})(1+{\interleave{W}}_0^{\kappa}),
+\]
+for some constant $\kappa>0$ depending on $K$ and $r$.
+
+A similar result holds for the $\psi_2$ norm. Under the same assumptions, for any $t\in[0,\infty)$, there exists $K_0(t)\ge 1$ of the form
+\[
+K_0(t) = (1+rK)^{1/2}\,K^{\kappa}(1+t^{\kappa})(1+\llbracket W\rrbracket_{\psi,0}^{\kappa}),
+\]
+such that a solution $W$, if it exists, must satisfy ${\interleave{W}}_t \le \llbracket W\rrbracket_{\psi,t} \le K_0(t)$ for any $t\in[0,\infty)$. Furthermore, by assuming $\llbracket W\rrbracket_{\psi,0}<\infty$, for any $B\ge 0$:
+\[
+\Pp\!\left(\max\big(\mathsf{max}_t^w(W), \mathsf{max}_t^{w_2}(W)\big)\ge K_0(t)B\right) \le C e^{-K_1 B^2},
+\]
+for some universal constants $C, K_1>0$.
+\end{lemma}
+
+\begin{proof}
+We do not provide this proof here because of conciseness to prove sub-gaussian bounds for trivial lipschiz variable. The proof follows from Grönwall-type arguments applied to the ODEs \eqref{eq:ode-w1}. The key steps are:
+\begin{enumerate}
+\item Use the boundedness and Lipschitz properties of $\varphi_1$, $\varphi_2$, $\varphi_2'$, and $\partial_2\mathcal{L}$.
+\item Control $H_2$ using the low-rank structure: $|H_2|\le \|L\|_{\infty,1}\max_k|f_k|\le rK\max_k\E_{C_1}[|w_1(C_1,k)|]$.
+\item Control $B_k$ using the structure: $|B_k|\le K\E_{C_2}[|L_{C_2,k}|\,|w_2|]\le rK^2\E_{C_2}[|w_2|]$.
+\item Apply Minkowski's inequality and Grönwall's lemma to obtain polynomial growth in $t$.
+\item The sub-Gaussian tail bound follows from the $\psi_2$ control and a union bound.
+\end{enumerate}
+The constant $\kappa$ depends on $K$ and $r$ through the factor $\|L\|_{\infty,1}\le rK$, but remains polynomial rather than exponential in $r$.
+\end{proof}
+
+These a priori bounds lead us to consider the following spaces, given an initialization $W(0)$ and an arbitrary terminal time $T>0$:
+
+\begin{itemize}
+\item The space $\mathcal{W}_T$ of mean-field parameters $W'=\{W'(t)\}_{t\le T}$ such that ${\interleave{W'}}_T \le K_0(T)$.
+
+\item The space $\mathcal{W}_T^0\subset\mathcal{W}_T$ of mean-field parameters $W'\in\mathcal{W}_T$ such that:
+\begin{align*}
+\llbracket W'\rrbracket_{\psi,T} &\le K_0(T),\\
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W'), \mathsf{max}_T^{w_2}(W')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2} \quad \forall B\ge 0,
+\end{align*}
+and $W'(0)=W(0)$ (so all elements in $\mathcal{W}_T^0$ share the same initialization).
+
+It is easy to see that $\mathcal{W}_T^0\subset\mathcal{W}_T$ since ${\interleave{W'}}_T \le \llbracket W'\rrbracket_{\psi,T}$.
+\end{itemize}
+
+We equip these spaces with the metric $(W',W'')\mapsto \|W'-W''\|_T$. By Lemma~\ref{lem:bounds-a-priori}, any solution $W$ to the mean-field ODEs, if it exists, must belong to $\mathcal{W}_T^0$.
+
+\begin{lemma}[Solution operator maps bounded sets to bounded sets]
+\label{lem:invariance-F}
+Under Assumptions~\ref{assump:regularity} and \ref{assump:data}, for any $W'\in\mathcal{W}_T^0$, we have $F(W')\in\mathcal{W}_T^0$.
+\end{lemma}
+
+\begin{proof}
+The proof follows the same argument as Lemma~\ref{lem:bounds-a-priori}, using the integral form defining $F$ and the bounded/Lipschitz properties of the drifts. The key is that applying bounded/Lipschitz drifts to $W'$ preserves the moment and tail bounds with constants controlled by $K_0(T)$.
+\end{proof}
+
+\subsection{Difference Estimate}
+
+\begin{lemma}[Solution operator is contractive]
+\label{lem:difference-F}
+For a given $B\ge 0$, consider two collections of mean-field parameters $W',W''\in\mathcal{W}_T$ such that:
+\begin{align*}
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W'), \mathsf{max}_T^{w_2}(W')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2},\\
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W''), \mathsf{max}_T^{w_2}(W'')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2}.
+\end{align*}
+Under Assumptions~\ref{assump:regularity}--\ref{assump:data}, for any $t\le T$:
+\[
+\|F(W')-F(W'')\|_t \le (KK_0(T))^4 \int_0^t \Big((1+B)\|W'-W''\|_s + \sqrt{2}e^{-K_1 B^2/2}\Big)ds,
+\]
+where the constant depends on $K$ and $r$ through $\|L\|_{\infty,1}\le rK$.
+\end{lemma}
+
+\begin{proof}
+The proof uses a good/bad event decomposition:
+\begin{enumerate}
+\item On the good event $\{\max(\mathsf{max}_T^w, \mathsf{max}_T^{w_2})\le K_0(T)B\}$, the drifts are Lipschitz in $W$ with constant $(1+B)K_0(T)$.
+\item The difference $|H_2(W')-H_2(W'')|$ is controlled using Lemma~\ref{lem:bilipschitz-H2}:
+\[
+|H_2(W')-H_2(W'')| \le K\|L\|_{\infty,1}\max_k\E_{C_1}[|w_1'(C_1,k)-w_1''(C_1,k)|] \le rK^2\max_k\|w_1'-w_1''\|_t.
+\]
+\item The difference $|B_k(W')-B_k(W'')|$ is controlled similarly, giving a factor $(1+B)$.
+\item The bad event contributes an exponentially small remainder $e^{-K_1 B^2/2}$.
+\item Integrating in time and using Minkowski's inequality yields the result.
+\end{enumerate}
+\end{proof}
+
+\subsection{Complete Proof of Theorem~\ref{thm:wellposed}}
+
+\begin{proof}[Proof of Theorem~\ref{thm:wellposed}]
+We perform a Picard-type iteration argument. Consider an arbitrary finite $T\ge 0$ and $W',W''\in\mathcal{W}_T^0$. From Lemma~\ref{lem:difference-F}:
+\begin{align*}
+\|F(W')-F(W'')\|_t &\le (KK_0(T))^4\left((1+B)\int_0^t \|W'-W''\|_s ds + T\sqrt{2}e^{-K_1 B^2/2}\right)\\
+&\equiv k_1(1+B)\int_0^t \|W'-W''\|_s ds + k_2 e^{-k_3 B^2},
+\end{align*}
+for any $B>0$, where $k_1=(KK_0(T))^4$, $k_2=(KK_0(T))^4 T\sqrt{2}$, and $k_3=K_1/2$.
+
+By Lemma~\ref{lem:invariance-F}, $F$ maps $\mathcal{W}_T^0$ to $\mathcal{W}_T^0$. We can iterate this inequality to obtain:
+\begin{align*}
+\|F^{(m)}(W')-F^{(m)}(W'')\|_T &\le k_1(1+B)\int_0^T \|F^{(m-1)}(W')-F^{(m-1)}(W'')\|_{T_2} dT_2 + k_2 e^{-k_3 B^2}\\
+&\le k_1^2(1+B)^2\int_0^T\int_0^{T_2} \|F^{(m-2)}(W')-F^{(m-2)}(W'')\|_{T_3} \mathbb{I}(T_2\le T) dT_3 dT_2\\
+&\quad + k_2\sum_{\ell=1}^2 \frac{(T k_1(1+B))^{\ell-1}}{\ell!} e^{-k_3 B^2}\\
+&\quad \ldots\\
+&\le \frac{1}{m!} T^m k_1^m (1+B)^m \|W'-W''\|_T + k_2 e^{T k_1(1+B) - k_3 B^2}\\
+&\le \frac{1}{m!} T^m k_1^m (1+\sqrt{m})^m \|W'-W''\|_T + k_2 e^{T k_1(1+\sqrt{m}) - k_3 m},
+\end{align*}
+where we choose $B=\sqrt{m}$ in the last display. Note that since ${\interleave{W}}_0<\infty$, $K_0(T)$ and hence $k_1, k_2$ are finite for finite $T$.
+
+By substituting $W''=F(W')$, we obtain:
+\[
+\sum_{m=1}^\infty \|F^{(m+1)}(W')-F^{(m)}(W')\|_T = \sum_{m=1}^\infty \|F^{(m)}(W'')-F^{(m)}(W')\|_T < \infty.
+\]
+Hence as $m\to\infty$, $F^{(m)}(W')$ converges in $\|\cdot\|_T$ to a limit $W\in\mathfrak{W}_T$, which is a fixed point of $F$. By Lemma~\ref{lem:bounds-a-priori}, $W$ belongs to $\mathcal{W}_T^0$.
+
+The uniqueness of the fixed point comes from the above estimate, since if $W'$ and $W''$ are fixed points of $F$, then they are both in $\mathcal{W}_T^0$, and:
+\[
+\|W'-W''\|_T = \|F^{(m)}(W')-F^{(m)}(W'')\|_T \le \frac{1}{m!} T^m k_1^m (1+\sqrt{m})^m \|W'-W''\|_T + k_2 e^{T k_1(1+\sqrt{m}) - k_3 m},
+\]
+and one can take $m$ arbitrarily large. This proves that the solution exists and is unique on $t\in[0,T]$. Since $T$ is arbitrary, we have existence and uniqueness of the solution to the mean-field ODEs on the time interval $[0,\infty)$.
+\end{proof}
+
+
+
+\section{Lemma and proofs of convergence}
+\label{app:technical-lemmas}
+
+\subsection{Channel Mixing and Low-Rank Structure}
+\label{app:channel-mixing}
+
+The low-rank channel mixing structure enters through:
+\[
+H_2(t,c_2;X,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(t;X,W),
+\]
+where $f_k(t;X,W)=\E_{C_1}[w_1(t,C_1,k)\,\varphi_1(\ip{L^0(C_1)}{X})]$ are the $r$ partial functions.
+
+Under the entrywise bound $\sup_{c_2,k}|L_{c_2,k}|\le K$, we have:
+\[
+\|L\|_{\infty,1}\le rK,\qquad \|L\|_{\infty,2}\le \sqrt{r}\,K.
+\]
+
+\begin{lemma}[Sub-Gaussian bounds for low-rank sums]
+\label{lem:lowrank-psi-app}
+Let $(U_k)_{k=1}^r$ be real random variables on a common probability space and $(a_k)_{k=1}^r\in\R^r$ deterministic.
+Then for every $m\ge 1$,
+\[
+\E\Big[\big|\sum_{k=1}^r a_k U_k\big|^m\Big]^{1/m}\le \sum_{k=1}^r |a_k|\,\E[|U_k|^m]^{1/m}
+\le \Big(\sum_{k=1}^r |a_k|\Big)\max_{1\le k\le r}\E[|U_k|^m]^{1/m}.
+\]
+Consequently, any ``$\psi_2$-type'' seminorm defined by $\sup_{m\ge 1}m^{-1/2}\E[|\,\cdot\,|^m]^{1/m}$ satisfies
+\[
+\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,\E\Big[\big|\sum_{k=1}^r a_k U_k\big|^m\Big]^{1/m}
+\le \Big(\sum_{k=1}^r |a_k|\Big)\max_{1\le k\le r}\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,\E[|U_k|^m]^{1/m}.
+\]
+If one prefers an $\ell_2$ version, then also $\sum_{k=1}^r |a_k|\le \sqrt{r}\,(\sum_k a_k^2)^{1/2}$ yields a $\sqrt{r}$ factor.
+\end{lemma}
+
+\begin{lemma}[Forward propagation bounds scale with mixing matrix norm]
+\label{lem:H2-row-norm-app}
+Assume $\varphi_1$ is bounded by $K$.
+Then for every $t\ge 0$ and every $c_2\in\Omega_2$,
+\[
+\sup_{s\le t}\big|H_2(s,c_2;X,W)\big|
+\le \Big(\sum_{k=1}^r |L_{c_2,k}|\Big)\max_{1\le k\le r}\sup_{s\le t}|f_k(s;X,W)|
+\le \|L\|_{\infty,1}\,\max_{1\le k\le r}\sup_{s\le t}|f_k(s;X,W)|.
+\]
+Moreover,
+\[
+\sup_{s\le t}|f_k(s;X,W)|
+\le \E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|\,\big|\varphi_1(\ip{L^0(C_1)}{X})\big|\right]
+\le K\,\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|\right].
+\]
+Combining these inequalities and taking moments yields, for every $m\ge 1$,
+\[
+\E_X\Big[\sup_{s\le t}\sup_{c_2}|H_2(s,c_2;X,W)|^m\Big]^{1/m}
+\le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\Big[\sup_{s\le t}|w_1(s,C_1,k)|^m\Big]^{1/m}.
+\]
+In particular, in the $\psi_2$-type calibration,
+\[
+\sqrt{50}\sup_{m\ge 1}\frac{1}{\sqrt{m}}\,
+\E_X\Big[\sup_{s\le t}\sup_{c_2}|H_2(s,c_2;X,W)|^m\Big]^{1/m}
+\le K\,\|L\|_{\infty,1}\,\llbracket w_1\rrbracket_{\psi,t}.
+\]
+\end{lemma}
+
+\subsection{Proof of Theorem~\ref{thm:convergence} (global minimizer at limit, any depth)}
+\label{app:proof-thm-convergence}
+
+This subsection adapts the core argument of \cite{nguyen2023rigorousframeworkmeanfield}, Sec.~6.3 (Proof of Theorem~34), to our low-rank setting for any depth $L\ge 2$. We omit the homotopy argument (their Lemma~37): the first-layer feature map $L^0(C_1)$ is \emph{frozen}, so $\text{supp}(L^0(C_1))=\R^d$ at init and at all $t$, and dense span follows without a homotopy. The main-text \paragraph{High-level proof idea} and \cite{nguyen2023rigorousframeworkmeanfield} Sec.~6.2.1 summarize the idea; we give the formal steps.
+
+\paragraph{Dense span without homotopy.}
+$L^0(C_1)$ is not trained. By Assumption~\ref{assump:diversity} and Theorem~\ref{thm:uap-automatic}, $\{\varphi_1(\ip{L^0(c_1)}{\cdot}): c_1\in\Omega_1\}$ has dense span in $L^2(\mathcal{P}_X)$ at all $t\ge 0$ and at the limit.
+
+\paragraph{Zero derivative at the limit.}
+Let $\bar W=(\bar{w}_1,\ldots,\bar{w}_{L-1})$ be a limit point under Assumption~\ref{assump:convergence} (and its natural extension to $L$ layers with couplings for all $w_\ell$). At the limit, $\partial_t w_\ell=0$ for all $\ell$. From \eqref{eq:ode-w1}, for the top layer $\ell=L-1$:
+\[
+\E_Z\bigl[d_L(Z;\bar W)\,\varphi_{L-1}(H_{L-1}(c_{L-1};X,\bar W))\bigr]=0,\qquad \forall c_{L-1}.
+\]
+By backpropagation, the first-layer ODE yields
+\[
+\E_Z\bigl[d_L(Z;\bar W)\,\varphi_1(\ip{L^0(c_1)}{X})\,B_k^{(2)}(X;\bar W)\bigr]=0,\qquad c_1\in\text{supp}(\rho^1),\; k\in\{1,\ldots,r\},
+\]
+where $B_k^{(2)}(X;\bar W)=\E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(C_2;X,\bar W))\,\bar{w}_2(C_2)]$ (and for $L>3$, $B_k^{(\ell)}$ involves $H_\ell$, $\bar{w}_\ell$, $L^{(\ell)}$ in the same way). Since $B_k^{(2)}$ depends only on $X$ and $\bar W$, we have
+\[
+\E_X\bigl[\E_{Y|X}[d_L(Z;\bar W)\mid X]\,\varphi_1(\ip{L^0(c_1)}{X})\,B_k^{(2)}(X;\bar W)\bigr]=0\quad \forall c_1,k.
+\]
+The function $x\mapsto \E_{Y|X}[d_L\mid X=x]\,B_k^{(2)}(x;\bar W)$ thus has zero inner product in $L^2(\mathcal{P}_X)$ with $\varphi_1(\ip{L^0(c_1)}{\cdot})$ for all $c_1$. By dense span, $\E_{Y|X}[d_L(Z;\bar W)\mid X=x]\,B_k^{(2)}(x;\bar W)=0$ for $\mathcal{P}_X$-a.e.\ $x$.
+
+\paragraph{From integrated identity to $\partial_{\hat{y}}\mathscr{L}$ a.e.}
+We have $\E_{Y|X}[d_L(Z;\bar W)\mid X=x]\,B_k^{(2)}(x;\bar W)=0$ for $\mathcal{P}_X$-a.e.\ $x$. Under Assumption~\ref{assump:lr}, $\max_{1\le k\le r}\Pp(\bar{w}_1(C_1,k)\ne 0)>0$ and $\Pp(\bar{w}_\ell(C_\ell)\ne 0)>0$ for $\ell=2,\ldots,L-1$; by Assumption~\ref{assump:regularity}, $\varphi_2'(H_2(c_2;x,\bar W))\ne 0$ for $\mathcal{P}_X$-a.e.\ $x$ and $\rho^2$-a.e.\ $c_2$. Hence for $\mathcal{P}_X$-a.e.\ $x$ and almost every $c_2$, the factor in $B_k^{(2)}$ involving $\varphi_2'$ is non-zero, so $B_k^{(2)}(x;\bar W)$ is non-zero on a set of positive $\mathcal{P}_X$-measure. On that set, $\E_{Y|X}[d_L(Z;\bar W)\mid X=x]=0$, and thus $\E_Z[\partial_{\hat{y}}\mathscr{L}(Y,\hat{y}(X;\bar W))\mid X=x]=0$ for $\mathcal{P}_X$-a.e.\ $x$.
+
+\paragraph{On ReLU and relaxing the activation-derivative assumption.}
+\label{app:relu-activation-remark}
+Assumption~\ref{assump:regularity} requires $\varphi_2'$ bounded away from zero and excludes ReLU. At convergence, we are at a stationary point: $\partial_t w_\ell=0$ for all $\ell$, so the ODE right-hand sides vanish and \emph{all backpropagated signals contribute zero to the gradient}---training has converged because the gradient is zero. The step above uses $\varphi_2'(H_2)\ne 0$ to deduce $B_k^{(2)}(x;\bar W)\ne 0$ on a set of positive measure and thus $\E[d_L\mid X=x]=0$ a.e. The only problematic case for ReLU is when the limit $\bar W$ is such that $B_k^{(2)}=0$ $\mathcal{P}_X$-a.e.\ purely because $\varphi_2'(H_2)=0$ everywhere on the relevant support (for ReLU, $H_2\le 0$). That is convergence to a \emph{degenerate} point where the gradient vanishes solely because all backprop through the activation derivative are zero. This event is exponentially rare in the rank $r$: it requires the pre-activation configuration (over $r$ channels and the layer width) to lie in a degenerate set, and the probability of landing there is of order $e^{-O(r)}$.
+
+\paragraph{Optimality (Assumption~\ref{assump:data}).}
+We have $\E[\partial_2\mathcal{L}(Y,\hat{y}(X;\bar W))\mid X=x]=0$ for $\mathcal{P}_X$-a.e.\ $x$. By the loss condition, $\mathbb{E}[\partial_2\mathcal{L}(Y,u)|X=x]=0$ implies $\mathbb{E}[\mathcal{L}(Y,u)|X=x]=0$. Thus $\E[\mathcal{L}(Y,\hat{y}(X;\bar W))\mid X=x]=0$ for $\mathcal{P}_X$-a.e.\ $x$, so $\mathscr{L}(\bar W)=0$. For non-negative $\mathcal{L}$, $\bar W$ is a global minimizer.
+
+\paragraph{$\mathscr{L}(W(t))\to\mathscr{L}(\bar W)$.}
+By Assumption~\ref{assump:convergence}, the couplings $\pi_t$ and the Wasserstein-like integrals \eqref{eq:conv-w1}--\eqref{eq:conv-w2} (and their $L$-layer analogues) tend to 0. The output difference $|\hat{y}(X;W(t))-\hat{y}(X;\bar W)|$ is bounded by a $K$-multiple of those integrals (via the low-rank structure: $H_2=\sum_k L_{c_2,k}f_k$, $B_k^{(\ell)}$, and the regularity of $\varphi_\ell$, $\partial_2\mathcal{L}$). Thus $\mathscr{L}(W(t))-\mathscr{L}(\bar W)=\E_Z[\mathcal{L}(Y,\hat{y}(X;W(t)))-\mathcal{L}(Y,\hat{y}(X;\bar W))]$ is bounded by $K\E_Z[|\hat{y}(X;W(t))-\hat{y}(X;\bar W)|]\to 0$ as $t\to\infty$.
+
+
+
+
+
+\section{Detailed Proof Sketches}
+\label{app:proofs}
+
+% TODO: Move detailed proof sketches here if space allows in main text
+
+\subsection{Well-Posedness: Picard Iteration Details}
+\label{app:picard}
+
+% TODO: Incorporate content from meanfield_lowrank.tex Section on low-rank channel mixing
+
+The key technical result is that the low-rank structure only multiplies constants by $r$:
+
+\begin{lemma}[Moment bounds for low-rank sums]
+\label{lem:lowrank-moment}
+For the low-rank sum $H_2(t,c_2;X,W)=\sum_{k=1}^r L_{c_2,k}\,f_k(t;X,W)$, we have
+\[
+\E_X\Big[\sup_{s\le t}\sup_{c_2}|H_2(s,c_2;X,W)|^m\Big]^{1/m}
+\le K\,\|L\|_{\infty,1}\,\max_{1\le k\le r}\E_{C_1}\Big[\sup_{s\le t}|w_1(s,C_1,k)|^m\Big]^{1/m},
+\]
+where $\|L\|_{\infty,1}\le rK$ under entrywise bounds.
+\end{lemma}
+
+This lemma shows that the forward propagation bounds are multiplied by at most $rK$, but the structure of the Picard iteration remains unchanged. The contraction mapping argument proceeds as in the full-rank case, with constants depending on $\|L\|_{\infty,1}$.
+
+
+
+
+
+
+
+
+\section{Quantitative Approximation by the Mean-Field Limit for Low-Rank Networks}
+\label{app:quantitative}
+
+This appendix provides a rigorous quantitative bound on the approximation error between finite-width low-rank networks and their mean-field limit. The key result shows that the approximation error scales as $O(1/\sqrt{n_{\min}} + \sqrt{\epsilon})$ with explicit constants, where $n_{\min}$ is the minimum width across layers and $\epsilon$ is the learning rate step size. This bound holds for any $n_1$ and $n_2$, independent of the data dimension $d$, similar to the full-rank case \cite{nguyen2020global,nguyen2023rigorousframeworkmeanfield}. The bound suggests that widths $n_1, n_2 \approx 1000$ are typically sufficient to observe mean-field behaviors, as empirically validated in \cite{nguyen2019meanfield} for high-dimensional real-world data.
+
+\subsection{Main Result: Approximation by the MF Limit}
+
+\begin{assumption}[Initialization for Low-Rank Networks]
+\label{assump:quant-init}
+We assume that ${\rm ess\text{-}sup}\max_{1\le k\le r}|w_1^0(C_1,k)| \le K$ and ${\rm ess\text{-}sup}|w_2^0(C_2)| \le K$, where $w_1^0$ and $w_2^0$ are the initial weights as described in the low-rank architecture setup.
+\end{assumption}
+
+\begin{theorem}[Finite-width approximation error bound]
+\label{thm:quantitative-lowrank}
+Given a family $\mathsf{Init}$ of initialization laws and a tuple $\{n_1, n_2\}$ that is in the index set of $\mathsf{Init}$, perform the coupling procedure for the low-rank architecture as described in Section~\ref{sec:setup}. Fix a terminal time $T \in \epsilon\mathbb{N}_{\ge 0}$. Under Assumptions~\ref{assump:regularity}, \ref{assump:quant-init}, and the low-rank structure with mixing matrix $L$ satisfying $\|L\|_{\infty,1} \le rK$, for $\epsilon \le 1$, we have with probability at least $1-2\delta$,
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le C_{\exp} \cdot C_{\text{width}} \cdot C_{\log},
+\]
+where $C_{\exp} = e^{K_T(1+rK)}$, $C_{\text{width}} = 1/\sqrt{n_{\min}} + \sqrt{\epsilon}$, $C_{\log} = \sqrt{\log(3(T+1)n_{\max}^2/\delta + e)}$, with $n_{\min} = \min\{n_1, n_2\}$, $n_{\max} = \max\{n_1, n_2\}$, $K_T = K(1+T^K)$, and the factor $(1+rK)$ accounts for the low-rank structure through $\|L\|_{\infty,1} \le rK$.
+
+\end{theorem}
+
+The theorem gives a connection between $\mathbf{W}(\lfloor t/\epsilon\rfloor)$ (the discrete-time finite-width network) and $W(t)$ (the continuous-time mean-field limit). The key difference from the full-rank case \cite{nguyen2023rigorousframeworkmeanfield} is the multiplicative factor $(1+rK)$ in the exponential constant. In the full-rank setting, the exponential factor is $e^{K_T}$, while our low-rank architecture introduces an additional $(1+rK)$ factor that accounts for the $r$ independent channels evolving through the mixing matrix $L$. This factor reflects the channel feature learning structure: the $r$ channels evolve independently through the mixing matrix $L$, each contributing a factor that reflects the multi-channel nature of the learning dynamics.
+
+\begin{corollary}[Test function approximation quality]
+\label{cor:gradient-descent-quality-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, consider any test function $\psi:\mathbb{R}\times\mathbb{R}\to\mathbb{R}$ which is $K$-Lipschitz in the second variable uniformly in the first variable (an example of $\psi$ is the loss $\mathscr{L}$). For any $\delta>0$, with probability at least $1-3\delta$,
+\[
+\sup_{t\leq T}\left|\mathbb{E}_{Z}\left[\psi\left(Y,\hat{\mathbf{y}}\left(X;\mathbf{W}\left(\left\lfloor t/\epsilon\right\rfloor \right)\right)\right)\right]-\mathbb{E}_{Z}\left[\psi\left(Y,\hat{y}\left(X;W\left(t\right)\right)\right)\right]\right|\leq e^{2K_T(1+rK)}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right),
+\]
+where $\hat{\mathbf{y}}(X; \mathbf{W})$ and $\hat{y}(X; W)$ denote the outputs of the finite-width and mean-field networks respectively.
+\end{corollary}
+
+\begin{proof}[Proof sketch]
+The proof follows the same structure as in the full-rank case \cite{nguyen2020global}. Since $\psi$ is $K$-Lipschitz in the second variable, we have:
+\[
+|\psi(Y, \hat{\mathbf{y}}(X; \mathbf{W})) - \psi(Y, \hat{y}(X; W))| \le K|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)|.
+\]
+The difference $|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)|$ can be bounded by the distance $\mathscr{D}_T(W, \mathbf{W})$ using the low-rank structure of the network. Specifically, for the low-rank architecture, the output difference involves:
+\begin{align*}
+|\hat{\mathbf{y}}(X; \mathbf{W}) - \hat{y}(X; W)| &\le \sum_{k=1}^r |L_{C_2,k}|\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k)\varphi_1(\langle L^0(C_1(j_1)), X\rangle)\right.\\
+&\quad\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\varphi_1(\langle L^0(C_1), X\rangle)]\right| + \text{(similar terms for $w_2$)}\\
+&\le rK\mathscr{D}_T(W, \mathbf{W}) + K\mathscr{D}_T(W, \mathbf{W}) = K(1+rK)\mathscr{D}_T(W, \mathbf{W}),
+\end{align*}
+where we used $\|L\|_{\infty,1} \le rK$. Taking expectation over $Z$ and applying Theorem~\ref{thm:quantitative-lowrank} completes the proof.
+\end{proof}
+
+\paragraph*{Comparison with the full-rank Case.}
+The main difference between our low-rank result and the full-rank case \cite{nguyen2020global} is the appearance of the factor $(1+rK)$ in the exponential constant. In the full-rank case, the bound is:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le e^{K_T}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right),
+\]
+whereas in our low-rank case, we have:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le e^{K_T(1+rK)}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right).
+\]
+
+The factor $(1+rK)$ arises from:
+\begin{itemize}
+\item The low-rank structure of $H_2$, which involves a sum over $r$ channels: $H_2(t, c_2; X, W) = \sum_{k=1}^r L_{c_2,k}\,f_k(t; X, W)$.
+\item The mixing matrix bounds: $\|L\|_{\infty,1} = \sup_{c_2}\sum_{k=1}^r |L_{c_2,k}| \le rK$.
+\item The backpropagated signal $B_k$ which aggregates over $n_2$ neurons with mixing coefficients $L_{C_2,k}$.
+\end{itemize}
+
+However, the fundamental structure of the proof remains the same: we still decompose the error into particle coupling and gradient descent discretization, and the scaling with $n_{\min}$ and $\epsilon$ is identical. The low-rank structure only affects the exponential constant, not the polynomial scaling. This suggests that the mean-field approximation quality is preserved under low-rank constraints, with the trade-off being a potentially larger (but still finite) exponential constant.
+
+\begin{remark}[Deterministic mixing matrix and hierarchical learning]
+\label{rem:deterministic-L}
+The mixing matrix $L$ can be chosen deterministically (e.g., on a grid) rather than randomly, since the proof only requires the boundedness condition $\|L\|_{\infty,1} \le rK$. There is no advantage to maximizing the entries of $L$; fixing $L$ deterministically with appropriate structure can enable hierarchical learning, where different channels $k$ specialize to different frequency components or scales through the backpropagated signal $B_k$. This design choice allows for structured learning dynamics while maintaining the same theoretical guarantees.
+\end{remark}
+
+\subsection{Particle ODEs for Low-Rank Networks}
+
+We construct auxiliary trajectories, which we call the \textit{particle ODEs} for the low-rank case. These are continuous-time trajectories of finitely many neurons, averaged over the data distribution, adapted to the low-rank structure:
+\begin{align*}
+\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) &= -\xi_2(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t)))\right],\\
+\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) &= -\xi_1(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_1(\langle L^0(C_1(j_1)), X\rangle)\,\tilde{B}_k(t; X, \tilde{W}(t))\right],
+\end{align*}
+where $j_1 = 1, \ldots, n_1$, $j_2 = 1, \ldots, n_2$, $k = 1, \ldots, r$, $\tilde{W}(t) = (\tilde{w}_1(t, \cdot, \cdot), \tilde{w}_2(t, \cdot))$, and $t \in \mathbb{R}_{\ge 0}$. 
+
+The second-layer output for the particle ODEs is:
+\[
+\tilde{H}_2(t, j_2; X, \tilde{W}) = \sum_{k=1}^r L_{C_2(j_2),k}\,\frac{1}{n_1}\sum_{j_1=1}^{n_1} \tilde{w}_1(t, j_1, k)\,\varphi_1(\langle L^0(C_1(j_1)), X\rangle),
+\]
+and the backpropagated signal is:
+\[
+\tilde{B}_k(t; X, \tilde{W}) = \frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k}\,\varphi_2'(\tilde{H}_2(t, j_2; X, \tilde{W}))\,\tilde{w}_2(t, j_2).
+\]
+
+We specify the initialization $\tilde{W}(0)$: $\tilde{w}_1(0, j_1, k) = w_1^0(C_1(j_1), k)$ and $\tilde{w}_2(0, j_2) = w_2^0(C_2(j_2))$. That is, it shares the same initialization with the neural network $\mathbf{W}(0)$, and hence is coupled with the neural network and the MF ODEs.
+
+The existence and uniqueness of the solution to the particle ODEs follows from the same proof as in Theorem~\ref{thm:wellposed}, adapted to account for the low-rank structure. We equip $\tilde{W}(t)$ with the norm:
+\[
+{\interleave{\tilde{W}}}_T = \max\left\{\max_{j_1 \le n_1, 1 \le k \le r}\sup_{t \le T}|\tilde{w}_1(t, j_1, k)|, \max_{j_2 \le n_2}\sup_{t \le T}|\tilde{w}_2(t, j_2)|\right\}.
+\]
+
+We define the distance measures:
+\begin{align*}
+\mathscr{D}_T(W, \tilde{W}) &= \sup\Big\{|w_1(t, C_1(j_1), k) - \tilde{w}_1(t, C_1(j_1), k)|, |w_2(t, C_2(j_2)) - \tilde{w}_2(t, C_2(j_2))|:\\
+&\qquad t \le T, j_1 \le n_1, j_2 \le n_2, 1 \le k \le r\Big\},\\
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) &= \sup\Big\{|\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k) - \tilde{w}_1(t, C_1(j_1), k)|,\\
+&\qquad |\mathbf{w}_2(\lfloor t/\epsilon\rfloor, j_2) - \tilde{w}_2(t, C_2(j_2))|: t \le T, j_1 \le n_1, j_2 \le n_2, 1 \le k \le r\Big\}.
+\end{align*}
+
+\subsection{Key Lemmas}
+
+\begin{lemma}[Particle coupling bound]
+\label{lem:particle-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, for any $\delta > 0$, with probability at least $1-\delta$,
+\[
+\mathscr{D}_T(W, \tilde{W}) \le \frac{1}{\sqrt{n_{\min}}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right)e^{K_T(1+rK)},
+\]
+in which $n_{\min} = \min\{n_1, n_2\}$, $n_{\max} = \max\{n_1, n_2\}$, and $K_T = K(1+T^K)$.
+\end{lemma}
+
+\begin{lemma}[Gradient descent discretization error]
+\label{lem:gradient-lowrank}
+Under the same setting as Theorem~\ref{thm:quantitative-lowrank}, for any $\delta > 0$ and $\epsilon \le 1$, with probability at least $1-\delta$,
+\[
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) \le \sqrt{\epsilon\log\left(\frac{2n_1n_2r}{\delta} + e\right)}e^{K_T(1+rK)},
+\]
+in which $K_T = K(1+T^K)$.
+\end{lemma}
+
+\begin{proof}[Proof of Theorem~\ref{thm:quantitative-lowrank}]
+Using the triangle inequality:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le \mathscr{D}_T(W, \tilde{W}) + \mathscr{D}_T(\tilde{W}, \mathbf{W}),
+\]
+the result follows immediately from Lemmas~\ref{lem:particle-lowrank} and \ref{lem:gradient-lowrank}, noting that the $\log(2n_1n_2r/\delta)$ term can be absorbed into the $\log(3(T+1)n_{\max}^2/\delta + e)$ term up to constants.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:particle-lowrank}}
+
+\begin{proof}
+In the following, let $K_t$ denote a generic positive constant that may change from line to line and takes the form $K_t = K(1+t^K)$, such that $K_t \ge 1$ and $K_t \le K_T$ for all $t \le T$. We first note that at initialization, $\mathscr{D}_0(W, \tilde{W}) = 0$. Since ${\interleave{W}}_0 \le K$, we have ${\interleave{W}}_T \le K_T$ by the a priori bounds. Furthermore, it is easy to see that ${\interleave{\tilde{W}}}_0 \le {\interleave{W}}_0 \le K$ almost surely. By the same argument, ${\interleave{\tilde{W}}}_T \le K_T$ almost surely.
+
+We decompose the proof into several steps.
+
+\paragraph*{Step 1: Main bound with low-rank structure.}
+
+Let us define, for brevity, the differences specific to the low-rank architecture:
+\begin{align*}
+q_2(t, x, j_2, c_2) &= \tilde{H}_2(t, j_2; x, \tilde{W}(t)) - H_2(t, c_2; x, W(t)),\\
+q_{B,k}(t, x) &= \tilde{B}_k(t; x, \tilde{W}(t)) - B_k(t; x, W(t)),
+\end{align*}
+where $H_2(t, c_2; x, W) = \sum_{k=1}^r L_{c_2,k}\,\mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle L^0(C_1), x\rangle)]$ and $B_k(t; x, W) = \mathbb{E}_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]$.
+
+Consider $t \ge 0$. We first bound the difference in the updates between $W$ and $\tilde{W}$.
+
+\subparagraph*{Bound for $w_2$ and $\tilde{w}_2$:}
+By Assumption~\ref{assump:regularity} and the definition of the ODEs:
+\begin{align*}
+&\left|\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) - \frac{\partial}{\partial t}w_2(t, C_2(j_2))\right|\\
+&\quad = \left|\xi_2(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t))) - d_L(Z; W(t))\,\varphi_2(H_2(t, C_2(j_2); X, W(t)))\right]\right|\\
+&\quad \le K\mathbb{E}_Z\left[|d_L(Z; \tilde{W}(t)) - d_L(Z; W(t))|\,|\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t)))|\right]\\
+&\quad\quad + K\mathbb{E}_Z\left[|d_L(Z; W(t))|\,|\varphi_2(\tilde{H}_2(t, j_2; X, \tilde{W}(t))) - \varphi_2(H_2(t, C_2(j_2); X, W(t)))|\right]\\
+&\quad \le K_t\mathbb{E}_Z\left[|q_2(t, X, j_2, C_2(j_2))|\right] + K_t\mathscr{D}_t(W, \tilde{W}),
+\end{align*}
+where we used that $d_L$ is Lipschitz in $W$, $\varphi_2$ is Lipschitz, and $H_2$ differences are controlled.
+
+\subparagraph*{Bound for $w_1$ and $\tilde{w}_1$:}
+For the low-rank case, we have $k = 1, \ldots, r$ channels. By the definition of the ODEs:
+\begin{align*}
+&\left|\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) - \frac{\partial}{\partial t}w_1(t, C_1(j_1), k)\right|\\
+&\quad = \left|\xi_1(t)\mathbb{E}_Z\left[d_L(Z; \tilde{W}(t))\,\varphi_1(\langle L^0(C_1(j_1)), X\rangle)\,\tilde{B}_k(t; X, \tilde{W}(t))\right.\right.\\
+&\quad\quad\left.\left. - d_L(Z; W(t))\,\varphi_1(\langle L^0(C_1(j_1)), X\rangle)\,B_k(t; X, W(t))\right]\right|\\
+&\quad \le K\mathbb{E}_Z\left[|d_L(Z; \tilde{W}(t)) - d_L(Z; W(t))|\,|\tilde{B}_k(t; X, \tilde{W}(t))|\right]\\
+&\quad\quad + K\mathbb{E}_Z\left[|d_L(Z; W(t))|\,|q_{B,k}(t, X)|\right]\\
+&\quad \le K_t\mathbb{E}_Z\left[|q_{B,k}(t, X)|\right] + K_t\mathscr{D}_t(W, \tilde{W}),
+\end{align*}
+where the expectation over $j_2$ in $\tilde{B}_k$ will be handled via concentration.
+
+\paragraph*{Step 2: Decomposition of $q_2$ with low-rank structure.}
+
+The key difference from the full-rank case is that $H_2$ involves a sum over $r$ channels. We decompose:
+\begin{align*}
+|q_2(t, x, j_2, c_2)| &= \left|\sum_{k=1}^r L_{C_2(j_2),k}\left(\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle)\right.\right.\\
+&\quad\left.\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle L^0(C_1), x\rangle)]\right)\right|\\
+&\le \sum_{k=1}^r |L_{C_2(j_2),k}|\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle)\right.\\
+&\quad\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle L^0(C_1), x\rangle)]\right|.
+\end{align*}
+
+We further decompose each term in the sum:
+\begin{align*}
+&\left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle) - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle L^0(C_1), x\rangle)]\right|\\
+&\quad \le \max_{j_1 \le n_1}\left|\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle) - w_1(t, C_1(j_1), k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle)\right|\\
+&\quad\quad + \left|\frac{1}{n_1}\sum_{j_1=1}^{n_1}w_1(t, C_1(j_1), k)\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle) - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle L^0(C_1), x\rangle)]\right|\\
+&\equiv Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2).
+\end{align*}
+
+Therefore:
+\[
+|q_2(t, x, j_2, c_2)| \le \sum_{k=1}^r |L_{C_2(j_2),k}|(Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2)) \le rK\max_{1 \le k \le r}(Q_{2,1,k}(x, j_2) + Q_{2,2,k}(x, j_2)),
+\]
+where we used $\|L\|_{\infty,1} \le rK$.
+
+\paragraph*{Step 3: Decomposition of $q_{B,k}$ with low-rank structure.}
+
+For the backpropagated signal difference:
+\begin{align*}
+|q_{B,k}(t, x)| &= \left|\frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k}\,\varphi_2'(\tilde{H}_2(t, j_2; x, \tilde{W}))\,\tilde{w}_2(t, j_2)\right.\\
+&\quad\left. - \mathbb{E}_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]\right|.
+\end{align*}
+
+We decompose:
+\begin{align*}
+|q_{B,k}(t, x)| &\le \max_{j_2 \le n_2}\left|L_{C_2(j_2),k}\,\varphi_2'(\tilde{H}_2(t, j_2; x, \tilde{W}))\,\tilde{w}_2(t, j_2)\right.\\
+&\quad\left. - L_{C_2(j_2),k}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))\right|\\
+&\quad + \left|\frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))\right.\\
+&\quad\left. - \mathbb{E}_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t, C_2; x, W))\,w_2(t, C_2)]\right|\\
+&\equiv Q_{B,1,k}(x) + Q_{B,2,k}(x).
+\end{align*}
+
+For $Q_{B,1,k}$, using Assumption~\ref{assump:regularity} and the fact that $|L_{C_2(j_2),k}| \le K$:
+\begin{align*}
+\mathbb{E}_Z[Q_{B,1,k}(X)] &\le K\max_{j_2 \le n_2}\left(|\tilde{w}_2(t, j_2) - w_2(t, C_2(j_2))|\right.\\
+&\quad\left. + |w_2(t, C_2(j_2))|\,\mathbb{E}_Z[|\tilde{H}_2(t, j_2; X, \tilde{W}) - H_2(t, C_2(j_2); X, W)|]\right)\\
+&\le K_t\left(\mathscr{D}_t(W, \tilde{W}) + \max_{j_2 \le n_2}\mathbb{E}_Z[|q_2(t, X, j_2, C_2(j_2))|]\right).
+\end{align*}
+
+\paragraph*{Step 4: Concentration bounds adapted to low-rank.}
+
+For $Q_{2,1,k}$, we have:
+\begin{align*}
+\max_{j_2 \le n_2}\mathbb{E}_Z[Q_{2,1,k}(X, j_2)] &\le K\max_{j_1 \le n_1, 1 \le k \le r}|\tilde{w}_1(t, j_1, k) - w_1(t, C_1(j_1), k)|\\
+&\le K_t\mathscr{D}_t(W, \tilde{W}).
+\end{align*}
+
+For $Q_{2,2,k}$, we apply concentration. Let us write:
+\[
+Z_{1,k}(x, c_1) = w_1(t, c_1, k)\,\varphi_1(\langle L^0(c_1), x\rangle).
+\]
+Recall that $\{C_1(j_1)\}_{j_1=1}^{n_1}$ are i.i.d. We have:
+\[
+\mathbb{E}[Z_{1,k}(X, C_1(j_1))|X] = \mathbb{E}_{C_1}[Z_{1,k}(X, C_1)],
+\]
+and $\{Z_{1,k}(X, C_1(j_1))\}_{j_1=1}^{n_1}$ are independent conditional on $X$. By Assumption~\ref{assump:regularity}, $|Z_{1,k}(X, C_1(j_1))| \le K_t$ almost surely. Then by concentration inequalities:
+\[
+\mathbb{P}\left(\mathbb{E}_Z[Q_{2,2,k}(X, j_2)] \ge K_t\gamma_{2,k}\right) \le \frac{1}{\gamma_{2,k}}\exp\left(-\frac{n_1\gamma_{2,k}^2}{K_t}\right).
+\]
+
+For $Q_{B,2,k}$, we note that almost surely:
+\[
+|L_{C_2(j_2),k}\,\varphi_2'(H_2(t, C_2(j_2); x, W))\,w_2(t, C_2(j_2))| \le K|L_{C_2(j_2),k}| \le K^2,
+\]
+by Assumption~\ref{assump:regularity}. Then by concentration inequalities:
+\[
+\mathbb{P}\left(\mathbb{E}_Z[Q_{B,2,k}(X)] \ge K_t\gamma_{1,k}\right) \le \frac{1}{\gamma_{1,k}}\exp\left(-\frac{n_2\gamma_{1,k}^2}{K_t}\right).
+\]
+
+\paragraph*{Step 5: Combining bounds with union over $k$.}
+
+Taking a union bound over $k = 1, \ldots, r$ channels, we obtain that for any $\gamma_1, \gamma_2 > 0$ and $t \ge 0$, the event:
+\begin{align*}
+&\max\Bigg\{\max_{j_2 \le n_2}\mathbb{E}_Z[|q_2(t, X, j_2, C_2(j_2))|],\\
+&\qquad\max_{j_1 \le n_1, 1 \le k \le r}\mathbb{E}_Z[|q_{B,k}(t, X)|]\Bigg\}\\
+&\quad \le K_t(1+rK)(\mathscr{D}_t(W, \tilde{W}) + \gamma_1 + \gamma_2),
+\end{align*}
+holds with probability at least:
+\[
+1 - \frac{n_1r}{\gamma_1}\exp\left(-\frac{n_2\gamma_1^2}{K_t(1+rK)^2}\right) - \frac{n_2r}{\gamma_2}\exp\left(-\frac{n_1\gamma_2^2}{K_t(1+rK)^2}\right).
+\]
+
+\paragraph*{Step 6: Gronwall argument.}
+
+Combining the bounds and taking a union bound over a discrete time grid $t \in \{0, \xi, 2\xi, \ldots, \lfloor T/\xi\rfloor\xi\}$ for some $\xi \in (0,1)$, we obtain:
+\[
+\max\left\{\max_{j_2 \le n_2}\left|\frac{\partial}{\partial t}\tilde{w}_2(t, j_2) - \frac{\partial}{\partial t}w_2(t, C_2(j_2))\right|,\right.
+\]
+\[
+\left.\max_{j_1 \le n_1, 1 \le k \le r}\left|\frac{\partial}{\partial t}\tilde{w}_1(t, j_1, k) - \frac{\partial}{\partial t}w_1(t, C_1(j_1), k)\right|\right\}
+\]
+\[
+\le K_T(1+rK)(\mathscr{D}_t(W, \tilde{W}) + \gamma_1 + \gamma_2 + \xi), \qquad \forall t \in [0, T],
+\]
+with probability at least:
+\[
+1 - \frac{T+1}{\xi}\left[\frac{n_1r}{\gamma_1}\exp\left(-\frac{n_2\gamma_1^2}{K_T(1+rK)^2}\right) + \frac{n_2r}{\gamma_2}\exp\left(-\frac{n_1\gamma_2^2}{K_T(1+rK)^2}\right)\right].
+\]
+
+The above event implies:
+\[
+\mathscr{D}_t(W, \tilde{W}) \le K_T(1+rK)\int_0^t(\mathscr{D}_s(W, \tilde{W}) + \gamma_1 + \gamma_2 + \xi)ds,
+\]
+and hence by Gronwall's lemma and the fact $\mathscr{D}_0(W, \tilde{W}) = 0$:
+\[
+\mathscr{D}_T(W, \tilde{W}) \le (\gamma_1 + \gamma_2 + \xi)e^{K_T(1+rK)}.
+\]
+
+The result follows from choosing:
+\begin{align*}
+\xi &= \frac{1}{\sqrt{n_{\max}}}, \\
+\gamma_1 &= \frac{K_T(1+rK)}{\sqrt{n_2}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2r}{\delta} + e\right), \\
+\gamma_2 &= \frac{K_T(1+rK)}{\sqrt{n_1}}\log^{1/2}\left(\frac{3(T+1)n_{\max}^2r}{\delta} + e\right).
+\end{align*}
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:gradient-lowrank}}
+
+\begin{proof}
+The proof follows the same structure as the full-rank case \cite{nguyen2020global}, with careful adaptations for the low-rank structure. The key difference is that we need to account for the $r$ channels in $w_1$ and the mixing matrix $L$ in all bounds.
+
+We consider $t \le T$ for a given terminal time $T \in \epsilon\mathbb{N}_{\ge 0}$. We reuse the notation $K_t$ from the proof of Lemma~\ref{lem:particle-lowrank}. Note that $K_t \le K_T$ for all $t \le T$. We also note that at initialization, $\mathscr{D}_0(\mathbf{W}, \tilde{W}) = 0$.
+
+For brevity, let us define quantities that relate to the difference in the gradient updates between $\mathbf{W}$ and $\tilde{W}$:
+\begin{align*}
+q_2(k, z, \tilde{z}, j_2) &= d_L(z; \mathbf{W}(k))\,\varphi_2(\mathbf{H}_2(k, j_2; x, \mathbf{W}(k)))\\
+&\quad - d_L(\tilde{z}; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; \tilde{x}, \tilde{W}(k\epsilon))),\\
+r_2(k, z, j_2) &= \xi_2(k\epsilon)d_L(z; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; x, \tilde{W}(k\epsilon)))\\
+&\quad - \xi_2(k\epsilon)\mathbb{E}_Z[d_L(Z; \tilde{W}(k\epsilon))\,\varphi_2(\tilde{H}_2(k\epsilon, j_2; X, \tilde{W}(k\epsilon)))],\\
+q_1(k, z, \tilde{z}, j_1, k') &= d_L(z; \mathbf{W}(k))\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle)\,\mathbf{B}_{k'}(k; x, \mathbf{W}(k))\\
+&\quad - d_L(\tilde{z}; \tilde{W}(k\epsilon))\,\varphi_1(\langle L^0(C_1(j_1)), \tilde{x}\rangle)\,\tilde{B}_{k'}(k\epsilon; \tilde{x}, \tilde{W}(k\epsilon)),\\
+r_1(k, z, j_1, k') &= \xi_1(k\epsilon)d_L(z; \tilde{W}(k\epsilon))\,\varphi_1(\langle L^0(C_1(j_1)), x\rangle)\,\tilde{B}_{k'}(k\epsilon; x, \tilde{W}(k\epsilon))\\
+&\quad - \xi_1(k\epsilon)\mathbb{E}_Z[d_L(Z; \tilde{W}(k\epsilon))\,\varphi_1(\langle L^0(C_1(j_1)), X\rangle)\,\tilde{B}_{k'}(k\epsilon; X, \tilde{W}(k\epsilon))],
+\end{align*}
+where $\mathbf{B}_{k'}(k; x, \mathbf{W}) = \frac{1}{n_2}\sum_{j_2=1}^{n_2} L_{C_2(j_2),k'}\,\varphi_2'(\mathbf{H}_2(k, j_2; x, \mathbf{W}))\,\mathbf{w}_2(k, j_2)$.
+
+By time-interpolation estimates (similar to Claim 1 in the full-rank case) and Assumption~\ref{assump:regularity}, we have:
+\begin{align*}
+|\mathbf{w}_2(\lfloor t/\epsilon\rfloor, j_2) - \tilde{w}_2(t, j_2)| &\le K\max_{j_2 \le n_2}\left[Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) + Q_{2,2}(\lfloor t/\epsilon\rfloor, j_2)\right] + tK_t\epsilon,\\
+|\mathbf{w}_1(\lfloor t/\epsilon\rfloor, j_1, k) - \tilde{w}_1(t, j_1, k)| &\le K\max_{j_1 \le n_1, 1 \le k \le r}\left[Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) + Q_{1,2}(\lfloor t/\epsilon\rfloor, j_1, k)\right] + tK_t\epsilon,
+\end{align*}
+where:
+\begin{align*}
+Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) &= \epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}|q_2(\ell, z(\ell), z(\ell), j_2)|,\\
+Q_{2,2}(\lfloor t/\epsilon\rfloor, j_2) &= \left|\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}r_2(\ell, z(\ell), j_2)\right|,\\
+Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) &= \epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}|q_1(\ell, z(\ell), z(\ell), j_1, k)|,\\
+Q_{1,2}(\lfloor t/\epsilon\rfloor, j_1, k) &= \left|\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}r_1(\ell, z(\ell), j_1, k)\right|.
+\end{align*}
+
+\paragraph*{Bounding the terms:}
+
+For $Q_{2,1}$, using Assumption~\ref{assump:regularity} and the low-rank structure:
+\begin{align*}
+|q_2(\ell, z(\ell), z(\ell), j_2)| &\le K|d_L(z(\ell); \mathbf{W}(\ell)) - d_L(z(\ell); \tilde{W}(\ell\epsilon))|\\
+&\quad + K|d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{H}_2(\ell, j_2; x(\ell), \mathbf{W}(\ell)) - \tilde{H}_2(\ell\epsilon, j_2; x(\ell), \tilde{W}(\ell\epsilon))|\\
+&\le K_t\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}) + K_t\sum_{k=1}^r |L_{C_2(j_2),k}|\max_{j_1 \le n_1}|\mathbf{w}_1(\ell, j_1, k) - \tilde{w}_1(\ell\epsilon, j_1, k)|\\
+&\le K_t(1+rK)\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}),
+\end{align*}
+which yields:
+\[
+\max_{j_2 \le n_2}Q_{2,1}(\lfloor t/\epsilon\rfloor, j_2) \le K_t(1+rK)\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}).
+\]
+
+For $Q_{1,1}$, similarly:
+\begin{align*}
+|q_1(\ell, z(\ell), z(\ell), j_1, k)| &\le K|d_L(z(\ell); \mathbf{W}(\ell)) - d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{B}_k(\ell; x(\ell), \mathbf{W}(\ell))|\\
+&\quad + K|d_L(z(\ell); \tilde{W}(\ell\epsilon))|\,|\mathbf{B}_k(\ell; x(\ell), \mathbf{W}(\ell)) - \tilde{B}_k(\ell\epsilon; x(\ell), \tilde{W}(\ell\epsilon))|\\
+&\le K_t(1+rK)\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}),
+\end{align*}
+which yields:
+\[
+\max_{j_1 \le n_1, 1 \le k \le r}Q_{1,1}(\lfloor t/\epsilon\rfloor, j_1, k) \le K_t(1+rK)\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}).
+\]
+
+For $Q_{2,2}$ and $Q_{1,2}$, we use martingale concentration. The martingale differences are bounded: $|r_2(\ell, z(\ell), j_2)| \le K_t$ and $|r_1(\ell, z(\ell), j_1, k)| \le K_t(1+rK)$ almost surely by Assumption~\ref{assump:regularity} and the low-rank structure. Then by martingale concentration inequalities:
+\[
+\mathbb{P}\left(\max_{j_2 \le n_2}\max_{\ell \in \{0,1,\ldots,T/\epsilon\}}Q_{2,2}(\ell, j_2) \ge \xi\right) \le 2n_2\exp\left(-\frac{\xi^2}{K_T(T+1)\epsilon}\right);
+\]
+\[
+\mathbb{P}\left(\max_{j_1 \le n_1, 1 \le k \le r}\max_{\ell \in \{0,1,\ldots,T/\epsilon\}}Q_{1,2}(\ell, j_1, k) \ge \xi\right) \le 2n_1r\exp\left(-\frac{\xi^2}{K_T(1+rK)^2(T+1)\epsilon}\right).
+\]
+
+\paragraph*{Putting everything together:}
+
+All the above results give us:
+\[
+\mathscr{D}_{\lfloor t/\epsilon\rfloor\epsilon}(\tilde{W}, \mathbf{W}) \le K_T(1+rK)\epsilon\sum_{\ell=0}^{\lfloor t/\epsilon\rfloor - 1}\mathscr{D}_{\ell\epsilon}(\tilde{W}, \mathbf{W}) + \xi + TK_T\epsilon, \qquad \forall t \le T,
+\]
+which holds with probability at least:
+\[
+1 - 2n_1r\exp\left(-\frac{\xi^2}{K_T(1+rK)^2(T+1)\epsilon}\right) - 2n_2\exp\left(-\frac{\xi^2}{K_T(T+1)\epsilon}\right).
+\]
+
+The above event implies, by Gronwall's lemma:
+\[
+\mathscr{D}_T(\tilde{W}, \mathbf{W}) \le (\xi + \epsilon)e^{K_T(1+rK)}.
+\]
+
+Choosing $\xi = K_T(1+rK)\sqrt{(T+1)\epsilon\log(2n_1n_2r/\delta)}$ completes the proof.
+\end{proof}
+
+\subsection{Discussion: Width Requirement and Exponential Factor}
+
+The bound in Theorem~\ref{thm:quantitative-lowrank} shows that the approximation error scales as:
+\[
+\mathscr{D}_T(W, \mathbf{W}) \le e^{K_T(1+rK)}\left(\frac{1}{\sqrt{n_{\min}}} + \sqrt{\epsilon}\right)\log^{1/2}\left(\frac{3(T+1)n_{\max}^2}{\delta} + e\right).
+\]
+
+For typical values $T \le 10$, $K \approx 1$, $r \le 100$, and $\epsilon \approx 0.001$, we have $K_T(1+rK) \le 1000$ (roughly), so $e^{K_T(1+rK)} \le e^{1000}$, which is an extremely large exponential factor. This reflects the worst-case scenario where all $r$ channels must be learned simultaneously. However, in practice, channel specialization enables a more favorable learning regime: channels progressively capture different frequency components, avoiding the worst-case exponential scaling. The actual convergence rate is determined by the favorable loss landscape structure (see Section~\ref{sec:conclusion}) rather than this worst-case bound.
+
+The key qualitative insight is that the error \emph{decreases} as $n_{\min}$ increases, with rate $O(1/\sqrt{n_{\min}})$ independent of data dimension $d$. The exponential factor $e^{K_T(1+rK)}$ reflects the multi-channel structure but does not dominate in practice due to channel specialization.
+
+Empirical validation in \cite{nguyen2019meanfield} confirms that networks with width $\approx 1000$ trained on high-dimensional real-world data (e.g., $d \approx 1000$) exhibit mean-field behaviors, supporting our theoretical prediction that the required width is independent of $d$.
+
+
+
+
+
+
+
+
+
+\section{Channel-wise partial functions}
+\label{app:pushforward}
+
+This section rewrites the $r$ channel summaries $m_k(t;\cdot)$ as integrals against a measure $\mu_0$ on the \emph{untrained} first-layer features, together with a pushforward that incorporates the \emph{trained} first-layer weights $w_1$. Let $w_0:\Omega_1\to\R^d$ denote the untrained first-layer map (in the main text, $w_0=L^0$) and let $\rho^1$ be the law of $C_1$. Define the pushforward $\mu_0 \equiv (w_0)_{\#}\rho^1$ on $\R^d$. For each $t\ge 0$ and $k\in\{1,\dots,r\}$, the signed measure $\mu_{1,k}^t \equiv (w_0)_{\#}(w_1(t,\cdot,k)\,\rho^1)$ satisfies $\mu_{1,k}^t(d\theta)=\bar w_{1,k}(t,\theta)\,\mu_0(d\theta)$ with $\bar w_{1,k}(t,\theta)$ the conditional average of $w_1(t,\cdot,k)$ given $w_0(c_1)=\theta$. Then $m_k(t;X,W)=\int_{\R^d}\varphi_1(\ip{\theta}{X})\,\mu_{1,k}^t(d\theta)=\int_{\R^d}\bar w_{1,k}(t,\theta)\,\varphi_1(\ip{\theta}{X})\,\mu_0(d\theta)$.
+
+\subsection{Time variation of the $r$ partial functions and the induced PDE}
+\label{app:time-variation-pde}
+
+Define $f_k(t,x)\equiv m_k(t;x,W)=\int_{\R^d}\bar w_{1,k}(t,\theta)\,\varphi_1(\ip{\theta}{x})\,\mu_0(d\theta)$. From the MF ODE \eqref{eq:ode-w1}, with $B_k(t;X)\equiv \E_{C_2}[L_{C_2,k}\,\varphi_2'(H_2(t,C_2;X,W(t)))\,w_2(t,C_2)]$, the coefficient field evolves as
+\begin{equation}\label{eq:barw-evol}
+\partial_t \bar w_{1,k}(t,\theta)
+=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1(\ip{\theta}{X})\,B_k(t;X)\right].
+\end{equation}
+Differentiating under the integral and defining $K_{\mu_0}(x,x')\equiv \int_{\R^d}\varphi_1(\ip{\theta}{x})\,\varphi_1(\ip{\theta}{x'})\,\mu_0(d\theta)$ yields
+\begin{equation}\label{eq:fk-kernel}
+\partial_t f_k(t,x)=-\xi_1(t)\,\E_{Z=(X,Y)}\!\left[d_L\big(Z;W(t)\big)\,B_k(t;X)\,K_{\mu_0}(x,X)\right],\qquad k=1,\dots,r.
+\end{equation}
+For ReLU $\varphi_2(u)=u_+$, $B_k(t;X)=\E_{C_2}[L_{C_2,k}\,w_2(t,C_2)\,\one \{H_2(t,C_2;X,W(t))>0\}]$. In a one-spike reduction at $x_\star$ with $f_k(t)=f_k(t,x_\star)$, $d(t)=d_L((x_\star,y_\star);W(t))$, the dynamics are
+\begin{align}
+\partial_t f_k(t)&=-\xi_1(t)\,d(t)\,B_k(t),\label{eq:spike-f}\\
+\partial_t w_2(t,c_2)&=-\xi_2(t)\,d(t)\,\big(\ip{L_{c_2}}{f(t)}\big)_+,\label{eq:spike-w2}
+\end{align}
+with
+\begin{equation}\label{eq:spike-B}
+B_k(t)=\E_{C_2}\!\left[L_{C_2,k}\,w_2(t,C_2)\,\one \!\left\{\ip{L_{C_2}}{f(t)}>0\right\}\right],\qquad k=1,\dots,r.
+\end{equation} Under Assumption~\ref{assump:L-symmetric} (symmetric independent coordinates of $L_{C_2}$), nonnegative $w_2(0,\cdot)$ and $d(t)\le 0$, a one-sparse initial $f(0)=a_0 e_j$ stays one-sparse: $f(t)=a(t)e_j$ with $a(t)\ge a_0$, $B_k(t)=0$ for $k\neq j$, and $B_j(t)>0$ (Lemma~\ref{lem:onesparse-reinforce}). Half-space symmetry gives $\E[U\,\one \{aU>0\}]=\mathrm{sign}(a)\,\frac{1}{2}\E[|U|]$ (Lemma~\ref{lem:halfspace-identities}).
+
+\begin{assumption}[Random mixing vector, symmetric and independent]\label{assump:L-symmetric}
+The random vector $L_{C_2}=(L_{C_2,1},\dots,L_{C_2,r})$ has independent coordinates, each symmetric about $0$: $L_{C_2,k}\overset{d}{=}-L_{C_2,k}$ and $\E[L_{C_2,k}^2]<\infty$ for all $k$.
+\end{assumption}
+
+\begin{lemma}[Half-space symmetry identities]\label{lem:halfspace-identities}
+Let $U$ be a real random variable with $U\overset{d}{=}-U$ and $\E[|U|]<\infty$. Then for any $a\in\R\setminus\{0\}$, $\E[U\,\one \{aU>0\}]=\mathrm{sign}(a)\,\frac{1}{2}\E[|U|]$. If $\E[U^2]<\infty$, then $\E[U^2\,\one \{aU>0\}]=\frac{1}{2}\E[U^2]$.
+\end{lemma}
+
+\begin{lemma}[One-sparse invariant manifold and emergent sign-coherence]\label{lem:onesparse-reinforce}
+Assume the one-spike system above, Assumption~\ref{assump:L-symmetric}, $d(t)\le 0$ on $[0,T]$, $w_2(0,c_2)\equiv w_2^0\ge 0$, and $f(0)=a_0 e_j$ with $a_0>0$. Then for all $t\in[0,T]$: $f(t)=a(t)e_j$ with $a(t)\ge a_0$; $B_k(t)=0$ for $k\neq j$; $B_j(t)>0$ with $B_j(t)=\frac{w_2^0}{2}\E[|L_{C_2,j}|]+\frac{\E[L_{C_2,j}^2]}{2}\int_0^t \xi_2(s)\,(-d(s))\,a(s)\,ds$; and $\partial_t a(t)\ge 0$.
+\end{lemma}
+
+\subsection{Finite-support reduction and scalar ODEs}
+\label{app:finite-support-scalar}
+
+The kernel $K_{\mu_0}$ and the evolution \eqref{eq:fk-kernel} are derived in the preceding section. For the two-point support $\{x_0,x_1\}$, $K_{\mu_0}(x_0,x_1)$ is \emph{positive} and \emph{fastly decaying} in $\delta$: $0<K_{\mu_0}(x_0,x_1)\le \psi(\delta)$ with $\psi(\delta)\to 0$ rapidly as $\delta\to\infty$, which holds for such NNGP kernels in 1D or under suitable geometry. The positivity reinforces the leading local term; the fast decay keeps the non-local remainder small.
+
+\paragraph{Finite-support data.}
+Assume the input marginal is supported on $x^{(1)},\ldots,x^{(m)}$ with $\Pp(X=x^{(p)})=\pi_p$ and targets $y^{(p)}$. Set $d_p(t)=d_L((x^{(p)},y^{(p)});W(t))$ and $B_{k,p}(t)=B_k(t;x^{(p)})$. Then \eqref{eq:barw-evol} becomes
+\begin{equation}\label{eq:barw-finite-support}
+\partial_t \bar w_{1,k}(t,\theta)=-\xi_1(t)\sum_{p=1}^m \pi_p\,d_p(t)\,B_{k,p}(t)\,\varphi_1(\ip{\theta}{x^{(p)}}),\qquad k=1,\dots,r.
+\end{equation}
+Integrating in time yields $\bar w_{1,k}(t,\theta)=\bar w_{1,k}(0,\theta)-\sum_{p=1}^m \varphi_1(\ip{\theta}{x^{(p)}})\,\Gamma_{k,p}(t)$ with
+\begin{equation}\label{eq:Gamma-finite}
+\Gamma_{k,p}(t)\equiv \int_0^t \xi_1(s)\,\pi_p\,d_p(s)\,B_{k,p}(s)\,ds.
+\end{equation}
+Plugging into $f_k$ gives the explicit superposition
+\begin{equation}\label{eq:fk-superposition}
+f_k(t,x)=f_k(0,x)-\sum_{p=1}^m \Gamma_{k,p}(t)\,K_{\mu_0}(x,x^{(p)}),\qquad k=1,\ldots,r.
+\end{equation}
+The spike shape is determined by $K_{\mu_0}$; all learning dynamics reduce to the scalar coefficients $\Gamma_{k,p}(t)$.
+
+\paragraph{One-spike reduction.}
+If $m=1$ with $x^{(1)}=x_\star$, then $f_k(t,x)=f_k(0,x)-\Gamma_{k,1}(t)\,K_{\mu_0}(x,x_\star)$. For $f_k(0,\cdot)\equiv 0$, $f_k(t,\cdot)$ is exactly a kernel bump at $x_\star$ and spike learning reduces to solving $\Gamma_{k,1}(t)$.
+
+\paragraph{Two-sided step ($m=2$).}
+Take $x^{(1)}=x_0=-\delta$, $x^{(2)}=x_1=+\delta$ ($\delta>0$), $y^{(1)}=+A$, $y^{(2)}=-A$. Then
+\[
+f_k(t,x)=f_k(0,x)-\Gamma_{k,1}(t)\,K_{\mu_0}(x,x_0)-\Gamma_{k,2}(t)\,K_{\mu_0}(x,x_1).
+\]
+The kernel $K_{\mu_0}$ (NNGP, \cite{jacot2018neural}) satisfies $K_{\mu_0}(x_p,x_p)=K_0>0$ for $p\in\{0,1\}$, and the off-diagonal $K_{\mu_0}(x_0,x_1)=K_{\mu_0}(-\delta,+\delta)$ is positive and fastly decaying in $\delta$: $0<K_{\mu_0}(x_0,x_1)\le \psi(\delta)$ with $\psi(\delta)\to 0$ rapidly as $\delta\to\infty$. The full evolution is
+\[
+\partial_t f_k(t,x_p)=-\xi_1(t)\,K_{\mu_0}(x_p,x_p)\,d_p(t)\,B_{k,p+1}(t)+E_p(t),
+\]
+with $|E_p(t)|\le C'\,\psi(\delta)$ for $\psi(\delta)$ fastly decaying in $\delta$. The positivity of $K_{\mu_0}(x_0,x_1)$ gives even better positivity in the log-ratio; the fast decay keeps the remainder small. This is the setting of Theorem~\ref{thm:r2-logratio-criterion-main}.
+
+\subsection{Proof of Theorem~\ref{thm:r2-logratio-criterion-main} (two-sided step, $x_0$)}
+\label{app:r2-logratio-proof}
+
+We prove the theorem at $x_0$; the argument at $x_1$ is symmetrical.
+
+\paragraph{At $x_0$.}
+By the log-ratio derivative identity at $x_0$,
+\[
+\partial_t R_{12}(t,x_0)=\frac{\mathrm{sign}(f_1)\,\partial_t f_1}{|f_1|}-\frac{\mathrm{sign}(f_2)\,\partial_t f_2}{|f_2|}.
+\]
+Insert the full evolution \eqref{eq:dtfk-full-delta}: $\partial_t f_k(t,x_0)=-\xi_1\,K_{\mu_0}(x_0,x_0)\,d_0\,B_{k,1}+E_0(t)$ with $|E_0(t)|\le C'\,\psi(\delta)$ for $\psi(\delta)$ fastly decaying in $\delta$. Then
+\[
+\partial_t R_{12}(t,x_0)=\xi_1(t)\,K_{\mu_0}(x_0,x_0)\,(-d_0(t))\Big(
+\frac{\mathrm{sign}(f_1)B_{1,1}}{|f_1|}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|}\Big)
++ \varepsilon_0(t),\qquad |\varepsilon_0(t)|\le C''\,\psi(\delta),
+\]
+where $\varepsilon_0(t)=E_0(t)\,\big(\frac{\mathrm{sign}(f_1)}{|f_1|}-\frac{\mathrm{sign}(f_2)}{|f_2|}\big)$ inherits the bound from $E_0$. Use $-d_0\ge 0$. The sign condition gives $\mathrm{sign}(f_1)B_{1,1}=|B_{1,1}|$; $-\mathrm{sign}(f_2)B_{2,1}\ge -|B_{2,1}|$. The dominance inequality at $x_0$ is $|B_{2,1}|\le \rho_0\,\frac{|f_2|}{|f_1|}\,|B_{1,1}|$, hence
+\[
+\frac{|B_{1,1}|}{|f_1|}-\frac{\mathrm{sign}(f_2)B_{2,1}}{|f_2|}
+\ge \frac{|B_{1,1}|}{|f_1|}-\frac{|B_{2,1}|}{|f_2|}
+\ge (1-\rho_0)\,\frac{|B_{1,1}|}{|f_1|},
+\]
+so $\partial_t R_{12}(t,x_0)= (1-\rho_0)\,\xi_1\,K_{\mu_0}(x_0,x_0)\,(-d_0)\,\frac{|B_{1,1}|}{|f_1|}+\varepsilon_0(t)$. The leading term is $\ge 0$; since $K_{\mu_0}(x_0,x_1)>0$ and fastly decaying, the off-diagonal coupling reinforces the leading term (even better positivity) while $|\varepsilon_0|\le C''\,\psi(\delta)$ is negligible for $\delta$ large. Thus $\partial_t R_{12}(t,x_0)\ge 0$ whenever the leading term dominates $|\varepsilon_0|$.
+
+\paragraph{At $x_1$.}
+The same argument applies by symmetry (indices 1$\leftrightarrow$2, $x_0\leftrightarrow x_1$): channel~2 dominates at $x_1$ and $\partial_t R_{21}(t,x_1)\ge 0$.
+
+\paragraph{Conclusion.}
+The log-ratio $R_{12}$ at $x_0$ is non-decreasing on $I$; strict dominance of channel~1 at $x_0$ cannot be lost and is amplified whenever $|B_{1,1}|$ is not too small. By symmetry, channel~2 dominates at $x_1$.
+
+\subsection{On the hypothesis: when (i)--(iii) hold in practice}
+\label{app:logratio-hypothesis-practice}
+
+The hypothesis of Theorem~\ref{thm:r2-logratio-criterion-main} is conditional: (i)~$-d_0(t)\ge 0$, (ii)~$B_{1,1}(t)$ has the same sign as $f_1(t,x_0)$, and (iii)~$|B_{2,1}(t)|\le \rho_0\,\frac{|f_2(t,x_0)|}{|f_1(t,x_0)|}\,|B_{1,1}(t)|$ for some $\rho_0\in[0,1)$. In practice, these conditions are observed to hold in standard training setups. Under \emph{Xavier initialization} (or similar scale-corrected schemes) for the frozen feature and mixing matrices, and \emph{sub-Gaussian initialization} for the trainable weights $w_1$, $w_2$, the initial $f_k$ and backprop signals $B_{k,p}$ are well-balanced across channels. The gradient-flow dynamics then tend to amplify small asymmetries: once one channel leads at $x_0$, (ii)~and (iii)~are maintained because the dominant channel receives a larger $B_k$ and thus a larger $\partial_t f_k$, while the weaker channel's backprop stays proportionally smaller. Condition~(i) holds when the network under-predicts at $x_0$; for squared loss $d_L \propto \hat{y}-y$, $-d_0\ge 0$ corresponds to $\hat{y}(x_0)\le y(x_0)=+A$, which is typical before convergence. The same reasoning applies for \emph{non-convex losses} such as cross-entropy: the loss derivative has a different form, but under-prediction at a class boundary and emergent sign-coherence under gradient flow still yield (i)--(iii) on an interval $I$ in common regimes. Thus, although the theorem does not prove (i)--(iii) from first principles, they are consistent with and typically observed under Xavier and sub-Gaussian initialization and under losses including cross-entropy, which are standard in practice.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Additional Experimental Details}
+\label{app:exp-details}
+
+\subsection{Dataset}
+\label{app:datasets}
+
+Target: $f(x)=\cos(f_1\pi x^2)-0.8\cos(f_2\pi x^2)$ on $[-1,1]$, symmetric in $x$. We use $(f_1,f_2)\in\{(36,12),(72,24),(144,48)\}$ with training sizes 1000, 2000, 4000 and test sizes 1234, 2468, 4936. Train: uniform grid; test: different distribution. Sample count scales with frequency to match Nyquist density.
+
+\subsection{Hyperparameters}
+\label{app:hyperparams}
+
+\begin{table}[htbp!]
+\centering
+\caption{Hyperparameters. Main runs: batch 100; we also try 50 and 200.}
+\label{tab:hyperparams}
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Values} \\
+\midrule
+\textbf{Architecture} & \\
+\quad Depth $L$ & 8 layers \\
+\quad Width $n$ & 1024 neurons per layer \\
+\quad Activation & Leaky ReLU \\
+\quad Rank $r$ & $\{10, 15, 20, 25, 50, 100, 1024\}$ \\
+\quad fixWb & True (frozen), False (trainable) \\
+\midrule
+\textbf{Optimization} & \\
+\quad Optimizer & Adam \\
+\quad Learning rate & 0.001 (initial) \\
+\quad Scheduler & StepLR ($\gamma=0.9$, step\_size=100) \\
+\quad Gradient clipping & max\_norm=1.0 \\
+\quad Batch size & $\{50, 100, 200\}$ \\
+\quad Training epochs & 10,000 (all runs) \\
+\midrule
+\textbf{Data} & \\
+\quad Frequency pairs $(f_1, f_2)$ & $(36, 12)$, $(72, 24)$, $(144, 48)$ \\
+\quad Training samples & 1000, 2000, 4000 (by frequency) \\
+\quad Test samples & 1234, 2468, 4936 (by frequency) \\
+\quad Input domain & $x \in [-1, 1]$ \\
+\midrule
+\textbf{Training Details} & \\
+\quad Random seed & 42 \\
+\quad Device & CUDA (GPU) \\
+\quad Checkpointing & Every 500 epochs \\
+\quad Evaluation frequency & Every 50 epochs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Roughly 90 configurations (rank, fixWb, frequency, batch size); 10k epochs, no early stopping.
+
+\subsection{Plots and log-ratio setup}
+\label{app:additional-plots}
+
+We plot loss and error evolution, final predictions vs.\ target, and layer-wise channel partials (up to 36 per layer) to inspect hierarchical frequency learning (Section~\ref{sec:channel-specialization}). \textbf{Log-ratio} (Figure~\ref{fig:logratio-heatmap}): 3-layer, $n{=}1024$, $r{=}15$, $\cos(8\pi x)$; SGD lr $0.01$, batch 160, 10k epochs; heatmap of $R_{i,j}$ at $x{=}0$.
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

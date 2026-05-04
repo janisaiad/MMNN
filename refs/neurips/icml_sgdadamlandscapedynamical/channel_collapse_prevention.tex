@@ -1,0 +1,139 @@
+\section{What Prevents Channels from Learning the Same Function?}
+\label{sec:channel-collapse-prevention}
+
+This section explains the mechanisms that prevent channel collapse (all channels learning the same function) and identifies when collapse can still occur.
+
+\subsection{The Channel-Specific Backpropagated Signal}
+
+\textbf{The key mechanism:} Each channel $k$ receives a \textbf{different backpropagated signal} $B_k$:
+
+\[
+B_k(t; X) = \mathbb{E}_{C_2}\left[L_{C_2,k}\,\varphi_2'(H_2(t, C_2; X, W(t)))\,w_2(t, C_2)\right]
+\]
+
+\textbf{Why this creates different gradients:}
+\begin{itemize}
+\item Each channel $k$ has a different column $L_{\cdot,k}$ of the mixing matrix
+\item The ReLU gating $\varphi_2'(H_2) = \mathbf{1}\{H_2 > 0\}$ creates different active regions for different channels
+\item The expectation over $C_2$ weights by $w_2(t, C_2)$, which can be different for different neurons
+\item This means: $\partial_t w_1(t, c_1, k) \propto \mathbb{E}_Z[d_L \varphi_1 B_k]$ receives a \textbf{channel-specific} gradient
+\end{itemize}
+
+\textbf{If all channels received the same signal:} If $B_k = B$ for all $k$, then all channels would receive identical gradients and would learn the same function, leading to collapse.
+
+\subsection{The ReLU Gating Mechanism}
+
+\textbf{The ReLU activation creates channel-specific active regions:}
+
+For ReLU, $\varphi_2'(H_2) = \mathbf{1}\{H_2 > 0\}$, so:
+\[
+B_k(t; X) = \mathbb{E}_{C_2}\left[L_{C_2,k}\,w_2(t, C_2)\,\mathbf{1}\left\{H_2(t, C_2; X) > 0\right\}\right]
+\]
+
+where $H_2(t, c_2; X) = \sum_{j=1}^r L_{c_2,j} f_j(t, X)$.
+
+\textbf{Why this prevents collapse:}
+\begin{itemize}
+\item Different channels $k$ have different mixing coefficients $L_{c_2,k}$ for each neuron $c_2$
+\item The gate $\mathbf{1}\{H_2 > 0\}$ depends on the \textbf{sum} over all channels: $H_2 = \sum_j L_{c_2,j} f_j$
+\item If channel $k$ is large at location $x$, it contributes more to $H_2$, affecting which neurons are active
+\item This creates a \textbf{feedback loop}: large $f_k$ $\to$ affects $H_2$ $\to$ affects gate $\to$ affects $B_k$ $\to$ affects $f_k$
+\item Different channels can establish dominance at different locations/frequencies
+\end{itemize}
+
+\subsection{The Log-Ratio Growth Mechanism}
+
+\textbf{Once a channel establishes dominance, it's preserved:}
+
+From Lemma~\ref{lem:r2-logratio-criterion-main}, if channel 1 is dominant at location $x_0$:
+\[
+R_{12}(t, x_0) = \log\frac{|f_1(t, x_0)| + \varepsilon}{|f_2(t, x_0)| + \varepsilon}
+\]
+
+satisfies:
+\[
+\partial_t R_{12}(t, x_0) \ge (1-\rho)\,\xi_1(t)\,K_{\mu_0}(x_0, x_0)\,(-d_0(t))\,\frac{|B_{1,1}(t)|}{|f_1(t, x_0)| + \varepsilon} \ge 0
+\]
+
+\textbf{This means:}
+\begin{itemize}
+\item Once $f_1 > f_2$ at $x_0$, the log-ratio \textbf{grows} (or at least doesn't decrease)
+\item Dominance is \textbf{amplified} over time
+\item Other channels are forced to specialize to different locations/frequencies
+\end{itemize}
+
+\subsection{When Can Collapse Still Occur?}
+
+\textbf{Critical limitation:} Isotropic Gaussian mixing can prevent specialization!
+
+From Lemma~\ref{lem:isotropic-no-specialization}, if $L_{C_2} \sim \mathcal{N}(0, I_r)$ (isotropic Gaussian), then:
+\[
+(B_1(t; x_0), \ldots, B_r(t; x_0)) = c(t) \cdot (f_1(t, x_0), \ldots, f_r(t, x_0))
+\]
+
+\textbf{This means:}
+\begin{itemize}
+\item The backpropagated signals $B_k$ are \textbf{colinear} with the channel functions $f_k$
+\item All channels receive \textbf{proportional} gradients (just scaled by $c(t)$)
+\item If channels start with the same sign, the log-ratio $R_{12}$ stays constant (no specialization)
+\item \textbf{Collapse can occur} if the mixing matrix is isotropic!
+\end{itemize}
+
+\subsection{What Prevents Collapse in Practice}
+
+\textbf{The mechanisms that prevent collapse:}
+
+\begin{enumerate}
+\item \textbf{Non-isotropic mixing matrix}: If $L$ is not isotropic (e.g., deterministic grid, structured initialization), then $B_k$ are not colinear with $f_k$, creating different effective gradients.
+
+\item \textbf{Initial asymmetry}: If channels start with different initializations or different signs, the log-ratio mechanism can amplify these differences.
+
+\item \textbf{ReLU gating creates competition}: The gate $\mathbf{1}\{H_2 > 0\}$ depends on the sum over channels, so if one channel is large, it affects which neurons are active, creating a competitive dynamic.
+
+\item \textbf{Frequency/spatial localization}: Different channels can specialize to different frequency components or spatial regions, with the ReLU gate creating different active regions for each channel.
+
+\item \textbf{Structured mixing matrix}: A deterministic, structured $L$ (e.g., on a grid) can create natural specialization patterns where different channels capture different scales or frequencies.
+\end{enumerate}
+
+\subsection{The Theoretical Gap}
+
+\textbf{Important caveat:} The current theory does \textbf{not} fully guarantee that channels won't collapse. The mechanisms that prevent collapse are:
+
+\begin{itemize}
+\item \textbf{Empirically observed}: Experiments show channel specialization occurs
+\item \textbf{Mechanistically plausible}: The log-ratio growth and ReLU gating provide mechanisms
+\item \textbf{But not guaranteed}: Isotropic mixing can prevent specialization, and the conditions for specialization (e.g., stability assumption in Lemma~\ref{lem:r2-logratio-criterion-main}) are not always satisfied
+\end{itemize}
+
+\textbf{What the theory guarantees:}
+\begin{itemize}
+\item \textbf{Global convergence}: Channels will converge to a global minimizer (even if they collapse)
+\item \textbf{Well-posedness}: The dynamics are well-defined
+\item \textbf{Quantitative bounds}: Approximation error is controlled
+\end{itemize}
+
+\textbf{What the theory does NOT guarantee:}
+\begin{itemize}
+\item \textbf{Channel specialization}: Channels may or may not specialize (depends on $L$ and initialization)
+\item \textbf{No collapse}: Isotropic mixing can lead to collapse
+\item \textbf{Unique specialization pattern}: Multiple specialization patterns may be possible
+\end{itemize}
+
+\subsection{Conclusion}
+
+\textbf{What prevents collapse:}
+\begin{enumerate}
+\item \textbf{Channel-specific backpropagated signals}: $B_k$ depends on $L_{\cdot,k}$, creating different gradients
+\item \textbf{ReLU gating}: Creates channel-specific active regions through $\mathbf{1}\{H_2 > 0\}$
+\item \textbf{Log-ratio growth}: Preserves and amplifies channel dominance once established
+\item \textbf{Non-isotropic mixing}: Structured $L$ creates natural specialization patterns
+\end{enumerate}
+
+\textbf{What can cause collapse:}
+\begin{enumerate}
+\item \textbf{Isotropic Gaussian mixing}: Makes $B_k$ colinear with $f_k$, preventing specialization
+\item \textbf{Symmetric initialization}: If all channels start identically, they may stay identical
+\item \textbf{Uniform mixing}: If $L$ has no structure, channels may not differentiate
+\end{enumerate}
+
+\textbf{The key insight:} Channel specialization is \textbf{not guaranteed} by the theory, but it's \textbf{mechanistically enabled} by the low-rank structure with non-isotropic mixing. The frozen random features provide a rich basis, and the mixing matrix $L$ (if structured) can create natural specialization patterns. However, the exact conditions for specialization remain an open question.

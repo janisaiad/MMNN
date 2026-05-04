@@ -1,0 +1,183 @@
+\section{What Makes the Low-Rank Proof Work: Key Technical Mechanisms}
+\label{sec:what-makes-proof-work}
+
+This section identifies the specific technical mechanisms that make the quantitative approximation proof work in the low-rank case, and why these mechanisms fail or become more complex in the full-width case.
+
+\subsection{The Five Key Mechanisms}
+
+\paragraph*{1. Channel-Wise Decomposition with Max (Not Sum)}
+
+\textbf{The crucial technique:} Instead of bounding the sum over $r$ channels directly, we decompose channel-by-channel and take the maximum:
+
+\begin{align*}
+|q_2(t, x, j_2, c_2)| &= \left|\sum_{k=1}^r L_{C_2(j_2),k}\left(\frac{1}{n_1}\sum_{j_1=1}^{n_1}\tilde{w}_1(t, j_1, k)\,\varphi_1(\langle f_1(C_1(j_1)), x\rangle)\right.\right.\\
+&\quad\left.\left. - \mathbb{E}_{C_1}[w_1(t, C_1, k)\,\varphi_1(\langle f_1(C_1), x\rangle)]\right)\right|\\
+&\le \sum_{k=1}^r |L_{C_2(j_2),k}|(Q_{2,1,k} + Q_{2,2,k})\\
+&\le rK \max_{1 \le k \le r}(Q_{2,1,k} + Q_{2,2,k}) \quad \text{(KEY: max, not sum)}
+\end{align*}
+
+\textbf{Why this works:}
+\begin{itemize}
+\item We bound each channel's error separately: $Q_{2,1,k} + Q_{2,2,k}$
+\item We take the \textbf{maximum} over channels, not the sum
+\item This gives a factor of $rK$ (from $\|L\|_{\infty,1} \le rK$), not $r^2K$
+\item The max operation preserves the concentration structure
+\end{itemize}
+
+\textbf{What would break:} If we summed over channels instead of taking max, we'd get $r^2K$ factors, leading to exponential growth in $r$.
+
+\paragraph*{2. Bounded Mixing Matrix Structure}
+
+\textbf{The key bound:} $\|L\|_{\infty,1} = \sup_{c_2}\sum_{k=1}^r |L_{c_2,k}| \le rK$
+
+This ensures:
+\begin{itemize}
+\item Each row of $L$ has bounded $\ell_1$ norm
+\item The forward propagation $H_2 = \sum_{k=1}^r L_{c_2,k} m_k$ is bounded: $|H_2| \le rK \max_k |m_k|$
+\item The backward propagation $B_k = \mathbb{E}_{C_2}[L_{C_2,k} \varphi_2' w_2]$ is bounded: $|B_k| \le K \|L\|_{\infty,1} \le rK^2$
+\end{itemize}
+
+\textbf{Why this is crucial:} Without this bound, the mixing matrix could amplify errors unboundedly, breaking the proof.
+
+\paragraph*{3. Union Bound Over Channels (Not Independent Sum)}
+
+\textbf{The technique:} When applying concentration inequalities, we take a union bound over $k = 1, \ldots, r$ channels:
+
+\[
+\mathbb{P}\left(\max_{1 \le k \le r} Q_{2,2,k} \ge \gamma\right) \le \sum_{k=1}^r \mathbb{P}(Q_{2,2,k} \ge \gamma) \le r \cdot \exp\left(-\frac{n_1\gamma^2}{K_t}\right)
+\]
+
+\textbf{Why this works:}
+\begin{itemize}
+\item Each channel's concentration bound is independent
+\item Union bound gives a factor of $r$ in the probability, not $r^2$
+\item The exponential decay in $n_1$ is preserved
+\item This leads to the $(1+rK)^2$ factor in the concentration exponent, not $(rK)^2$
+\end{itemize}
+
+\textbf{What would break:} If channels were not independent or if we needed to bound their sum (not max), we'd get worse concentration.
+
+\paragraph*{4. Global Distance Bounding (Not Layer-Wise)}
+
+\textbf{The crucial technique:} All errors are bounded in terms of the global distance $\mathscr{D}_t(W, \tilde{W})$, not layer-wise errors:
+
+\begin{align*}
+|q_2| &\le rK \max_k(Q_{2,1,k} + Q_{2,2,k}) \le rK(\mathscr{D}_t + \text{concentration})\\
+|q_{B,k}| &\le Q_{B,1,k} + Q_{B,2,k} \le rK^2(\mathscr{D}_t + \text{concentration})
+\end{align*}
+
+\textbf{Why this works:}
+\begin{itemize}
+\item All layer errors are controlled by the same global quantity $\mathscr{D}_t$
+\item This prevents exponential error compounding
+\item The Gronwall constant accumulates multiplicatively: $(1+rK)$ per layer
+\item Without this, we'd get $\delta_i \le (rK)^i \delta_1$ (exponential growth)
+\end{itemize}
+
+\textbf{What would break:} If we bounded errors in terms of previous layer errors, we'd get exponential compounding.
+
+\paragraph*{5. Frozen First Layer Provides Stable Base}
+
+\textbf{The mechanism:} $H_1(t, c_1; X, W) = \langle f_1(c_1), X\rangle$ is independent of $W(t)$
+
+This ensures:
+\begin{itemize}
+\item No recursion needed for the base case
+\item $H_1$ cannot diverge (it's constant in $t$)
+\item Full support $\text{supp}(f_1(C_1)) = \mathbb{R}^d$ is maintained trivially
+\item Standard i.i.d. initialization suffices
+\end{itemize}
+
+\textbf{Why this is crucial:} Without the frozen layer, we'd need to prove the first layer doesn't diverge and maintains full support, which requires correlated initialization (limiting to $L=3$).
+
+\subsection{The Combined Effect: Polynomial Growth}
+
+\textbf{How these mechanisms combine:}
+
+\begin{enumerate}
+\item \textbf{Forward bound:} $|q_2| \le rK \max_k(Q_{2,1,k} + Q_{2,2,k}) \le rK(\mathscr{D}_t + \gamma)$
+   \begin{itemize}
+   \item Channel-wise decomposition gives $r$ channels
+   \item Max operation gives factor $K$ (not $rK$)
+   \item Bounded mixing matrix gives $\|L\|_{\infty,1} \le rK$
+   \item Global distance bounding gives $\mathscr{D}_t$ (not layer-wise errors)
+   \end{itemize}
+
+\item \textbf{Backward bound:} $|q_{B,k}| \le rK^2(\mathscr{D}_t + \gamma)$
+   \begin{itemize}
+   \item Each $B_k$ depends on $n_2$ neurons through mixing matrix $L$
+   \item Bounded $|L_{C_2,k}| \le K$ gives factor $K$
+   \item Sum over $n_2$ gives another factor (handled by concentration)
+   \item Global distance bounding prevents compounding
+   \end{itemize}
+
+\item \textbf{Combined:} $\max(|q_2|, |q_{B,k}|) \le (1+rK)(\mathscr{D}_t + \gamma)$
+   \begin{itemize}
+   \item The $1$ comes from the $w_2$ update (no mixing matrix)
+   \item The $rK$ comes from the $w_1$ update (through mixing matrix)
+   \item This gives the Gronwall constant: $K_T(1+rK)$
+   \end{itemize}
+
+\item \textbf{For $L$ layers:} Each layer contributes $(1+rK)$, so:
+   \[
+   \text{Gronwall constant} = K_T(1+rK)^{L-2} \quad \text{(polynomial, not exponential)}
+   \]
+\end{enumerate}
+
+\subsection{Why Full-Width Case is Harder}
+
+In the full-width case, the corresponding mechanisms would be:
+
+\begin{enumerate}
+\item \textbf{No channel decomposition:} The full-width $H_2$ involves a sum over all $n_1$ neurons, not $r$ channels. This gives:
+   \[
+   |q_2| \le n_1 K \max_{j_1}(Q_{2,1,j_1} + Q_{2,2,j_1})
+   \]
+   The factor $n_1$ (which grows with width) instead of $r$ (fixed rank) makes bounds width-dependent.
+
+\item \textbf{No bounded structure:} Without the low-rank structure, there's no natural bound like $\|L\|_{\infty,1} \le rK$. The full-width case requires more complex analysis of weight distributions.
+
+\item \textbf{Support collapse:} Without frozen features, the first layer's support can collapse, requiring correlated initialization to maintain full support.
+
+\item \textbf{Error compounding:} Without the clean channel structure, errors can compound more complexly across the full width.
+\end{enumerate}
+
+\subsection{The Key Insight: Structure Enables Bounds}
+
+\textbf{The low-rank structure provides:}
+\begin{itemize}
+\item \textbf{Finite decomposition}: $r$ channels (fixed) instead of $n_1$ neurons (growing)
+\item \textbf{Bounded mixing}: $\|L\|_{\infty,1} \le rK$ (fixed bound)
+\item \textbf{Channel independence}: Each channel's error can be bounded separately
+\item \textbf{Max operation}: Taking max over channels gives polynomial growth, not exponential
+\end{itemize}
+
+\textbf{This structure enables:}
+\begin{itemize}
+\item Polynomial growth: $(1+rK)^{L-2}$ instead of exponential
+\item Width-independent bounds: The factor $r$ is fixed, not growing with $n_1, n_2$
+\item Standard initialization: Frozen features provide stable base
+\item Arbitrary depth: Same procedure applies recursively
+\end{itemize}
+
+\subsection{Conclusion}
+
+\textbf{What makes the proof work:}
+
+\begin{enumerate}
+\item \textbf{Channel-wise decomposition with max}: Decompose over $r$ channels, take max (not sum)
+\item \textbf{Bounded mixing matrix}: $\|L\|_{\infty,1} \le rK$ provides fixed bound
+\item \textbf{Union bound over channels}: Independent channels enable clean concentration
+\item \textbf{Global distance bounding}: All errors in terms of $\mathscr{D}_t$, preventing exponential compounding
+\item \textbf{Frozen first layer}: Provides stable, non-diverging base
+\end{enumerate}
+
+\textbf{The combined effect:} These mechanisms ensure that:
+\begin{itemize}
+\item Each layer contributes a bounded factor $(1+rK)$
+\item Factors multiply (not compound exponentially): $(1+rK)^{L-2}$
+\item Growth is polynomial in $L$, not exponential
+\item Bounds are width-independent (depend on $r$, not $n_1, n_2$)
+\end{itemize}
+
+This is why the low-rank proof works: \textbf{the structure provides natural decomposition and boundedness that enables polynomial growth, while the full-width case lacks this structure and requires more complex analysis.}

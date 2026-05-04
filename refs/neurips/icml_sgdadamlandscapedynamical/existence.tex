@@ -1,0 +1,315 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{mathrsfs}
+\usepackage{bbm}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+% math macros
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\1}{\mathbbm{1}}
+\newcommand{\ip}[2]{\left\langle #1,\,#2 \right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+% double brackets for norms
+\newcommand{\llbracket}{[\![}
+\newcommand{\rrbracket}{]\!]}
+% interleave for Orlicz norms
+\newcommand{\interleave}[1]{\llbracket #1 \rrbracket}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+\title{Existence and Uniqueness for Low-Rank Mean-Field Neural Networks}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Existence and Uniqueness of the Solution of the Mean-Field ODEs}
+\label{sec:existence-unicity}
+
+This section establishes well-posedness of the mean-field ODE system \eqref{eq:ode-w1}--\eqref{eq:ode-wL} for low-rank networks with $L$ layers and $r$ channels. The proof adapts the Picard iteration argument from \cite{nguyen2023rigorousframeworkmeanfield} to account for the low-rank structure, showing that the solution operator is contractive on appropriate function spaces.
+
+\subsection{Setup and Notation}
+
+We consider the mean-field ODE system:
+\begin{align}
+\partial_t w_1(t,c_1,k) &= -\xi_1(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_1\!\left(\ip{f_1(c_1)}{X}\right)\,B_k^{(2)}(t;X)\right], \label{eq:ode-w1-existence}\\
+\partial_t w_i(t,c_i,k) &= -\xi_i(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_i\!\Big(H_i(t,c_i;X,W(t))\Big)\,B_k^{(i+1)}(t;X)\right], \quad i=2,\ldots,L-1, \label{eq:ode-wi-existence}\\
+\partial_t w_L(t,c_L) &= -\xi_L(t)\,\E_{Z}\!\left[d_L\big(Z;W(t)\big)\,\varphi_L\!\Big(H_L(t,c_L;X,W(t))\Big)\right], \label{eq:ode-wL-existence}
+\end{align}
+where for $i=2,\ldots,L-1$:
+\[
+B_k^{(i)}(t;X)=\E_{C_i}\!\left[L^{(i)}_{C_i,k}\,\varphi_i'\!\Big(H_i(t,C_i;X,W(t))\Big)\,w_i(t,C_i,k)\right],
+\]
+and $H_i(t,c_i;X,W) = \sum_{k=1}^r L^{(i)}_{c_i,k}\,m_k^{(i)}(t;X,W)$ with $m_k^{(i)}$ defined recursively.
+
+\subsection{Norms and Function Spaces}
+
+We equip the mean-field parameters with several norms to control growth and establish contractivity. For the low-rank case with $L$ layers and $r$ channels, we define:
+
+\paragraph*{Orlicz-type norms:}
+\begin{align}
+\interleave w_1\interleave_t &= \max_{1\le k\le r}\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|^{50}\right]^{1/50},\label{eq:norm-w1}\\
+\interleave w_i\interleave_t &= \max_{1\le k\le r}\E_{C_i}\!\left[\sup_{s\le t}|w_i(s,C_i,k)|^{50}\right]^{1/50}, \quad i=2,\ldots,L-1,\label{eq:norm-wi}\\
+\interleave w_L\interleave_t &= \E_{C_L}\!\left[\sup_{s\le t}|w_L(s,C_L)|^{50}\right]^{1/50},\label{eq:norm-wL}\\
+\interleave W\interleave_t &= \max\big(\interleave w_1\interleave_t, \max_{2\le i\le L-1}\interleave w_i\interleave_t, \interleave w_L\interleave_t\big).\label{eq:norm-W}
+\end{align}
+
+\paragraph*{$L^2$-type norms:}
+\begin{align}
+\|w_1\|_t &= \max_{1\le k\le r}\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|^2\right]^{1/2},\\
+\|w_i\|_t &= \max_{1\le k\le r}\E_{C_i}\!\left[\sup_{s\le t}|w_i(s,C_i,k)|^2\right]^{1/2}, \quad i=2,\ldots,L-1,\\
+\|w_L\|_t &= \E_{C_L}\!\left[\sup_{s\le t}|w_L(s,C_L)|^2\right]^{1/2},\\
+\|W\|_t &= \max\big(\|w_1\|_t, \max_{2\le i\le L-1}\|w_i\|_t, \|w_L\|_t\big).
+\end{align}
+
+\paragraph*{Sub-Gaussian ($\psi_2$) norms:}
+\begin{align}
+\llbracket w_1\rrbracket_{\psi,t} &= \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)|^m\right]^{1/m},\\
+\llbracket w_i\rrbracket_{\psi,t} &= \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\max_{1\le k\le r}\E_{C_i}\!\left[\sup_{s\le t}|w_i(s,C_i,k)|^m\right]^{1/m}, \quad i=2,\ldots,L-1,\\
+\llbracket w_L\rrbracket_{\psi,t} &= \sqrt{50}\,\sup_{m\ge 1}\frac{1}{\sqrt{m}}\E_{C_L}\!\left[\sup_{s\le t}|w_L(s,C_L)|^m\right]^{1/m},\\
+\llbracket W\rrbracket_{\psi,t} &= \max\big(\llbracket w_1\rrbracket_{\psi,t}, \max_{2\le i\le L-1}\llbracket w_i\rrbracket_{\psi,t}, \llbracket w_L\rrbracket_{\psi,t}\big).
+\end{align}
+
+The factor $\sqrt{50}$ ensures that $\llbracket W\rrbracket_{\psi,t}\ge \interleave W\interleave_t$ and hence $\llbracket W\rrbracket_{\psi,t}\ge \|W\|_t$.
+
+For convenience, we define the random variables:
+\begin{align}
+\mathsf{max}_t^w(W) &= \max_{1\le k\le r}\sup_{s\le t}|w_1(s,C_1,k)|,\\
+\mathsf{max}_t^{w_i}(W) &= \max_{1\le k\le r}\sup_{s\le t}|w_i(s,C_i,k)|, \quad i=2,\ldots,L-1,\\
+\mathsf{max}_t^{w_L}(W) &= \sup_{s\le t}|w_L(s,C_L)|.
+\end{align}
+
+For two sets of mean-field parameters $W$ and $W'$, we define the distance:
+\begin{align}
+\|W-W'\|_t &= \max\big(\|w_1-w_1'\|_t, \max_{2\le i\le L-1}\|w_i-w_i'\|_t, \|w_L-w_L'\|_t\big),\label{eq:distance-norm}\\
+\|w_1-w_1'\|_t &= \max_{1\le k\le r}\E_{C_1}\!\left[\sup_{s\le t}|w_1(s,C_1,k)-w_1'(s,C_1,k)|^2\right]^{1/2},\nonumber\\
+\|w_i-w_i'\|_t &= \max_{1\le k\le r}\E_{C_i}\!\left[\sup_{s\le t}|w_i(s,C_i,k)-w_i'(s,C_i,k)|^2\right]^{1/2}, \quad i=2,\ldots,L-1,\nonumber\\
+\|w_L-w_L'\|_t &= \E_{C_L}\!\left[\sup_{s\le t}|w_L(s,C_L)-w_L'(s,C_L)|^2\right]^{1/2}.\nonumber
+\end{align}
+
+\subsection{A Priori Bounds}
+
+We first establish that any solution, if it exists, must remain bounded. This is crucial for defining the function spaces on which the solution operator acts.
+
+\begin{lemma}[A priori bounds]
+\label{lem:a-priori-bounds}
+Under Assumptions~\ref{assump:regularity-lowrank} and \ref{assump:init-lowrank}, given an initialization $W(0)$ with $\llbracket W\rrbracket_{\psi,0}<\infty$, a solution $W$ to the mean-field ODEs, if it exists, must satisfy that for any $t\in[0,\infty)$:
+\[
+\interleave W\interleave_t \le \llbracket W\rrbracket_{\psi,t} \le K_0(t),
+\]
+where $K_0(t)$ is a non-decreasing function of the form
+\[
+K_0(t) = K^{\kappa}(1+t^{\kappa})(1+\llbracket W\rrbracket_{\psi,0}^{\kappa}),
+\]
+for some constant $\kappa>0$ depending on $K$, $r$, and $L$. Furthermore, for any $B\ge 0$:
+\[
+\Pp\!\left(\max\big(\mathsf{max}_t^w(W), \max_{2\le i\le L-1}\mathsf{max}_t^{w_i}(W), \mathsf{max}_t^{w_L}(W)\big)\ge K_0(t)B\right) \le C e^{-K_1 B^2},
+\]
+for some universal constants $C, K_1>0$.
+\end{lemma}
+
+\begin{proof}
+The proof uses Grönwall-type arguments applied to the ODEs \eqref{eq:ode-w1-existence}--\eqref{eq:ode-wL-existence}. The key steps are:
+
+\begin{enumerate}
+\item \textbf{Boundedness of drifts:} By Assumption~\ref{assump:regularity-lowrank}:
+\begin{itemize}
+\item $|d_L(Z;W)| \le K$ (bounded loss derivative)
+\item $|\varphi_i|, |\varphi_i'| \le K$ (bounded activations)
+\item $|H_i| \le \|L^{(i)}\|_{\infty,1}\max_k|m_k^{(i)}|\le rK\max_k\E_{C_{i-1}}[|w_{i-1}(C_{i-1},k)|]$ for $i=2,\ldots,L$
+\item $|B_k^{(i)}| \le K\E_{C_i}[|L^{(i)}_{C_i,k}|\,|w_i|]\le rK^2\E_{C_i}[|w_i|]$ for $i=2,\ldots,L-1$
+\end{itemize}
+
+\item \textbf{Control of $H_i$ with low-rank structure:} For $i=2,\ldots,L$:
+\begin{align*}
+|H_2| &\le \|L^{(2)}\|_{\infty,1}\max_{1\le k\le r}|m_k^{(2)}|\le rK\max_{1\le k\le r}\E_{C_1}[|w_1(C_1,k)|],\\
+|H_i| &\le \|L^{(i)}\|_{\infty,1}\max_{1\le k\le r}|m_k^{(i)}|\le rK\max_{1\le k\le r}\E_{C_{i-1}}[|w_{i-1}(C_{i-1},k)|], \quad i=3,\ldots,L.
+\end{align*}
+
+\item \textbf{Control of $B_k^{(i)}$ with low-rank structure:} For $i=2,\ldots,L-1$:
+\begin{align*}
+|B_k^{(2)}| &\le K\E_{C_2}[|L^{(2)}_{C_2,k}|\,|w_2|]\le rK^2\E_{C_2}[|w_2|],\\
+|B_k^{(i)}| &\le K\E_{C_i}[|L^{(i)}_{C_i,k}|\,|w_i|]\le rK^2\E_{C_i}[|w_i|], \quad i=3,\ldots,L-1.
+\end{align*}
+
+\item \textbf{Grönwall argument:} From the ODE structure, we have for each layer:
+\[
+|w_1(t,c_1,k)| \le |w_1(0,c_1,k)| + \int_0^t K(1 + \max_{1\le k'\le r}\E_{C_1}[|w_1(s,C_1,k')|] + rK^2\max_{1\le k'\le r}\E_{C_2}[|w_2(s,C_2)|]) ds,
+\]
+and similarly for other layers. Taking expectations and applying Minkowski's inequality, then using Grönwall's lemma, we obtain polynomial growth in $t$. The key is that each layer contributes a factor $(1+rK)$ to the Gronwall constant, giving $(1+rK)^{L-2}$ total, which is polynomial in $L$ (not exponential) because $rK$ is fixed.
+
+\item \textbf{Sub-Gaussian tail bound:} The tail bound follows from the $\psi_2$ control and a union bound over $r$ channels and $L$ layers.
+\end{enumerate}
+
+The constant $\kappa$ depends on $K$, $r$, and $L$ through the factors $\|L^{(i)}\|_{\infty,1}\le rK$ for $i=2,\ldots,L-1$, but remains polynomial rather than exponential in $r$ and $L$ because the factors multiply (not compound exponentially).
+\end{proof}
+
+These a priori bounds lead us to consider the following spaces, given an initialization $W(0)$ and an arbitrary terminal time $T>0$:
+
+\begin{itemize}
+\item The space $\mathcal{W}_T$ of mean-field parameters $W'=\{W'(t)\}_{t\le T}$ such that $\interleave W'\interleave_T \le K_0(T)$.
+
+\item The space $\mathcal{W}_T^0\subset\mathcal{W}_T$ of mean-field parameters $W'\in\mathcal{W}_T$ such that:
+\begin{align}
+\llbracket W'\rrbracket_{\psi,T} &\le K_0(T),\label{eq:W0-psi}\\
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W'), \max_{2\le i\le L-1}\mathsf{max}_T^{w_i}(W'), \mathsf{max}_T^{w_L}(W')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2} \quad \forall B\ge 0,\label{eq:W0-tail}
+\end{align}
+and $W'(0)=W(0)$ (so all elements in $\mathcal{W}_T^0$ share the same initialization).
+\end{itemize}
+
+We equip these spaces with the metric $(W',W'')\mapsto \|W'-W''\|_T$. By Lemma~\ref{lem:a-priori-bounds}, any solution $W$ to the mean-field ODEs, if it exists, must belong to $\mathcal{W}_T^0$.
+
+\subsection{Solution Operator}
+
+Denote by $\mathfrak{W}_T$ the space of mean-field parameters $W$ such that $\|W\|_T<\infty$. Given a terminal time $T\ge 0$ and an initialization $W(0)$, we define the mapping $F$ that associates $W'\in\mathfrak{W}_T$ with:
+\begin{align}
+F(W')(t) &= \big\{F_1(W')(t,\cdot,\cdot), F_2(W')(t,\cdot,\cdot), \ldots, F_{L-1}(W')(t,\cdot,\cdot), F_L(W')(t,\cdot)\big\},
+\end{align}
+where for the first layer ($k=1,\ldots,r$):
+\begin{align}
+F_1(W')(t,c_1,k) &= w_1(0,c_1,k) - \int_0^t \xi_1(s)\,\E_{Z}\!\left[d_L\big(Z;W'(s)\big)\,\varphi_1\!\left(\ip{f_1(c_1)}{X}\right)\,B_k^{(2)}\big(s;X,W'(s)\big)\right]ds,\label{eq:F1}
+\end{align}
+for intermediate layers ($i=2,\ldots,L-1$ and $k=1,\ldots,r$):
+\begin{align}
+F_i(W')(t,c_i,k) &= w_i(0,c_i,k) - \int_0^t \xi_i(s)\,\E_{Z}\!\left[d_L\big(Z;W'(s)\big)\,\varphi_i\!\Big(H_i\big(s,c_i;X,W'(s)\big)\Big)\,B_k^{(i+1)}\big(s;X,W'(s)\big)\right]ds,\label{eq:Fi}
+\end{align}
+and for the output layer:
+\begin{align}
+F_L(W')(t,c_L) &= w_L(0,c_L) - \int_0^t \xi_L(s)\,\E_{Z}\!\left[d_L\big(Z;W'(s)\big)\,\varphi_L\!\Big(H_L\big(s,c_L;X,W'(s)\big)\Big)\right]ds,\label{eq:FL}
+\end{align}
+where $B_k^{(i)}(s;X,W')$ and $H_i(s,c_i;X,W')$ are computed with respect to $W'$.
+
+Observe that at initialization $F(W')(0,\cdot,\cdot)=W(0)$, whereas the quantities in the time integrals are computed with respect to $W'$. A solution to the mean-field ODEs on $[0,T]$ is an element of $\mathfrak{W}_T$ satisfying $F(W)=W$. We say that $W$ is a solution on $[0,\infty)$ if its restriction to $[0,T]$ is a solution on $[0,T]$ for all $T>0$.
+
+\begin{lemma}[Solution operator maps bounded sets to bounded sets]
+\label{lem:invariance-F}
+Under Assumptions~\ref{assump:regularity-lowrank} and \ref{assump:init-lowrank}, for any $W'\in\mathcal{W}_T^0$, we have $F(W')\in\mathcal{W}_T^0$.
+\end{lemma}
+
+\begin{proof}
+The proof follows the same argument as Lemma~\ref{lem:a-priori-bounds}, using the integral form defining $F$ \eqref{eq:F1}--\eqref{eq:FL} and the bounded/Lipschitz properties of the drifts. The key is that applying bounded/Lipschitz drifts to $W'$ preserves the moment and tail bounds with constants controlled by $K_0(T)$.
+\end{proof}
+
+\subsection{Contractivity of the Solution Operator}
+
+The key technical result is that the solution operator is contractive on $\mathcal{W}_T^0$, which enables the Picard iteration argument.
+
+\begin{lemma}[Solution operator is contractive]
+\label{lem:contractivity-F}
+For a given $B\ge 0$, consider two collections of mean-field parameters $W',W''\in\mathcal{W}_T$ such that:
+\begin{align}
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W'), \max_{2\le i\le L-1}\mathsf{max}_T^{w_i}(W'), \mathsf{max}_T^{w_L}(W')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2},\label{eq:tail-W'}\\
+\Pp\!\left(\max\big(\mathsf{max}_T^w(W''), \max_{2\le i\le L-1}\mathsf{max}_T^{w_i}(W''), \mathsf{max}_T^{w_L}(W'')\big)\ge K_0(T)B\right) &\le C e^{-K_1 B^2}.\label{eq:tail-W''}
+\end{align}
+Under Assumptions~\ref{assump:regularity-lowrank}--\ref{assump:init-lowrank}, for any $t\le T$:
+\[
+\|F(W')-F(W'')\|_t \le (KK_0(T))^4(1+rK)^{L-2} \int_0^t \Big((1+B)\|W'-W''\|_s + \sqrt{2}e^{-K_1 B^2/2}\Big)ds,
+\]
+where the constant depends on $K$, $r$, and $L$ through $\|L^{(i)}\|_{\infty,1}\le rK$ for $i=2,\ldots,L-1$.
+\end{lemma}
+
+\begin{proof}
+The proof uses a good/bad event decomposition:
+
+\begin{enumerate}
+\item \textbf{Good event:} On the event $\{\max(\mathsf{max}_T^w, \max_{2\le i\le L-1}\mathsf{max}_T^{w_i}, \mathsf{max}_T^{w_L})\le K_0(T)B\}$, the drifts are Lipschitz in $W$ with constant $(1+B)K_0(T)$.
+
+\item \textbf{Control of $H_i$ differences:} For $H_2$:
+\[
+|H_2(W')-H_2(W'')| \le \|L^{(2)}\|_{\infty,1}\max_{1\le k\le r}\E_{C_1}[|w_1'(C_1,k)-w_1''(C_1,k)|] \le rK\max_{1\le k\le r}\|w_1'-w_1''\|_t.
+\]
+For $H_i$ with $i=3,\ldots,L$:
+\[
+|H_i(W')-H_i(W'')| \le \|L^{(i)}\|_{\infty,1}\max_{1\le k\le r}\E_{C_{i-1}}[|w_{i-1}'(C_{i-1},k)-w_{i-1}''(C_{i-1},k)|] \le rK\max_{1\le k\le r}\|w_{i-1}'-w_{i-1}''\|_t.
+\]
+
+\item \textbf{Control of $B_k^{(i)}$ differences:} For $B_k^{(2)}$:
+\begin{align*}
+|B_k^{(2)}(W')-B_k^{(2)}(W'')| &\le K\E_{C_2}[|L^{(2)}_{C_2,k}|(|w_2'(C_2)-w_2''(C_2)| + |w_2''(C_2)||H_2(W')-H_2(W'')|)]\\
+&\le rK^2(1+B)\|W'-W''\|_t.
+\end{align*}
+For $B_k^{(i)}$ with $i=3,\ldots,L-1$, the difference is controlled similarly, giving a factor $(1+B)$ and accumulating factors of $rK$ from each layer.
+
+\item \textbf{Control of weight differences:} For the first layer:
+\begin{align*}
+|F_1(W')(t,c_1,k) - F_1(W'')(t,c_1,k)| &\le \int_0^t K(1+B)K_0(T)\|W'-W''\|_s ds\\
+&\quad + \int_0^t K rK^2(1+B)\|W'-W''\|_s ds\\
+&\le (KK_0(T))^2(1+rK)(1+B)\int_0^t \|W'-W''\|_s ds.
+\end{align*}
+For intermediate layers $i=2,\ldots,L-1$, each layer contributes a factor $(1+rK)$, giving $(1+rK)^{L-2}$ total. For the output layer, the bound is similar but without the $B_k$ term.
+
+\item \textbf{Bad event:} The bad event contributes an exponentially small remainder $\sqrt{2}e^{-K_1 B^2/2}$.
+
+\item \textbf{Combining bounds:} Integrating in time and using Minkowski's inequality yields the result. The factor $(1+rK)^{L-2}$ comes from the accumulation of $rK$ factors from each of the $L-2$ intermediate layers.
+\end{enumerate}
+\end{proof}
+
+\subsection{Main Theorem: Existence and Uniqueness}
+
+\begin{theorem}[Existence and uniqueness of mean-field ODE solution]
+\label{thm:existence-uniqueness}
+Assume that the initialization $W(0)$ of the mean-field ODEs satisfies $\llbracket W\rrbracket_{\psi,0}\le K$. Then under Assumptions~\ref{assump:regularity-lowrank} and \ref{assump:init-lowrank}, there exists a unique solution to the mean-field ODEs \eqref{eq:ode-w1-existence}--\eqref{eq:ode-wL-existence} on $t\in[0,\infty)$.
+\end{theorem}
+
+\begin{proof}
+We perform a Picard-type iteration argument. Consider an arbitrary finite $T\ge 0$ and $W',W''\in\mathcal{W}_T^0$. From Lemma~\ref{lem:contractivity-F}:
+\begin{align}
+\|F(W')-F(W'')\|_t &\le (KK_0(T))^4(1+rK)^{L-2}\left((1+B)\int_0^t \|W'-W''\|_s ds + T\sqrt{2}e^{-K_1 B^2/2}\right)\nonumber\\
+&\equiv k_1(1+B)\int_0^t \|W'-W''\|_s ds + k_2 e^{-k_3 B^2},\label{eq:contractivity-bound}
+\end{align}
+for any $B>0$, where $k_1=(KK_0(T))^4(1+rK)^{L-2}$, $k_2=(KK_0(T))^4(1+rK)^{L-2} T\sqrt{2}$, and $k_3=K_1/2$.
+
+By Lemma~\ref{lem:invariance-F}, $F$ maps $\mathcal{W}_T^0$ to $\mathcal{W}_T^0$. We can iterate the inequality \eqref{eq:contractivity-bound} to obtain:
+\begin{align}
+\|F^{(m)}(W')-F^{(m)}(W'')\|_T &\le k_1(1+B)\int_0^T \|F^{(m-1)}(W')-F^{(m-1)}(W'')\|_{T_2} dT_2 + k_2 e^{-k_3 B^2}\nonumber\\
+&\le k_1^2(1+B)^2\int_0^T\int_0^{T_2} \|F^{(m-2)}(W')-F^{(m-2)}(W'')\|_{T_3} dT_3 dT_2 + k_2\sum_{\ell=1}^2 \frac{(T k_1(1+B))^{\ell-1}}{\ell!} e^{-k_3 B^2}\nonumber\\
+&\quad \ldots\nonumber\\
+&\le \frac{1}{m!} T^m k_1^m (1+B)^m \|W'-W''\|_T + k_2 e^{T k_1(1+B) - k_3 B^2}\nonumber\\
+&\le \frac{1}{m!} T^m k_1^m (1+\sqrt{m})^m \|W'-W''\|_T + k_2 e^{T k_1(1+\sqrt{m}) - k_3 m},\label{eq:picard-iteration}
+\end{align}
+where we choose $B=\sqrt{m}$ in the last display. Note that since $\llbracket W\rrbracket_{\psi,0}<\infty$, $K_0(T)$ and hence $k_1, k_2$ are finite for finite $T$.
+
+By substituting $W''=F(W')$, we obtain:
+\[
+\sum_{m=1}^\infty \|F^{(m+1)}(W')-F^{(m)}(W')\|_T = \sum_{m=1}^\infty \|F^{(m)}(W'')-F^{(m)}(W')\|_T < \infty.
+\]
+Hence as $m\to\infty$, $F^{(m)}(W')$ converges in $\|\cdot\|_T$ to a limit $W\in\mathfrak{W}_T$, which is a fixed point of $F$. By Lemma~\ref{lem:a-priori-bounds}, $W$ belongs to $\mathcal{W}_T^0$.
+
+The uniqueness of the fixed point comes from the estimate \eqref{eq:picard-iteration}, since if $W'$ and $W''$ are fixed points of $F$, then they are both in $\mathcal{W}_T^0$, and:
+\[
+\|W'-W''\|_T = \|F^{(m)}(W')-F^{(m)}(W'')\|_T \le \frac{1}{m!} T^m k_1^m (1+\sqrt{m})^m \|W'-W''\|_T + k_2 e^{T k_1(1+\sqrt{m}) - k_3 m},
+\]
+and one can take $m$ arbitrarily large. This proves that the solution exists and is unique on $t\in[0,T]$. Since $T$ is arbitrary, we have existence and uniqueness of the solution to the mean-field ODEs on the time interval $[0,\infty)$.
+\end{proof}
+
+\subsection{Key Differences from Full-Width Case}
+
+The proof structure follows the full-width case \cite{nguyen2023rigorousframeworkmeanfield}, but with the following key adaptations for the low-rank structure:
+
+\begin{enumerate}
+\item \textbf{Norms account for $r$ channels:} All norms take the maximum over $k\in\{1,\ldots,r\}$ for intermediate layers, reflecting the $r$ independent channels.
+
+\item \textbf{Low-rank structure in bounds:} The pre-activations $H_i$ involve sums over $r$ channels with mixing matrices $L^{(i)}$, introducing factors of $\|L^{(i)}\|_{\infty,1}\le rK$ in all bounds.
+
+\item \textbf{Polynomial growth in $L$:} The Gronwall constant accumulates as $(1+rK)^{L-2}$ (polynomial in $L$), not exponentially, because:
+\begin{itemize}
+\item Each layer contributes a bounded factor $(1+rK)$
+\item These factors multiply (not compound exponentially)
+\item All errors are bounded in terms of the global distance $\|W'-W''\|_t$, not layer-wise errors that would compound
+\end{itemize}
+
+\item \textbf{Frozen first layer simplifies base case:} Since $f_1(C_1)$ is frozen, $H_1(t,c_1;X,W) = \langle f_1(c_1), X\rangle$ is independent of $W(t)$, eliminating recursion at the base case and ensuring the pattern starts cleanly.
+\end{enumerate}
+
+These adaptations ensure that the proof works for arbitrary depth $L$ with polynomial (not exponential) growth in the constants, making the low-rank framework theoretically tractable for deep networks.
+
+\end{document}

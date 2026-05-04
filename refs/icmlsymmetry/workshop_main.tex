@@ -1,0 +1,170 @@
+\documentclass[nohyperref]{article}
+
+\usepackage{icml2026_weightsymmetry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\icmltitlerunning{Batch-One Symmetry in Low-Rank Networks}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Asymmetric Batch-One Training Learns Symmetric Functions\\in Low-Rank Weight Space}
+
+\begin{icmlauthorlist}
+\icmlauthor{Anonymous Author(s)}{anon}
+\end{icmlauthorlist}
+\icmlaffiliation{anon}{Anonymous Institution}
+\icmlcorrespondingauthor{Anonymous Author}{anonymous@example.com}
+\icmlkeywords{weight-space symmetry, low-rank networks, random features, implicit bias, representation symmetry}
+
+\vskip 0.2in
+]
+
+\printAffiliationsAndNotice{}
+
+\begin{abstract}
+We study an empirical phenomenon in low-rank random-feature networks: even when stochastic training sees one non-symmetrized sample at a time, the learned model can recover a globally symmetric function and, in successful regimes, symmetric internal partial functions.
+The effect is not explained by output invariance alone.
+Low-loss counterexamples exist where the output is nearly symmetric but the learned partial functions remain asymmetric.
+We therefore analyze symmetry simultaneously in function space, representation space, and weight space.
+Across one-dimensional ICLR sumcos reruns and new multidimensional batch-size-one experiments, low-rank bottleneck networks exhibit a distinctive regime where symmetry is visible in late partial functions and in mirror-paired first-layer atoms.
+\end{abstract}
+
+\section{Question}
+
+Weight-space symmetries are usually discussed as exact parameter transformations that preserve a network function, especially in model merging and mode connectivity \citep{garipov2018loss,frankle2020linear,entezari2022role,ainsworth2023git}.
+Here we ask a different question: can optimization discover a \emph{data-dependent} symmetry in weight space when the training procedure itself is maximally asymmetric?
+Our motivating setting uses a target invariant under $x \mapsto -x$ or related finite transformations, but trains with stochastic batch size one and without paired samples.
+The surprising observation is that MMNN/RF-LR models often learn not only an invariant output but also invariant low-rank partial functions.
+
+For a learned scalar function $f$, we measure
+\[
+D_{\mathrm{out}}(T)
+=
+\frac{\mathbb{E}_{x}\left[(f(x)-f(Tx))^2\right]}
+{\mathbb{E}_{x}\left[f(x)^2\right]+\varepsilon},
+\]
+and apply the same relative defect to active internal partial functions.
+For first-layer ReLU atoms $\sigma(a_j^\top x+b_j)$, we also compare each atom to its nearest mirror $(-a_j,b_j)$ and measure outgoing coefficient mismatch.
+
+\section{Low-Rank Architecture}
+
+\begin{figure}[t]
+\centering
+\resizebox{0.95\linewidth}{!}{
+\begin{tikzpicture}[
+    layer/.style={circle,draw,minimum size=15pt,inner sep=1pt},
+    wide/.style={layer,fill=blue!12},
+    rank/.style={layer,fill=orange!25},
+    input/.style={layer,fill=green!18},
+    output/.style={layer,fill=red!18},
+    edge/.style={-{Latex[length=2mm]},line width=0.35pt,black!60},
+    frozen/.style={edge,dashed,blue!70},
+    trainable/.style={edge,orange!85!black}
+]
+\foreach \y/\name in {1.2/x1,0/x2,-1.2/xd}
+    \node[input] (x\name) at (0,\y) {$\name$};
+\foreach \y/\name in {1.8/h1,0.9/h2,0/h3,-0.9/h4,-1.8/h5}
+    \node[wide] (h\name) at (2.2,\y) {};
+\foreach \y/\name in {0.8/r1,-0.8/r2}
+    \node[rank] (r\name) at (4.4,\y) {$r$};
+\foreach \y/\name in {1.8/g1,0.9/g2,0/g3,-0.9/g4,-1.8/g5}
+    \node[wide] (g\name) at (6.6,\y) {};
+\node[output] (out) at (8.7,0) {$f$};
+\foreach \x in {xx1,xx2,xxd}
+    \foreach \h in {hh1,hh2,hh3,hh4,hh5}
+        \draw[frozen] (\x) -- (\h);
+\foreach \h in {hh1,hh2,hh3,hh4,hh5}
+    \foreach \r in {rr1,rr2}
+        \draw[trainable] (\h) -- (\r);
+\foreach \r in {rr1,rr2}
+    \foreach \g in {gg1,gg2,gg3,gg4,gg5}
+        \draw[frozen] (\r) -- (\g);
+\foreach \g in {gg1,gg2,gg3,gg4,gg5}
+    \draw[trainable] (\g) -- (out);
+\node[align=center,blue!70] at (1.1,2.35) {\scriptsize frozen\\[-1pt]\scriptsize random features};
+\node[align=center,orange!85!black] at (3.3,1.65) {\scriptsize trained\\[-1pt]\scriptsize low-rank mix};
+\node[align=center,blue!70] at (5.55,2.35) {\scriptsize frozen\\[-1pt]\scriptsize expansion};
+\end{tikzpicture}}
+\caption{MMNN/RF-LR alternates wide random-feature maps and low-rank bottlenecks. Symmetry is measured at the output, at bottleneck partials, and through mirror structure in first-layer atoms.}
+\label{fig:arch}
+\end{figure}
+
+The architectural bias is not an explicit equivariance constraint.
+The first random-feature layer is sampled asymmetrically, and mini-batches contain a single point.
+Nevertheless, the trained low-rank channel weights can organize mirror-related atoms into an approximately symmetric representation.
+
+\section{Evidence}
+
+\paragraph{One-dimensional ICLR reruns.}
+We reran the low-loss sumcos configurations from the ICLR landscape study with width $1024$ and adaptive SGD.
+Across six reliable low-loss runs, final test MSE ranges from $1.94\cdot10^{-5}$ to $3.26\cdot10^{-3}$.
+Output even defects range from $4.1\cdot10^{-6}$ to $8.0\cdot10^{-4}$, while active last-layer partial even defects range from $6.24\cdot10^{-5}$ to $5.22\cdot10^{-4}$.
+This is the cleanest evidence that the learned symmetry is internal, not only an output coincidence.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{results/good_sumcos_low_loss/low_loss_test_error_vs_partial_symmetry.png}
+\caption{Low-loss ICLR sumcos reruns: fitted MMNNs have small output defects and small active last-layer partial defects.}
+\label{fig:lowloss}
+\end{figure}
+
+\paragraph{Counterexamples are useful.}
+The exhaustive rerun currently separates completed checkpoints into 12 partial-symmetric, 28 output-only/asymmetric, 92 intermediate, and 9 underfit runs.
+For example, one rank-5 depth-3 $f_2$ run reaches test MSE $9.53\cdot10^{-4}$ with partial defect $2.62\cdot10^{-5}$.
+In contrast, a rank-10 depth-1 $f_1$ run reaches test MSE $1.17\cdot10^{-4}$ but partial defect $2.17$.
+Thus low output loss does not force internal symmetry; the positive low-rank regime is a real representation phenomenon.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{results/weightspace_distributions/loss_partial_vs_mirror_mismatch.png}
+\caption{Completed reruns: output loss, partial symmetry, and median mirror mismatch reveal distinct regimes.}
+\label{fig:mismatch}
+\end{figure}
+
+\paragraph{Batch-one multidimensional stress test.}
+We then stress-test the strongest claim in two and three dimensions: symmetry can emerge from a fully asymmetric stochastic stream.
+All runs below use batch size one, non-paired uniform training samples, Adam, width $512$, and low-rank bottlenecks with rank $8$ or $16$.
+The 2D Gaussian run with rank $8$ and depth $3$ reaches test MSE $1.20\cdot10^{-5}$, output defect $6.91\cdot10^{-5}$ under $x\mapsto -x$, and active last-partial defect $6.62\cdot10^{-4}$.
+The 3D quadratic run with rank $8$ and depth $3$ reaches test MSE $1.92\cdot10^{-4}$, output defect $9.76\cdot10^{-4}$, and active last-partial defect $1.81\cdot10^{-3}$.
+Thus the phenomenon survives beyond the original one-dimensional setting while using rank-to-width ratio $8/512=1.56\%$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{results/multidim_batch1_symmetry/multidim_loss_vs_partial_symmetry.png}
+\caption{2D/3D batch-size-one runs: low test error coincides with small active partial symmetry defects in the best low-rank regimes.}
+\label{fig:multidim}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{results/multidim_batch1_symmetry/multidim_low_loss_defect_bars.png}
+\caption{Median output and partial symmetry defects among low-loss multidimensional runs.}
+\label{fig:multidim-bars}
+\end{figure}
+
+\section{Why This Matters}
+
+The key message for weight-space symmetries is that useful symmetries need not be imposed as exact architectural equivariances or explicit path-norm constraints \citep{neyshabur2015path}.
+In low-rank random-feature networks, the optimizer can discover approximate, data-dependent symmetry in the trained low-rank weights.
+This suggests a practical analysis program: compare models not only by their functions, but by whether the symmetry appears in their internal partials and mirror-organized parameters.
+
+\section{Limitations}
+
+The current mirror metric is nearest-neighbor based and only probes the first layer.
+It supports the weight-space interpretation but is weaker than the partial-function evidence.
+Some harder 3D soft-axis targets still generalize poorly despite tiny training error, so the multidimensional claim should be stated for the low-loss Gaussian and quadratic regimes rather than as a universal statement across all symmetric targets.
+
+\bibliography{refs}
+\bibliographystyle{icml2026}
+
+\end{document}

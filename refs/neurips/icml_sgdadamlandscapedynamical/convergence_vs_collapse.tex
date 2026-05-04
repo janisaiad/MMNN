@@ -1,0 +1,157 @@
+\section{Convergence to Minimizer vs. Channel Collapse: Two Different Phenomena}
+\label{sec:convergence-vs-collapse}
+
+This section clarifies the distinction between two different concepts: (1) convergence to a global minimizer, and (2) channel collapse.
+
+\subsection{Convergence to Global Minimizer: "If It Converges, Then to Minimizer"}
+
+\textbf{The theorem states:} Under the assumptions (including \emph{Convergence to Limit Point}), if the mean-field dynamics $W(t)$ converge to some limit point $W^*$ as $t \to \infty$, then $W^*$ is a \textbf{global minimizer} of the population loss.
+
+\textbf{What this means:}
+\begin{itemize}
+\item \textbf{Convergence assumption}: We assume $W(t) \to W^*$ (in a Wasserstein-like sense)
+\item \textbf{Conclusion}: $W^*$ minimizes $\mathscr{L}(W) = \mathbb{E}_Z[\mathcal{L}(Y, \hat{y}(X; W))]$
+\item \textbf{Key mechanism}: Universal approximation property + convergence $\to$ global optimality
+\end{itemize}
+
+\textbf{The proof strategy:}
+\begin{enumerate}
+\item Show that at the limit point, the gradient is zero: $\partial_t w_i(t) \to 0$
+\item Use universal approximation property (frozen random features maintain full support)
+\item Conclude that if gradient is zero and function class is dense, then we're at a global minimizer
+\end{enumerate}
+
+\textbf{This is guaranteed} (under the assumptions) - if the solution converges, it converges to a global minimizer.
+
+\subsection{Channel Collapse: A Different Issue}
+
+\textbf{Channel collapse} is a separate phenomenon: all $r$ channels learn the \textbf{same function}, i.e., $f_1(t, \cdot) = f_2(t, \cdot) = \cdots = f_r(t, \cdot)$.
+
+\textbf{What this means:}
+\begin{itemize}
+\item The network still converges to a global minimizer (if convergence assumption holds)
+\item But the benefit of having $r$ channels is lost (they're all identical)
+\item The low-rank structure becomes redundant
+\end{itemize}
+
+\textbf{This is NOT guaranteed} - channels may or may not collapse, depending on the mixing matrix $L$ and initialization.
+
+\subsection{What Causes Channel Collapse?}
+
+\textbf{Channel collapse occurs when all channels receive the same gradient signal:}
+
+\begin{enumerate}
+\item \textbf{Isotropic Gaussian mixing}: If $L_{C_2} \sim \mathcal{N}(0, I_r)$ (isotropic), then:
+   \[
+   (B_1, \ldots, B_r) = c(t) \cdot (f_1, \ldots, f_r) \quad \text{(colinear)}
+   \]
+   All channels receive \textbf{proportional} gradients, so if they start identically, they stay identical.
+
+\item \textbf{Symmetric initialization}: If all channels start with the same initialization:
+   \[
+   w_1^0(C_1, 1) = w_1^0(C_1, 2) = \cdots = w_1^0(C_1, r)
+   \]
+   and the mixing matrix is symmetric/isotropic, then all channels evolve identically.
+
+\item \textbf{Uniform mixing matrix}: If $L$ has no structure (e.g., all entries equal), then all channels receive similar signals and may not differentiate.
+
+\item \textbf{No ReLU gating differentiation}: If the ReLU gate $\mathbf{1}\{H_2 > 0\}$ activates the same neurons for all channels, then $B_k$ become similar for all $k$.
+\end{enumerate}
+
+\subsection{What Prevents Channel Collapse?}
+
+\textbf{Mechanisms that enable specialization:}
+
+\begin{enumerate}
+\item \textbf{Non-isotropic mixing matrix}: Structured $L$ (e.g., deterministic grid) creates different effective gradients for each channel.
+
+\item \textbf{Asymmetric initialization}: Different initializations for different channels can be amplified by the log-ratio growth mechanism.
+
+\item \textbf{ReLU gating creates competition}: The gate $\mathbf{1}\{H_2 > 0\}$ depends on the sum over channels, creating competitive dynamics where different channels can dominate at different locations.
+
+\item \textbf{Log-ratio growth preserves dominance}: Once a channel establishes dominance, the log-ratio mechanism preserves and amplifies it, forcing other channels to specialize elsewhere.
+\end{enumerate}
+
+\subsection{The Key Distinction}
+
+\textbf{Convergence to minimizer:}
+\begin{itemize}
+\item \textbf{Guaranteed} (under convergence assumption)
+\item \textbf{Independent} of channel collapse
+\item \textbf{Means}: The network learns the target function optimally
+\end{itemize}
+
+\textbf{Channel collapse:}
+\begin{itemize}
+\item \textbf{Not guaranteed} - depends on $L$ and initialization
+\item \textbf{Separate} from convergence to minimizer
+\item \textbf{Means}: All channels learn the same function (redundancy)
+\end{itemize}
+
+\textbf{Important:} Even if channels collapse, the network can still converge to a global minimizer! The collapse just means we're not using the full capacity of having $r$ channels.
+
+\subsection{Example Scenarios}
+
+\textbf{Scenario 1: Convergence with specialization}
+\begin{itemize}
+\item $W(t) \to W^*$ (converges)
+\item $W^*$ is a global minimizer (guaranteed by theorem)
+\item $f_1^*, f_2^*, \ldots, f_r^*$ are different (channels specialized)
+\item \textbf{Best case}: Network uses full capacity, channels capture different frequencies/regions
+\end{itemize}
+
+\textbf{Scenario 2: Convergence with collapse}
+\begin{itemize}
+\item $W(t) \to W^*$ (converges)
+\item $W^*$ is a global minimizer (still guaranteed by theorem)
+\item $f_1^* = f_2^* = \cdots = f_r^*$ (all channels identical)
+\item \textbf{Still works}: Network learns the target, but $r$ channels are redundant
+\end{itemize}
+
+\textbf{Scenario 3: No convergence}
+\begin{itemize}
+\item $W(t)$ does not converge (oscillates, diverges, etc.)
+\item Theorem doesn't apply (convergence assumption violated)
+\item \textbf{Problem}: Can't guarantee global optimality
+\end{itemize}
+
+\subsection{What the Theory Guarantees vs. What It Doesn't}
+
+\textbf{Guaranteed:}
+\begin{itemize}
+\item \textbf{If} $W(t) \to W^*$ (convergence assumption), \textbf{then} $W^*$ is a global minimizer
+\item Well-posedness of the dynamics
+\item Quantitative approximation bounds
+\end{itemize}
+
+\textbf{Not guaranteed:}
+\begin{itemize}
+\item \textbf{That} $W(t)$ converges (this is an assumption)
+\item \textbf{That} channels specialize (depends on $L$ and initialization)
+\item \textbf{That} channels don't collapse (isotropic mixing can cause collapse)
+\end{itemize}
+
+\subsection{Conclusion}
+
+\textbf{To answer your question:}
+
+\begin{enumerate}
+\item \textbf{"If solution converges, then to minimizer"}: Yes, this is guaranteed by the theorem. If $W(t) \to W^*$, then $W^*$ minimizes the population loss (under the assumptions).
+
+\item \textbf{"Collapse can occur due to what?"}: Channel collapse occurs when:
+   \begin{itemize}
+   \item \textbf{Isotropic Gaussian mixing}: Makes $B_k$ colinear with $f_k$, preventing differentiation
+   \item \textbf{Symmetric initialization}: All channels start identically
+   \item \textbf{Uniform mixing}: $L$ has no structure to create different gradients
+   \item \textbf{No ReLU differentiation}: Gate activates same neurons for all channels
+   \end{itemize}
+
+\item \textbf{Key point}: Convergence to minimizer and channel collapse are \textbf{independent}. You can have:
+   \begin{itemize}
+   \item Convergence with specialization (best case)
+   \item Convergence with collapse (still works, but redundant)
+   \item No convergence (theorem doesn't apply)
+   \end{itemize}
+\end{enumerate}
+
+\textbf{The theory guarantees global optimality IF convergence occurs, but does NOT guarantee that channels won't collapse. Channel specialization is enabled by the low-rank structure with non-isotropic mixing, but it's not guaranteed.}

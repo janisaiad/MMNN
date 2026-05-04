@@ -1,0 +1,440 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers}{natbib}
+\usepackage{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{bm}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calE}{\mathcal{E}}
+\newcommand{\scrL}{\mathcal{L}}
+\newcommand{\wh}{\widehat}
+\newcommand{\llbracket}{[\![}
+\newcommand{\rrbracket}{]\!]}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{Im}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Global Convergence and High-Frequency Spectral Bias of Low-Rank Networks}
+
+\author{Anonymous Authors}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Low-rank neural networks are usually introduced as compressed versions of dense models, but this view misses their main theoretical role: rank creates a structured mean-field system whose optimization and spectral behavior can be analyzed directly. We prove that low-rank random-feature neural networks, with frozen feature maps and trainable channel weights, have well-posed mean-field dynamics and that every convergent trajectory reaches a global minimizer of the population risk under a standard loss-identifiability condition. The result holds for arbitrary depth and standard independent initialization; low rank changes constants through the channel mixing norm but does not destroy the dense-span argument needed for global optimality. We then explain why convergence alone is not enough for highly oscillatory functions. Building on the spectral-bias perspective of Rahaman et al.~\cite{rahaman2019}, low rank is shown to control path-space degrees of freedom, continuous piecewise affine geometry, and finite-time Fourier recovery. Experiments on oscillatory targets and Fourier-native rank sweeps support the view that the useful rank is often intermediate: small enough to change spectral transfer, but large enough to avoid an approximation bottleneck.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Low-rank neural networks replace dense matrices by factored or bottlenecked operators. The standard motivation is computational: fewer trainable parameters, cheaper memory traffic, and sometimes faster training. This paper argues that the more important question is mathematical. Does the low-rank constraint preserve the optimization guarantees available in mean-field theory, and can the same constraint help with the spectral bias that prevents neural networks from learning highly oscillatory functions?
+
+We answer the first question positively for a low-rank random-feature architecture. The model freezes a rich random-feature map and trains low-rank channel weights through mean-field gradient flow. Since the frozen features keep a dense span throughout training, the usual obstruction in deep mean-field convergence proofs is removed: at a limit point, zero gradient implies the conditional first-order condition for the loss, and the loss-identifiability assumption forces global optimality. Low rank enters through the mixing matrix and channel index, changing constants but not the logic of the proof.
+
+The second question is more subtle. A globally convergent training dynamic can still learn low frequencies first and fail at finite time on highly oscillatory targets. We therefore connect the convergence theorem to a rank-dependent spectral bias mechanism. For ReLU networks, low rank constrains active path coefficient tensors; this constrains switching normals, suppresses high-codimension faces in the continuous piecewise affine complex, and changes Fourier shell behavior. In one dimension, the raw spline tail remains close to the classical $k^{-4}$ law, so the correct diagnostic is not the asymptotic exponent alone but the learned Fourier recovery curve. This leads to a practical rank-selection rule: choose the smallest rank that avoids the approximation bottleneck while flattening the finite-time spectral transfer.
+
+\paragraph{Contributions.}
+The paper makes three contributions. First, we state a global convergence theorem for arbitrary-depth low-rank random-feature networks in the mean-field limit. Second, we turn low-rank spectral bias into a geometric statement: rank constrains active path coefficients, which constrains CPWL switching geometry and Fourier shell energy. Third, we connect this mechanism to experiments on highly oscillatory targets, including high-frequency regression, frozen-vs-trainable random features, and heavy-tail spectral updates.
+
+\section{Freezing Some Weights Allows Global Convergence}
+\label{sec:model}
+
+Let $X\in\R^d$ and $Y$ be drawn from a population distribution. The finite-width low-rank random-feature network used throughout the paper is the one from the original experiments:
+\begin{equation}
+h^{(0)}(x)=x,\qquad
+h^{(\ell)}(x)=
+\frac1{n_\ell}\sum_{j=1}^{n_\ell}
+w_j^{(\ell)}
+\varphi_\ell\!\left(
+\langle L_j^{(\ell)},h^{(\ell-1)}(x)\rangle+b_j^{(\ell)}
+\right),
+\label{eq:finite-rflr}
+\end{equation}
+where the feature directions $L_j^{(\ell)}$ and biases $b_j^{(\ell)}$ are frozen, while the channel weights $w_j^{(\ell)}$ are trained. This is a low-rank factorization of a dense layer in which the left factor is fixed: if $W_\ell=U_\ell V_\ell^\top$ with $U_\ell\in\mathrm{St}(n_\ell,r_\ell)$, then $U_\ell$ plays the role of an orthogonal random-feature or mixing basis and the trainable factor $V_\ell$ is absorbed into the channel weights. Thus one may avoid training $U_\ell$ entirely, either by drawing it once as a random orthogonal matrix or by fixing it on the Stiefel manifold; training only the right/channel factor is the regime analyzed below.
+
+In the mean-field limit, frozen feature maps are written $L^0(C_\ell)$ and trainable channel weights are written $w_\ell(t,C_\ell)$. The channel mixer $L\in\R^{N_2\times r}$ is taken to have orthonormal columns, $L^\top L=I_r$. It is the left orthogonal factor of a rank-$r$ factorization of the second-layer weight matrix: if a dense second-layer operator has truncated singular-value decomposition $W_2=U_r\Sigma_r V_r^\top$, we set $L=U_r$ and absorb $\Sigma_r V_r^\top$ into the rank-channel functions below. In the two-hidden-layer case, the first partial functions are
+\begin{equation}
+f_k(t,x)=\E_{C_1}\left[w_1(t,C_1,k)\,\varphi_1\left(\langle L^0(C_1),x\rangle\right)\right],
+\qquad k=1,\ldots,r,
+\end{equation}
+and the second-layer preactivation is
+\begin{equation}
+H_2(t,c_2;x)=\sum_{k=1}^r L_{c_2,k} f_k(t,x).
+\end{equation}
+Thus $H_2$ is the reconstruction of the second-layer signal from an orthogonal rank-$r$ channel basis. The output is obtained by averaging the trainable top weights against $\varphi_2(H_2)$. For deeper networks, the same alternating pattern is used: trainable channel weights are averaged against frozen random features and mixed through bounded low-rank channel matrices.
+
+The population objective is
+\begin{equation}
+\scrL(W)=\E_{(X,Y)}\left[\calL\left(Y,\hat y(X;W)\right)\right].
+\end{equation}
+The mean-field gradient flow evolves the trainable weights by
+\begin{equation}
+\partial_t w_\ell(t,\cdot)=-\xi_\ell(t)\,\nabla_{w_\ell}\scrL(W(t)),
+\label{eq:generic-flow}
+\end{equation}
+where $\xi_\ell$ are bounded learning-rate schedules. The exact formulas are standard backpropagation in the mean-field variables; the only low-rank modification is the channel mixing through $L_{c_\ell,k}$.
+
+\begin{assumption}[Regularity and diversity]
+\label{assump:regularity}
+There is $K\ge1$ such that the activations are $K$-Lipschitz, the relevant activation derivatives are bounded, the loss derivative $\partial_2\calL$ is bounded and Lipschitz, and the orthogonal channel mixers satisfy $L^\top L=I_r$ together with $\sup_{c_\ell}\sum_{k=1}^r |L_{c_\ell,k}|\le rK$. Inputs and frozen features are bounded. The support of the first frozen feature law is dense in $\R^d$, and the activation is non-polynomial, so the frozen random features have dense span in $L^2(\Pp_X)$.
+\end{assumption}
+
+\begin{assumption}[Loss identifiability and convergence]
+\label{assump:loss}
+The loss is non-negative and satisfies the implication $\partial_2\calL(y,u)=0\Rightarrow \calL(y,u)=0$ in the conditional population sense. The mean-field trajectory has a limit point in the natural Wasserstein-Orlicz topology used by the gradient-flow system.
+\end{assumption}
+
+\section{Global Convergence}
+\label{sec:global-convergence}
+
+The first result is well-posedness. It ensures that the low-rank channel formulation defines a genuine limiting dynamic rather than only a formal ODE.
+
+\begin{theorem}[Well-posedness of low-rank mean-field ODEs]
+\label{thm:wellposed}
+Under Assumption~\ref{assump:regularity} and sub-Gaussian initialization of the trainable weights, the low-rank mean-field gradient-flow system has a unique solution on every finite interval $[0,T]$ and therefore on $[0,\infty)$.
+\end{theorem}
+
+We use this theorem only to justify that the limiting dynamics are well-defined. The technical fixed-point estimates are standard mean-field estimates with the dense-layer constants replaced by low-rank mixing norms, and are not the focus of the paper.
+
+\begin{theorem}[Global convergence of RF-LR training]
+\label{thm:convergence}
+Under Assumptions~\ref{assump:regularity}--\ref{assump:loss}, if the low-rank mean-field dynamics converges to $W^\star$, then $W^\star$ is a global minimizer of the population loss:
+\begin{equation}
+\scrL(W^\star)=\inf_W \scrL(W).
+\end{equation}
+For every depth $L\ge2$, this holds with standard independent initialization of the trainable weights.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+At a limit point, the gradient-flow velocity is zero. Testing the top-layer equation against arbitrary frozen features yields orthogonality between the loss derivative and the closed span of the represented features. Because the frozen feature law has full support and the activation is non-polynomial, this span is dense in $L^2(\Pp_X)$. Hence
+\begin{equation}
+\E\left[\partial_2\calL\left(Y,\hat y(X;W^\star)\right)\mid X=x\right]=0
+\quad\text{for }\Pp_X\text{-a.e. }x.
+\end{equation}
+The loss-identifiability assumption then implies zero conditional loss and therefore global optimality. In dense deep mean-field proofs, one must show that the trained first-layer support remains rich. Here the support is frozen, so the dense-span property is automatic along the whole trajectory. Low rank only changes the upstream factors in the backpropagated signal.
+\end{proof}
+
+\section{Low-Rank Spectral Bias}
+\label{sec:spectral-transition}
+
+\paragraph{Related work: spectral bias.}
+Theorem~\ref{thm:convergence} says that any convergent trajectory reaches a global minimizer. It does not say how fast different frequencies are learned, nor which finite-time solution is reached under a fixed training budget. Highly oscillatory functions expose this gap. This is precisely the phenomenon called spectral bias by Rahaman et al.~\cite{rahaman2019}: standard neural networks tend to fit low-frequency components before high-frequency components. Rahaman et al.~\cite{rahaman2019} explain this behavior through Fourier decay and training dynamics of neural networks.
+
+Our mechanism is complementary and more structural. In ReLU networks, the represented function is continuous piecewise affine (CPWL), so Fourier behavior can be related to the polyhedral complex induced by activation boundaries. Low rank does not merely reduce parameter count; it constrains the algebraic degrees of freedom of the active path coefficients, and this changes which CPWL faces can carry Fourier mass. Our goal is therefore not to contradict classical spectral bias, but to identify rank as an architectural knob that modifies the geometry behind the finite-time Fourier transfer.
+
+In a ReLU network, on every activation region the network is affine, and the affine coefficient is a sum over active paths. The high-level idea is that a low-rank network has fewer \emph{independent} paths in this sum-over-paths representation. More precisely, when $W_\ell=U_\ell V_\ell^\top$ with rank $r_\ell$, the path coefficients involving layer $\ell$ must factor through an $r_\ell$-dimensional latent coordinate. Thus the graph may still contain many symbolic paths, but the number of independent path constraints is much smaller than in a full-width layer. Fewer independent path constraints mean fewer independent switching constraints for the polytopes of the CPWL linear-region complex. Geometrically, this favors more high-dimensional faces and suppresses low-dimensional, high-codimension intersections. Spectrally, the Fourier shell law below then predicts a lower finite-resolution decay, closer to the facet-dominated regime.
+
+This algebraic constraint becomes geometric. Inside a cell of the previous layers, a new switching normal has the form
+\begin{equation}
+n_{\ell i\varepsilon}=B_{\ell-1,\varepsilon}^{\top}V_\ell u_{\ell i}
+\in \im(B_{\ell-1,\varepsilon}^{\top}V_\ell),
+\qquad
+\dim \im(B_{\ell-1,\varepsilon}^{\top}V_\ell)\le \min(d,r_1,\ldots,r_\ell).
+\end{equation}
+Thus rank lowers the dimension of the normal subspace and suppresses high-codimension faces first.
+
+\paragraph{Face Fourier expansion.}
+Let $g=\chi f$, where $f$ is CPWL on a finite polyhedral complex in $\R^d$ and $\chi\in C_c^\infty(\R^d)$ is an observation window. Let $\mathcal F_q(f)$ be the codimension-$q$ faces of the complex. For every large frequency $\xi=\rho\theta$, $\theta\in\mathbb S^{d-1}$, the Fourier transform has the expansion
+\begin{equation}
+\wh g(\rho\theta)
+=
+\sum_{q=1}^d
+\rho^{-(q+1)}
+\sum_{F\in\mathcal F_q(f)}
+A_F(\rho,\theta)
++O(\rho^{-(d+2)}),
+\label{eq:face-expansion}
+\end{equation}
+where $A_F$ is a bounded oscillatory face coefficient controlled by the jump $\Delta_F$ of the appropriate normal derivative across the local fan around $F$. In particular,
+\begin{equation}
+|A_F(\rho,\theta)|
+\le C_\chi \|\Delta_F\|\,\operatorname{vol}_{d-q}(F)\,\omega_F(\theta).
+\end{equation}
+This is the anisotropic phenomenon isolated by Rahaman et al.~\citep{rahaman2019}: in almost all directions a ReLU network has fast $k^{-(d+1)}$ amplitude decay, while in special directions orthogonal to facets of the linear regions the decay can be as slow as $k^{-2}$. Thus low codimension faces are precisely the geometric structures that keep high-frequency Fourier mass visible at finite resolution.
+
+\begin{proposition}[Fourier shell law for CPWL networks]
+\label{prop:shell-law}
+Let $g=\chi f$ be a windowed continuous piecewise affine network in dimension $d$. Define the codimension-$q$ face moment
+\begin{equation}
+M_q(f)=
+\sum_{F\in\mathcal F_q(f)}
+\|\Delta_F\|^2
+\operatorname{vol}_{d-q}(F)^2
+\E_{\theta\in\mathbb S^{d-1}}\omega_F(\theta)^2 .
+\end{equation}
+Then the shell-averaged Fourier energy satisfies
+\begin{equation}
+S_f(\rho)=\E_{\|\xi\|\simeq \rho}|\wh g(\xi)|^2
+\lesssim
+\sum_{q=1}^d M_q(f)\rho^{-2(q+1)}.
+\label{eq:shell-law}
+\end{equation}
+Low rank suppresses $M_q$ for larger $q$ first, moving finite-resolution spectra toward the facet-dominated $\rho^{-4}$ energy regime. This should be read as a coefficient statement rather than a claim that low rank creates a new universal exponent: the useful comparison with full rank is the reduction of $M_q/M_1$ and of the transition coefficient $(M_q/M_1)\rho^{-2q+2}$ for $q\ge2$.
+\end{proposition}
+
+\begin{proof}
+Write the CPWL network on its polyhedral complex as
+\begin{equation}
+f(x)=\sum_{\varepsilon}
+(a_\varepsilon^\top x+b_\varepsilon)\mathbf 1_{P_\varepsilon}(x),
+\qquad
+g(x)=\chi(x)f(x).
+\end{equation}
+The cutoff makes $g$ compactly supported, so its Fourier transform is an ordinary oscillatory integral. On each cell $P_\varepsilon$, integrate by parts in the direction $\theta=\xi/\|\xi\|$. The affine interior terms either gain powers of $\rho^{-1}$ or cancel with the adjacent cell contribution; the non-canceling terms are the jumps of normal derivatives across the faces of the polyhedral complex.
+
+Iterating this argument localizes the $q$th boundary contribution on codimension-$q$ faces. A codimension-$q$ face appears after $q$ boundary reductions plus one affine derivative, which gives the factor $\rho^{-(q+1)}$. The remaining integral is over the face itself and has the form
+\begin{equation}
+A_F(\rho,\theta)
+=
+\int_F e^{-i\rho\langle \theta,x\rangle}
+B_F(\theta,x)\,d\sigma_F(x),
+\end{equation}
+where $B_F$ is linear in the jump $\Delta_F$ of the appropriate normal derivative and in derivatives of the window $\chi$. Hence
+\begin{equation}
+|A_F(\rho,\theta)|
+\le
+C_\chi\|\Delta_F\|
+\operatorname{vol}_{d-q}(F)\omega_F(\theta).
+\end{equation}
+This is the same anisotropic mechanism as the spectral-decay formula of Rahaman et al.~\citep{rahaman2019}: generic directions have fast $k^{-(d+1)}$ amplitude decay, but directions orthogonal to facets can decay as slowly as $k^{-2}$.
+
+Squaring the face expansion gives diagonal face terms and oscillatory cross terms. The diagonal contribution of codimension-$q$ faces is bounded by
+\begin{equation}
+\rho^{-2(q+1)}
+\sum_{F\in\mathcal F_q(f)}
+\|\Delta_F\|^2
+\operatorname{vol}_{d-q}(F)^2
+\omega_F(\theta)^2 .
+\end{equation}
+The off-diagonal terms are oscillatory products between distinct faces. After averaging over a shell, they are either lower order by non-stationary phase or bounded by Cauchy--Schwarz and absorbed into the same face moments. Taking the angular expectation yields
+\begin{equation}
+S_f(\rho)\lesssim
+\sum_{q=1}^d
+M_q(f)\rho^{-2(q+1)}.
+\end{equation}
+Thus the exponent $2(q+1)$ is inherited from face codimension, while the rank-dependent quantities are the coefficients $M_q(f)$. Low rank acts on these coefficients by reducing the number and strength of high-codimension intersections.
+\end{proof}
+
+In one dimension, this mechanism has a crucial caveat. A ReLU network is a linear spline, and for derivative jumps $\Delta_j$ at knots $t_j$,
+\begin{equation}
+\wh f(k)=
+-\frac{1}{(ik)^2}\sum_j \Delta_j e^{-ikt_j}
++O(|k|^{-3}),
+\qquad
+|\wh f(k)|^2\sim |k|^{-4}A(k).
+\end{equation}
+Therefore a 1D experiment should not be judged by a large change in the raw asymptotic exponent. The better diagnostic is Fourier recovery during training:
+\begin{equation}
+R_r(k,t)=\frac{|\wh f_{r,t}(k)|}{|\wh f^\star(k)|},
+\qquad
+\beta_r(t)=\frac{d\log R_r(k,t)}{d\log k}.
+\label{eq:recovery}
+\end{equation}
+A flatter recovery slope $\beta_r$ means that high modes are learned more evenly relative to low modes.
+
+This explains why the comparison to the classical spectral-bias paper must be made carefully. The classical claim is a learning-order claim: low frequencies are fitted faster. Our CPWL result is a geometric explanation of how rank can modify the finite-resolution Fourier transfer that governs this learning order. In dimensions $d\ge2$, rank can suppress high-codimension intersections and make the observed spectrum closer to the low-codimension, facet-supported directions where Fourier decay is slowest. In $d=1$, the raw CPWL tail is pinned near $k^{-4}$, so the right comparison is mode-wise recovery rather than raw asymptotic decay.
+
+\section{Experiments}
+\label{sec:experiments}
+
+We keep the experimental evidence deliberately short and defer settings to Appendix~\ref{app:exp-details}. The high-frequency MMNN sweeps use rank-$10$, width-$512$ networks on \texttt{chirp1d} and \texttt{sumcos} targets at frequencies $8,16,32$, depths $3$ and $6$, with both frozen and trainable random-feature modes. They confirm that low-rank models can learn oscillatory targets, while optimizer choice and feature freezing remain important: AdamW is strongest on several trainable-feature \texttt{chirp1d} runs, whereas Muon and HT-Muon are competitive on some frozen-feature \texttt{sumcos} settings.
+
+The CPWL theory also dictates how the experiments should be read. In one dimension, a ReLU network is a linear spline, and for derivative jumps $\Delta_j$ at knots $t_j$,
+\begin{equation}
+\wh f(k)=
+-\frac{1}{(ik)^2}\sum_j \Delta_j e^{-ikt_j}
++O(|k|^{-3}),
+\qquad
+|\wh f(k)|^2\sim |k|^{-4}A(k).
+\end{equation}
+Thus a 1D experiment should not be judged by a large change in the raw asymptotic exponent. The better diagnostic is Fourier recovery during training,
+\begin{equation}
+R_r(k,t)=\frac{|\wh f_{r,t}(k)|}{|\wh f^\star(k)|},
+\qquad
+\beta_r(t)=\frac{d\log R_r(k,t)}{d\log k}.
+\end{equation}
+A flatter recovery slope $\beta_r$ means that high modes are learned more evenly relative to low modes. This is why the comparison with the spectral-bias result of Rahaman et al.~\cite{rahaman2019} must be made carefully: their claim is a learning-order claim, while our CPWL result explains how rank can modify the finite-resolution Fourier transfer governing that learning order. In dimensions $d\ge2$, rank can suppress high-codimension intersections and move observed spectra toward low-codimension, facet-supported directions. In $d=1$, the raw CPWL tail is pinned near $k^{-4}$, so the right comparison is mode-wise recovery rather than raw asymptotic decay.
+
+The spectral-bias experiment isolates the rank effect. In a width-$2^{15}$ Fourier/kernel surrogate, ranks $1,\ldots,50$ are compared with a full-rank endpoint. The best rank is intermediate: $r=4$ obtains MSE $0.250$ versus $0.461$ for full rank on sparse Fourier mixtures, and $0.443$ versus $0.654$ on dense mixtures. More importantly for Proposition~\ref{prop:shell-law}, the recovery slope flattens from $-0.94$ and $-1.20$ at full rank to about $-0.29$ at rank $4$, and the useful log-log scaling coefficient saturates at the same rank. This is the experimental signature that adding rank beyond the first plateau no longer improves finite-resolution high-frequency transfer.
+
+The rank sweep is interpreted through the finite-time decomposition
+\begin{equation}
+\calE_r(t)\le
+A r^{-2s}
+\,
+\frac{B d_{\rm eff}(r)}{n}
+\,
+\sum_{k\in\Omega}|\wh f^\star(k)|^2 e^{-2t\lambda_r(k)}.
+\label{eq:rank-risk}
+\end{equation}
+The first term says rank cannot be too small; the second measures effective dimension; the third measures finite-time spectral transfer. The useful rank is the first rank that avoids the approximation bottleneck while keeping the recovery scaling flat.
+
+\section{Conclusion}
+
+Low rank is not only a compression device. In the random-feature mean-field regime, it preserves global convergence because frozen features maintain dense span and low-rank channel mixing only changes constants. In ReLU and CPWL regimes, it also changes the spectral bias through path-space constraints and Fourier face moments. The resulting picture is conservative but actionable: prove convergence in the frozen-feature low-rank model, then choose rank by spectral recovery on the target class. This makes low-rank networks a principled tool for highly oscillatory functions rather than merely a smaller approximation of full-rank networks.
+
+\appendix
+
+\section{Assumptions and Dense-Span Property}
+\label{app:assumptions}
+
+The convergence theorem uses the following standard ingredients. The activation is Lipschitz and non-polynomial; for the cleanest theorem one may use sigmoid, tanh, or leaky ReLU with derivative bounded away from zero on the active region. Inputs and random features are bounded or sub-Gaussian. The random-feature law has dense support in $\R^d$. The trainable weights have sub-Gaussian initialization. The loss derivative is bounded and Lipschitz, and the loss is identifiable from its first-order condition.
+
+\begin{theorem}[Universal approximation automatically maintained]
+\label{thm:uap-automatic}
+If $\operatorname{supp}(L^0(C_1))=\R^d$ and $\varphi_1$ is non-polynomial, then the class
+\begin{equation}
+\left\{\varphi_1\left(\langle L^0(c_1),\cdot\rangle\right):c_1\in\Omega_1\right\}
+\end{equation}
+has dense span in $L^2(\Pp_X)$ throughout training.
+\end{theorem}
+
+\begin{proof}
+The statement is a direct application of the classical non-polynomial random-feature density theorem. The feature parameters are frozen, so their support cannot collapse during training. Therefore the dense span property holds at initialization and remains true for all $t\ge0$.
+\end{proof}
+
+\section{Proof Details for Global Convergence}
+\label{app:global-proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:convergence}]
+Let $W(t)\to W^\star$. Since the dynamics are gradient flow, the time derivatives vanish at the limit in the weak topology used for the trajectory. The top-layer equation therefore implies
+\begin{equation}
+\E\left[\partial_2\calL(Y,\hat y(X;W^\star))
+\varphi_L(H_L(c_L;X,W^\star))\right]=0
+\end{equation}
+for all feature indices in the support. Propagating the same stationarity through the lower layers and using the frozen dense feature class gives
+\begin{equation}
+\E\left[\partial_2\calL(Y,\hat y(X;W^\star))\mid X=x\right]=0
+\end{equation}
+for almost every $x$. By loss identifiability, the conditional loss is zero almost everywhere. Since $\calL\ge0$, this implies $\scrL(W^\star)=0$, hence $W^\star$ is a global minimizer.
+\end{proof}
+
+\section{Additional Experimental Details}
+\label{app:exp-details}
+
+The high-frequency sweeps use \texttt{chirp1d} targets of the form
+\begin{equation}
+\cos(f\pi x^2)-0.8\cos((f/3)\pi x^2)
+\end{equation}
+and \texttt{sumcos} targets
+\begin{equation}
+\frac{1}{\sqrt f}\sum_{h=1}^{f}\cos(2\pi h x).
+\end{equation}
+The main sweep uses width $512$, rank $10$, batch size $1024$, $20000$ optimization steps, depths $3$ and $6$, and frequencies $8,16,32$. The low-rank spectral-bias sweep uses the CSV data in \texttt{refs/lr\_spectral\_workshop/figdata}; its main conclusion is the intermediate optimum $r=4$ in Fourier recovery.
+
+\begin{table}[h]
+\centering
+\caption{Representative frequency-$16$, depth-$6$ results from the current high-frequency sweeps. Lower is better.}
+\label{tab:freq16}
+\begin{tabular}{lllr}
+\toprule
+Target & Mode & Optimizer & Test MSE \\
+\midrule
+chirp1d & trainWb & AdamW & $8.8\cdot10^{-6}$ \\
+chirp1d & fixWb & Muon & $3.1\cdot10^{-3}$ \\
+chirp1d & fixWb & HT-Muon & $3.9\cdot10^{-3}$ \\
+sumcos & fixWb & AdamW & $5.1\cdot10^{-4}$ \\
+sumcos & fixWb & Muon & $1.8\cdot10^{-3}$ \\
+sumcos & trainWb & Muon & $6.5\cdot10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Fourier/kernel rank sweep at width $2^{15}$. Rank $4$ balances approximation and optimization better than both very small ranks and the full endpoint.}
+\label{tab:fourier-rank}
+\begin{tabular}{lrrrr}
+\toprule
+Task & Best $r$ & Best MSE & Full MSE & Slopes \\
+\midrule
+Sparse & $4$ & $0.250$ & $0.461$ & $-0.29/-0.94$ \\
+Dense & $4$ & $0.443$ & $0.654$ & $-0.29/-1.20$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{thebibliography}{99}
+
+\bibitem{bach2017}
+F. Bach.
+\newblock Breaking the curse of dimensionality with convex neural networks.
+\newblock \emph{Journal of Machine Learning Research}, 2017.
+
+\bibitem{barron1993}
+A. Barron.
+\newblock Universal approximation bounds for superpositions of a sigmoidal function.
+\newblock \emph{IEEE Transactions on Information Theory}, 1993.
+
+\bibitem{czarnecki2017}
+W. Czarnecki, S. Osindero, M. Jaderberg, G. Swirszcz, and R. Pascanu.
+\newblock Sobolev training for neural networks.
+\newblock In \emph{NeurIPS}, 2017.
+
+\bibitem{diaz2016}
+R. Diaz and S. Robins.
+\newblock Fourier transforms of polytopes and solid angle sums.
+\newblock In \emph{Integer Points in Polyhedra}, 2016.
+
+\bibitem{jacot2018}
+A. Jacot, F. Gabriel, and C. Hongler.
+\newblock Neural tangent kernel: Convergence and generalization in neural networks.
+\newblock In \emph{NeurIPS}, 2018.
+
+\bibitem{montufar2014}
+G. Montufar, R. Pascanu, K. Cho, and Y. Bengio.
+\newblock On the number of linear regions of deep neural networks.
+\newblock In \emph{NeurIPS}, 2014.
+
+\bibitem{nguyen2023}
+P.-M. Nguyen and H. T. Pham.
+\newblock A rigorous framework for the mean-field limit of multilayer neural networks.
+\newblock 2023.
+
+\bibitem{rahaman2019}
+N. Rahaman, A. Baratin, D. Arpit, F. Draxler, M. Lin, F. Hamprecht, Y. Bengio, and A. Courville.
+\newblock On the spectral bias of neural networks.
+\newblock In \emph{ICML}, 2019.
+
+\bibitem{zaslavsky1975}
+T. Zaslavsky.
+\newblock Facing up to arrangements: face-count formulas for partitions of space by hyperplanes.
+\newblock \emph{Memoirs of the American Mathematical Society}, 1975.
+
+\end{thebibliography}
+
+\newpage
+\input{checklist.tex}
+
+\end{document}

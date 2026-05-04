@@ -16,6 +16,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 import matplotlib
 matplotlib.use("Agg")
@@ -125,7 +126,7 @@ def run_mmnn(
     resnet: bool,
     seed: int,
     desc: str = "MMNN",
-    factorize_first_rank: int | None = None,
+    factorize_first_rank: Optional[int] = None,
 ) -> tuple[dict, nn.Module]:
     """Train MMNN and return (history and final metrics, trained model)."""
     torch.manual_seed(seed)

@@ -1,0 +1,323 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{positioning,arrows.meta}
+\pgfplotsset{compat=1.18,
+ every axis/.append style={tick label style={font=\scriptsize},label style={font=\small},legend style={font=\scriptsize,draw=none,fill=none}}
+}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\im}{\operatorname{Im}}
+\newcommand{\diag}{\operatorname{Diag}}
+\newcommand{\wh}{\widehat}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cE}{\mathcal{E}}
+\newcommand{\dd}{\mathrm{d}}
+
+\title{Appendix: Low-Rank Path Constraints, CPWL Face Moments, and Fourier Scaling Laws}
+\author{Anonymous Workshop Submission}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Why the path-count wording is wrong but useful}
+The informal slogan is ``low rank means fewer paths.''  Strictly speaking this is false.  A dense matrix $W\in\R^{m\times n}$ has one edge between each input and output channel.  A factorization $W=UV^\top$ inserts a latent rank coordinate, so the computational graph can contain $n r + m r$ edges and many two-hop graph paths.  What decreases is the dimension of the set of possible coefficients attached to paths.
+
+For one factorized layer,
+\begin{equation}
+W_{ij}=\sum_{a=1}^{r}U_{ia}V_{ja}.
+\end{equation}
+A path coefficient involving this edge is no longer independently indexed by $(i,j)$; it factors through $a\in\{1,\ldots,r\}$.  With $L$ factorized layers, the full active path tensor belongs to a tensor network whose bond dimensions are the ranks.  This is the precise version used in the main text.
+
+\section{Proof of the normal-subspace constraint}
+Fix a region $R_\varepsilon$ of the first $\ell-1$ layers.  On that region,
+\begin{equation}
+h_{\ell-1}(x)=B_{\ell-1,\varepsilon}x+c_{\ell-1,\varepsilon}.
+\end{equation}
+For layer $\ell$ with $W_\ell=U_\ell V_\ell^\top$, the preactivation of neuron $i$ is
+\begin{align}
+a_{\ell i}(x)
+&=e_i^\top U_\ell V_\ell^\top(B_{\ell-1,\varepsilon}x+c_{\ell-1,\varepsilon})+b_{\ell i}\\
+&=u_{\ell i}^\top V_\ell^\top B_{\ell-1,\varepsilon}x+\mathrm{const.}
+\end{align}
+Thus the normal is $n_{\ell i\varepsilon}=B_{\ell-1,\varepsilon}^\top V_\ell u_{\ell i}$ and belongs to $\im(B_{\ell-1,\varepsilon}^\top V_\ell)$.  Moreover
+\begin{equation}
+\rank(B_{\ell,\varepsilon})=\rank(D_{\ell,\varepsilon}U_\ell V_\ell^\top B_{\ell-1,\varepsilon})
+\le \min\{\rank(B_{\ell-1,\varepsilon}),r_\ell\}.
+\end{equation}
+Induction from $\rank(B_0)=d$ gives
+\begin{equation}
+\dim \im(B_{\ell-1,\varepsilon}^\top V_\ell)\le \min(d,r_1,\ldots,r_\ell).
+\end{equation}
+This is the geometric bottleneck behind the face-moment proxy.
+
+\section{From arrangement counts to face moments}
+Let $m$ hyperplanes be in general position inside a $\rho$-dimensional normal subspace.  A codimension-$q$ face can only be created by selecting $q$ active hyperplanes and then counting regions of the induced arrangement on the intersection.  The conservative proxy
+\begin{equation}
+N_q(m,\rho)\le {m\choose q}\sum_{j=0}^{\rho-q}{m-q\choose j}
+\end{equation}
+therefore suffices for our purpose.  It has the key qualitative property $N_q(m,\rho)=0$ when $q>\rho$.  In particular, rank constraints suppress high codimension first.
+
+The Fourier-relevant moment is not just a face count.  It weighs each face by jump sizes and volumes:
+\begin{equation}
+M_q(f)=\sum_{F\in\cF_q(f)}\|\Delta_F\|^2\operatorname{vol}_{d-q}(F)^2\omega_F.
+\end{equation}
+The count proxy controls the combinatorial part of $M_q$, while rank also affects jump magnitudes.  The experiments in the main paper use multi-way activation junctions as a measurable proxy for the high-$q$ part of $M_q$.
+
+\section{Fourier shell expansion details}
+For a compactly windowed CPWL function $g=\chi f$, repeated integration by parts gives boundary terms on the faces where derivatives jump.  A schematic form is
+\begin{equation}
+\wh g(\xi)=\sum_{q=1}^{d}\sum_{F\in\cF_q} \frac{e^{-i\langle \xi,x_F\rangle}}{\|\xi\|^{q+1}}A_F(\xi/\|\xi\|)+O(\|\xi\|^{-d-2}).
+\end{equation}
+Squaring and averaging over shells removes many oscillatory cross terms, leading to
+\begin{equation}
+S_f(\rho)\lesssim \sum_{q=1}^{d}M_q(f)\rho^{-2(q+1)}.
+\end{equation}
+The effective slope is a weighted average of the exponents $2(q+1)$:
+\begin{equation}
+\alpha_{\rm eff}(\rho)=\frac{\sum_q2(q+1)M_q\rho^{-2(q+1)}}{\sum_qM_q\rho^{-2(q+1)}}.
+\end{equation}
+Therefore, removing $q\ge2$ terms makes the observed slope smaller in magnitude.  This is the mathematical version of the ``better Fourier scaling'' claim.
+
+\section{The special 1D case}
+A 1D ReLU network is a spline.  If $f'$ has jumps $\Delta_j$ at knots $t_j$, then in distributions
+\begin{equation}
+f''=\sum_j\Delta_j\delta_{t_j}.
+\end{equation}
+Hence
+\begin{equation}
+(ik)^2\wh f(k)=\sum_j\Delta_j e^{-ikt_j},
+\end{equation}
+up to boundary/window terms.  Thus $|\wh f(k)|^2$ has a $k^{-4}$ envelope.  Low rank changes the random sum and its prefactor, but not the generic envelope.  The 1D validation must therefore use training transfer:
+\begin{equation}
+R_r(k,t)=\frac{|\wh f_{r,t}(k)|}{|\wh f^\star(k)|}.
+\end{equation}
+This is the reason the main experiments focus on recovery slopes rather than raw random-network exponents in 1D.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.78\textwidth,height=0.36\textwidth,
+ grid=both,grid style={gray!15},xlabel={radius},ylabel={shell power},xmode=log,ymode=log,legend columns=5,legend pos=south west]
+\addplot+[mark=*] table[col sep=comma,x=radius,y=power]{figdata/cpwl3d_spectrum_curve_full.csv};\addlegendentry{full}
+\addplot+[mark=square*] table[col sep=comma,x=radius,y=power]{figdata/cpwl3d_spectrum_curve_8.csv};\addlegendentry{$r=8$}
+\addplot+[mark=triangle*] table[col sep=comma,x=radius,y=power]{figdata/cpwl3d_spectrum_curve_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=diamond*] table[col sep=comma,x=radius,y=power]{figdata/cpwl3d_spectrum_curve_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=o] table[col sep=comma,x=radius,y=power]{figdata/cpwl3d_spectrum_curve_1.csv};\addlegendentry{$r=1$}
+\end{axis}
+\end{tikzpicture}
+\caption{Shell spectra behind the slope plot.  Low ranks preserve a visibly heavier relative high-frequency tail over the measured shell range.}
+\label{fig:app_cpwl_spectra}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.78\textwidth,height=0.36\textwidth,
+ grid=both,grid style={gray!15},xlabel={rank},ylabel={effective exponent $\alpha_{\rm eff}$},xmin=1,xmax=50,legend columns=4,legend pos=north west]
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=alpha_eff]{figdata/theory_phase_shell4.csv};\addlegendentry{$\rho=4$}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=alpha_eff]{figdata/theory_phase_shell8.csv};\addlegendentry{$\rho=8$}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=alpha_eff]{figdata/theory_phase_shell16.csv};\addlegendentry{$\rho=16$}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=alpha_eff]{figdata/theory_phase_shell32.csv};\addlegendentry{$\rho=32$}
+\end{axis}
+\end{tikzpicture}
+\caption{Resolution-dependent phase transition.  High-codimension terms need larger moments to affect higher Fourier shells, so the rank at which the exponent detaches depends on the observed radius.}
+\label{fig:app_phase}
+\end{figure}
+
+\section{Detailed optimal-rank proxy}
+The main bound is
+\begin{equation}
+\cE_r(t)\le A r^{-2s}+B d_{\rm eff}(r)/n+\sum_k |\wh f^\star(k)|^2 e^{-2t\lambda_r(k)}.
+\end{equation}
+The minimizer satisfies a discrete balance condition: increasing rank by one is beneficial only if the approximation decrease is larger than the optimization/generalization increase,
+\begin{equation}
+A(r^{-2s}-(r+1)^{-2s})
+\gtrsim \Delta_r\left[\sum_k |\wh f^\star(k)|^2 e^{-2t\lambda_r(k)}\right]
++\frac{B}{n}\Delta_r d_{\rm eff}(r).
+\end{equation}
+In our experiments, ranks $1$ and $2$ are dominated by approximation.  Ranks much larger than $4$ have a worse high-frequency transfer at the same training horizon.  Rank $4$ is the first point at which the approximation floor is low and the recovery slope remains flat.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.25cm},
+ width=0.45\textwidth,height=0.28\textwidth,grid=both,grid style={gray!15},xmin=1,xmax=50]
+\nextgroupplot[xlabel={rank},ylabel={sparse risk decomposition},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=approx_floor]{figdata/wide32768_bound_sparse.csv};\addlegendentry{approx.}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=opt_residual]{figdata/wide32768_bound_sparse.csv};\addlegendentry{opt.}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=gen_term]{figdata/wide32768_bound_sparse.csv};\addlegendentry{gen.}
+\addplot+[mark=none,very thick] table[col sep=comma,x=rank,y=bound_proxy]{figdata/wide32768_bound_sparse.csv};\addlegendentry{total}
+\nextgroupplot[xlabel={rank},ylabel={dense risk decomposition},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=approx_floor]{figdata/wide32768_bound_dense.csv};\addlegendentry{approx.}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=opt_residual]{figdata/wide32768_bound_dense.csv};\addlegendentry{opt.}
+\addplot+[mark=none,thick] table[col sep=comma,x=rank,y=gen_term]{figdata/wide32768_bound_dense.csv};\addlegendentry{gen.}
+\addplot+[mark=none,very thick] table[col sep=comma,x=rank,y=bound_proxy]{figdata/wide32768_bound_dense.csv};\addlegendentry{total}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Approximation/optimization decomposition.  The total proxy selects the same sweet spot as the experimental rank sweep.}
+\label{fig:app_decomp}
+\end{figure}
+
+\section{Additional Fourier recovery plots}
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.15cm},
+ width=0.45\textwidth,height=0.30\textwidth,grid=both,grid style={gray!15},xmode=log,ymode=log]
+\nextgroupplot[xlabel={frequency},ylabel={sparse recovery},legend columns=3,legend pos=south west]
+\addplot+[mark=*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_sparse_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=square*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_sparse_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=triangle*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_sparse_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=diamond*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_sparse_full.csv};\addlegendentry{full}
+\nextgroupplot[xlabel={frequency},ylabel={dense recovery},legend columns=3,legend pos=south west]
+\addplot+[mark=*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_dense_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=square*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_dense_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=triangle*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_dense_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=diamond*] table[col sep=comma,x=frequency,y=recovery]{figdata/wide32768_recovery_dense_full.csv};\addlegendentry{full}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Mode-wise recovery for more ranks.  Rank $2$ is flatter but underfits; rank $16$ starts to recover the full-rank spectral bias; rank $4$ balances both.}
+\label{fig:app_more_recovery}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 2,horizontal sep=1.15cm,vertical sep=1.0cm},
+ width=0.45\textwidth,height=0.28\textwidth,grid=both,grid style={gray!15},xmode=log,ymode=log]
+\nextgroupplot[xlabel={step},ylabel={sparse test},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_sparse_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_sparse_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_sparse_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=none,thick,dashed] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_sparse_full.csv};\addlegendentry{full}
+\nextgroupplot[xlabel={step},ylabel={dense test},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_dense_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_dense_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_dense_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=none,thick,dashed] table[col sep=comma,x=step,y=test_mse]{figdata/wide32768_curve_dense_full.csv};\addlegendentry{full}
+\nextgroupplot[xlabel={step},ylabel={sparse train},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_sparse_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_sparse_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_sparse_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=none,thick,dashed] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_sparse_full.csv};\addlegendentry{full}
+\nextgroupplot[xlabel={step},ylabel={dense train},legend pos=north east]
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_dense_2.csv};\addlegendentry{$r=2$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_dense_4.csv};\addlegendentry{$r=4$}
+\addplot+[mark=none,thick] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_dense_16.csv};\addlegendentry{$r=16$}
+\addplot+[mark=none,thick,dashed] table[col sep=comma,x=step,y=train_mse]{figdata/wide32768_curve_dense_full.csv};\addlegendentry{full}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Training and test curves.  The optimal rank is not merely a final-step artifact; it dominates over a broad finite-horizon window.}
+\label{fig:app_learning}
+\end{figure}
+
+\section{Sobolev/Fourier loss proxy}
+A Fourier-weighted Sobolev loss increases the value of high-mode recovery.  In our proxy, increasing the Sobolev exponent shifts the risk curves in favor of ranks with flatter recovery slopes, but the approximation floor prevents the optimum from collapsing to rank $1$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.15cm},
+ width=0.45\textwidth,height=0.30\textwidth,grid=both,grid style={gray!15},xmin=1,xmax=50]
+\nextgroupplot[xlabel={rank},ylabel={sparse weighted risk},legend columns=2,legend pos=north east]
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_sparse_0p0.csv};\addlegendentry{$s=0$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_sparse_0p5.csv};\addlegendentry{$s=.5$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_sparse_1p0.csv};\addlegendentry{$s=1$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_sparse_1p5.csv};\addlegendentry{$s=1.5$}
+\nextgroupplot[xlabel={rank},ylabel={dense weighted risk},legend columns=2,legend pos=north east]
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_dense_0p0.csv};\addlegendentry{$s=0$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_dense_0p5.csv};\addlegendentry{$s=.5$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_dense_1p0.csv};\addlegendentry{$s=1$}
+\addplot+[mark=none] table[col sep=comma,x=rank,y=weighted_risk]{figdata/sobolev_dense_1p5.csv};\addlegendentry{$s=1.5$}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Sobolev/Fourier objective proxy.  Fourier-weighted training strengthens the case for intermediate ranks because the high-mode transfer matters more.}
+\label{fig:app_sobolev}
+\end{figure}
+
+
+\clearpage
+\section{Archived width-1024 multidimensional Fourier sweeps}
+Before focusing the final story on the 1D Fourier transfer law, we also ran finite-width sweeps on Fourier mixtures in dimensions $d\in\{1,2,5,10,20\}$ with sparse and dense spectra.  These plots are included here to preserve the full experimental trail.  They show the same qualitative message but with substantially more variance: rank is a useful spectral knob, yet the optimal rank depends strongly on dimension, sampling density, and mixture sparsity.  This motivated the cleaner width-$2^{15}$ one-dimensional Fourier/kernel experiment in the main paper.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 2,horizontal sep=1.15cm,vertical sep=1.0cm},
+ width=0.45\textwidth,height=0.28\textwidth,grid=both,grid style={gray!15},xmode=log,legend columns=3,legend pos=north east]
+\nextgroupplot[xlabel={rank},ylabel={sparse final test MSE}]
+\addplot+[mark=*] table[col sep=comma,x=rank_value,y=d1]{figdata/fourier_sparse_final_test_mse.csv};\addlegendentry{$d=1$}
+\addplot+[mark=square*] table[col sep=comma,x=rank_value,y=d2]{figdata/fourier_sparse_final_test_mse.csv};\addlegendentry{$d=2$}
+\addplot+[mark=triangle*] table[col sep=comma,x=rank_value,y=d5]{figdata/fourier_sparse_final_test_mse.csv};\addlegendentry{$d=5$}
+\addplot+[mark=diamond*] table[col sep=comma,x=rank_value,y=d10]{figdata/fourier_sparse_final_test_mse.csv};\addlegendentry{$d=10$}
+\addplot+[mark=o] table[col sep=comma,x=rank_value,y=d20]{figdata/fourier_sparse_final_test_mse.csv};\addlegendentry{$d=20$}
+\nextgroupplot[xlabel={rank},ylabel={dense final test MSE}]
+\addplot+[mark=*] table[col sep=comma,x=rank_value,y=d1]{figdata/fourier_dense_final_test_mse.csv};\addlegendentry{$d=1$}
+\addplot+[mark=square*] table[col sep=comma,x=rank_value,y=d2]{figdata/fourier_dense_final_test_mse.csv};\addlegendentry{$d=2$}
+\addplot+[mark=triangle*] table[col sep=comma,x=rank_value,y=d5]{figdata/fourier_dense_final_test_mse.csv};\addlegendentry{$d=5$}
+\addplot+[mark=diamond*] table[col sep=comma,x=rank_value,y=d10]{figdata/fourier_dense_final_test_mse.csv};\addlegendentry{$d=10$}
+\addplot+[mark=o] table[col sep=comma,x=rank_value,y=d20]{figdata/fourier_dense_final_test_mse.csv};\addlegendentry{$d=20$}
+\nextgroupplot[xlabel={rank},ylabel={sparse high/low recovery}]
+\addplot+[mark=*] table[col sep=comma,x=rank_value,y=d1]{figdata/fourier_sparse_hl_ratio.csv};\addlegendentry{$d=1$}
+\addplot+[mark=square*] table[col sep=comma,x=rank_value,y=d2]{figdata/fourier_sparse_hl_ratio.csv};\addlegendentry{$d=2$}
+\addplot+[mark=triangle*] table[col sep=comma,x=rank_value,y=d5]{figdata/fourier_sparse_hl_ratio.csv};\addlegendentry{$d=5$}
+\addplot+[mark=diamond*] table[col sep=comma,x=rank_value,y=d10]{figdata/fourier_sparse_hl_ratio.csv};\addlegendentry{$d=10$}
+\addplot+[mark=o] table[col sep=comma,x=rank_value,y=d20]{figdata/fourier_sparse_hl_ratio.csv};\addlegendentry{$d=20$}
+\nextgroupplot[xlabel={rank},ylabel={dense high/low recovery}]
+\addplot+[mark=*] table[col sep=comma,x=rank_value,y=d1]{figdata/fourier_dense_hl_ratio.csv};\addlegendentry{$d=1$}
+\addplot+[mark=square*] table[col sep=comma,x=rank_value,y=d2]{figdata/fourier_dense_hl_ratio.csv};\addlegendentry{$d=2$}
+\addplot+[mark=triangle*] table[col sep=comma,x=rank_value,y=d5]{figdata/fourier_dense_hl_ratio.csv};\addlegendentry{$d=5$}
+\addplot+[mark=diamond*] table[col sep=comma,x=rank_value,y=d10]{figdata/fourier_dense_hl_ratio.csv};\addlegendentry{$d=10$}
+\addplot+[mark=o] table[col sep=comma,x=rank_value,y=d20]{figdata/fourier_dense_hl_ratio.csv};\addlegendentry{$d=20$}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Earlier finite-width Fourier sweeps across dimensions.  The signal is noisier than the width-$2^{15}$ 1D kernel experiment, but it supports the same view: rank changes both finite-budget MSE and high-frequency recovery, and the best rank is task dependent.}
+\label{fig:app_multidim}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llrrr}
+\toprule
+Mixture & dim & best MSE rank & best MSE & best high/low rank\\
+\midrule
+Sparse & 1  & 512 & 0.060 & 512\\
+Sparse & 2  & 512 & 0.692 & 1\\
+Sparse & 5  & 1   & 0.790 & 8\\
+Sparse & 10 & 1   & 0.946 & 2\\
+Sparse & 20 & 1   & 1.071 & 2\\
+Dense  & 1  & 128 & 0.0019 & 1\\
+Dense  & 2  & 256 & 0.370 & 256\\
+Dense  & 5  & 1   & 1.241 & 1\\
+Dense  & 10 & 1   & 1.118 & 512\\
+Dense  & 20 & 1   & 1.101 & 1\\
+\bottomrule
+\end{tabular}
+\caption{Best ranks from the earlier finite-width multidimensional runs.  These are not used as the main validation because dimension and sample sparsity introduce much larger variance, but they are useful context.}
+\label{tab:app_multidim}
+\end{table}
+
+\section{Implementation notes}
+The released script writes all CSV files used by the paper.  It includes: CPWL geometry summaries; theory phase-transition curves; width-$2^{15}$ rank sweeps; full endpoint lines; mode-wise recovery; train/test learning curves; and Sobolev-weighted proxy risks.  The full endpoint is not a materialized dense $32768\times32768$ matrix.  It is the dense/full transfer endpoint of the Fourier/kernel surrogate.  This is the computationally meaningful object at this width and avoids a multi-gigabyte matrix that would be irrelevant to the Fourier transfer calculation.
+
+\end{document}

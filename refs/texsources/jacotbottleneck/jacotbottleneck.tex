@@ -1,0 +1,3849 @@
+
+%% Copyright 2010 Hal Daum\'e III
+%% Modified by J. F�rnkranz
+%% - Changed labels from (X and Y, 2000) to (X & Y, 2000)
+%%
+%% Copyright 1993-2007 Patrick W Daly
+%% Max-Planck-Institut f\"ur Sonnensystemforschung
+%% Max-Planck-Str. 2
+%% D-37191 Katlenburg-Lindau
+%% Germany
+%% E-mail: daly@mps.mpg.de
+%%
+%% This program can be redistributed and/or modified under the terms
+%% of the LaTeX Project Public License Distributed from CTAN
+%% archives in directory macros/latex/base/lppl.txt; either
+%% version 1 of the License, or any later version.
+%%
+ % Version and source file information:
+ % \ProvidesFile{icml2010.mbs}[2007/11/26 1.93 (PWD)]
+ %
+ % BibTeX `plainnat' family
+ %   version 0.99b for BibTeX versions 0.99a or later,
+ %   for LaTeX versions 2.09 and 2e.
+ %
+ % For use with the `natbib.sty' package; emulates the corresponding
+ %   member of the `plain' family, but with author-year citations.
+ %
+ % With version 6.0 of `natbib.sty', it may also be used for numerical
+ %   citations, while retaining the commands \citeauthor, \citefullauthor,
+ %   and \citeyear to print the corresponding information.
+ %
+ % For version 7.0 of `natbib.sty', the KEY field replaces missing
+ %   authors/editors, and the date is left blank in \bibitem.
+ %
+ % Includes field EID for the sequence/citation number of electronic journals
+ %  which is used instead of page numbers.
+ %
+ % Includes fields ISBN and ISSN.
+ %
+ % Includes field URL for Internet addresses.
+ %
+ % Includes field DOI for Digital Object Idenfifiers.
+ %
+ % Works best with the url.sty package of Donald Arseneau.
+ %
+ % Works with identical authors and year are further sorted by
+ %   citation key, to preserve any natural sequence.
+ %
+ENTRY
+  { address
+    author
+    booktitle
+    chapter
+    doi
+    eid
+    edition
+    editor
+    howpublished
+    institution
+    isbn
+    issn
+    journal
+    key
+    month
+    note
+    number
+    organization
+    pages
+    publisher
+    school
+    series
+    title
+    type
+    url
+    volume
+    year
+  }
+  {}
+  { label extra.label sort.label short.list }
+
+INTEGERS { output.state before.all mid.sentence after.sentence after.block }
+
+FUNCTION {init.state.consts}
+{ #0 'before.all :=
+  #1 'mid.sentence :=
+  #2 'after.sentence :=
+  #3 'after.block :=
+}
+
+STRINGS { s t }
+
+FUNCTION {output.nonnull}
+{ 's :=
+  output.state mid.sentence =
+    { ", " * write$ }
+    { output.state after.block =
+        { add.period$ write$
+          newline$
+          "\newblock " write$
+        }
+        { output.state before.all =
+            'write$
+            { add.period$ " " * write$ }
+          if$
+        }
+      if$
+      mid.sentence 'output.state :=
+    }
+  if$
+  s
+}
+
+FUNCTION {output}
+{ duplicate$ empty$
+    'pop$
+    'output.nonnull
+  if$
+}
+
+FUNCTION {output.check}
+{ 't :=
+  duplicate$ empty$
+    { pop$ "empty " t * " in " * cite$ * warning$ }
+    'output.nonnull
+  if$
+}
+
+FUNCTION {fin.entry}
+{ add.period$
+  write$
+  newline$
+}
+
+FUNCTION {new.block}
+{ output.state before.all =
+    'skip$
+    { after.block 'output.state := }
+  if$
+}
+
+FUNCTION {new.sentence}
+{ output.state after.block =
+    'skip$
+    { output.state before.all =
+        'skip$
+        { after.sentence 'output.state := }
+      if$
+    }
+  if$
+}
+
+FUNCTION {not}
+{   { #0 }
+    { #1 }
+  if$
+}
+
+FUNCTION {and}
+{   'skip$
+    { pop$ #0 }
+  if$
+}
+
+FUNCTION {or}
+{   { pop$ #1 }
+    'skip$
+  if$
+}
+
+FUNCTION {new.block.checka}
+{ empty$
+    'skip$
+    'new.block
+  if$
+}
+
+FUNCTION {new.block.checkb}
+{ empty$
+  swap$ empty$
+  and
+    'skip$
+    'new.block
+  if$
+}
+
+FUNCTION {new.sentence.checka}
+{ empty$
+    'skip$
+    'new.sentence
+  if$
+}
+
+FUNCTION {new.sentence.checkb}
+{ empty$
+  swap$ empty$
+  and
+    'skip$
+    'new.sentence
+  if$
+}
+
+FUNCTION {field.or.null}
+{ duplicate$ empty$
+    { pop$ "" }
+    'skip$
+  if$
+}
+
+FUNCTION {emphasize}
+{ duplicate$ empty$
+    { pop$ "" }
+    { "\emph{" swap$ * "}" * }
+  if$
+}
+
+INTEGERS { nameptr namesleft numnames }
+
+FUNCTION {format.names}
+{ 's :=
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { s nameptr "{ff~}{vv~}{ll}{, jj}" format.name$ 't :=
+      nameptr #1 >
+        { namesleft #1 >
+            { ", " * t * }
+            { numnames #2 >
+                { "," * }
+                'skip$
+              if$
+              t "others" =
+                { " et~al." * }
+                { " and " * t * }
+              if$
+            }
+          if$
+        }
+        't
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+}
+
+FUNCTION {format.key}
+{ empty$
+    { key field.or.null }
+    { "" }
+  if$
+}
+
+FUNCTION {format.authors}
+{ author empty$
+    { "" }
+    { author format.names }
+  if$
+}
+
+FUNCTION {format.editors}
+{ editor empty$
+    { "" }
+    { editor format.names
+      editor num.names$ #1 >
+        { " (eds.)" * }
+        { " (ed.)" * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.isbn}
+{ isbn empty$
+    { "" }
+    { new.block "ISBN " isbn * }
+  if$
+}
+
+FUNCTION {format.issn}
+{ issn empty$
+    { "" }
+    { new.block "ISSN " issn * }
+  if$
+}
+
+FUNCTION {format.url}
+{ url empty$
+    { "" }
+    { new.block "URL \url{" url * "}" * }
+  if$
+}
+
+FUNCTION {format.doi}
+{ doi empty$
+    { "" }
+    { new.block "\doi{" doi * "}" * }
+  if$
+}
+
+FUNCTION {format.title}
+{ title empty$
+    { "" }
+    { title "t" change.case$ }
+  if$
+}
+
+FUNCTION {format.full.names}
+{'s :=
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { s nameptr
+      "{vv~}{ll}" format.name$ 't :=
+      nameptr #1 >
+        {
+          namesleft #1 >
+            { ", " * t * }
+            {
+              numnames #2 >
+                { "," * }
+                'skip$
+              if$
+              t "others" =
+                { " et~al." * }
+                { " and " * t * }
+              if$
+            }
+          if$
+        }
+        't
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+}
+
+FUNCTION {author.editor.full}
+{ author empty$
+    { editor empty$
+        { "" }
+        { editor format.full.names }
+      if$
+    }
+    { author format.full.names }
+  if$
+}
+
+FUNCTION {author.full}
+{ author empty$
+    { "" }
+    { author format.full.names }
+  if$
+}
+
+FUNCTION {editor.full}
+{ editor empty$
+    { "" }
+    { editor format.full.names }
+  if$
+}
+
+FUNCTION {make.full.names}
+{ type$ "book" =
+  type$ "inbook" =
+  or
+    'author.editor.full
+    { type$ "proceedings" =
+        'editor.full
+        'author.full
+      if$
+    }
+  if$
+}
+
+FUNCTION {output.bibitem}
+{ newline$
+  "\bibitem[" write$
+  label write$
+  ")" make.full.names duplicate$ short.list =
+     { pop$ }
+     { * }
+   if$
+  "]{" * write$
+  cite$ write$
+  "}" write$
+  newline$
+  ""
+  before.all 'output.state :=
+}
+
+FUNCTION {n.dashify}
+{ 't :=
+  ""
+    { t empty$ not }
+    { t #1 #1 substring$ "-" =
+        { t #1 #2 substring$ "--" = not
+            { "--" *
+              t #2 global.max$ substring$ 't :=
+            }
+            {   { t #1 #1 substring$ "-" = }
+                { "-" *
+                  t #2 global.max$ substring$ 't :=
+                }
+              while$
+            }
+          if$
+        }
+        { t #1 #1 substring$ *
+          t #2 global.max$ substring$ 't :=
+        }
+      if$
+    }
+  while$
+}
+
+FUNCTION {format.date}
+{ year duplicate$ empty$
+    { "empty year in " cite$ * warning$
+       pop$ "" }
+    'skip$
+  if$
+  month empty$
+    'skip$
+    { month
+      " " * swap$ *
+    }
+  if$
+  extra.label *
+}
+
+FUNCTION {format.btitle}
+{ title emphasize
+}
+
+FUNCTION {tie.or.space.connect}
+{ duplicate$ text.length$ #3 <
+    { "~" }
+    { " " }
+  if$
+  swap$ * *
+}
+
+FUNCTION {either.or.check}
+{ empty$
+    'pop$
+    { "can't use both " swap$ * " fields in " * cite$ * warning$ }
+  if$
+}
+
+FUNCTION {format.bvolume}
+{ volume empty$
+    { "" }
+    { "volume" volume tie.or.space.connect
+      series empty$
+        'skip$
+        { " of " * series emphasize * }
+      if$
+      "volume and number" number either.or.check
+    }
+  if$
+}
+
+FUNCTION {format.number.series}
+{ volume empty$
+    { number empty$
+        { series field.or.null }
+        { output.state mid.sentence =
+            { "number" }
+            { "Number" }
+          if$
+          number tie.or.space.connect
+          series empty$
+            { "there's a number but no series in " cite$ * warning$ }
+            { " in " * series * }
+          if$
+        }
+      if$
+    }
+    { "" }
+  if$
+}
+
+FUNCTION {format.edition}
+{ edition empty$
+    { "" }
+    { output.state mid.sentence =
+        { edition "l" change.case$ " edition" * }
+        { edition "t" change.case$ " edition" * }
+      if$
+    }
+  if$
+}
+
+INTEGERS { multiresult }
+
+FUNCTION {multi.page.check}
+{ 't :=
+  #0 'multiresult :=
+    { multiresult not
+      t empty$ not
+      and
+    }
+    { t #1 #1 substring$
+      duplicate$ "-" =
+      swap$ duplicate$ "," =
+      swap$ "+" =
+      or or
+        { #1 'multiresult := }
+        { t #2 global.max$ substring$ 't := }
+      if$
+    }
+  while$
+  multiresult
+}
+
+FUNCTION {format.pages}
+{ pages empty$
+    { "" }
+    { pages multi.page.check
+        { "pp.\ " pages n.dashify tie.or.space.connect }
+        { "pp.\ " pages tie.or.space.connect }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.eid}
+{ eid empty$
+    { "" }
+    { "art." eid tie.or.space.connect }
+  if$
+}
+
+FUNCTION {format.vol.num.pages}
+{ volume field.or.null
+  number empty$
+    'skip$
+    { "\penalty0 (" number * ")" * *
+      volume empty$
+        { "there's a number but no volume in " cite$ * warning$ }
+        'skip$
+      if$
+    }
+  if$
+  pages empty$
+    'skip$
+    { duplicate$ empty$
+        { pop$ format.pages }
+        { ":\penalty0 " * pages n.dashify * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.vol.num.eid}
+{ volume field.or.null
+  number empty$
+    'skip$
+    { "\penalty0 (" number * ")" * *
+      volume empty$
+        { "there's a number but no volume in " cite$ * warning$ }
+        'skip$
+      if$
+    }
+  if$
+  eid empty$
+    'skip$
+    { duplicate$ empty$
+        { pop$ format.eid }
+        { ":\penalty0 " * eid * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.chapter.pages}
+{ chapter empty$
+    'format.pages
+    { type empty$
+        { "chapter" }
+        { type "l" change.case$ }
+      if$
+      chapter tie.or.space.connect
+      pages empty$
+        'skip$
+        { ", " * format.pages * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.in.ed.booktitle}
+{ booktitle empty$
+    { "" }
+    { editor empty$
+        { "In " booktitle emphasize * }
+        { "In " format.editors * ", " * booktitle emphasize * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {empty.misc.check}
+{ author empty$ title empty$ howpublished empty$
+  month empty$ year empty$ note empty$
+  and and and and and
+  key empty$ not and
+    { "all relevant fields are empty in " cite$ * warning$ }
+    'skip$
+  if$
+}
+
+FUNCTION {format.thesis.type}
+{ type empty$
+    'skip$
+    { pop$
+      type "t" change.case$
+    }
+  if$
+}
+
+FUNCTION {format.tr.number}
+{ type empty$
+    { "Technical Report" }
+    'type
+  if$
+  number empty$
+    { "t" change.case$ }
+    { number tie.or.space.connect }
+  if$
+}
+
+FUNCTION {format.article.crossref}
+{ key empty$
+    { journal empty$
+        { "need key or journal for " cite$ * " to crossref " * crossref *
+          warning$
+          ""
+        }
+        { "In \emph{" journal * "}" * }
+      if$
+    }
+    { "In " }
+  if$
+  " \citet{" * crossref * "}" *
+}
+
+FUNCTION {format.book.crossref}
+{ volume empty$
+    { "empty volume in " cite$ * "'s crossref of " * crossref * warning$
+      "In "
+    }
+    { "Volume" volume tie.or.space.connect
+      " of " *
+    }
+  if$
+  editor empty$
+  editor field.or.null author field.or.null =
+  or
+    { key empty$
+        { series empty$
+            { "need editor, key, or series for " cite$ * " to crossref " *
+              crossref * warning$
+              "" *
+            }
+            { "\emph{" * series * "}" * }
+          if$
+        }
+        'skip$
+      if$
+    }
+    'skip$
+  if$
+  " \citet{" * crossref * "}" *
+}
+
+FUNCTION {format.incoll.inproc.crossref}
+{ editor empty$
+  editor field.or.null author field.or.null =
+  or
+    { key empty$
+        { booktitle empty$
+            { "need editor, key, or booktitle for " cite$ * " to crossref " *
+              crossref * warning$
+              ""
+            }
+            { "In \emph{" booktitle * "}" * }
+          if$
+        }
+        { "In " }
+      if$
+    }
+    { "In " }
+  if$
+  " \citet{" * crossref * "}" *
+}
+
+FUNCTION {article}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    { journal emphasize "journal" output.check
+      eid empty$
+        { format.vol.num.pages output }
+        { format.vol.num.eid output }
+      if$
+      format.date "year" output.check
+    }
+    { format.article.crossref output.nonnull
+      eid empty$
+        { format.pages output }
+        { format.eid output }
+      if$
+    }
+  if$
+  format.issn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {book}
+{ output.bibitem
+  author empty$
+    { format.editors "author and editor" output.check
+      editor format.key output
+    }
+    { format.authors output.nonnull
+      crossref missing$
+        { "author and editor" editor either.or.check }
+        'skip$
+      if$
+    }
+  if$
+  new.block
+  format.btitle "title" output.check
+  crossref missing$
+    { format.bvolume output
+      new.block
+      format.number.series output
+      new.sentence
+      publisher "publisher" output.check
+      address output
+    }
+    { new.block
+      format.book.crossref output.nonnull
+    }
+  if$
+  format.edition output
+  format.date "year" output.check
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {booklet}
+{ output.bibitem
+  format.authors output
+  author format.key output
+  new.block
+  format.title "title" output.check
+  howpublished address new.block.checkb
+  howpublished output
+  address output
+  format.date output
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {inbook}
+{ output.bibitem
+  author empty$
+    { format.editors "author and editor" output.check
+      editor format.key output
+    }
+    { format.authors output.nonnull
+      crossref missing$
+        { "author and editor" editor either.or.check }
+        'skip$
+      if$
+    }
+  if$
+  new.block
+  format.btitle "title" output.check
+  crossref missing$
+    { format.bvolume output
+      format.chapter.pages "chapter and pages" output.check
+      new.block
+      format.number.series output
+      new.sentence
+      publisher "publisher" output.check
+      address output
+    }
+    { format.chapter.pages "chapter and pages" output.check
+      new.block
+      format.book.crossref output.nonnull
+    }
+  if$
+  format.edition output
+  format.date "year" output.check
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {incollection}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    { format.in.ed.booktitle "booktitle" output.check
+      format.bvolume output
+      format.number.series output
+      format.chapter.pages output
+      new.sentence
+      publisher "publisher" output.check
+      address output
+      format.edition output
+      format.date "year" output.check
+    }
+    { format.incoll.inproc.crossref output.nonnull
+      format.chapter.pages output
+    }
+  if$
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {inproceedings}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    { format.in.ed.booktitle "booktitle" output.check
+      format.bvolume output
+      format.number.series output
+      format.pages output
+      address empty$
+        { organization publisher new.sentence.checkb
+          organization output
+          publisher output
+          format.date "year" output.check
+        }
+        { address output.nonnull
+          format.date "year" output.check
+          new.sentence
+          organization output
+          publisher output
+        }
+      if$
+    }
+    { format.incoll.inproc.crossref output.nonnull
+      format.pages output
+    }
+  if$
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {conference} { inproceedings }
+
+FUNCTION {manual}
+{ output.bibitem
+  format.authors output
+  author format.key output
+  new.block
+  format.btitle "title" output.check
+  organization address new.block.checkb
+  organization output
+  address output
+  format.edition output
+  format.date output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {mastersthesis}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  "Master's thesis" format.thesis.type output.nonnull
+  school "school" output.check
+  address output
+  format.date "year" output.check
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {misc}
+{ output.bibitem
+  format.authors output
+  author format.key output
+  title howpublished new.block.checkb
+  format.title output
+  howpublished new.block.checka
+  howpublished output
+  format.date output
+  format.issn output
+  format.url output
+  new.block
+  note output
+  fin.entry
+  empty.misc.check
+}
+
+FUNCTION {phdthesis}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.btitle "title" output.check
+  new.block
+  "PhD thesis" format.thesis.type output.nonnull
+  school "school" output.check
+  address output
+  format.date "year" output.check
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {proceedings}
+{ output.bibitem
+  format.editors output
+  editor format.key output
+  new.block
+  format.btitle "title" output.check
+  format.bvolume output
+  format.number.series output
+  address output
+  format.date "year" output.check
+  new.sentence
+  organization output
+  publisher output
+  format.isbn output
+  format.doi output
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {techreport}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  format.tr.number output.nonnull
+  institution "institution" output.check
+  address output
+  format.date "year" output.check
+  format.url output
+  new.block
+  note output
+  fin.entry
+}
+
+FUNCTION {unpublished}
+{ output.bibitem
+  format.authors "author" output.check
+  author format.key output
+  new.block
+  format.title "title" output.check
+  new.block
+  note "note" output.check
+  format.date output
+  format.url output
+  fin.entry
+}
+
+FUNCTION {default.type} { misc }
+
+
+MACRO {jan} {"January"}
+
+MACRO {feb} {"February"}
+
+MACRO {mar} {"March"}
+
+MACRO {apr} {"April"}
+
+MACRO {may} {"May"}
+
+MACRO {jun} {"June"}
+
+MACRO {jul} {"July"}
+
+MACRO {aug} {"August"}
+
+MACRO {sep} {"September"}
+
+MACRO {oct} {"October"}
+
+MACRO {nov} {"November"}
+
+MACRO {dec} {"December"}
+
+
+
+MACRO {acmcs} {"ACM Computing Surveys"}
+
+MACRO {acta} {"Acta Informatica"}
+
+MACRO {cacm} {"Communications of the ACM"}
+
+MACRO {ibmjrd} {"IBM Journal of Research and Development"}
+
+MACRO {ibmsj} {"IBM Systems Journal"}
+
+MACRO {ieeese} {"IEEE Transactions on Software Engineering"}
+
+MACRO {ieeetc} {"IEEE Transactions on Computers"}
+
+MACRO {ieeetcad}
+ {"IEEE Transactions on Computer-Aided Design of Integrated Circuits"}
+
+MACRO {ipl} {"Information Processing Letters"}
+
+MACRO {jacm} {"Journal of the ACM"}
+
+MACRO {jcss} {"Journal of Computer and System Sciences"}
+
+MACRO {scp} {"Science of Computer Programming"}
+
+MACRO {sicomp} {"SIAM Journal on Computing"}
+
+MACRO {tocs} {"ACM Transactions on Computer Systems"}
+
+MACRO {tods} {"ACM Transactions on Database Systems"}
+
+MACRO {tog} {"ACM Transactions on Graphics"}
+
+MACRO {toms} {"ACM Transactions on Mathematical Software"}
+
+MACRO {toois} {"ACM Transactions on Office Information Systems"}
+
+MACRO {toplas} {"ACM Transactions on Programming Languages and Systems"}
+
+MACRO {tcs} {"Theoretical Computer Science"}
+
+
+READ
+
+FUNCTION {sortify}
+{ purify$
+  "l" change.case$
+}
+
+INTEGERS { len }
+
+FUNCTION {chop.word}
+{ 's :=
+  'len :=
+  s #1 len substring$ =
+    { s len #1 + global.max$ substring$ }
+    's
+  if$
+}
+
+FUNCTION {format.lab.names}
+{ 's :=
+  s #1 "{vv~}{ll}" format.name$
+  s num.names$ duplicate$
+  #2 >
+    { pop$ " et~al." * }
+    { #2 <
+        'skip$
+        { s #2 "{ff }{vv }{ll}{ jj}" format.name$ "others" =
+            { " et~al." * }
+            { " \& " * s #2 "{vv~}{ll}" format.name$ * }
+          if$
+        }
+      if$
+    }
+  if$
+}
+
+FUNCTION {author.key.label}
+{ author empty$
+    { key empty$
+        { cite$ #1 #3 substring$ }
+        'key
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {author.editor.key.label}
+{ author empty$
+    { editor empty$
+        { key empty$
+            { cite$ #1 #3 substring$ }
+            'key
+          if$
+        }
+        { editor format.lab.names }
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {author.key.organization.label}
+{ author empty$
+    { key empty$
+        { organization empty$
+            { cite$ #1 #3 substring$ }
+            { "The " #4 organization chop.word #3 text.prefix$ }
+          if$
+        }
+        'key
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {editor.key.organization.label}
+{ editor empty$
+    { key empty$
+        { organization empty$
+            { cite$ #1 #3 substring$ }
+            { "The " #4 organization chop.word #3 text.prefix$ }
+          if$
+        }
+        'key
+      if$
+    }
+    { editor format.lab.names }
+  if$
+}
+
+FUNCTION {calc.short.authors}
+{ type$ "book" =
+  type$ "inbook" =
+  or
+    'author.editor.key.label
+    { type$ "proceedings" =
+        'editor.key.organization.label
+        { type$ "manual" =
+            'author.key.organization.label
+            'author.key.label
+          if$
+        }
+      if$
+    }
+  if$
+  'short.list :=
+}
+
+FUNCTION {calc.label}
+{ calc.short.authors
+  short.list
+  "("
+  *
+  year duplicate$ empty$
+  short.list key field.or.null = or
+     { pop$ "" }
+     'skip$
+  if$
+  *
+  'label :=
+}
+
+FUNCTION {sort.format.names}
+{ 's :=
+  #1 'nameptr :=
+  ""
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    {
+      s nameptr "{vv{ } }{ll{ }}{  ff{ }}{  jj{ }}" format.name$ 't :=
+      nameptr #1 >
+        {
+          "   "  *
+          namesleft #1 = t "others" = and
+            { "zzzzz" * }
+            { numnames #2 > nameptr #2 = and
+                { "zz" * year field.or.null * "   " * }
+                'skip$
+              if$
+              t sortify *
+            }
+          if$
+        }
+        { t sortify * }
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+}
+
+FUNCTION {sort.format.title}
+{ 't :=
+  "A " #2
+    "An " #3
+      "The " #4 t chop.word
+    chop.word
+  chop.word
+  sortify
+  #1 global.max$ substring$
+}
+
+FUNCTION {author.sort}
+{ author empty$
+    { key empty$
+        { "to sort, need author or key in " cite$ * warning$
+          ""
+        }
+        { key sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {author.editor.sort}
+{ author empty$
+    { editor empty$
+        { key empty$
+            { "to sort, need author, editor, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { editor sort.format.names }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {author.organization.sort}
+{ author empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need author, organization, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {editor.organization.sort}
+{ editor empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need editor, organization, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { editor sort.format.names }
+  if$
+}
+
+
+FUNCTION {presort}
+{ calc.label
+  label sortify
+  "    "
+  *
+  type$ "book" =
+  type$ "inbook" =
+  or
+    'author.editor.sort
+    { type$ "proceedings" =
+        'editor.organization.sort
+        { type$ "manual" =
+            'author.organization.sort
+            'author.sort
+          if$
+        }
+      if$
+    }
+  if$
+  "    "
+  *
+  year field.or.null sortify
+  *
+  "    "
+  *
+  cite$
+  *
+  #1 entry.max$ substring$
+  'sort.label :=
+  sort.label *
+  #1 entry.max$ substring$
+  'sort.key$ :=
+}
+
+ITERATE {presort}
+
+SORT
+
+STRINGS { longest.label last.label next.extra }
+
+INTEGERS { longest.label.width last.extra.num number.label }
+
+FUNCTION {initialize.longest.label}
+{ "" 'longest.label :=
+  #0 int.to.chr$ 'last.label :=
+  "" 'next.extra :=
+  #0 'longest.label.width :=
+  #0 'last.extra.num :=
+  #0 'number.label :=
+}
+
+FUNCTION {forward.pass}
+{ last.label label =
+    { last.extra.num #1 + 'last.extra.num :=
+      last.extra.num int.to.chr$ 'extra.label :=
+    }
+    { "a" chr.to.int$ 'last.extra.num :=
+      "" 'extra.label :=
+      label 'last.label :=
+    }
+  if$
+  number.label #1 + 'number.label :=
+}
+
+FUNCTION {reverse.pass}
+{ next.extra "b" =
+    { "a" 'extra.label := }
+    'skip$
+  if$
+  extra.label 'next.extra :=
+  extra.label
+  duplicate$ empty$
+    'skip$
+    { "{\natexlab{" swap$ * "}}" * }
+  if$
+  'extra.label :=
+  label extra.label * 'label :=
+}
+
+EXECUTE {initialize.longest.label}
+
+ITERATE {forward.pass}
+
+REVERSE {reverse.pass}
+
+FUNCTION {bib.sort.order}
+{ sort.label  'sort.key$ :=
+}
+
+ITERATE {bib.sort.order}
+
+SORT
+
+FUNCTION {begin.bib}
+{   preamble$ empty$
+    'skip$
+    { preamble$ write$ newline$ }
+  if$
+  "\begin{thebibliography}{" number.label int.to.str$ * "}" *
+  write$ newline$
+  "\providecommand{\natexlab}[1]{#1}"
+  write$ newline$
+  "\providecommand{\url}[1]{\texttt{#1}}"
+  write$ newline$
+  "\expandafter\ifx\csname urlstyle\endcsname\relax"
+  write$ newline$
+  "  \providecommand{\doi}[1]{doi: #1}\else"
+  write$ newline$
+  "  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi"
+  write$ newline$
+}
+
+EXECUTE {begin.bib}
+
+EXECUTE {init.state.consts}
+
+ITERATE {call.type$}
+
+FUNCTION {end.bib}
+{ newline$
+  "\end{thebibliography}" write$ newline$
+}
+
+EXECUTE {end.bib}
+                                                                                                                                                                    iclr2023_conference.sty                                                                             0000664 0000000 0000000 00000021701 14315364420 013751  0                                                                                                    ustar   root                            root                                                                                                                                                                                                                   %%%% ICLR Macros (LaTex)
+%%%% Adapted by Hugo Larochelle from the NIPS stylefile Macros
+%%%% Style File
+%%%% Dec 12, 1990   Rev Aug 14, 1991; Sept, 1995; April, 1997; April, 1999; October 2014
+
+% This file can be used with Latex2e whether running in main mode, or
+% 2.09 compatibility mode.
+%
+% If using main mode, you need to include the commands
+%             \documentclass{article}
+%             \usepackage{iclr14submit_e,times}
+%
+
+% Change the overall width of the page.  If these parameters are
+%       changed, they will require corresponding changes in the
+%       maketitle section.
+%
+\usepackage{eso-pic} % used by \AddToShipoutPicture
+\RequirePackage{fancyhdr}
+\RequirePackage{natbib}
+
+% modification to natbib citations
+\setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
+
+\renewcommand{\topfraction}{0.95}   % let figure take up nearly whole page
+\renewcommand{\textfraction}{0.05}  % let figure take up nearly whole page
+
+% Define iclrfinal, set to true if iclrfinalcopy is defined
+\newif\ificlrfinal
+\iclrfinalfalse
+\def\iclrfinalcopy{\iclrfinaltrue}
+\font\iclrtenhv  = phvb at 8pt
+
+% Specify the dimensions of each page
+
+\setlength{\paperheight}{11in}
+\setlength{\paperwidth}{8.5in}
+
+
+\oddsidemargin .5in    %   Note \oddsidemargin = \evensidemargin
+\evensidemargin .5in
+\marginparwidth 0.07 true in
+%\marginparwidth 0.75 true in
+%\topmargin 0 true pt           % Nominal distance from top of page to top of
+%\topmargin 0.125in
+\topmargin -0.625in
+\addtolength{\headsep}{0.25in}
+\textheight 9.0 true in       % Height of text (including footnotes & figures)
+\textwidth 5.5 true in        % Width of text line.
+\widowpenalty=10000
+\clubpenalty=10000
+
+% \thispagestyle{empty}        \pagestyle{empty}
+\flushbottom \sloppy
+
+% We're never going to need a table of contents, so just flush it to
+% save space --- suggested by drstrip@sandia-2
+\def\addcontentsline#1#2#3{}
+
+% Title stuff, taken from deproc.
+\def\maketitle{\par
+\begingroup
+   \def\thefootnote{\fnsymbol{footnote}}
+   \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} % for perfect author
+                                                        % name centering
+%   The footnote-mark was overlapping the footnote-text,
+%   added the following to fix this problem               (MK)
+   \long\def\@makefntext##1{\parindent 1em\noindent
+                            \hbox to1.8em{\hss $\m@th ^{\@thefnmark}$}##1}
+   \@maketitle \@thanks
+\endgroup
+\setcounter{footnote}{0}
+\let\maketitle\relax \let\@maketitle\relax
+\gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\thanks\relax}
+
+% The toptitlebar has been raised to top-justify the first page
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead{}
+
+% Title (includes both anonimized and non-anonimized versions)
+\def\@maketitle{\vbox{\hsize\textwidth
+%\linewidth\hsize \vskip 0.1in \toptitlebar \centering
+{\LARGE\sc \@title\par}
+%\bottomtitlebar % \vskip 0.1in %  minus
+\ificlrfinal
+    \lhead{Published as a conference paper at ICLR 2023}
+    \def\And{\end{tabular}\hfil\linebreak[0]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+  \def\AND{\end{tabular}\hfil\linebreak[4]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+    \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\@author\end{tabular}%
+\else
+       \lhead{Under review as a conference paper at ICLR 2023}
+   \def\And{\end{tabular}\hfil\linebreak[0]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+  \def\AND{\end{tabular}\hfil\linebreak[4]\hfil
+            \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}\ignorespaces}%
+    \begin{tabular}[t]{l}\bf\rule{\z@}{24pt}Anonymous authors\\Paper under double-blind review\end{tabular}%
+\fi
+\vskip 0.3in minus 0.1in}}
+
+\renewenvironment{abstract}{\vskip.075in\centerline{\large\sc
+Abstract}\vspace{0.5ex}\begin{quote}}{\par\end{quote}\vskip 1ex}
+
+% sections with less space
+\def\section{\@startsection {section}{1}{\z@}{-2.0ex plus
+    -0.5ex minus -.2ex}{1.5ex plus 0.3ex
+minus0.2ex}{\large\sc\raggedright}}
+
+\def\subsection{\@startsection{subsection}{2}{\z@}{-1.8ex plus
+-0.5ex minus -.2ex}{0.8ex plus .2ex}{\normalsize\sc\raggedright}}
+\def\subsubsection{\@startsection{subsubsection}{3}{\z@}{-1.5ex
+plus      -0.5ex minus -.2ex}{0.5ex plus
+.2ex}{\normalsize\sc\raggedright}}
+\def\paragraph{\@startsection{paragraph}{4}{\z@}{1.5ex plus
+0.5ex minus .2ex}{-1em}{\normalsize\bf}}
+\def\subparagraph{\@startsection{subparagraph}{5}{\z@}{1.5ex plus
+  0.5ex minus .2ex}{-1em}{\normalsize\sc}}
+\def\subsubsubsection{\vskip
+5pt{\noindent\normalsize\rm\raggedright}}
+
+
+% Footnotes
+\footnotesep 6.65pt %
+\skip\footins 9pt plus 4pt minus 2pt
+\def\footnoterule{\kern-3pt \hrule width 12pc \kern 2.6pt }
+\setcounter{footnote}{0}
+
+% Lists and paragraphs
+\parindent 0pt
+\topsep 4pt plus 1pt minus 2pt
+\partopsep 1pt plus 0.5pt minus 0.5pt
+\itemsep 2pt plus 1pt minus 0.5pt
+\parsep 2pt plus 1pt minus 0.5pt
+\parskip .5pc
+
+
+%\leftmargin2em
+\leftmargin3pc
+\leftmargini\leftmargin \leftmarginii 2em
+\leftmarginiii 1.5em \leftmarginiv 1.0em \leftmarginv .5em
+
+%\labelsep \labelsep 5pt
+
+\def\@listi{\leftmargin\leftmargini}
+\def\@listii{\leftmargin\leftmarginii
+   \labelwidth\leftmarginii\advance\labelwidth-\labelsep
+   \topsep 2pt plus 1pt minus 0.5pt
+   \parsep 1pt plus 0.5pt minus 0.5pt
+   \itemsep \parsep}
+\def\@listiii{\leftmargin\leftmarginiii
+    \labelwidth\leftmarginiii\advance\labelwidth-\labelsep
+    \topsep 1pt plus 0.5pt minus 0.5pt
+    \parsep \z@ \partopsep 0.5pt plus 0pt minus 0.5pt
+    \itemsep \topsep}
+\def\@listiv{\leftmargin\leftmarginiv
+     \labelwidth\leftmarginiv\advance\labelwidth-\labelsep}
+\def\@listv{\leftmargin\leftmarginv
+     \labelwidth\leftmarginv\advance\labelwidth-\labelsep}
+\def\@listvi{\leftmargin\leftmarginvi
+     \labelwidth\leftmarginvi\advance\labelwidth-\labelsep}
+
+\abovedisplayskip 7pt plus2pt minus5pt%
+\belowdisplayskip \abovedisplayskip
+\abovedisplayshortskip  0pt plus3pt%
+\belowdisplayshortskip  4pt plus3pt minus3pt%
+
+% Less leading in most fonts (due to the narrow columns)
+% The choices were between 1-pt and 1.5-pt leading
+%\def\@normalsize{\@setsize\normalsize{11pt}\xpt\@xpt} % got rid of @ (MK)
+\def\normalsize{\@setsize\normalsize{11pt}\xpt\@xpt}
+\def\small{\@setsize\small{10pt}\ixpt\@ixpt}
+\def\footnotesize{\@setsize\footnotesize{10pt}\ixpt\@ixpt}
+\def\scriptsize{\@setsize\scriptsize{8pt}\viipt\@viipt}
+\def\tiny{\@setsize\tiny{7pt}\vipt\@vipt}
+\def\large{\@setsize\large{14pt}\xiipt\@xiipt}
+\def\Large{\@setsize\Large{16pt}\xivpt\@xivpt}
+\def\LARGE{\@setsize\LARGE{20pt}\xviipt\@xviipt}
+\def\huge{\@setsize\huge{23pt}\xxpt\@xxpt}
+\def\Huge{\@setsize\Huge{28pt}\xxvpt\@xxvpt}
+
+\def\toptitlebar{\hrule height4pt\vskip .25in\vskip-\parskip}
+
+\def\bottomtitlebar{\vskip .29in\vskip-\parskip\hrule height1pt\vskip
+.09in} %
+%Reduced second vskip to compensate for adding the strut in \@author
+
+
+%% % Vertical Ruler
+%% % This code is, largely, from the CVPR 2010 conference style file
+%% % ----- define vruler
+%% \makeatletter
+%% \newbox\iclrrulerbox
+%% \newcount\iclrrulercount
+%% \newdimen\iclrruleroffset
+%% \newdimen\cv@lineheight
+%% \newdimen\cv@boxheight
+%% \newbox\cv@tmpbox
+%% \newcount\cv@refno
+%% \newcount\cv@tot
+%% % NUMBER with left flushed zeros  \fillzeros[<WIDTH>]<NUMBER>
+%% \newcount\cv@tmpc@ \newcount\cv@tmpc
+%% \def\fillzeros[#1]#2{\cv@tmpc@=#2\relax\ifnum\cv@tmpc@<0\cv@tmpc@=-\cv@tmpc@\fi
+%% \cv@tmpc=1 %
+%% \loop\ifnum\cv@tmpc@<10 \else \divide\cv@tmpc@ by 10 \advance\cv@tmpc by 1 \fi
+%%    \ifnum\cv@tmpc@=10\relax\cv@tmpc@=11\relax\fi \ifnum\cv@tmpc@>10 \repeat
+%% \ifnum#2<0\advance\cv@tmpc1\relax-\fi
+%% \loop\ifnum\cv@tmpc<#1\relax0\advance\cv@tmpc1\relax\fi \ifnum\cv@tmpc<#1 \repeat
+%% \cv@tmpc@=#2\relax\ifnum\cv@tmpc@<0\cv@tmpc@=-\cv@tmpc@\fi \relax\the\cv@tmpc@}%
+%% % \makevruler[<SCALE>][<INITIAL_COUNT>][<STEP>][<DIGITS>][<HEIGHT>]
+%% \def\makevruler[#1][#2][#3][#4][#5]{\begingroup\offinterlineskip
+%% \textheight=#5\vbadness=10000\vfuzz=120ex\overfullrule=0pt%
+%% \global\setbox\iclrrulerbox=\vbox to \textheight{%
+%% {\parskip=0pt\hfuzz=150em\cv@boxheight=\textheight
+%% \cv@lineheight=#1\global\iclrrulercount=#2%
+%% \cv@tot\cv@boxheight\divide\cv@tot\cv@lineheight\advance\cv@tot2%
+%% \cv@refno1\vskip-\cv@lineheight\vskip1ex%
+%% \loop\setbox\cv@tmpbox=\hbox to0cm{{\iclrtenhv\hfil\fillzeros[#4]\iclrrulercount}}%
+%% \ht\cv@tmpbox\cv@lineheight\dp\cv@tmpbox0pt\box\cv@tmpbox\break
+%% \advance\cv@refno1\global\advance\iclrrulercount#3\relax
+%% \ifnum\cv@refno<\cv@tot\repeat}}\endgroup}%
+%% \makeatother
+%% % ----- end of vruler
+
+%% % \makevruler[<SCALE>][<INITIAL_COUNT>][<STEP>][<DIGITS>][<HEIGHT>]
+%% \def\iclrruler#1{\makevruler[12pt][#1][1][3][0.993\textheight]\usebox{\iclrrulerbox}}
+%% \AddToShipoutPicture{%
+%% \ificlrfinal\else
+%% \iclrruleroffset=\textheight
+%% \advance\iclrruleroffset by -3.7pt
+%%   \color[rgb]{.7,.7,.7}
+%%   \AtTextUpperLeft{%
+%%     \put(\LenToUnit{-35pt},\LenToUnit{-\iclrruleroffset}){%left ruler
+%%       \iclrruler{\iclrrulercount}}
+%%   }
+%% \fi
+%% }
+%%% To add a vertical bar on the side
+%\AddToShipoutPicture{
+%\AtTextLowerLeft{
+%\hspace*{-1.8cm}
+%\colorbox[rgb]{0.7,0.7,0.7}{\small \parbox[b][\textheight]{0.1cm}{}}}
+%}
+                                                               main.bbl                                                                                            0000664 0000000 0000000 00000025751 14407113212 011170  0                                                                                                    ustar   root                            root                                                                                                                                                                                                                   \begin{thebibliography}{28}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Arora et~al.(2018)Arora, Basu, Mianjy, and
+  Mukherjee]{arora_2018_relu_piecewise_lin}
+Raman Arora, Amitabh Basu, Poorya Mianjy, and Anirbit Mukherjee.
+\newblock Understanding deep neural networks with rectified linear units.
+\newblock In \emph{International Conference on Learning Representations}, 2018.
+\newblock URL \url{https://openreview.net/forum?id=B1J_rgWRW}.
+
+\bibitem[Arora et~al.(2019)Arora, Cohen, Hu, and
+  Luo]{arora_2019_matrix_factorization}
+Sanjeev Arora, Nadav Cohen, Wei Hu, and Yuping Luo.
+\newblock Implicit regularization in deep matrix factorization.
+\newblock \emph{Advances in Neural Information Processing Systems}, 32, 2019.
+\newblock ISSN 1049-5258.
+
+\bibitem[Bach(2017)]{bach2017_F1_norm}
+Francis Bach.
+\newblock Breaking the curse of dimensionality with convex neural networks.
+\newblock \emph{The Journal of Machine Learning Research}, 18\penalty0
+  (1):\penalty0 629--681, 2017.
+
+\bibitem[Beardwood et~al.(1959)Beardwood, Halton, and
+  Hammersley]{beardwood_1959_shortest_path_many_points}
+Jillian Beardwood, J.~H. Halton, and J.~M. Hammersley.
+\newblock The shortest path through many points.
+\newblock \emph{Mathematical Proceedings of the Cambridge Philosophical
+  Society}, 55\penalty0 (4):\penalty0 299--327, 1959.
+\newblock \doi{10.1017\/S0305004100034095}.
+
+\bibitem[Cand{\`e}s \& Recht(2009)Cand{\`e}s and Recht]{candes2009exact}
+Emmanuel~J Cand{\`e}s and Benjamin Recht.
+\newblock Exact matrix completion via convex optimization.
+\newblock \emph{Foundations of Computational mathematics}, 9\penalty0
+  (6):\penalty0 717--772, 2009.
+
+\bibitem[Chizat \& Bach(2018)Chizat and Bach]{Chizat2018}
+L\'{e}na\"{\i}c Chizat and Francis Bach.
+\newblock {On the Global Convergence of Gradient Descent for Over-parameterized
+  Models using Optimal Transport}.
+\newblock In \emph{Advances in Neural Information Processing Systems 31}, pp.\
+  3040--3050. Curran Associates, Inc., 2018.
+\newblock URL
+  \url{http://papers.nips.cc/paper/7567-on-the-global-convergence-of-gradient-descent-for-over-parameterized-models-using-optimal-transport.pdf}.
+
+\bibitem[Chizat \& Bach(2020)Chizat and Bach]{chizat_2020_implicit_bias}
+L\'ena\"ic Chizat and Francis Bach.
+\newblock Implicit bias of gradient descent for wide two-layer neural networks
+  trained with the logistic loss.
+\newblock In Jacob Abernethy and Shivani Agarwal (eds.), \emph{Proceedings of
+  Thirty Third Conference on Learning Theory}, volume 125 of \emph{Proceedings
+  of Machine Learning Research}, pp.\  1305--1338. PMLR, 09--12 Jul 2020.
+\newblock URL \url{http://proceedings.mlr.press/v125/chizat20a.html}.
+
+\bibitem[Dai et~al.(2021)Dai, Karzand, and Srebro]{dai_2021_repres_cost_DLN}
+Zhen Dai, Mina Karzand, and Nathan Srebro.
+\newblock Representation costs of linear neural networks: Analysis and design.
+\newblock In A.~Beygelzimer, Y.~Dauphin, P.~Liang, and J.~Wortman Vaughan
+  (eds.), \emph{Advances in Neural Information Processing Systems}, 2021.
+\newblock URL \url{https://openreview.net/forum?id=3oQyjABdbC8}.
+
+\bibitem[Du et~al.(2018)Du, Hu, and Lee]{du_2018_implicit_bias}
+Simon~S Du, Wei Hu, and Jason~D Lee.
+\newblock Algorithmic regularization in learning deep homogeneous models:
+  Layers are automatically balanced.
+\newblock \emph{Advances in Neural Information Processing Systems}, 31, 2018.
+
+\bibitem[Feng et~al.(2022)Feng, Zheng, Huang, Zhao, Jordan, and
+  Zha]{feng_2022_Jacobian_rank_DNN}
+Ruili Feng, Kecheng Zheng, Yukun Huang, Deli Zhao, Michael Jordan, and
+  Zheng-Jun Zha.
+\newblock Rank diminishing in deep neural networks.
+\newblock \emph{arXiv preprint arXiv:2206.06072}, 2022.
+
+\bibitem[Gunasekar et~al.(2018{\natexlab{a}})Gunasekar, Lee, Soudry, and
+  Srebro]{gunasekar_2018_implicit_bias}
+Suriya Gunasekar, Jason Lee, Daniel Soudry, and Nathan Srebro.
+\newblock Characterizing implicit bias in terms of optimization geometry.
+\newblock In Jennifer Dy and Andreas Krause (eds.), \emph{Proceedings of the
+  35th International Conference on Machine Learning}, volume~80 of
+  \emph{Proceedings of Machine Learning Research}, pp.\  1832--1841. PMLR,
+  10--15 Jul 2018{\natexlab{a}}.
+\newblock URL \url{http://proceedings.mlr.press/v80/gunasekar18a.html}.
+
+\bibitem[Gunasekar et~al.(2018{\natexlab{b}})Gunasekar, Lee, Soudry, and
+  Srebro]{gunasekar_2018_implicit_bias2}
+Suriya Gunasekar, Jason~D Lee, Daniel Soudry, and Nati Srebro.
+\newblock Implicit bias of gradient descent on linear convolutional networks.
+\newblock In S.~Bengio, H.~Wallach, H.~Larochelle, K.~Grauman, N.~Cesa-Bianchi,
+  and R.~Garnett (eds.), \emph{Advances in Neural Information Processing
+  Systems}, volume~31. Curran Associates, Inc., 2018{\natexlab{b}}.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper/2018/file/0e98aeeb54acf612b9eb4e48a269814c-Paper.pdf}.
+
+\bibitem[He et~al.(2018)He, Li, Xu, and Zheng]{he_2018_relu_piecewise_lin}
+Juncai He, Lin Li, Jinchao Xu, and Chunyue Zheng.
+\newblock Relu deep neural networks and linear finite elements.
+\newblock \emph{arXiv preprint arXiv:1807.03973}, 2018.
+
+\bibitem[Jacot et~al.(2018)Jacot, Gabriel, and Hongler]{jacot2018neural}
+Arthur Jacot, Franck Gabriel, and Cl\'ement Hongler.
+\newblock {Neural Tangent Kernel: Convergence and Generalization in Neural
+  Networks}.
+\newblock In \emph{Advances in Neural Information Processing Systems 31}, pp.\
+  8580--8589. Curran Associates, Inc., 2018.
+\newblock URL
+  \url{http://papers.nips.cc/paper/8076-neural-tangent-kernel-convergence-and-generalization-in-neural-networks.pdf}.
+
+\bibitem[Jacot et~al.(2022{\natexlab{a}})Jacot, Ged, \c{S}im\c{s}ek, Hongler,
+  and Gabriel]{jacot-2021-DLN-Saddle}
+Arthur Jacot, Fran\c{c}ois Ged, Berfin \c{S}im\c{s}ek, Cl\'ement Hongler, and
+  Franck Gabriel.
+\newblock Saddle-to-saddle dynamics in deep linear networks: Small
+  initialization training, symmetry, and sparsity, 2022{\natexlab{a}}.
+
+\bibitem[Jacot et~al.(2022{\natexlab{b}})Jacot, Golikov, Hongler, and
+  Gabriel]{jacot_2022_L2_reformulation}
+Arthur Jacot, Eugene Golikov, Cl{\'e}ment Hongler, and Franck Gabriel.
+\newblock Feature learning in $l_{2}$-regularized dnns: Attraction/repulsion
+  and sparsity, 2022{\natexlab{b}}.
+
+\bibitem[Ji \& Telgarsky(2018)Ji and Telgarsky]{Ji_2018_directional}
+Ziwei Ji and Matus Telgarsky.
+\newblock Gradient descent aligns the layers of deep linear networks.
+\newblock \emph{CoRR}, abs/1810.02032, 2018.
+\newblock URL \url{http://arxiv.org/abs/1810.02032}.
+
+\bibitem[Ji \& Telgarsky(2020)Ji and Telgarsky]{Ji_2020_directional2}
+Ziwei Ji and Matus Telgarsky.
+\newblock Directional convergence and alignment in deep learning.
+\newblock In H.~Larochelle, M.~Ranzato, R.~Hadsell, M.~F. Balcan, and H.~Lin
+  (eds.), \emph{Advances in Neural Information Processing Systems}, volume~33,
+  pp.\  17176--17186. Curran Associates, Inc., 2020.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper/2020/file/c76e4b2fa54f8506719a5c0dc14c2eb9-Paper.pdf}.
+
+\bibitem[Le \& Jegelka(2022)Le and Jegelka]{le_2022_IB_mix_linear_homogeneous}
+Thien Le and Stefanie Jegelka.
+\newblock Training invariances and the low-rank phenomenon: beyond linear
+  networks.
+\newblock In \emph{International Conference on Learning Representations}, 2022.
+\newblock URL \url{https://openreview.net/forum?id=XEW8CQgArno}.
+
+\bibitem[Li et~al.(2020)Li, Luo, and Lyu]{li2020towards}
+Zhiyuan Li, Yuping Luo, and Kaifeng Lyu.
+\newblock Towards resolving the implicit bias of gradient descent for matrix
+  factorization: Greedy low-rank learning.
+\newblock In \emph{International Conference on Learning Representations}, 2020.
+
+\bibitem[Moroshko et~al.(2020)Moroshko, Woodworth, Gunasekar, Lee, Srebro, and
+  Soudry]{Moroshko_2020_implicit_bias_diag}
+Edward Moroshko, Blake~E Woodworth, Suriya Gunasekar, Jason~D Lee, Nati Srebro,
+  and Daniel Soudry.
+\newblock Implicit bias in deep linear classification: Initialization scale vs
+  training accuracy.
+\newblock In H.~Larochelle, M.~Ranzato, R.~Hadsell, M.~F. Balcan, and H.~Lin
+  (eds.), \emph{Advances in Neural Information Processing Systems}, volume~33,
+  pp.\  22182--22193. Curran Associates, Inc., 2020.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper/2020/file/fc2022c89b61c76bbef978f1370660bf-Paper.pdf}.
+
+\bibitem[Mulayoff et~al.(2021)Mulayoff, Michaeli, and
+  Soudry]{mulayoff_2021_minima_stability_bias_1D}
+Rotem Mulayoff, Tomer Michaeli, and Daniel Soudry.
+\newblock The implicit bias of minima stability: A view from function space.
+\newblock 34:\penalty0 17749--17761, 2021.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper/2021/file/944a5ae3483ed5c1e10bbccb7942a279-Paper.pdf}.
+
+\bibitem[Ongie \& Willett(2022)Ongie and
+  Willett]{ongie2022_linear_layer_in_DNN}
+Greg Ongie and Rebecca Willett.
+\newblock The role of linear layers in nonlinear interpolating networks.
+\newblock \emph{arXiv preprint arXiv:2202.00856}, 2022.
+
+\bibitem[Ongie et~al.(2020)Ongie, Willett, Soudry, and
+  Srebro]{Ongie_2020_repres_bounded_norm_shallow_ReLU_net}
+Greg Ongie, Rebecca Willett, Daniel Soudry, and Nathan Srebro.
+\newblock A function space view of bounded norm infinite width relu nets: The
+  multivariate case.
+\newblock In \emph{International Conference on Learning Representations}, 2020.
+\newblock URL \url{https://openreview.net/forum?id=H1lNPxHKDH}.
+
+\bibitem[Rotskoff \& Vanden-Eijnden(2018)Rotskoff and
+  Vanden-Eijnden]{Rotskoff2018}
+Grant Rotskoff and Eric Vanden-Eijnden.
+\newblock {Parameters as interacting particles: long time convergence and
+  asymptotic error scaling of neural networks}.
+\newblock In \emph{Advances in Neural Information Processing Systems 31}, pp.\
+  7146--7155. Curran Associates, Inc., 2018.
+\newblock URL
+  \url{http://papers.nips.cc/paper/7945-parameters-as-interacting-particles-long-time-convergence-and-asymptotic-error-scaling-of-neural-networks.pdf}.
+
+\bibitem[Savarese et~al.(2019)Savarese, Evron, Soudry, and
+  Srebro]{Savarese_2019_repres_bounded_norm_shallow_ReLU_net_1D}
+Pedro Savarese, Itay Evron, Daniel Soudry, and Nathan Srebro.
+\newblock How do infinite width bounded norm networks look in function space?
+\newblock In Alina Beygelzimer and Daniel Hsu (eds.), \emph{Proceedings of the
+  Thirty-Second Conference on Learning Theory}, volume~99 of \emph{Proceedings
+  of Machine Learning Research}, pp.\  2667--2690. PMLR, 25--28 Jun 2019.
+\newblock URL \url{https://proceedings.mlr.press/v99/savarese19a.html}.
+
+\bibitem[Soudry et~al.(2018)Soudry, Hoffer, Nacson, Gunasekar, and
+  Srebro]{soudry2018implicit}
+Daniel Soudry, Elad Hoffer, Mor~Shpigel Nacson, Suriya Gunasekar, and Nathan
+  Srebro.
+\newblock The implicit bias of gradient descent on separable data.
+\newblock \emph{The Journal of Machine Learning Research}, 19\penalty0
+  (1):\penalty0 2822--2878, 2018.
+
+\bibitem[Timor et~al.(2022)Timor, Vardi, and
+  Shamir]{timor_2022_implicit_large_depth}
+Nadav Timor, Gal Vardi, and Ohad Shamir.
+\newblock Implicit regularization towards rank minimization in relu networks.
+\newblock \emph{arXiv preprint arXiv:2201.12760}, 2022.
+
+\end{thebibliography}
+%% Do not edit unless you really know what you are doing.
+\documentclass[english,pdftex]{article}
+\usepackage{helvet}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage[pdftex]{geometry}
+\geometry{verbose}
+\setcounter{secnumdepth}{1}
+\setcounter{tocdepth}{1}
+\synctex=-1
+\usepackage{units}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage[pdftex]{graphicx}
+
+\makeatletter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+\theoremstyle{remark}
+\newtheorem{rem}{\protect\remarkname}
+\theoremstyle{definition}
+\newtheorem{defn}{\protect\definitionname}
+\theoremstyle{plain}
+\newtheorem{prop}{\protect\propositionname}
+\theoremstyle{plain}
+\newtheorem{thm}{\protect\theoremname}
+\theoremstyle{remark}
+\newtheorem{claim}{\protect\claimname}
+\theoremstyle{plain}
+\newtheorem{cor}{\protect\corollaryname}
+\theoremstyle{definition}
+\newtheorem{example}{\protect\examplename}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+
+\usepackage{iclr2023_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+
+\title{Implicit Bias of Large Depth Networks:\\ a Notion of Rank for Nonlinear Functions}%{$L_2$-regularization in Large Depth Networks leads to a Notion of Rank for Nonlinear Functions}
+
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+% Non-anonymous submissions will be rejected without review.
+
+\author{Arthur Jacot \\
+Courant Institute of Mathematical Sciences\\
+New York University\\
+New York, NY 10012, USA \\
+\texttt{arthur.jacot@nyu.edu}
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\iclrfinalcopy
+
+\@ifundefined{showcaptionsetup}{}{%
+ \PassOptionsToPackage{caption=false}{subfig}}
+\usepackage{subfig}
+\makeatother
+
+\usepackage{babel}
+\providecommand{\definitionname}{Definition}
+\providecommand{\propositionname}{Proposition}
+\providecommand{\remarkname}{Remark}
+\providecommand{\theoremname}{Theorem}
+\providecommand{\claimname}{Claim}
+\providecommand{\corollaryname}{Corollary}
+\providecommand{\examplename}{Example}
+
+
+\begin{document}
+\maketitle
+\begin{abstract} We show that the representation cost of fully connected neural networks with homogeneous nonlinearities - which describes the implicit bias in function space of networks with $L_2$-regularization or with losses such as the cross-entropy - converges as the depth of the network goes to infinity to a notion of rank over nonlinear functions. We then inquire under which conditions the global minima of the loss recover the `true' rank of the data: we show that for too large depths the global minimum will be approximately rank 1 (underestimating the rank); we then argue that there is a range of depths which grows with the number of datapoints where the true rank is recovered. Finally, we discuss the effect of the rank of a classifier on the topology of the resulting class boundaries and show that autoencoders with optimal nonlinear rank are naturally denoising.
+\end{abstract}
+\renewcommand\cite{\citep}
+
+\section{Introduction}
+
+There has been a lot of recent interest in the so-called implicit
+bias of DNNs, which describes what functions are favored by a network
+when fitting the training data. Different network architectures (choice
+of nonlinearity, depth, width of the network, and more) and training
+procedures (initialization, optimization algorithm, loss) can lead
+to widely different biases.
+
+In contrast to the so-called kernel regime where the implicit bias
+is described by the Neural Tangent Kernel \cite{jacot2018neural},
+there are several active regimes (also called rich or feature-learning
+regimes), whose implicit bias often feature a form sparsity that is
+absent from the kernel regime. Such active regimes have been observed
+for example in DNNs with small initialization \cite{Chizat2018,Rotskoff2018,li2020towards,jacot-2021-DLN-Saddle},
+with $L_{2}$-regularization \cite{Savarese_2019_repres_bounded_norm_shallow_ReLU_net_1D,Ongie_2020_repres_bounded_norm_shallow_ReLU_net,jacot_2022_L2_reformulation}
+or when trained on exponentially decaying losses \cite{gunasekar_2018_implicit_bias,gunasekar_2018_implicit_bias2,soudry2018implicit,du_2018_implicit_bias,Ji_2018_directional,chizat_2020_implicit_bias,Ji_2020_directional2}.
+In the latter two cases, the implicit bias is described by the representation
+cost:
+\[
+R(f)=\min_{\mathbf{W}:f_{\mathbf{W}}=f}\left\Vert \mathbf{W}\right\Vert ^{2}
+\]
+where $f$ is a function that can be represented by the network and
+the minimization is over all parameters $\mathbf{W}$ that result
+in a network function $f_{\mathbf{W}}$ equal to $f$, the parameters
+$\mathbf{W}$ form a vector and $\left\Vert \mathbf{W}\right\Vert $
+is the $L_{2}$-norm.
+
+The representation cost can in some cases be explicitly computed for
+linear networks. For diagonal linear networks, the representation
+cost of a linear function $f(x)=w^{T}x$ equals the $L_{p}$ norm
+$R(f)=L\left\Vert w\right\Vert _{p}^{p}$ of the vector $v$ for $p=\frac{2}{L}$
+\cite{gunasekar_2018_implicit_bias,Moroshko_2020_implicit_bias_diag}
+where $L$ is the depth of the network. For fully-connected linear
+networks, the representation cost of a linear function $f(x)=Ax$
+equals the $L_{p}$-Schatten norm (the $L_{p}$ norm of the singular
+values) $R(f)=L\left\Vert A\right\Vert _{p}^{p}$ \cite{dai_2021_repres_cost_DLN}.
+
+A common thread between these examples is a bias towards some notion
+of sparsity: sparsity of the entries of the vector $w$ in diagonal
+networks and sparsity of the singular values in fully connected networks.
+Furthermore, this bias becomes stronger with depth and in the infinite
+depth limit $L\to\infty$ the rescaled representation cost $R(f)/L$
+converges to the $L_{0}$ norm $\left\Vert w\right\Vert _{0}$ (the
+number of non-zero entries in $w$) in the first case and to the rank
+$\mathrm{Rank}(A)$ in the second.
+
+For shallow ($L=2$) nonlinear networks with a homogeneous activation,
+the representation cost also takes the form of a $L_{1}$ norm \cite{bach2017_F1_norm,chizat_2020_implicit_bias,Ongie_2020_repres_bounded_norm_shallow_ReLU_net},
+leading to sparsity in the effective number of neurons in the hidden
+layer of the network.
+
+However, the representation cost of deeper networks does not resemble
+any typical norm ($L_{p}$ or not), though it still leads to some
+form of sparsity \cite{jacot_2022_L2_reformulation}. Despite the
+absence of explicit formula, we will show that the rescaled representation
+cost $R(f)/L$ converges to some notion of rank in nonlinear networks
+as $L\to\infty$, in analogy to infinite depth linear networks.
+
+\subsection{Contributions}
+
+We first introduce two notions of rank: the Jacobian rank $\mathrm{Rank}_{J}(f)=\max_{x}\mathrm{Rank}\left[Jf(x)\right]$
+and the Bottleneck rank $\mathrm{Rank}_{BN}(f)$ which is the smallest
+integer $k$ such that $f$ can be factorized $f=h\circ g$ with inner
+dimension $k$. In general, $\mathrm{Rank}_{J}(f)\leq\mathrm{Rank}_{BN}(f)$,
+but for functions of the form $f=\psi\circ A\circ\phi$ (for a linear
+map $A$ and two bijections $\psi$ and $\phi$), we have $\mathrm{Rank}_{J}(f)=\mathrm{Rank}_{BN}(f)=\mathrm{Rank}A$.
+These two notions of rank satisfy the properties (1) $\mathrm{Rank}f\in\mathbb{Z}$;
+(2) $\mathrm{Rank}(f\circ g)\leq\min\{\mathrm{Rank}f,\mathrm{Rank}g\}$;
+(3) $\mathrm{Rank}(f+g)\leq\mathrm{Rank}f+\mathrm{Rank}g$; (4) $\mathrm{Rank}(x\mapsto Ax+b)=\mathrm{Rank}A$.
+
+We then show that in the infinite depth limit $L\to\infty$ the rescaled
+representation cost of DNNs with a general homogeneous nonlinearity
+is sandwiched between the Jacobian and Bottleneck ranks:
+\[
+\mathrm{Rank}_{J}\left(f\right)\leq\lim_{L\to\infty}\frac{R(f)}{L}\leq\mathrm{Rank}_{BN}\left(f\right).
+\]
+Furthermore $\lim_{L\to\infty}R(f)$ satisfies properties (2-4) above.
+We also conjecture that the limiting representation cost equals its
+upper bound $\mathrm{Rank}_{BN}(f)$.
+
+We then study how this bias towards low-rank functions translates
+to finite but large depths. We first show that for large depths the
+rescaled norm of the parameters $\nicefrac{\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}}{L}$
+at any global minimum $\hat{\mathbf{W}}$ is upper bounded by $1+\nicefrac{C_{N}}{L}$
+for a constant $C_{N}$ which depends on the training points. This
+implies that the resulting function has approximately rank $1$ w.r.t.
+the Jacobian and Bottleneck ranks. 
+
+This is however problematic if we are trying to fit a `true function'
+$f^{*}$ whose `true rank' $k=\mathrm{Rank}_{BN}f^{*}$ is larger
+than 1. Thankfully we show that if $k>1$ the constant $C_{N}$ explodes
+as $N\to\infty$, so that the above bound ($\nicefrac{\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}}{L}\leq1+\nicefrac{C_{N}}{L}$)
+is relevant only for very large depths when $N$ is large. We show
+another upper bound $\nicefrac{\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}}{L}\leq k+\nicefrac{C}{L}$
+with a constant $C$ independent of $N$, suggesting the existence
+of a range of intermediate depths where the network recovers the true
+rank $k$.
+
+Finally, we discuss how rank recovery affects the topology of decision
+boundaries in classification and leads autoencoders to naturally be
+denoising, which we confirm with numerical experiments.
+
+\subsection{Related Works}
+
+The implicit bias of deep homogeneous networks has, to our knowledge,
+been much less studied than those of either linear networks or shallow
+nonlinear ones. \cite{ongie2022_linear_layer_in_DNN} study deep networks
+with only one nonlinear layer (all others being linear). Similarly
+\cite{le_2022_IB_mix_linear_homogeneous} show a low-rank alignment
+phenomenon in a network whose last layers are linear. 
+
+Closer to our setup is the analysis of the representation cost of
+deep homogeneous networks in \cite{jacot_2022_L2_reformulation},
+which gives two reformulations for the optimization in the definition
+of the representation cost, with some implications on the sparsity
+of the representations, though the infinite depth limit is not studied.
+
+A very similar analysis of the sparsity effect of large depth on the
+global minima of $L_{2}$-regularized networks is given in \cite{timor_2022_implicit_large_depth},
+however, they only show how the optimal weight matrices are almost
+rank 1 (and only on average), while we show low-rank properties of
+the learned function, as well as the existence of a layer with almost
+rank 1 hidden representations.
+
+\section{Preliminaries}
+
+In this section, we define fully-connected DNNs and their representation
+cost.
+
+\subsection{Fully Connected DNNs}
+
+In this paper, we study fully connected DNNs with $L+1$ layers numbered
+from $0$ (input layer) to $L$ (output layer). Each layer $\ell\in\{0,\dots,L\}$
+has $n_{\ell}$ neurons, with $n_{0}=d_{in}$ the input dimension
+and $n_{L}=d_{out}$ the output dimension. The pre-activations $\tilde{\alpha}_{\ell}(x)\in\mathbb{R}^{n_{\ell}}$
+and activations $\alpha_{\ell}(x)\in\mathbb{R}^{n_{\ell}}$ of the
+layers of the network are defined inductively as
+\begin{align*}
+\alpha_{0}(x) & =x\\
+\tilde{\alpha}_{\ell}(x) & =W_{\ell}\alpha_{\ell-1}(x)+b_{\ell}\\
+\alpha_{\ell}(x) & =\sigma\left(\tilde{\alpha}_{\ell}(x)\right),
+\end{align*}
+for the $n_{\ell}\times n_{\ell-1}$ connection weight matrix $W_{\ell}$,
+the $n_{\ell}$ bias vector $b_{\ell}$ and the nonlinearity $\sigma:\mathbb{R}\to\mathbb{R}$
+applied entrywise to the vector $\tilde{\alpha}_{\ell}(x)$. The parameters
+of the network are the collection of all connection weights matrices
+and bias vectors $\mathbf{W}=\left(W_{1},b_{1},\dots,W_{L},b_{L}\right)$.
+
+We call the network function $f_{\mathbf{W}}:\mathbb{R}^{d_{in}}\to\mathbb{R}^{d_{out}}$
+the function that maps an input $x$ to the pre-activations of the
+last layer $\tilde{\alpha}_{L}(x)$.
+
+In this paper, we will focus on homogeneous nonlinearities $\sigma$,
+i.e. such that $\sigma(\lambda x)=\lambda\sigma(x)$ for any $\lambda\geq0$
+and $x\in\mathbb{R}$, such as the traditional ReLU $\sigma(x)=\max\{0,x\}$.
+In our theoretical analysis we will assume that the nonlinearity is
+of the form $\sigma_{a}(x)=\begin{cases}
+x & \text{if \ensuremath{x\geq0}}\\
+ax & \text{otherwise}
+\end{cases}$ for some $\alpha\in(-1,1)$, since for a general homogeneous nonlinearity
+$\sigma$ (which is not proportional to the identity function, the
+constant zero function or the absolute function), there are scalars
+$a\in(-1,1)$, $b\in\mathbb{R}$ and $c\in\{+1,-1\}$ such that $\sigma(x)=c\sigma_{a}(bx)$;
+as a result, the global minima and representation cost are the same
+up to scaling. 
+\begin{rem}
+By a simple generalization of the work of \cite{arora_2018_relu_piecewise_lin},
+the set of functions that can be represented by networks (with any
+finite widths and depth) with such nonlinearities is the set of piecewise
+linear functions with a finite number of linear regions. In contrast,
+the three types of homogeneous nonlinearities we rule out (the identity,
+the constant, or the absolute value) lead to different sets of functions:
+the linear functions, the constant functions, or the piecewise linear
+functions $f$ such that $\lim_{t\to\infty}\left\Vert f(tx)-f(-tx)\right\Vert $
+is finite for all directions $x\in\mathbb{R}^{d_{in}}$ (or possibly
+a subset of this class of functions). While some of the results of
+this paper could probably be generalized to the third case up to a
+few details, we rule it out for the sake of simplicity.
+\end{rem}
+%
+\begin{rem}
+All of our results will be for sufficiently wide networks, i.e. for
+all widths $\mathbf{n}$ such that $n_{\ell}\geq n_{\ell}^{*}$ for
+some minimal widths $n_{\ell}^{*}$. Moreover these results are $O(0)$
+in the width, in the sense that above the threshold $n_{\ell}^{*}$
+the constants do not depend on the widths $n_{\ell}$. When there
+are a finite number of datapoints $N$, it was shown by \cite{jacot_2022_L2_reformulation}
+that a width of $N(N+1)$ is always sufficient, that is we can always
+take $n_{\ell}^{*}=N(N+1)$ (though it is observed empirically that
+a much smaller width can be sufficient in some cases). When we are
+trying to fit a piecewise linear function over the whole input domain
+$\Omega$, the width required depends on the number of linear regions
+\cite{he_2018_relu_piecewise_lin}.
+\end{rem}
+
+\subsection{Representation Cost}
+
+The representation cost $R(f;\Omega,\sigma,L)$ is the squared norm
+of the optimal weights $\mathbf{W}$ which represents the function
+$f_{|\Omega}$:
+\[
+R(f;\Omega,\sigma,L)=\min_{\mathbf{W}:f_{\mathbf{W}|\Omega}=f_{|\Omega}}\left\Vert \mathbf{W}\right\Vert ^{2}
+\]
+where the minimum is taken over all weights $\mathbf{W}$ of a depth
+$L$ network (with some finite widths $\mathbf{n}$) such that $f_{\mathbf{W}}(x)=f(x)$
+for all $x\in\Omega$. If no such weights exist, we define $R(f;\Omega,\sigma,L)=\infty$. 
+
+The representation cost describes the natural bias on the represented
+function $f_{\mathbf{W}}$ induced by adding $L_{2}$ regularization
+on the weights $\mathbf{W}$:
+\[
+\min_{\mathbf{W}}C(f_{\mathbf{W}})+\lambda\left\Vert \mathbf{W}\right\Vert ^{2}=\min_{f}C(f)+\lambda R(f;\Omega,\sigma,L)
+\]
+for any cost $C$ (defined on functions $f:\Omega\mapsto\mathbb{R}^{d_{out}}$)
+and where the minimization on the right is over all functions $f$
+that can be represented by a depth $L$ network with nonlinearity
+$\sigma$. Therefore, if we can give a simple description of the representation
+cost of a function $f$, we can better understand what type of functions
+$f$ are favored by a DNN with nonlinearity $\sigma$ and depth $L$.
+\begin{rem}
+Note that the representation cost does not only play a role in the
+presence of $L_{2}$-regularization, it also describes the implicit
+bias of networks trained on an exponentially decaying loss, such as
+the cross-entropy loss, as described in \cite{soudry2018implicit,gunasekar_2018_implicit_bias,chizat_2020_implicit_bias}.
+\end{rem}
+
+\section{Infinitely Deep Networks}
+
+In this section, we first give 4 properties that a notion of rank
+on piecewise linear functions should satisfy and introduce two notions
+of rank that satisfy these properties. We then show that the infinite-depth
+limit $L\to\infty$ of the rescaled representation cost $R(f;\Omega,\sigma_{a},L)/L$
+is sandwiched between the two notions of rank we introduced, and that
+this limit satisfies 3 of the 4 properties we introduced.
+
+\subsection{Rank of Piecewise Linear Functions}
+
+There is no single natural definition of rank for nonlinear functions,
+but we will provide two of them in this section and compare them.
+We focus on notions of rank for piecewise linear functions with a
+finite number of linear regions since these are the function that
+can be represented by DNNs with homogeneous nonlinearities (this is
+a Corollary of Theorem 2.1 from \cite{arora_2018_relu_piecewise_lin},
+for more details, see Appendix E.1). We call such functions finite
+piecewise linear functions (FPLF).
+
+Let us first state a set of properties that any notion of rank on
+FPLF should satisfy, inspired by properties of rank for linear functions:
+\begin{enumerate}
+\item The rank of a function is an integer $\mathrm{Rank}(f)\in\mathbb{N}$.
+\item $\mathrm{Rank}(f\circ g)\leq\min\{\mathrm{Rank}f,\mathrm{Rank}g\}$.
+\item $\mathrm{Rank}(f+g)\leq\mathrm{Rank}f+\mathrm{Rank}g$.
+\item If $f$ is affine ($f(x)=Ax+b$) then $\mathrm{Rank}f=\mathrm{Rank}A$.
+\end{enumerate}
+Taking $g=id$ or $f=id$ in (2) implies $\mathrm{Rank}(f)\leq\min\{d_{in},d_{out}\}$.
+Properties (2) and (4) also imply that for any bijection $\phi$ on
+$\mathbb{R}^{d}$, $\mathrm{Rank}(\phi)=\mathrm{Rank}(\phi^{-1})=d$.
+
+Note that these properties do not uniquely define a notion of rank.
+Indeed we will now give two notions of rank which satisfy these properties
+but do not always match. However any such notion of rank must agree
+on a large family of functions: Property 2 implies that $\mathrm{Rank}$
+is invariant under pre- and post-composition with bijections (see
+Appendix A), which implies that the rank of functions of the form
+$\psi\circ f\circ\phi$ for an affine function $f(x)=Ax+b$ and two
+(piecewise linear) bijections $\psi$ and $\phi$ always equals $\mathrm{Rank}A$.
+
+The first notion of rank we consider is based on the rank of the Jacobian
+of the function:
+\begin{defn}
+The Jacobian rank of a FPLF $f$ is $\mathrm{Rank}_{J}(f;\Omega)=\max_{x}\mathrm{Rank}Jf(x)$,
+taking the max over points where $x$ is differentiable.
+\end{defn}
+Note that since the jacobian is constant over the linear regions of
+the FPLF $f$, we only need to take the maximum over every linear
+region. As observed in \cite{feng_2022_Jacobian_rank_DNN}, the Jacobian
+rank measures the intrinsic dimension of the output set $f(\Omega)$.
+
+The second notion of rank is inspired by the fact that for linear
+functions $f$, the rank of $f$ equals the minimal dimension $k$
+such that $f$ can be written as the composition of two linear function
+$f=g\circ h$ with inner dimension $k$. We define the bottleneck
+rank as:
+\begin{defn}
+The bottleneck rank $\mathrm{Rank}_{BN}(f;\Omega)$ is the smallest
+integer $k\in\mathbb{N}$ such that there is a factorization as the
+composition of two FPLFs $f_{|\Omega}=\left(g\circ h\right)_{|\Omega}$
+with inner dimension $k$.
+\end{defn}
+The following proposition relates these two notions of rank:
+\begin{prop}
+Both $\mathrm{Rank}_{J}$ and $\mathrm{Rank}_{BN}$ satisfy properties
+$1-4$ above. Furthermore:
+\begin{itemize}
+\item For any FPLF and any set $\Omega$, $\mathrm{Rank}_{J}(f;\Omega)\leq\mathrm{Rank}_{BN}(f;\Omega).$
+\item There exists a FPLF $f:\mathbb{R}^{2}\to\mathbb{R}^{2}$ and a domain
+$\Omega$ such that $\mathrm{Rank}_{J}(f;\Omega)=1$ and $\mathrm{Rank}_{BN}(f;\Omega)=2$.
+\end{itemize}
+\end{prop}
+
+\subsection{Infinite-depth representation cost}
+
+In the infinite-depth limit, the (rescaled) representation cost of
+DNNs $R_{\infty}(f;\Omega,\sigma_{a})=\lim_{L\to\infty}\frac{R(f;\Omega,\sigma_{a},L)}{L}$
+converges to a value `sandwiched' between the above two notions of
+rank:
+\begin{thm}
+\label{thm:infinite_depth_representation_cost_sandwich_bound}For
+any bounded domain $\Omega$ and any FPLF $f$
+\[
+\mathrm{Rank}_{J}(f;\Omega)\leq R_{\infty}(f;\Omega,\sigma_{\alpha})\leq\mathrm{Rank}_{BN}(f;\Omega).
+\]
+Furthermore the limiting representation cost $R_{\infty}(f;\Omega,\sigma_{a})$
+satisfies properties 2 to 4.
+\end{thm}
+\begin{proof}
+The lower bound follows from taking $L\to\infty$ in Proposition \ref{prop:param_norm_bound_Schatten_Jacobian}
+(see Section \ref{subsec:Approximate-Rank-1-regime}). The upper bound
+is constructive: a function $f=h\circ g$ can be represented as a
+network in three consecutive parts: a first part (of depth $L_{g}$)
+representing $g$, a final part (of depth $L_{h}$) representing $h$,
+and in the middle $L-L_{g}-L_{h}$ identity layers on a $k$-dimensional
+space. The contribution to the norm of the parameters of the middle
+part is $k(L-L_{g}-L_{h})$ and it dominates as $L\to\infty$, since
+the contribution of the first and final parts are finite.
+\end{proof}
+Note that $R_{\infty}(f;\Omega,\sigma_{a})$ might satisfy property
+$1$ as well, we were simply not able to prove it. Theorem \ref{thm:infinite_depth_representation_cost_sandwich_bound}
+implies that for functions of the form $f=\psi\circ A\circ\phi$ for
+bijections $\psi$ and $\phi$, $R_{\infty}(f;\Omega,\sigma_{a})=\mathrm{Rank}_{J}(f;\Omega)=\mathrm{Rank}_{BN}(f;\Omega)=\mathrm{Rank}A$.
+\begin{rem}
+Motivated by some aspects of the proofs and a general intuition (which
+is described in Section \ref{subsec:Discussion}) we conjecture that
+$R_{\infty}(f;\Omega,\sigma_{a})=\mathrm{Rank}_{BN}(f;\Omega)$. This
+would imply that the limiting representation cost does not depend
+on the choice of nonlinearity, as long as it is of the form $\sigma_{a}$
+(which we already proved is the case for functions of the form $\psi\circ A\circ\phi$).
+\end{rem}
+This result suggests that large-depth neural networks are biased towards
+function which have a low Jacobian rank and (if our above mentioned
+conjecture is true) low Bottleneck rank, much like linear networks
+are biased towards low-rank linear maps. It also suggests that the
+rescaled norm of the parameters $\nicefrac{\left\Vert \mathbf{W}\right\Vert ^{2}}{L}$
+is an approximate upper bound on the Jacobian rank (and if our conjecture
+is true on the Bottleneck rank too) of the function $f_{\mathbf{W}}$.
+In the next section, we partly formalize these ideas.
+
+\section{Rank Recovery in Finite Depth Networks}
+
+In this section, we study how the (approximate) rank of minimizer
+functions $f_{\hat{\mathbf{W}}}$ (i.e. functions at a global minimum
+$\hat{\mathbf{W}}$) for the MSE $\mathcal{L}_{\lambda}(\mathbf{W})=\frac{1}{N}\sum_{i=1}^{N}(f_{\mathbf{W}}(x_{i})-y_{i})^{2}+\frac{\lambda}{L}\left\Vert \mathbf{W}\right\Vert ^{2}$
+with data sampled from a distribution with support $\Omega$ is affected
+by the depth $L$. In particular, when the outputs are generated from
+a true function $f^{*}$ (i.e. $y_{i}=f^{*}(x_{i})$) with $k=\mathrm{Rank}_{BN}(f^{*};\Omega)$,
+we study in which condition the `true rank' $k$ is recovered.
+
+
+\subsection{Approximate Rank 1 Regime \label{subsec:Approximate-Rank-1-regime}}
+
+One can build a function with BN-rank 1 that fits any training data
+(for example by first projecting the input to a line with no overlap
+and then mapping the points from the line to the outputs with a piecewise
+linear function). This implies the following bound:
+\begin{prop}
+\label{prop:almost_rank_1_very_deep}There is a constant $C_{N}$
+(which depends on the training data only) such that for any large
+enough $L$, at any global minimum $\hat{\mathbf{W}}$ of the loss
+$\mathcal{L}_{\lambda}$ the represented function $f_{\hat{\mathbf{W}}}$
+satisfies
+\[
+\frac{1}{L}R(f_{\hat{\mathbf{W}}};\sigma_{a},\Omega,L)\leq1+\frac{C_{N}}{L}.
+\]
+\end{prop}
+\begin{proof}
+We use the same construction as in the proof of Theorem \ref{thm:infinite_depth_representation_cost_sandwich_bound}
+for any fitting rank $1$ function.
+\end{proof}
+This bound implies that the function $f_{\hat{\mathbf{W}}}$ represented
+by the network at a global minimum is approximately rank $1$ both
+w.r.t. to the Jacobian and Bottleneck ranks, showing the bias towards
+low-rank functions even for finite (but possibly very large) depths.
+
+\textbf{Jacobian Rank: }For any function $f$, the rescaled norm representation
+cost $\frac{1}{L}R(f;\Omega,\sigma_{a},L)$ bounds the $L_{p}$-Schatten
+norm of the Jacobian (with $p=\frac{2}{L}$) at any point:
+\begin{prop}
+\label{prop:param_norm_bound_Schatten_Jacobian}Let $f$ be a FPLF,
+then at any differentiable point $x$, we have
+\[
+\left\Vert Jf(x)\right\Vert _{\nicefrac{2}{L}}^{\nicefrac{2}{L}}:=\sum_{k=1}^{\mathrm{Rank}Jf_{\mathbf{W}}(x)}s_{k}\left(Jf(x)\right)^{\frac{2}{L}}\leq\frac{1}{L}R(f;\Omega,\sigma_{a},L),
+\]
+where $s_{k}\left(Jf_{\mathbf{W}}(x)\right)$ is the $k$-th singular
+value of the Jacobian $Jf_{\mathbf{W}}(x)$.
+\end{prop}
+Together with Proposition \ref{prop:almost_rank_1_very_deep}, this
+implies that the second singular value of the Jacobian of any minimizer
+function must be exponentially small $s_{2}\left(Jf_{\hat{\mathbf{W}}}(x)\right)\leq\left(\frac{1+\frac{C_{N}}{L}}{2}\right)^{\frac{L}{2}}$
+in $L$.
+
+\textbf{Bottleneck Rank: }We can further prove the existence of a
+bottleneck in the network in any minimizer network, i.e. a layer $\ell$
+whose hidden representation is approximately rank 1:
+\begin{prop}
+\label{prop:almost_BN_rank_1}For any global minimum $\hat{\mathbf{W}}$
+of the $L_{2}$-regularized loss $\mathcal{L}_{\lambda}$ with $\lambda>0$
+and any set of $\tilde{N}$ datapoints $\tilde{X}\in\mathbb{R}^{d_{in}\times\tilde{N}}$
+(which do not have to be the training set $X$) with non-constant
+outputs, there is a layer $\ell_{0}$ such that the first two singular
+values $s_{1},s_{2}$ of the hidden representation $Z_{\ell_{0}}\in\mathbb{R}^{n_{\ell}\times N}$
+(whose columns are the activations $\alpha_{\ell_{0}}(x_{i})$ for
+all the inputs $x_{i}$ in $\tilde{X}$) satisfies $\frac{s_{2}}{s_{1}}=O(L^{-\frac{1}{4}})$.
+\end{prop}
+The fact that the global minima of the loss are approximately rank
+1 not only in the Jacobian but also in the Bottleneck sense further
+supports our conjecture that the limiting representation cost equals
+the Bottleneck rank $R_{\infty}=\mathrm{Rank}_{BN}$. Furthermore,
+it shows that the global minimum of the $L_{2}$-regularized is biased
+towards low-rank functions for large depths, since it fits the data
+with (approximately) the smallest possible rank.
+
+\subsection{Rank Recovery for Intermediate Depths}
+
+However, learning rank 1 functions is not always a good thing. Assume
+that we are trying to fit a `true function' $f^{*}:\Omega\to\mathbb{R}^{d_{out}}$
+with a certain rank $k=\mathrm{Rank}_{BN}\left(f^{*};\Omega\right)$.
+If $k>1$ the global minima of a large depth network will end up underestimating
+the true rank $k$.
+
+In contrast, in the linear setting underestimating the true rank is
+almost never a problem: for example in matrix completion one always
+wants to find a minimal rank solution \cite{candes2009exact,arora_2019_matrix_factorization}.
+The difference is due to the fact that rank $1$ nonlinear functions
+can fit any finite training set, which is not the case in the linear
+case. 
+
+Thankfully, for large datasets it becomes more and more difficult
+to underestimate the rank, since for large $N$ fitting the data with
+a rank 1 function requires large derivatives, which in turn implies
+a large parameter norm:
+\begin{thm}
+\label{prop:explosion_norm_rank_1_fit}Given a Jacobian-rank $k$
+true function $f^{*}:\Omega\to\mathbb{R}^{d_{out}}$ on a bounded
+domain $\Omega$, then for all $\epsilon$ there is a constant $c_{\epsilon}$
+such that for any BN-rank 1 function $\hat{f}:\Omega\to\mathbb{R}^{d_{out}}$
+that fits $\hat{f}(x_{i})=f^{*}(x_{i})$ a dataset $x_{1},\dots,x_{N}$
+sampled i.i.d. from a distribution $p$ with support $\Omega$, we
+have $\frac{1}{L}R(\hat{f};\Omega,\sigma_{a},L)>c_{\epsilon}N^{\frac{2}{L}\left(1-\frac{1}{k}\right)}$
+with prob. at least $1-\epsilon$.
+\end{thm}
+\begin{proof}
+We show that there is a point $x\in\Omega$ with large derivative
+$\left\Vert Jf(x)\right\Vert _{op}\geq\frac{\mathrm{TSP}(y_{1},\dots,y_{N})}{\mathrm{diam}(x_{1},\dots,x_{N})}$
+for the Traveling Salesman Problem $\mathrm{TSP}(y_{1},\dots,y_{N})$,
+i.e. the length of the shortest path passing through every point $y_{1},\dots,y_{m}$,
+and the diameter $\mathrm{diam}(x_{1},\dots,x_{N})$ of the points
+$x_{1},\dots,x_{N}$. This follows from the fact that the image of
+$\hat{f}$ is a line going through all $y_{i}$s, and if $i$ and
+$j$ are the first and last points visited, the image of segment $[x_{i},x_{j}]$
+is a line from $y_{i}$ to $y_{j}$ passing through all $y_{k}$s.
+The diameter is bounded by $\mathrm{diam}\Omega$ while the TSP scales
+as $N^{1-\frac{1}{k}}$ \cite{beardwood_1959_shortest_path_many_points}
+since the $y_{i}$s are sampled from a $k$-dimensional distribution.
+The bound on the parameter norm then follows from Proposition \ref{prop:param_norm_bound_Schatten_Jacobian}.
+\end{proof}
+This implies that the constant $C_{N}$ in Proposition \ref{prop:almost_rank_1_very_deep}
+explodes as the number of datapoints $N$ increases, i.e. as $N$
+increases, larger and larger depths are required for the bound in
+Proposition \ref{prop:almost_rank_1_very_deep} to be meaningful.
+In that case, a better upper bound on the norm of the parameters can
+be obtained, which implies that the functions $f_{\hat{\mathbf{W}}}$
+at global minima are approximately rank $k$ or less (at least in
+the Jacobian sense, according to Proposition \ref{prop:param_norm_bound_Schatten_Jacobian}):
+\begin{prop}
+\label{prop:almost_rank_k_global_min}Let the `true function' $f^{*}:\Omega\to\mathbb{R}^{d_{out}}$
+be piecewise linear with $\mathrm{Rank}_{BN}(f^{*})=k$, then there
+is a constant $C$ which depends on $f^{*}$ only such that any minimizer
+function $f_{\hat{\mathbf{W}}}$ satisfies
+
+\[
+\frac{1}{L}R(f_{\hat{\mathbf{W}}};\sigma_{a},\Omega,L)\leq\frac{1}{L}R(f^{*};\sigma_{a},\Omega,L)\leq k+\frac{C}{L}.
+\]
+\end{prop}
+Theorem \ref{prop:explosion_norm_rank_1_fit} and Proposition \ref{prop:almost_rank_k_global_min}
+imply that if the number of datapoints $N$ is sufficiently large
+($N>\left(\frac{k+\frac{C}{L}}{c}\right)^{\frac{kL}{2k-2}}$), there
+are parameters $\mathbf{W}^{*}$ that fit the true function $f^{*}$
+with a smaller parameter norm than any choice of parameters $\mathbf{W}$
+that fit the data with a rank 1 function. In that case, the global
+minima will not be rank 1 and might instead recover the true rank
+$k$.
+
+Another interpretation is that since the constant $C$ does not depend
+on the number of training points $N$ (in contrast to $C_{N}$), there
+is a range of depths (which grows as $N\to\infty$) where the upper
+bound of Proposition \ref{prop:almost_rank_k_global_min} is below
+that of Proposition \ref{prop:almost_rank_1_very_deep}. We expect
+rank recovery to happen roughly in this range of depths: too small
+depths can lead to an overestimation of the rank\footnote{Note that traditional regression models, such as Kernel Ridge Regression
+(KRR) typically overestimate the true rank, as described in Appendix
+D.1.}, while too large depths can lead to an underestimation.
+\begin{rem}
+Note that in our experiments, we were not able to observe gradient
+descent converging to a solution that underestimates the true rank,
+even for very deep networks. This is probably due to gradient descent
+converging to one of the many local minima in the loss surface of
+very deep $L_{2}$-regularized DNNs. Some recent theoretical results
+offer a possible explanation for why gradient descent naturally avoids
+rank 1 solutions: the proof of Proposition \ref{prop:explosion_norm_rank_1_fit}
+shows that rank 1 fitting functions have exploding gradient as $N\to\infty$,
+and such high gradient functions are known (at the moment only for
+shallow networks with 1D inputs) to correspond to narrow minima \cite{mulayoff_2021_minima_stability_bias_1D}. 
+
+Some of our results can be applied to local minima $\hat{\mathbf{W}}$with
+a small norm: Proposition \ref{prop:param_norm_bound_Schatten_Jacobian}
+implies that the Jacobian rank of $f_{\hat{\mathbf{W}}}$ is approximately
+bounded by $\nicefrac{\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}}{L}$.
+Proposition \ref{prop:almost_BN_rank_1} also applies to local minima,
+but only if $\nicefrac{\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}}{L}\leq1+\nicefrac{C}{L}$
+for some constant $C$, though it could be generalized.
+\end{rem}
+\begin{figure}
+\vspace{-30bp}
+
+\begin{center}
+
+\subfloat{\includegraphics[viewport=0bp 0bp 422bp 320bp,clip,scale=0.3]{code/bottleneck_network_eigs_L13_w100_N500_lamb05}}\subfloat{\includegraphics[viewport=0bp 0bp 422bp 320bp,clip,scale=0.3]{code/bottleneck_network_nonlin_impact_L13_w100_N500_lamb05}}\subfloat{\includegraphics[viewport=0bp 0bp 422bp 320bp,clip,scale=0.3]{code/bottleneck_network_eigs_W_L13_w100_N500_lamb05}}
+
+\end{center}
+
+\caption{\label{fig:DNN_global_min_low_rank}DNN (depth $L=13$ and width $n_{\ell}=100$)
+trained on a MSE task with rank $4$ true function $f^{*}:\mathbb{R}^{50}\to\mathbb{R}^{50}$,
+with $N=500$ and $\lambda=0.05/L$. At the end of training, we obtain
+$\nicefrac{\left\Vert W\right\Vert ^{2}}{L}\approx6$. \textbf{(left)}
+First 10 singular values of the matrix of activations $Z_{\ell}$
+for all $\ell$. The representations are appr. rank 4 in the middle
+layers. \textbf{(middle)} The impact of the nonlinearity at each layer
+$\ell$, measured by the ratio $\nicefrac{\left\Vert \tilde{Z}_{\ell}-Z_{\ell}\right\Vert _{F}}{\left\Vert \tilde{Z}_{\ell}\right\Vert _{F}}$
+where $\tilde{Z}_{\ell}$ is the matrix of preactivations with entries
+$\tilde{\alpha}_{k}^{(\ell)}(x_{i})$. This impact vanishes in the
+middle layers, supporting our intuition that the middle layers represent
+approximate identities. \textbf{(right)} First 10 singular values
+of the weight matrices $W_\ell$ at every layer.}
+\end{figure}
+
+
+\subsection{Discussion\label{subsec:Discussion}}
+
+We now propose a tentative explanation for the phenomenon observed
+in this section. In contrast to the rest of the paper, this discussion
+is informal.
+
+Ideally, we want to learn functions $f$ which can be factorized as
+a composition $h\circ g$ so that not only the inner dimension is
+small but the two functions $g,h$ are not `too complex'. These two
+objectives are often contradictory and one needs to find a trade-off
+between the two. Instead of optimizing the bottleneck rank, one might
+want to optimize with a regularization term of the form
+\begin{equation}
+\min_{f=h\circ g}k+\gamma\left(C(g)+C(h)\right),\label{eq:mixed_optimization}
+\end{equation}
+optimizing over all possible factorization $f=h\circ g$ of $f$ with
+inner dimension $k$, where $C(g)$ and $C(h)$ are measures of the
+complexity of $g$ and $h$ resp. The parameter $\gamma\geq0$ allows
+us to tune the balance between the minimization of the inner dimension
+and the complexity of $g$ and $h$, recovering the Bottleneck rank
+when $\gamma=0$. For small $\gamma$ the minimizer is always rank
+1 (since it is always possible to fit a finite dataset with a rank
+$1$ function in the absence of restriction on the complexity on $g$
+and $h$), but with the right choice of $\gamma$ one can recover
+the true rank.
+
+Some aspects of the proofs techniques we used in this paper suggest
+that large-depth DNNs are optimizing such a cost (or an approximation
+thereof). Consider a deep network that fits with minimal parameter
+norm a function $f$; if we add more layers to the network it is natural
+to assume that the new optimal representation of $f$ will be almost
+the same as that of the shallower network with some added (approximate)
+identity layers. The interesting question is where are those identity
+layers added? The cost of adding an identity layer at a layer $\ell$
+equals the dimension $d_{\ell}$ of the hidden representation of the
+inputs at $\ell$. It is therefore optimal to add identity layers
+where the hidden representations have minimal dimension.
+
+This suggests that for large depths the optimal representation of
+a function $f$ approximately takes the form of $L_{g}$ layers representing
+$g$, then $L-L_{g}-L_{h}$ identity layers, and finally $L_{h}$
+layers representing $h$, for some factorization $f=h\circ g$ with
+inner dimension $k$. We observe in Figure \ref{fig:DNN_global_min_low_rank}
+such a three-part representation structure in an MSE task with a low-rank
+true function. The rescaled parameter norm would then take the form
+\[
+\frac{1}{L}\left\Vert \mathbf{W}\right\Vert ^{2}=\frac{L-L_{g}-L_{h}}{L}k+\frac{1}{L}\left(\left\Vert \mathbf{W}_{g}\right\Vert ^{2}+\left\Vert \mathbf{W}_{h}\right\Vert ^{2}\right),
+\]
+where $\mathbf{W}_{g}$ and $\mathbf{W}_{h}$ are the parameters of
+the first and last part of the network. For large depths, we can make
+the approximation $\frac{L-L_{g}-L_{h}}{L}\approx1$ to recover the
+same structure as Equation \ref{eq:mixed_optimization}, with $\gamma=\nicefrac{1}{L}$,
+$C(g)=\left\Vert \mathbf{W}\right\Vert _{g}^{2}$ and $C(h)=\left\Vert \mathbf{W}_{h}\right\Vert ^{2}$.
+This intuition offers a possible explanation for rank recovery in
+DNNs, though we are not yet able to prove it rigorously.
+
+\section{Practical Implications}
+
+In this section, we describe the impact of rank minimization on two
+practical tasks: multiclass classification and autoencoders.
+
+\subsection{Multiclass Classification}
+
+Consider a function $f_{\mathbf{W}^{*}}:\mathbb{R}^{d_{in}}\to\mathbb{R}^{m}$
+which solves a classification task with $m$ classes, i.e. for all
+training points $x_{i}$ with class $y_{i}\in\{1,\dots,m\}$ the $y_{i}$-th
+entry of the vector $f_{\mathbf{W}^{*}}$ is strictly larger than
+all other entries. The Bottleneck rank $k=\mathrm{Rank}_{BN}(f_{\mathbf{W}^{*}})$
+of $f_{\mathbf{W}^{*}}$ has an impact on the topology of the resulting
+partition of the input space $\Omega$ into classes, leading to topological
+properties typical of a partition on a $k$-dimensional space rather
+than those of a partition on a $d_{in}$-dimensional space.
+
+When $k=1$, the partition will be topologically equivalent to a classification
+on a line, which implies the absence of tripoints, i.e. points at
+the boundary of 3 (or more) classes. Indeed any boundary point $x\in\Omega$
+will be mapped to a boundary point $z=g(x)$ by the first function
+$g:\Omega\to\mathbb{R}$ in the factorization of $f_{\mathbf{W}^{*}}$;
+since $z$ has at most two neighboring classes, then so does $x$.
+
+This property is illustrated in Figure \ref{fig:Classification}:
+for a classification task on four classes on the plane, we observe
+that the partitions obtained by shallow networks ($L=2$) leads to
+tripoints which are absent in deeper networks ($L=9$). Notice also
+that the presence or absence of $L_{2}$-regularization has little
+effect on the final shape, which is in line with the observation that
+the cross-entropy loss leads to an implicit $L_{2}$-regularization
+\cite{soudry2018implicit,gunasekar_2018_implicit_bias,chizat_2020_implicit_bias},
+reducing the necessity of an explicit $L_{2}$-regularization.
+
+\begin{figure}
+\vspace{-45bp}
+
+\begin{center}
+
+\hspace{-60bp}\subfloat[$L=2,\lambda=0$]{\hspace{30bp}\includegraphics[viewport=65bp 10bp 335bp 310bp,clip,scale=0.35]{dim1_classification_L2_w10000_lamb0}\hspace{30bp}}\hspace{-60bp}\subfloat[$L=2,\lambda=10^{-3}$]{\hspace{30bp}\includegraphics[viewport=65bp 10bp 335bp 310bp,clip,scale=0.35]{dim1_classification_L2_w10000_lamb001}\hspace{30bp}
+
+}\hspace{-60bp}\subfloat[$L=9,\lambda=0$]{\hspace{30bp}\includegraphics[viewport=65bp 10bp 335bp 310bp,clip,scale=0.35]{dim1_classification_L9_w1000_lamb0}\hspace{30bp}
+
+}\hspace{-60bp}\subfloat[$L=9,\lambda=10^{-3}$]{\hspace{30bp}\includegraphics[viewport=65bp 10bp 335bp 310bp,clip,scale=0.35]{dim1_classification_L9_w1000_lamb001}
+
+\hspace{30bp}
+
+}\hspace{-60bp}
+
+\end{center}\caption{\label{fig:Classification}Classification on 4 classes (whose sampling
+distribution are 4 identical inverted `S' shapes translated along
+the $x$-axis) for two depths and with or without $L_{2}$-regularization.
+The class boundaries in shallow networks \textbf{(A,B)} feature tripoints,
+which are not observed in deeper networks \textbf{(C,D)}.}
+\end{figure}
+
+\begin{figure}
+\vspace{-30bp}
+
+\begin{center}
+
+\subfloat[$L=5$]{\includegraphics[viewport=10bp 20bp 422bp 245bp,clip,scale=0.4]{denoising_autoencoder_MNIST_L5_w2000lamb0001}
+
+}\subfloat[$L=6$]{\includegraphics[viewport=60bp 20bp 350bp 290bp,clip,scale=0.4]{denoising_autoencoder_line_L6_w500lamb0001}
+
+}\subfloat[$L=2$]{\includegraphics[viewport=80bp 20bp 350bp 290bp,clip,scale=0.4]{denoising_autoencoder_line_L2_w5000lamb0001}
+
+}
+
+\end{center}
+
+\caption{Autoencoders trained on MNIST \textbf{(A)} and a 1D dataset on the
+plane \textbf{(B, C)} with a ridge $\lambda=10^{-4}$. Plot \textbf{(A)}
+shows noisy inputs in the first line with corresponding outputs below.
+In plots \textbf{(B)} and \textbf{(C)} the blue dots are the training
+data, and the green dots are random inputs that are mapped to the
+orange dots pointed by the arrows. We see that for large depths \textbf{(A,
+B)} the learned autoencoder is naturally denoising, projecting points
+to the data distribution, which is not the case for shallow networks
+\textbf{(C)}.}
+\end{figure}
+
+
+\subsection{Autoencoders}
+
+Consider learning an autoender on data of the form $x=g(z)$ where
+$z$ is sampled (with full dimensional support) in a latent space
+$\mathbb{R}^{k}$ and $g:\mathbb{R}^{k}\to\mathbb{R}^{d}$ is an injective
+FPLF. In this setting, the true rank is the intrinsic dimension $k$
+of the data, since the minimal rank function that equals the identity
+on the data distribution has rank $k$.
+
+Assume that the learned autoencoder $\hat{f}:\mathbb{R}^{k}\to\mathbb{R}^{k}$
+fits the data $f(x)=x$ for all $x=g(z)$ and recovers the rank $\mathrm{Rank}_{BN}\hat{f}=k$.
+At any datapoint $x_{0}=g(z_{0})$ such that $g$ is differentiale
+at $z_{0}$, the data support $g(\mathbb{R}^{k})$ is locally a $k$-dimensional
+affine subspace $T=x_{0}+\mathrm{Im}Jg(z_{0})$. In the linear region
+of $\hat{f}$ that contains $x_{0}$, $\hat{f}$ is an affine projection
+to $T$ since it equals the identity when restricted to $T$ and its
+Jacobian is rank $k$. This proves that rank recovering autoencoders
+are naturally (locally) denoising.
+
+
+\section{Conclusion}
+
+We have shown that in infinitely deep networks, $L_{2}$-regularization
+leads to a bias towards low-rank functions, for some notion of rank
+on FPLFs. We have then shown a set of results that suggest that this
+low-rank bias extends to large but finite depths. With the right depths,
+this leads to `rank recovery', where the learned function has approximately
+the same rank as the `true function'. We proposed a tentative explanation
+for this rank recovery: for finite but large widths, the network is
+biased towards function $f$ which can be factorized $f=h\circ g$
+with both a small inner dimension $k$ and small complexity of $g$
+and $h$. Finally, we have shown how rank recovery affects the topology
+of the class boundaries in a classification task and leads to natural
+denoising abilities in autoencoders.
+
+\bibliographystyle{iclr2023_conference}
+\bibliography{./../../main}
+
+\appendix
+
+\section{Notions of Rank}
+\begin{claim}
+From properties (2),(4) follows:
+\begin{enumerate}
+\item For any function $f$, one has $\mathrm{Rank}f\leq\min\{d_{in},d_{out}\}$.
+\item For any bijection $\phi$ on $\mathbb{R}^{d}$, $\mathrm{Rank}\phi=\mathrm{Rank}\phi^{-1}=d$.
+\item For any two bijections $\phi,\psi$ on $\mathbb{R}^{d_{in}}$ and
+$\mathbb{R}^{d_{out}}$ resp. one has $\mathrm{Rank}\left(\psi\circ f\circ\phi\right)=\mathrm{Rank}f$.
+\end{enumerate}
+\end{claim}
+\begin{proof}
+1. By property 4, one has that $\mathrm{Rank}id=d$ for the identity
+$id:\mathbb{R}^{d}\to\mathbb{R}^{d}$. By property (4), one has $\mathrm{Rank}f=\mathrm{Rank}(id\circ f\circ id)\leq\min\left\{ d_{in},\mathrm{Rank}f,d_{out}\right\} \leq\min\left\{ d_{in},d_{out}\right\} $.
+
+2. We have $d=\mathrm{Rank}\left(\phi\circ\phi^{-1}\right)\leq\min\left\{ \mathrm{Rank}\phi,\mathrm{Rank}\phi^{-1}\right\} $
+and $\mathrm{Rank}\phi\leq d$ as well as $\mathrm{Rank}\phi^{-1}\leq d$.
+Therefore $\mathrm{Rank}\phi=\mathrm{Rank}\phi^{-1}=d$.
+
+3. Let us only show $\mathrm{Rank}\left(f\circ\phi\right)=\mathrm{Rank}f$,
+the other side follows from the same argument. We have $\mathrm{Rank}\left(f\circ\phi\right)\leq\min\left\{ \mathrm{Rank}f,d_{in}\right\} =\mathrm{Rank}f$
+and $\mathrm{Rank}f=\mathrm{Rank}\left(f\circ\phi\circ\phi^{-1}\right)\leq\min\left\{ \mathrm{Rank}\left(f\circ\phi\right),d_{in}\right\} =\mathrm{Rank}\left(f\circ\phi\right)$,
+thus proving $\mathrm{Rank}\left(f\circ\phi\right)=\mathrm{Rank}f$.
+\end{proof}
+\begin{prop}[Proposition 1 in the main]
+We have 
+\[
+\mathrm{Rank}_{J}(f;\Omega)\leq\mathrm{Rank}_{BN}(f;\Omega).
+\]
+\end{prop}
+\begin{proof}
+Since $f=g\circ h$ with an inner dimension of $\mathrm{Rank}_{BN}(f;\Omega)$
+then at any point $x$ where $f$ is differentiable, we have by the
+chain rule
+\[
+Jf(x)=Jg(h(x))Jh(x).
+\]
+Clearly the rank of $Jf(x)$ is bounded by the inner dimension $\mathrm{Rank}_{BN}(f;\Omega)$.
+\end{proof}
+Let us now give an example of a function $f$ where the above inequality
+is strict:
+\begin{example}
+Consider the piecewise linear function $f:\mathbb{R}^{2}\to\mathbb{R}^{2}$
+which maps $x=(x_{0},x_{1})$ to $(x_{0},\mathrm{sign}(x_{1})\left|x_{0}\right|)$
+if $\left|x_{0}\right|\geq\left|x_{1}\right|$ and to $(\mathrm{sign}(x_{0})\left|x_{1}\right|,x_{1})$
+if $\left|x_{0}\right|<\left|x_{1}\right|$. 
+\end{example}
+\begin{proof}
+One can easily check that this function is continuous and equals the
+identity on the $x$-cross $X=\left\{ (x_{0},x_{1}):\left|x_{0}\right|=\left|x_{1}\right|\right\} $.
+Inside the linear regions (i.e. outside of the $x$-cross and the
+$+$-cross made up of the union of both axis) the Jacobian is rank
+1, as a result the function $f$ satisfies $\mathrm{Rank}_{J}(f;\mathbb{R}^{2})=1$,
+on the other hand $\mathrm{Rank}_{BN}(f;\mathbb{R}^{2})>1$ since
+$\mathrm{Rank}_{BN}(f;\mathbb{R}^{2})\geq\mathrm{Rank}_{BN}\left(f;X\right)$
+and since there are no continuous functions $g:X\to\mathbb{R}$ and
+$h:\mathbb{R}\to X$ such that $h\circ g=id_{X}$ we know that $\mathrm{Rank}_{BN}\left(f;X\right)>1$.
+We therefore know that $\mathrm{Rank}_{BN}(f;\mathbb{R}^{2})=2$ (since
+$1<\mathrm{Rank}_{BN}(f;\mathbb{R}^{2})\leq2$).
+\end{proof}
+Finally, one can easily check that both $\mathrm{Rank}_{J}$ and $\mathrm{Rank}_{BN}$
+satisfy properties 1-4.
+
+\section{Representation Cost}
+\begin{prop}[Proposition 3 in the main]
+\label{prop:appendix_bound_repr_norm_Jacobian_schatten}Let $f$
+be a piecewise linear function, then at any differentiable point $x$,
+we have
+\[
+\left\Vert Jf(x)\right\Vert _{\nicefrac{2}{L}}^{\nicefrac{2}{L}}:=\sum_{k=1}^{\mathrm{Rank}Jf_{\mathbf{W}}(x)}s_{k}\left(Jf(x)\right)^{\frac{2}{L}}\leq\frac{1}{L}R(f;\Omega,\sigma_{a},L),
+\]
+where $s_{k}\left(Jf_{\mathbf{W}}(x)\right)$ is the $k$-th singular
+value of the Jacobian $Jf_{\mathbf{W}}(x)$.
+\end{prop}
+\begin{proof}
+For any weights $\mathbf{W}$ of a depth $L$ network such that $f_{\mathbf{W}}=f$
+we have
+\[
+Jf(x)=W_{L}D_{L-1}(x)W_{L-1}\cdots W_{2}D_{1}(x)W_{1}
+\]
+where $D_{\ell}(x)$ is a $n_{\ell}\times n_{\ell}$ diagonal matrix
+with diagonal vector equal to $\dot{\sigma_{a}}\left(\tilde{\alpha}_{\ell}(x)\right)$.
+
+We know from \cite{soudry2018implicit} that the representation cost
+of linear fully connected networks equals $L\left\Vert A\right\Vert _{p}^{p}$
+for $\left\Vert A\right\Vert _{p}^{p}=\lambda_{1}^{p}+\dots+\lambda_{k}^{p}$
+is the $L_{p}$-Schatten norm with $p=\frac{2}{L}$. In other terms,
+we have for any matrices $\tilde{W}_{1},\dots,\tilde{W}_{L}$
+\[
+L\left\Vert \tilde{W}_{L}\cdots\tilde{W}_{1}\right\Vert _{p}^{p}\leq\left\Vert \tilde{W}_{L}\right\Vert _{F}^{2}+\dots+\left\Vert \tilde{W}_{1}\right\Vert _{F}^{2}.
+\]
+Applying it to $\tilde{W}_{L}=W_{L}$ and $\tilde{W}_{\ell}=D_{\ell}(x)W_{\ell}$
+for $\ell=1,\dots,L-1$, we obtain
+\begin{align*}
+\left\Vert Jf(x)\right\Vert _{p}^{p} & \leq\frac{\left\Vert W_{L}\right\Vert _{F}^{2}+\left\Vert D_{L-1}(x)W_{L-1}\right\Vert _{F}^{2}+\dots+\left\Vert D_{1}(x)W_{1}\right\Vert _{F}^{2}}{L}\\
+ & \leq\frac{\left\Vert W_{L}\right\Vert _{F}^{2}+\left\Vert W_{L-1}\right\Vert _{F}^{2}+\dots+\left\Vert W_{1}\right\Vert _{F}^{2}}{L}
+\end{align*}
+since $\left\Vert D_{\ell}(x)\right\Vert _{op}\leq1$.
+
+Note that this result applies for any widths $n_{1},\dots,n_{L-1}$.
+\end{proof}
+\begin{thm}[first part of Theorem 1 in the main]
+\label{thm:sandwich-bound-rank-representation-cost}We have
+\[
+\mathrm{Rank}_{J}(f;\Omega)\leq\lim_{L\to\infty}\frac{R(f;\Omega,\sigma_{a},L)}{L}\leq\mathrm{Rank}_{BN}(f;\Omega).
+\]
+\end{thm}
+\begin{proof}
+\textbf{First inequality:} Take a point $x$ such that $\mathrm{Rank}(Jf(x))=\mathrm{Rank}_{J}(f;\Omega)$,
+then Proposition \ref{prop:appendix_bound_repr_norm_Jacobian_schatten}
+implies that $\frac{R(f;\Omega,\sigma_{a},L)}{L}\geq\left\Vert Jf(x)\right\Vert _{p}^{p}$.
+Letting $L\to\infty$ on both sides leads to the bound $\lim_{L\to\infty}\frac{R(f;\Omega,\sigma_{a},L)}{L}\geq\mathrm{Rank}(Jf(x))=\mathrm{Rank}_{J}(f;\Omega)$
+as needed. 
+
+This lower bound applies to any widths $n_{1}(L),\dots,n_{L-1}(L)$,
+of course if the widths are too small, it might be impossible to represent
+$f$, in which case $R(f;\Omega,\sigma_{a},L)=\infty$.
+
+\textbf{Second Inequality:} Fix a decomposition $f=g\circ h$ with
+minimal inner dimension and such that $h(\Omega)\subset\mathbb{R}_{+}^{\mathrm{Rank}(f;\Omega)}$
+(we need to be in the upper quadrant to represent the identity on
+$h(\Omega)$ efficiently, and since $\Omega$ is bounded, one can
+always translate the output of $h$ to be in the upper quadrant).
+
+Corollary \ref{thm:piecewise-linear-func-representation} tells us
+that there are two networks of finite depths $L_{h}$ and $L_{g}$
+(with parameters $\mathbf{W}_{h}$ and $\mathbf{W}_{g}$) which represent
+$h$ and $g$, for any depth $L$ larger than $L_{h}+L_{g}$ we can
+construct a network of depth $L$ which represents $f$ by concatenating
+the network that the represents $h$, followed by $L-L_{h}-L_{g}$
+identity weight matrices of dimension $\mathrm{Rank}(f;\Omega)\times\mathrm{Rank}(f;\Omega)$
+and finally the network representing $g$. The norm of the parameters
+of this network is $\left\Vert \mathbf{W}_{h}\right\Vert ^{2}+(L-L_{h}-L_{g})\mathrm{Rank}(f;\Omega)+\left\Vert \mathbf{W}_{g}\right\Vert ^{2}$.
+We therefore have the bound
+\[
+R(f;\Omega,\sigma_{a},L)\leq\left\Vert \mathbf{W}_{h}\right\Vert ^{2}+(L-L_{h}-L_{g})\mathrm{Rank}_{BN}(f;\Omega)+\left\Vert \mathbf{W}_{g}\right\Vert ^{2}
+\]
+ divinding both sides by $L$ and letting $L$ grow to infinity, we
+obtain the inequality $\lim_{L\to\infty}\frac{R(f;\Omega,\sigma_{a},L)}{L}\leq\mathrm{Rank}_{BN}(f;\Omega)$.
+
+For the upper bound to apply, the widths $n_{\ell}$ of the network
+in the first part must be larger than some threshold that depends
+on the number of linear regions in $h$, in the middle part the widths
+must be larger than $k$ and in the last part they must be above a
+threshold that depends on the number of linear regions in $g$ \cite{he_2018_relu_piecewise_lin}.
+Note that in each of these regions the minimal with required does
+not depend on the depth.
+\end{proof}
+Let us now show that the limiting rescaled representation cost $R_{\infty}(f;\Omega,\sigma_{a}):=\lim_{L\to\infty}\frac{R(f;\Omega,\sigma_{a},L)}{L}$
+satisfies all properties of rank except the first one (though it might
+actually satisfy it):
+\begin{thm}[second part of Theorem 1 in the main]
+ We have for any piecewise linear functions $f,g$:
+\begin{enumerate}
+\item $R_{\infty}(f\circ g;\Omega,\sigma_{a})\leq\min\{R_{\infty}(f;g(\Omega),\sigma_{a}),R_{\infty}(g;\Omega,\sigma_{a})\}$.
+\item $R_{\infty}(f+g;\Omega,\sigma_{a})\leq R_{\infty}(f;\Omega,\sigma_{a})+R_{\infty}(g;\Omega,\sigma_{a})$.
+\item If $f$ is affine ($f(x)=Ax+b$) then $R_{\infty}\left(f;\Omega,\sigma_{a}\right)=\mathrm{Rank}A$.
+\end{enumerate}
+\end{thm}
+\begin{proof}
+\textbf{1.} Without loss of generality, we can translate the output
+of $g$ and the input of $f$ (keeping the same composition $f\circ g$)
+so that $g(\Omega)$ lies in the upper quadrant $\mathbb{R}_{+}^{m}$
+where $m$ is the inner dimension. This translation changes the parameter
+norm by a value which is constant in $L$, it therefore does not matter
+in the $L\to\infty$ limit of $\nicefrac{\left\Vert \mathbf{W}\right\Vert ^{2}}{L}$. 
+
+Assume $R_{\infty}(f;\Omega,\sigma_{a})\leq R_{\infty}(g;\Omega,\sigma_{a})$
+(the other case can be proved with the same argument) and fix a network
+of depth $L_{0}$ and parameters $\mathbf{W}_{0}$ that represents
+the function $g$. For any $L$ sufficiently large we consider the
+network made up of the composition of the fixed network followed by
+a network of depth $L-L_{0}$ with weigths $\mathbf{W}'$ which represents
+$f$ with minimal parameter norm, i.e. $\left\Vert \mathbf{W}'\right\Vert ^{2}=R(f;g(\Omega),\sigma_{a},L-L_{0})$.
+The norm of this composed network is $\left\Vert \mathbf{W}_{0}\right\Vert ^{2}+R(f;g(\Omega),\sigma_{a},L-L_{0})$,
+in the $L\to\infty$ limit, this implies $R_{\infty}(f\circ g;\Omega,\sigma_{a})\leq R_{\infty}(f;g(\Omega),\sigma_{a})$
+as needed.
+
+\textbf{2.} For any sufficiently large depth $L$ consider two networks
+of depth $L$ with parameters $\mathbf{W}_{f}$ and $\mathbf{W}_{g}$
+which represent the functions $f$ and $g$ with minimal parameter
+norms, i.e. $\left\Vert \mathbf{W}_{f}\right\Vert ^{2}=R(f;\Omega,\sigma_{a},L)$
+and $\left\Vert \mathbf{W}_{g}\right\Vert ^{2}=R(g;\Omega,\sigma,L)$.
+We then consider the network obtained by putting the two network in
+'parallel', i.e. the first weight matrix is given by the concatenation
+$\left(\begin{array}{c}
+W_{f,1}\\
+W_{g,1}
+\end{array}\right)$, the weight matrices of the middle layers are of the form $\left(\begin{array}{cc}
+W_{f,\ell} & 0\\
+0 & W_{g,\ell}
+\end{array}\right)$ for all $\ell=2,\dots,L-1$ and the last weight matrix is given by
+$\left(\begin{array}{cc}
+W_{f,L} & W_{g,L}\end{array}\right)$. This new network represents the function $f+g$ and has parameter
+norm $\left\Vert \mathbf{W}_{f}\right\Vert ^{2}+\left\Vert \mathbf{W}_{g}\right\Vert ^{2}$,
+which implies the bound $R(f+g;\Omega,\sigma_{a},L)\leq\left\Vert \mathbf{W}_{f}\right\Vert ^{2}+\left\Vert \mathbf{W}_{g}\right\Vert ^{2}=R(f;\Omega,\sigma_{a},L)+R(g;\Omega,\sigma_{a},L)$
+and in the limit $R_{\infty}(f+g;\Omega,\sigma_{a})\leq R_{\infty}(f;\Omega,\sigma_{a})+R_{\infty}(g;\Omega,\sigma_{a})$.
+
+\textbf{3.} This point follows from Theorem \ref{thm:sandwich-bound-rank-representation-cost},
+since for affine functions both notions of rank agree $\mathrm{Rank}_{J}(f;\Omega)=\mathrm{Rank}_{BN}(f;\Omega)=\mathrm{Rank}A$,
+the same must be true for the limiting rescaled representation cost
+$R_{\infty}(f;\Omega,\sigma_{a})$.
+
+Regarding the widths required for these results to apply, the minimal
+widths are the one described by the construction in the proofs. Since
+these constructions can be included into any wider network by adding
+zero neurons (neurons with zero incoming weights and zero outcoming
+weights), these results also apply to any larger widths.
+\end{proof}
+
+\section{Global Minima are Almost Rank 1}
+
+Consider a global minimizer $\hat{\mathbf{W}}$ of the regression
+problem $\mathcal{L}(\mathbf{W})=\frac{1}{N}\sum\left(f_{\mathbf{W}}(x_{i})-y_{i}\right)^{2}+\frac{\lambda}{L}\left\Vert \mathbf{W}\right\Vert ^{2}$
+we will now show that if the depth $L$ is large enough, then the
+function $f_{\hat{\mathbf{W}}}$ is in a sense almost rank 1 w.r.t.
+both notions of rank ($\mathrm{Rank}_{J}$ and $\mathrm{Rank}_{BN}$
+).
+\begin{prop}[Proposition 2 in the main]
+For the regression problem $\mathcal{L}_{\lambda}(\mathbf{W})=\frac{1}{N}\sum\left(f_{\mathbf{W}}(x_{i})-y_{i}\right)^{2}+\frac{\lambda}{L}\left\Vert \mathbf{W}\right\Vert ^{2}$
+there is a constant $C_{N}$ (which depends only on the inputs $x_{i}$
+and outputs $y_{i}$) such that for $L\geq\left\lceil \log_{2}(n_{0}+1)\right\rceil +2$,
+we have\textbf{
+\[
+\inf_{\mathbf{W}}\mathcal{L}_{\lambda}(\mathbf{W})\leq\lambda\left(1+\frac{C_{N}}{L}\right).
+\]
+}
+\end{prop}
+\begin{proof}
+There is a BN-rank $1$ function $f=h\circ g$ (with $g:\mathbb{R}^{n_{0}}\to\mathbb{R}$
+and $h:\mathbb{R}\to\mathbb{R}^{n_{L}}$) which fits the data perfectly
+$f(x_{i})=y_{i}$ for all $i$. Much like in the second inequality
+of Theorem \ref{thm:sandwich-bound-rank-representation-cost}, by
+Corollary \ref{thm:piecewise-linear-func-representation}, there is
+a depth $\left\lceil \log_{2}(n_{0}+1)\right\rceil $ networks which
+represents $g$ and a depth $2$ network which represents the function
+$f$. For any depth $L>\left\lceil \log_{2}(n_{0}+1)\right\rceil +2$,
+we compose the network representing $g$, followed by a number of
+identity layers, followed by the network representing $h$. The function
+represented by this network has zero loss and the regularization term
+is of the form $\lambda\left(1+\frac{C_{N}}{L}\right)$, since
+\[
+\frac{1}{L}\left\Vert \mathbf{W}\right\Vert ^{2}=\frac{\left\Vert \mathbf{W}_{g}\right\Vert ^{2}}{L}+\left(1-\frac{\left\lceil \log_{2}(n_{0}+1)\right\rceil +2}{L}\right)+\frac{\left\Vert \mathbf{W}_{h}\right\Vert ^{2}}{L}.
+\]
+
+Note that the minimal width required for this result to apply might
+depend on the number of datapoints $N$, but not the depth.
+\end{proof}
+Let us now show that the function $f_{\hat{\mathbf{W}}}$ is close
+to a BN-rank 1 function:
+\begin{prop}[Proposition 4 in the main]
+\label{thm:almost_BN_rank_1}For any global minimum $\hat{\mathbf{W}}$
+of the $L_{2}$-regularized loss $\mathcal{L}_{\lambda}$ with $\lambda>0$
+and any set of $\tilde{N}$ datapoints $\tilde{X}\in\mathbb{R}^{d_{in}\times\tilde{N}}$
+(which do not have to be the training set $X$) with non-constant
+outputs, there is a layer $\ell_{0}$ such that the first two singular
+values $s_{1},s_{2}$ of the hidden representation $Z_{\ell_{0}}\in\mathbb{R}^{n_{\ell}\times N}$
+(whose columns are the activations $\alpha_{\ell_{0}}(x_{i})$ for
+all the inputs $x_{i}$ in $\tilde{X}$) satisfies $\frac{s_{2}}{s_{1}}=O(L^{-\frac{1}{4}})$.
+\end{prop}
+\begin{proof}
+We need to prove a lower bound on the first eigenvalue of $\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}$
+and an upper bound on the second one. For both parts, we will rely
+on the balanced property described in Proposition \ref{prop:balancedness}:
+at any local minimum of the loss the weights satisfy $\left\Vert W_{\ell+1}\right\Vert _{F}^{2}=\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert ^{2}$.
+This implies that $\left\Vert W_{\ell'}\right\Vert _{F}^{2}\geq\left\Vert W_{\ell}\right\Vert _{F}^{2}$
+for all $\ell'\geq\ell$. Since the overall norm of the parameters
+is bounded by $L+C_{N}$ this implies a bound
+\[
+\left\Vert W_{\ell+1}\right\Vert _{F}^{2}\leq\frac{L+C_{N}}{L-\ell}=1+\frac{C_{N}+\ell}{L-\ell}
+\]
+for all $\ell$ .
+
+Assuming by contradiction that for all layers $\frac{\lambda_{2}\left(\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right)}{\lambda_{1}\left(\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right)}>\delta$,
+one should intuitively think of $1+\frac{C_{N}+\ell}{L-\ell}$ as
+a `ressource' with which the $\ell$-th layer has to do two tasks:
+(1) keep the top eigenvalue of $\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}$
+close to 1 to keep enough information to represent the outputs; and
+(2) keep the second eigenvalue above $\delta$ to keep the contradiction.
+However the ressource cost of (1) is roughly $1$ and the cost of
+(2) is roughly $\delta$ which is above the ressource allowance $1+\frac{C_{N}+\ell}{L-\ell}$
+for large $L$ and constant $\ell$. This leads to a contradiction.
+
+\textbf{Upper bound on $\lambda_{2}$:} Let $\ell_{0}$ be the first
+time where $\lambda_{2}<\delta$, we will show that $\ell_{0}$ exists
+and is upper bounded by $\frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}$.
+
+For all $\ell<\ell_{0}$ we have the following for bound the operator
+norm $\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op}$:
+\begin{align*}
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op} & \leq\mathrm{Tr}\left[\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right]-\lambda_{2}\left(\frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right)\\
+ & \leq\mathrm{Tr}\left[\frac{1}{\tilde{N}}\sigma_{a}\left(W_{\ell}Z_{\ell-1}+b_{\ell}\right)^{T}\sigma_{a}\left(W_{\ell}Z_{\ell-1}+b_{\ell}\right)\right]-\delta\\
+ & \leq\left\Vert \frac{1}{\tilde{N}}Z_{\ell-1}^{T}Z_{\ell-1}\right\Vert _{op}\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}-\delta.
+\end{align*}
+ Assuming $\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op}\leq\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} $
+(we will later show that this is true for all $\ell\leq\ell_{0}$
+as long as $L$ is sufficiently large) we obtain:
+
+\begin{align}
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op} & \leq\left\Vert \frac{1}{\tilde{N}}Z_{\ell-1}^{T}Z_{\ell-1}\right\Vert _{op}+\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} \left(\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}-1\right)-\delta.\label{eq:rec_op_norm_representation}
+\end{align}
+Since $\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}=\left\Vert W_{\ell+1}\right\Vert _{F}^{2}\leq1+\frac{\ell+C_{N}}{L-\ell}$,
+if $L>\frac{2\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} \left(C_{N}+\left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil \right)}{\delta}+\left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil \geq\frac{\kappa}{\delta^{2}}$
+for some $\kappa$ (which depends on $\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}$
+and $C_{N}$ only) and $L$ large enough, then for all $\ell\leq\min\left\{ \left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil ,\ell_{0}\right\} $,
+we obtain that
+\begin{align*}
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op} & \leq\left\Vert \frac{1}{\tilde{N}}Z_{\ell-1}^{T}Z_{\ell-1}\right\Vert _{op}-\frac{\delta}{2}\\
+ & \leq\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}-\ell\frac{\delta}{2}.
+\end{align*}
+
+Therefore for all $\ell\leq\min\left\{ \left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil ,\ell_{0}\right\} $
+we have $\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op}\leq\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} $,
+as needed. Furthermore this implies that $\ell_{0}\leq\left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil $,
+otherwise, we would get a contradiction when taking $\ell=\left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil $:
+\[
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell}^{T}Z_{\ell}\right\Vert _{op}\leq\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}-\left\lceil \frac{2\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta}\right\rceil \frac{\delta}{2}<0.
+\]
+
+We have now proven that for large enough $L$, there is a $\kappa$
+(which depends on $\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}$
+and $C_{N}$ only) such there is a $\ell_{0}\leq\left\lceil \frac{2\sqrt{L}\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\delta\sqrt{\kappa}}\right\rceil $
+where $\lambda_{2}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)<\sqrt{\frac{\kappa}{L}}$.
+
+\textbf{Lower bound on $\lambda_{1}$:} We now need to lower bound
+the first eigenvalue $\lambda_{1}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)=\left\Vert \frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right\Vert _{op}$
+at this same layer $\ell_{0}$ . We denote the means $m_{\ell}=\frac{1}{\tilde{N}}\sum_{i=1}^{\tilde{N}}\alpha_{\ell}(x_{i})$
+and have the bounds
+\[
+\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell}\right)^{T}\left(Z_{\ell}-m_{\ell}\right)\right\Vert _{op}\leq\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell-1}-m_{\ell-1}\right)^{T}\left(Z_{\ell-1}-m_{\ell-1}\right)\right\Vert _{op}\left\Vert W_{\ell}\right\Vert _{op}^{2}.
+\]
+This implies that 
+\begin{equation}
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right\Vert _{op}\geq\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell_{0}}\right)^{T}\left(Z_{\ell}-m_{\ell_{0}}\right)\right\Vert _{op}\geq\frac{\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell_{0}}\right)^{T}\left(Z_{\ell}-m_{\ell_{0}}\right)\right\Vert _{op}}{\left\Vert W_{\ell_{0}+1}\right\Vert _{op}^{2}\cdots\left\Vert W_{L}\right\Vert _{op}^{2}}.\label{eq:lower_bound_norm_ell0}
+\end{equation}
+
+We now need to lower bound the norm of the parameters in the layers
+up to $\ell_{0}$, to upper bound the norm of the parameters of the
+layers $\ell_{0}+1$ to $L$. Iterating Equation (\ref{eq:rec_op_norm_representation})
+leads to the equation
+\[
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right\Vert _{op}\leq\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}+\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} \left(\sum_{\ell=1}^{\ell_{0}}\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}-1\right)-\ell_{0}\delta.
+\]
+which implies that
+
+\[
+\sum_{\ell=1}^{\ell_{0}}\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}\geq\ell_{0}+\frac{\ell_{0}\delta-\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}}{\max\left\{ \left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op},1\right\} }\geq\ell_{0}-\min\left\{ 1,\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}^{-1}\right\} 
+\]
+and therefore
+\[
+\sum_{\ell=\ell_{0}+1}^{L}\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert _{F}^{2}\leq L-\ell_{0}+C_{N}+\min\left\{ 1,\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}^{-1}\right\} .
+\]
+
+Applying the arithmetic/geometric mean inequality to Equation (\ref{eq:lower_bound_norm_ell0}),
+we obtain a lower bound
+\begin{align*}
+\left\Vert \frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right\Vert _{op} & \geq\frac{\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell_{0}}\right)^{T}\left(Z_{\ell}-m_{\ell_{0}}\right)\right\Vert _{op}}{\left(\frac{1}{L-\ell_{0}}\sum_{\ell=\ell_{0}+1}^{L}\left\Vert W_{\ell}\right\Vert _{op}^{2}\right)^{L-\ell_{0}}}\\
+ & \geq\frac{\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell_{0}}\right)^{T}\left(Z_{\ell}-m_{\ell_{0}}\right)\right\Vert _{op}}{\left(1+\frac{C_{N}+\min\left\{ 1,\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}^{-1}\right\} }{L-\ell_{0}}\right)^{L-\ell_{0}}}\\
+ & \geq e^{-C_{N}-\min\left\{ 1,\left\Vert \frac{1}{\tilde{N}}\tilde{X}^{T}\tilde{X}\right\Vert _{op}^{-1}\right\} }\left\Vert \frac{1}{\tilde{N}}\left(Z_{\ell}-m_{\ell_{0}}\right)^{T}\left(Z_{\ell}-m_{\ell_{0}}\right)\right\Vert _{op}.
+\end{align*}
+
+Putting it all together, we have shown that for large enough $L$,
+there is a $\ell_{0}=O(\sqrt{L})$ such that $\lambda_{1}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)=\Omega(1)$
+and $\lambda_{2}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)=O\left(\frac{1}{\sqrt{L}}\right)$,
+which together imply that
+\[
+\frac{\lambda_{1}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)}{\lambda_{2}\left(\frac{1}{\tilde{N}}Z_{\ell_{0}}^{T}Z_{\ell_{0}}\right)}=O\left(\frac{1}{\sqrt{L}}\right)
+\]
+and therefore
+\[
+\frac{s_{1}(Z_{\ell_{0}})}{s_{2}(Z_{\ell_{0}})}=O(L^{-\frac{1}{4}}).
+\]
+
+Finally note that this result does not require anything more than
+the widths be nonzero. Of course , if one of the widths is 1, the
+result is trivial.
+\end{proof}
+
+\section{Rank Recovery}
+
+Consider a finite dataset $X,Y$ of size $N$, with $x_{i}$ sampled
+i.i.d. for a distribution $p$ with support equal to $\Omega$ and
+with $y_{i}=f^{*}(x_{i})$ for a true function $f^{*}:\Omega\to\mathbb{R}^{d_{out}}$
+with $\mathrm{Rank}_{J}(f^{*};\Omega)=k>1$. For any function $g$
+which fits the data $g(x_{i})=y_{i}$ with a BN-Rank of $1$ (there
+always exists at least one such function), then if the depth $L$
+is large enough we have $R(g;\Omega,\sigma_{a},L)<R(f^{*};\Omega,\sigma_{a},L)$. 
+
+This is problematic as it suggests that for large depths, minimizing
+the representation cost will always lead to fitting the data with
+a function with a BN rank of 1 instead of the rank of the true function
+$k$. However, if we instead fix a depth $L$ and let the number of
+datapoints $N$ grow, the representation cost required to fit the
+data with a rank 1 function (or any rank lower than $k$) increases
+to infinity, whereas the representation cost of the true function
+remains constant. This suggest that if one increases the depth $L$
+and the number of datapoints $N$ simultaneously with the right scaling,
+minimizing the representation cost over fitting functions should recover
+a function $h$ with the right rank $k$.
+\begin{prop}[Theorem 2 in the main]
+Let $f$ satisfy $f(x_{i})=y_{i}$ and $\mathrm{Rank}_{BN}(f;\Omega)=1$
+for some $\Omega$ which contains the convex hull of $x_{1},\dots,x_{N}$.
+There is a point $x\in\Omega$, such that 
+\[
+\left\Vert Jf(x)\right\Vert _{op}\geq\frac{\mathrm{TSP}(y_{1},\dots,y_{N})}{\mathrm{diam}(x_{1},\dots,x_{N})},
+\]
+for the Traveling Salesman Problem $\mathrm{TSP}(y_{1},\dots,y_{N})$,
+i.e. the length of the shortest path passing through every points
+$y_{1},\dots,y_{m}$, and for the diameter $\mathrm{diam}(x_{1},\dots,x_{N})$
+of the points $x_{1},\dots,x_{N}$. As a result any rank $1$ interpolator
+with parameters $\mathbf{W}$ satisfies $\left\Vert \mathbf{W}\right\Vert ^{2}\geq L\left(\frac{\mathrm{TSP}(y_{1},\dots,y_{N})}{\mathrm{diam}(x_{1},\dots,x_{N})}\right)^{\frac{2}{L}}$.
+\end{prop}
+\begin{proof}
+The lower bound on the nom of the paramaters $\left\Vert \mathbf{W}\right\Vert ^{2}$
+follows directly from the first bound and Proposition \ref{prop:appendix_bound_repr_norm_Jacobian_schatten}. 
+
+Let us now prove the first bound. Since $\mathrm{Rank}_{BN}(f;\Omega)=1$,
+there are piecewise linear functions $g:\mathbb{R}^{d_{in}}\to\mathbb{R}$
+and $h:\mathbb{R}\to\mathbb{R}^{d_{out}}$ such that $f=h\circ g$.
+We define $z_{i}=g(x_{i})$ and w.l.o.g. we assume that $z_{1}\leq\dots\leq z_{N}$.
+
+The image of the segment $[x_{1},x_{N}]$ under $f$ is a path that
+connects $y_{1}$ to $y_{N}$, passing through the points $y_{2},\dots,y_{N-1}$
+(since the segment $[x_{1},x_{N}]$ is mapped by $g$ to a path from
+$z_{1}$ to $z_{N}$ on the line, which must pass through $z_{2},\dots,z_{N-1}$).
+This implies that the function $f$ maps a path of length $\left\Vert x_{1}-x_{N}\right\Vert \leq\mathrm{diam}(x_{1},\dots,x_{N})$
+to a path of length at least $\mathrm{TSP}(y_{1},\dots,y_{N})$, as
+a result there must be a point $x$ on the segment $[x_{1},x_{N}]$
+whose Jacobian has operator norm at least $\frac{\mathrm{TSM}(y_{1},\dots,y_{N})}{\mathrm{diam}(x_{1},\dots,x_{N})}$.
+\end{proof}
+Let us now prove that the global minima are approximately rank $k$
+in deep networks:
+\begin{prop}[Proposition 5 in the main]
+Let the `true function' $f^{*}:\Omega\to\mathbb{R}^{d_{out}}$ be
+piecewise linear with $\mathrm{Rank}_{BN}(f^{*})=k$, then there is
+a constant $C$ which depends on $f^{*}$ only such that any global
+minimum $\hat{\mathbf{W}}$ of the loss $\mathcal{L}_{\lambda}(\mathbf{W})=\frac{1}{N}\sum_{i=1}^{N}\left\Vert f_{\mathbf{W}}(x_{i})-f^{*}(x_{i})\right\Vert ^{2}+\frac{\lambda}{L}\left\Vert \mathbf{W}\right\Vert ^{2}$
+for a sufficiently wide network satisfies
+\[
+\frac{R(f_{\hat{\mathbf{W}}};\Omega,\sigma_{a},L)}{L}\leq k+\frac{C}{L}.
+\]
+\end{prop}
+\begin{proof}
+The true function $f^{*}$ equals the composition of two piecewise
+linear functions $h\circ g$ with $g:\Omega\to\mathbb{R}^{k}$ and
+$h:\mathbb{R}^{k}\to\mathbb{R}^{d_{out}}$ which can be represented
+by networks of depth $\left\lceil \log_{2}d_{in}+1\right\rceil +1$
+(resp. $\left\lceil \log_{2}k+1\right\rceil +1$) and with parameters
+$\mathbf{W}_{g}$ (resp. $\mathbf{W}_{h}$) using Corollary \ref{thm:piecewise-linear-func-representation}.
+For $L>\left\lceil \log_{2}d_{in}+1\right\rceil +\left\lceil \log_{2}k+1\right\rceil +2$,
+consider the network made up of the concatenation of the network representing
+$g$, and the network $h$ at the end, with identity layers in the
+middle. This concatenated network has parameters norm
+\[
+\left\Vert W_{g}\right\Vert ^{2}+k(L-\left\lceil \log_{2}d_{in}+1\right\rceil -\left\lceil \log_{2}k+1\right\rceil -2)+\left\Vert W_{h}\right\Vert ^{2}.
+\]
+Since this network recovers the true function, we have that for any
+global minimum $\hat{\mathbf{W}}$:
+\begin{align*}
+\frac{R(f_{\hat{\mathbf{W}}};\Omega,\sigma_{a},L)}{L} & \leq\frac{1}{L}\left\Vert \hat{\mathbf{W}}\right\Vert ^{2}\\
+ & \leq\frac{1}{\lambda}\min_{\mathbf{W}}\mathcal{L}(\mathbf{W})\\
+ & \leq\frac{1}{L}\left(\left\Vert W_{g}\right\Vert ^{2}+k(L-\left\lceil \log_{2}d_{in}+1\right\rceil -\left\lceil \log_{2}k+1\right\rceil -2)+\left\Vert W_{h}\right\Vert ^{2}\right)\\
+ & =k+\frac{C}{L}.
+\end{align*}
+
+The minimal widths required for this result only depends on the decomposition
+$f=h\circ g$ chosen, it does not depend on the depth.
+\end{proof}
+
+\subsection{Rank of Kernel Ridge Regression}
+
+Consider a translation- and rotation-invariant kernel $K(x,y)=k(\left\Vert x-y\right\Vert )$
+then the Kernel Ridge Regression (KRR) predictor with ridge parameter
+$\lambda$ and on inputs $X$ and outputs $Y$ is of the form
+\[
+\hat{f}_{K}(x)=K(x,X)\left(K(X,X)+\lambda I_{N}\right)^{-1}Y.
+\]
+
+The Jacobian of $\hat{f}_{K}(x)$ equals $J\hat{f}_{K}(x)=JK(x,X)\left(K(X,X)+\lambda I_{N}\right)^{-1}Y,$
+where
+\[
+JK(x,X)=(X-x)\mathrm{diag}\left(\frac{k'(\left\Vert x-X\right\Vert )}{\left\Vert x-X\right\Vert }\right),
+\]
+where $X-x$ is the $n_{0}\times N$ dimension matrix with entries
+$(X-x)_{ki}=X_{ki}-x_{k}$ and $\mathrm{diag}\left(\frac{k'(\left\Vert x-X\right\Vert )}{\left\Vert x-X\right\Vert }\right)$
+is the $N\times N$ diagonal matrix with diagonal entries $\frac{k'(\left\Vert x-x_{i}\right\Vert )}{\left\Vert x-x_{i}\right\Vert }$.
+Since $\mathrm{diag}\left(\frac{k'(\left\Vert x-X\right\Vert )}{\left\Vert x-X\right\Vert }\right)$
+is invertible, we have $\mathrm{Rank}\left(JK(x,X)\right)=\mathrm{Rank}(X-x)$.
+For almost all choices of $x$ (i.e. as long as $x$ does not belong
+to a zero Lebesgue measure set) one has $\mathrm{Rank}\left(JK(x,X)\right)=\mathrm{Rank}(X-x)=\min\{d_{in},N,\mathrm{Rank}X+1\}$.
+
+Assuming that $Y$ conditioned on $X$ is sampled from a distribution
+with full support (as is the case when there is i.i.d. noise on the
+entries of $Y$ for example), then $\mathrm{Rank}Y=\min\left\{ d_{out},N\right\} $
+with prob. 1. As a result, the rank of $J\hat{f}_{K}(x)$ will be
+$\min\left\{ \mathrm{Rank}(X-x),\mathrm{Rank}Y\right\} =\min\left\{ \mathrm{Rank}X+1,N,d_{out}\right\} $
+with prob. 1.
+
+Assuming $N$ to be larger than the input and output dimensions and
+$X$ to be full rank, we obtain that the Jacobian $J\hat{f}_{K}(x)$
+is almost surely full rank
+\[
+\mathrm{Rank}\left(J\hat{f}_{K}(x)\right)=\min\{d_{in},d_{out}\}.
+\]
+
+
+\section{Technical Results}
+
+\subsection{Representation of Piecewise Linear Functions}
+
+Let us prove a generalization of the Theorem 2.1 from \cite{arora_2018_relu_piecewise_lin}:
+\begin{cor}
+\label{thm:piecewise-linear-func-representation}For any $L\geq\left\lceil \log_{2}(n_{0}+1)\right\rceil +1$,
+and any piecewise linear function $f:\mathbb{R}^{d_{in}}\to\mathbb{R}^{d_{out}}$
+there are widths $\mathbf{n}$ and parameters $\mathbf{W}$ such that
+$f_{\mathbf{W}}=f$.
+\end{cor}
+\begin{proof}
+This result was proven in \cite{arora_2018_relu_piecewise_lin} for
+ReLU networks, we therefore simply need to show that given a ReLU
+network with widths $\mathbf{n}$ and parameters $\mathbf{W}$ such
+$f_{\mathbf{W}}=f$, there are widths $\mathbf{n}'$ and parameters
+$\mathbf{W}'$ such that $f_{\mathbf{W}'}=f$ for a network with a
+nonlinearity $\sigma_{a}$.
+
+Notice that for any $a\in(-1,1)$ $\frac{\sigma(x)-a\sigma(-x)}{1-a^{2}}=\max\{0,x\}$.
+By doubling the number of neurons in each hidden layer, i.e. $n'_{\ell}=2n_{\ell}$,
+we can represent the same output function $f$ with the nonlinearity
+$\sigma_{a}$.
+\end{proof}
+
+\subsection{Weak Balancedness Property}
+
+In the analysis of linear networks a widely used tool is the notion
+of balancedness, which is an invariant of linear networks during training.
+Furthermore any at any local minimum of the $L_{2}$-regularized loss
+the weights of the network must be balanced. While no direct equivalent
+of this notion exists for nonlinear DNNs, for homogeneous nonlinearities
+a weaker notion exists, which we describe now.
+\begin{prop}
+\label{prop:balancedness}Let $\mathbf{W}$ be a local minimum of
+the $L_{2}$-regularized loss $\mathcal{L}_{\lambda}(\mathbf{W})=C(f_{\mathbf{W}})+\lambda\left\Vert \mathbf{W}\right\Vert ^{2}$
+for some $\lambda>0$. Then\textbf{ }$\mathbf{W}$ satisfies
+\[
+\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert ^{2}=\left\Vert W_{\ell+1}\right\Vert _{F}^{2}.
+\]
+\end{prop}
+\begin{proof}
+Given a local minimum $\mathbf{W}$ of the $L_{2}$-regularized loss,
+one can change the the weights of the network to new weights $\mathbf{W}(\alpha_{1},\dots,\alpha_{L})$
+with the same outputs for any set of scalars $\alpha_{1},\dots,\alpha_{L}$
+such that $\alpha_{1}\cdots\alpha_{L}=1$ :
+\begin{align*}
+W_{\ell}(\alpha_{1},\dots,\alpha_{L}) & \mapsto\alpha_{\ell}W_{\ell}\\
+b_{\ell}(\alpha_{1},\dots,\alpha_{L}) & \mapsto\alpha_{1}\cdots\alpha_{\ell}b_{\ell}
+\end{align*}
+Since $\mathbf{W}$ is a local minimum, the derivatives of the norm
+of the parameters $\left\Vert \mathbf{W}(\alpha_{1},\dots,\alpha_{L})\right\Vert ^{2}$
+w.r.t. to $\alpha_{1},\dots,\alpha_{L}$ at $\alpha_{1}=\dots=\alpha_{L}=1$
+have to be orthogonal to the constraint space $\alpha_{1}\cdots\alpha_{L}=1$.
+At $\alpha_{1}=\dots=\alpha_{L}=1$the normal space (orthogonal to
+the tangent space) is the space of constant vectors, since it is spanned
+by the gradient of the product $\alpha_{1}\cdots\alpha_{L}$. This
+implies that the values
+\begin{align*}
+\partial_{\alpha_{\ell}}\left(\left\Vert \mathbf{W}(\alpha_{1},\dots,\alpha_{L})\right\Vert ^{2}\right)(1,\dots,1) & =\partial_{\alpha_{\ell}}\left(\sum_{\ell=1}^{L}\left\Vert \alpha_{\ell}W_{\ell}\right\Vert _{F}^{2}+\left\Vert \alpha_{1}\cdots\alpha_{\ell}b_{\ell}\right\Vert ^{2}\right)(1,\dots,1)\\
+ & =2\left\Vert W_{\ell}\right\Vert _{F}^{2}+2\left\Vert b_{\ell}\right\Vert ^{2}+\dots+2\left\Vert b_{L}\right\Vert ^{2}
+\end{align*}
+must all be equal. This equality for two consecutive layers implies
+that
+\[
+\left\Vert W_{\ell}\right\Vert _{F}^{2}+\left\Vert b_{\ell}\right\Vert ^{2}+\dots+\left\Vert b_{L}\right\Vert ^{2}=\left\Vert W_{\ell+1}\right\Vert _{F}^{2}+\left\Vert b_{\ell+1}\right\Vert ^{2}+\dots+\left\Vert b_{L}\right\Vert ^{2}
+\]
+and therefore that at any local minimum
+\[
+\left\Vert W_{\ell}\right\Vert ^{2}+\left\Vert b_{\ell}\right\Vert ^{2}=\left\Vert W_{\ell+1}\right\Vert ^{2}.
+\]
+\end{proof}
+\begin{rem}
+A yet stronger notion of balancedness can be obtained by observing
+that this rescaling of the weights can be done neuron by neuron instead
+of layer by layer, but we do not need this notion for our proofs.
+\end{rem}
+
+\section{Experimental Setup}
+
+All our experiments were done on fully-connected ReLU networks with
+biases. We used diagonal networks, i.e. $n_{1}=n_{2}=\dots=n_{L-1}=w$
+for some width $w$. We trained the network using Adam with weight
+decay, in some cases we used traditional gradient descent at the end
+of training to make sure to converge as close as possible to a local
+minimum. When the ridge $\lambda$ is small, we often observe two
+phases in learning: in the first phase, the cost $C(f_{\mathbf{W}})$
+goes down very fast as the network fits the data, in the second part
+the cost remains close to zero and the parameter of the network slowly
+goes down. This second part is very slow and we did in most case stop
+before the parameter norm had completely stabilized. Note that even
+with this `early stopping' we observed results consistent with our
+theory.
+
+For Figure 1, the inputs $x\in\mathbb{R}^{50}$ and outputs $y\in\mathbb{R}^{50}$
+were generated from a $15$-dimensional latent representation $z\in\mathbb{R}^{15}$
+sampled with i.i.d. $\mathcal{N}(0,1)$ entries. The inputs $x$ then
+equal $x=g(x)$ for a function $g:\mathbb{R}^{15}\to\mathbb{R}^{50}$
+and the outputs equal $y=h(x_{1},\dots,x_{5})$ for a function $h:\mathbb{R}^{5}\to\mathbb{R}^{50}$
+which depends only on the first 5 coordinates of the latent space.
+Both functions $g,h$ are represented by random shallow ReLU networks
+with inner width $n_{1}=100$.
+
+For Figure 2 the data points from the 4 classes were using the same
+inverted S-shape distribution and translated on the $x$ axis according
+to their class.
+
+For Figure 3, we used the MNIST dataset on the left and on the right
+data of the form $g(z)$ for $z$ random 1D Gaussian scalars and a
+function $g:\mathbb{R}^{1}\to\mathbb{R}^{2}$ represented y a random
+ReLU network.
+
+
+\end{document}
+
+
+\usepackage{amsmath,amsfonts,bm}
+
+% Mark sections of captions for referring to divisions of figures
+\newcommand{\figleft}{{\em (Left)}}
+\newcommand{\figcenter}{{\em (Center)}}
+\newcommand{\figright}{{\em (Right)}}
+\newcommand{\figtop}{{\em (Top)}}
+\newcommand{\figbottom}{{\em (Bottom)}}
+\newcommand{\captiona}{{\em (a)}}
+\newcommand{\captionb}{{\em (b)}}
+\newcommand{\captionc}{{\em (c)}}
+\newcommand{\captiond}{{\em (d)}}
+
+% Highlight a newly defined term
+\newcommand{\newterm}[1]{{\bf #1}}
+
+
+% Figure reference, lower-case.
+\def\figref#1{figure~\ref{#1}}
+% Figure reference, capital. For start of sentence
+\def\Figref#1{Figure~\ref{#1}}
+\def\twofigref#1#2{figures \ref{#1} and \ref{#2}}
+\def\quadfigref#1#2#3#4{figures \ref{#1}, \ref{#2}, \ref{#3} and \ref{#4}}
+% Section reference, lower-case.
+\def\secref#1{section~\ref{#1}}
+% Section reference, capital.
+\def\Secref#1{Section~\ref{#1}}
+% Reference to two sections.
+\def\twosecrefs#1#2{sections \ref{#1} and \ref{#2}}
+% Reference to three sections.
+\def\secrefs#1#2#3{sections \ref{#1}, \ref{#2} and \ref{#3}}
+% Reference to an equation, lower-case.
+\def\eqref#1{equation~\ref{#1}}
+% Reference to an equation, upper case
+\def\Eqref#1{Equation~\ref{#1}}
+% A raw reference to an equation---avoid using if possible
+\def\plaineqref#1{\ref{#1}}
+% Reference to a chapter, lower-case.
+\def\chapref#1{chapter~\ref{#1}}
+% Reference to an equation, upper case.
+\def\Chapref#1{Chapter~\ref{#1}}
+% Reference to a range of chapters
+\def\rangechapref#1#2{chapters\ref{#1}--\ref{#2}}
+% Reference to an algorithm, lower-case.
+\def\algref#1{algorithm~\ref{#1}}
+% Reference to an algorithm, upper case.
+\def\Algref#1{Algorithm~\ref{#1}}
+\def\twoalgref#1#2{algorithms \ref{#1} and \ref{#2}}
+\def\Twoalgref#1#2{Algorithms \ref{#1} and \ref{#2}}
+% Reference to a part, lower case
+\def\partref#1{part~\ref{#1}}
+% Reference to a part, upper case
+\def\Partref#1{Part~\ref{#1}}
+\def\twopartref#1#2{parts \ref{#1} and \ref{#2}}
+
+\def\ceil#1{\lceil #1 \rceil}
+\def\floor#1{\lfloor #1 \rfloor}
+\def\1{\bm{1}}
+\newcommand{\train}{\mathcal{D}}
+\newcommand{\valid}{\mathcal{D_{\mathrm{valid}}}}
+\newcommand{\test}{\mathcal{D_{\mathrm{test}}}}
+
+\def\eps{{\epsilon}}
+
+
+% Random variables
+\def\reta{{\textnormal{$\eta$}}}
+\def\ra{{\textnormal{a}}}
+\def\rb{{\textnormal{b}}}
+\def\rc{{\textnormal{c}}}
+\def\rd{{\textnormal{d}}}
+\def\re{{\textnormal{e}}}
+\def\rf{{\textnormal{f}}}
+\def\rg{{\textnormal{g}}}
+\def\rh{{\textnormal{h}}}
+\def\ri{{\textnormal{i}}}
+\def\rj{{\textnormal{j}}}
+\def\rk{{\textnormal{k}}}
+\def\rl{{\textnormal{l}}}
+% rm is already a command, just don't name any random variables m
+\def\rn{{\textnormal{n}}}
+\def\ro{{\textnormal{o}}}
+\def\rp{{\textnormal{p}}}
+\def\rq{{\textnormal{q}}}
+\def\rr{{\textnormal{r}}}
+\def\rs{{\textnormal{s}}}
+\def\rt{{\textnormal{t}}}
+\def\ru{{\textnormal{u}}}
+\def\rv{{\textnormal{v}}}
+\def\rw{{\textnormal{w}}}
+\def\rx{{\textnormal{x}}}
+\def\ry{{\textnormal{y}}}
+\def\rz{{\textnormal{z}}}
+
+% Random vectors
+\def\rvepsilon{{\mathbf{\epsilon}}}
+\def\rvtheta{{\mathbf{\theta}}}
+\def\rva{{\mathbf{a}}}
+\def\rvb{{\mathbf{b}}}
+\def\rvc{{\mathbf{c}}}
+\def\rvd{{\mathbf{d}}}
+\def\rve{{\mathbf{e}}}
+\def\rvf{{\mathbf{f}}}
+\def\rvg{{\mathbf{g}}}
+\def\rvh{{\mathbf{h}}}
+\def\rvu{{\mathbf{i}}}
+\def\rvj{{\mathbf{j}}}
+\def\rvk{{\mathbf{k}}}
+\def\rvl{{\mathbf{l}}}
+\def\rvm{{\mathbf{m}}}
+\def\rvn{{\mathbf{n}}}
+\def\rvo{{\mathbf{o}}}
+\def\rvp{{\mathbf{p}}}
+\def\rvq{{\mathbf{q}}}
+\def\rvr{{\mathbf{r}}}
+\def\rvs{{\mathbf{s}}}
+\def\rvt{{\mathbf{t}}}
+\def\rvu{{\mathbf{u}}}
+\def\rvv{{\mathbf{v}}}
+\def\rvw{{\mathbf{w}}}
+\def\rvx{{\mathbf{x}}}
+\def\rvy{{\mathbf{y}}}
+\def\rvz{{\mathbf{z}}}
+
+% Elements of random vectors
+\def\erva{{\textnormal{a}}}
+\def\ervb{{\textnormal{b}}}
+\def\ervc{{\textnormal{c}}}
+\def\ervd{{\textnormal{d}}}
+\def\erve{{\textnormal{e}}}
+\def\ervf{{\textnormal{f}}}
+\def\ervg{{\textnormal{g}}}
+\def\ervh{{\textnormal{h}}}
+\def\ervi{{\textnormal{i}}}
+\def\ervj{{\textnormal{j}}}
+\def\ervk{{\textnormal{k}}}
+\def\ervl{{\textnormal{l}}}
+\def\ervm{{\textnormal{m}}}
+\def\ervn{{\textnormal{n}}}
+\def\ervo{{\textnormal{o}}}
+\def\ervp{{\textnormal{p}}}
+\def\ervq{{\textnormal{q}}}
+\def\ervr{{\textnormal{r}}}
+\def\ervs{{\textnormal{s}}}
+\def\ervt{{\textnormal{t}}}
+\def\ervu{{\textnormal{u}}}
+\def\ervv{{\textnormal{v}}}
+\def\ervw{{\textnormal{w}}}
+\def\ervx{{\textnormal{x}}}
+\def\ervy{{\textnormal{y}}}
+\def\ervz{{\textnormal{z}}}
+
+% Random matrices
+\def\rmA{{\mathbf{A}}}
+\def\rmB{{\mathbf{B}}}
+\def\rmC{{\mathbf{C}}}
+\def\rmD{{\mathbf{D}}}
+\def\rmE{{\mathbf{E}}}
+\def\rmF{{\mathbf{F}}}
+\def\rmG{{\mathbf{G}}}
+\def\rmH{{\mathbf{H}}}
+\def\rmI{{\mathbf{I}}}
+\def\rmJ{{\mathbf{J}}}
+\def\rmK{{\mathbf{K}}}
+\def\rmL{{\mathbf{L}}}
+\def\rmM{{\mathbf{M}}}
+\def\rmN{{\mathbf{N}}}
+\def\rmO{{\mathbf{O}}}
+\def\rmP{{\mathbf{P}}}
+\def\rmQ{{\mathbf{Q}}}
+\def\rmR{{\mathbf{R}}}
+\def\rmS{{\mathbf{S}}}
+\def\rmT{{\mathbf{T}}}
+\def\rmU{{\mathbf{U}}}
+\def\rmV{{\mathbf{V}}}
+\def\rmW{{\mathbf{W}}}
+\def\rmX{{\mathbf{X}}}
+\def\rmY{{\mathbf{Y}}}
+\def\rmZ{{\mathbf{Z}}}
+
+% Elements of random matrices
+\def\ermA{{\textnormal{A}}}
+\def\ermB{{\textnormal{B}}}
+\def\ermC{{\textnormal{C}}}
+\def\ermD{{\textnormal{D}}}
+\def\ermE{{\textnormal{E}}}
+\def\ermF{{\textnormal{F}}}
+\def\ermG{{\textnormal{G}}}
+\def\ermH{{\textnormal{H}}}
+\def\ermI{{\textnormal{I}}}
+\def\ermJ{{\textnormal{J}}}
+\def\ermK{{\textnormal{K}}}
+\def\ermL{{\textnormal{L}}}
+\def\ermM{{\textnormal{M}}}
+\def\ermN{{\textnormal{N}}}
+\def\ermO{{\textnormal{O}}}
+\def\ermP{{\textnormal{P}}}
+\def\ermQ{{\textnormal{Q}}}
+\def\ermR{{\textnormal{R}}}
+\def\ermS{{\textnormal{S}}}
+\def\ermT{{\textnormal{T}}}
+\def\ermU{{\textnormal{U}}}
+\def\ermV{{\textnormal{V}}}
+\def\ermW{{\textnormal{W}}}
+\def\ermX{{\textnormal{X}}}
+\def\ermY{{\textnormal{Y}}}
+\def\ermZ{{\textnormal{Z}}}
+
+% Vectors
+\def\vzero{{\bm{0}}}
+\def\vone{{\bm{1}}}
+\def\vmu{{\bm{\mu}}}
+\def\vtheta{{\bm{\theta}}}
+\def\va{{\bm{a}}}
+\def\vb{{\bm{b}}}
+\def\vc{{\bm{c}}}
+\def\vd{{\bm{d}}}
+\def\ve{{\bm{e}}}
+\def\vf{{\bm{f}}}
+\def\vg{{\bm{g}}}
+\def\vh{{\bm{h}}}
+\def\vi{{\bm{i}}}
+\def\vj{{\bm{j}}}
+\def\vk{{\bm{k}}}
+\def\vl{{\bm{l}}}
+\def\vm{{\bm{m}}}
+\def\vn{{\bm{n}}}
+\def\vo{{\bm{o}}}
+\def\vp{{\bm{p}}}
+\def\vq{{\bm{q}}}
+\def\vr{{\bm{r}}}
+\def\vs{{\bm{s}}}
+\def\vt{{\bm{t}}}
+\def\vu{{\bm{u}}}
+\def\vv{{\bm{v}}}
+\def\vw{{\bm{w}}}
+\def\vx{{\bm{x}}}
+\def\vy{{\bm{y}}}
+\def\vz{{\bm{z}}}
+
+% Elements of vectors
+\def\evalpha{{\alpha}}
+\def\evbeta{{\beta}}
+\def\evepsilon{{\epsilon}}
+\def\evlambda{{\lambda}}
+\def\evomega{{\omega}}
+\def\evmu{{\mu}}
+\def\evpsi{{\psi}}
+\def\evsigma{{\sigma}}
+\def\evtheta{{\theta}}
+\def\eva{{a}}
+\def\evb{{b}}
+\def\evc{{c}}
+\def\evd{{d}}
+\def\eve{{e}}
+\def\evf{{f}}
+\def\evg{{g}}
+\def\evh{{h}}
+\def\evi{{i}}
+\def\evj{{j}}
+\def\evk{{k}}
+\def\evl{{l}}
+\def\evm{{m}}
+\def\evn{{n}}
+\def\evo{{o}}
+\def\evp{{p}}
+\def\evq{{q}}
+\def\evr{{r}}
+\def\evs{{s}}
+\def\evt{{t}}
+\def\evu{{u}}
+\def\evv{{v}}
+\def\evw{{w}}
+\def\evx{{x}}
+\def\evy{{y}}
+\def\evz{{z}}
+
+% Matrix
+\def\mA{{\bm{A}}}
+\def\mB{{\bm{B}}}
+\def\mC{{\bm{C}}}
+\def\mD{{\bm{D}}}
+\def\mE{{\bm{E}}}
+\def\mF{{\bm{F}}}
+\def\mG{{\bm{G}}}
+\def\mH{{\bm{H}}}
+\def\mI{{\bm{I}}}
+\def\mJ{{\bm{J}}}
+\def\mK{{\bm{K}}}
+\def\mL{{\bm{L}}}
+\def\mM{{\bm{M}}}
+\def\mN{{\bm{N}}}
+\def\mO{{\bm{O}}}
+\def\mP{{\bm{P}}}
+\def\mQ{{\bm{Q}}}
+\def\mR{{\bm{R}}}
+\def\mS{{\bm{S}}}
+\def\mT{{\bm{T}}}
+\def\mU{{\bm{U}}}
+\def\mV{{\bm{V}}}
+\def\mW{{\bm{W}}}
+\def\mX{{\bm{X}}}
+\def\mY{{\bm{Y}}}
+\def\mZ{{\bm{Z}}}
+\def\mBeta{{\bm{\beta}}}
+\def\mPhi{{\bm{\Phi}}}
+\def\mLambda{{\bm{\Lambda}}}
+\def\mSigma{{\bm{\Sigma}}}
+
+% Tensor
+\DeclareMathAlphabet{\mathsfit}{\encodingdefault}{\sfdefault}{m}{sl}
+\SetMathAlphabet{\mathsfit}{bold}{\encodingdefault}{\sfdefault}{bx}{n}
+\newcommand{\tens}[1]{\bm{\mathsfit{#1}}}
+\def\tA{{\tens{A}}}
+\def\tB{{\tens{B}}}
+\def\tC{{\tens{C}}}
+\def\tD{{\tens{D}}}
+\def\tE{{\tens{E}}}
+\def\tF{{\tens{F}}}
+\def\tG{{\tens{G}}}
+\def\tH{{\tens{H}}}
+\def\tI{{\tens{I}}}
+\def\tJ{{\tens{J}}}
+\def\tK{{\tens{K}}}
+\def\tL{{\tens{L}}}
+\def\tM{{\tens{M}}}
+\def\tN{{\tens{N}}}
+\def\tO{{\tens{O}}}
+\def\tP{{\tens{P}}}
+\def\tQ{{\tens{Q}}}
+\def\tR{{\tens{R}}}
+\def\tS{{\tens{S}}}
+\def\tT{{\tens{T}}}
+\def\tU{{\tens{U}}}
+\def\tV{{\tens{V}}}
+\def\tW{{\tens{W}}}
+\def\tX{{\tens{X}}}
+\def\tY{{\tens{Y}}}
+\def\tZ{{\tens{Z}}}
+
+
+% Graph
+\def\gA{{\mathcal{A}}}
+\def\gB{{\mathcal{B}}}
+\def\gC{{\mathcal{C}}}
+\def\gD{{\mathcal{D}}}
+\def\gE{{\mathcal{E}}}
+\def\gF{{\mathcal{F}}}
+\def\gG{{\mathcal{G}}}
+\def\gH{{\mathcal{H}}}
+\def\gI{{\mathcal{I}}}
+\def\gJ{{\mathcal{J}}}
+\def\gK{{\mathcal{K}}}
+\def\gL{{\mathcal{L}}}
+\def\gM{{\mathcal{M}}}
+\def\gN{{\mathcal{N}}}
+\def\gO{{\mathcal{O}}}
+\def\gP{{\mathcal{P}}}
+\def\gQ{{\mathcal{Q}}}
+\def\gR{{\mathcal{R}}}
+\def\gS{{\mathcal{S}}}
+\def\gT{{\mathcal{T}}}
+\def\gU{{\mathcal{U}}}
+\def\gV{{\mathcal{V}}}
+\def\gW{{\mathcal{W}}}
+\def\gX{{\mathcal{X}}}
+\def\gY{{\mathcal{Y}}}
+\def\gZ{{\mathcal{Z}}}
+
+% Sets
+\def\sA{{\mathbb{A}}}
+\def\sB{{\mathbb{B}}}
+\def\sC{{\mathbb{C}}}
+\def\sD{{\mathbb{D}}}
+% Don't use a set called E, because this would be the same as our symbol
+% for expectation.
+\def\sF{{\mathbb{F}}}
+\def\sG{{\mathbb{G}}}
+\def\sH{{\mathbb{H}}}
+\def\sI{{\mathbb{I}}}
+\def\sJ{{\mathbb{J}}}
+\def\sK{{\mathbb{K}}}
+\def\sL{{\mathbb{L}}}
+\def\sM{{\mathbb{M}}}
+\def\sN{{\mathbb{N}}}
+\def\sO{{\mathbb{O}}}
+\def\sP{{\mathbb{P}}}
+\def\sQ{{\mathbb{Q}}}
+\def\sR{{\mathbb{R}}}
+\def\sS{{\mathbb{S}}}
+\def\sT{{\mathbb{T}}}
+\def\sU{{\mathbb{U}}}
+\def\sV{{\mathbb{V}}}
+\def\sW{{\mathbb{W}}}
+\def\sX{{\mathbb{X}}}
+\def\sY{{\mathbb{Y}}}
+\def\sZ{{\mathbb{Z}}}
+
+% Entries of a matrix
+\def\emLambda{{\Lambda}}
+\def\emA{{A}}
+\def\emB{{B}}
+\def\emC{{C}}
+\def\emD{{D}}
+\def\emE{{E}}
+\def\emF{{F}}
+\def\emG{{G}}
+\def\emH{{H}}
+\def\emI{{I}}
+\def\emJ{{J}}
+\def\emK{{K}}
+\def\emL{{L}}
+\def\emM{{M}}
+\def\emN{{N}}
+\def\emO{{O}}
+\def\emP{{P}}
+\def\emQ{{Q}}
+\def\emR{{R}}
+\def\emS{{S}}
+\def\emT{{T}}
+\def\emU{{U}}
+\def\emV{{V}}
+\def\emW{{W}}
+\def\emX{{X}}
+\def\emY{{Y}}
+\def\emZ{{Z}}
+\def\emSigma{{\Sigma}}
+
+% entries of a tensor
+% Same font as tensor, without \bm wrapper
+\newcommand{\etens}[1]{\mathsfit{#1}}
+\def\etLambda{{\etens{\Lambda}}}
+\def\etA{{\etens{A}}}
+\def\etB{{\etens{B}}}
+\def\etC{{\etens{C}}}
+\def\etD{{\etens{D}}}
+\def\etE{{\etens{E}}}
+\def\etF{{\etens{F}}}
+\def\etG{{\etens{G}}}
+\def\etH{{\etens{H}}}
+\def\etI{{\etens{I}}}
+\def\etJ{{\etens{J}}}
+\def\etK{{\etens{K}}}
+\def\etL{{\etens{L}}}
+\def\etM{{\etens{M}}}
+\def\etN{{\etens{N}}}
+\def\etO{{\etens{O}}}
+\def\etP{{\etens{P}}}
+\def\etQ{{\etens{Q}}}
+\def\etR{{\etens{R}}}
+\def\etS{{\etens{S}}}
+\def\etT{{\etens{T}}}
+\def\etU{{\etens{U}}}
+\def\etV{{\etens{V}}}
+\def\etW{{\etens{W}}}
+\def\etX{{\etens{X}}}
+\def\etY{{\etens{Y}}}
+\def\etZ{{\etens{Z}}}
+
+% The true underlying data generating distribution
+\newcommand{\pdata}{p_{\rm{data}}}
+% The empirical distribution defined by the training set
+\newcommand{\ptrain}{\hat{p}_{\rm{data}}}
+\newcommand{\Ptrain}{\hat{P}_{\rm{data}}}
+% The model distribution
+\newcommand{\pmodel}{p_{\rm{model}}}
+\newcommand{\Pmodel}{P_{\rm{model}}}
+\newcommand{\ptildemodel}{\tilde{p}_{\rm{model}}}
+% Stochastic autoencoder distributions
+\newcommand{\pencode}{p_{\rm{encoder}}}
+\newcommand{\pdecode}{p_{\rm{decoder}}}
+\newcommand{\precons}{p_{\rm{reconstruct}}}
+
+\newcommand{\laplace}{\mathrm{Laplace}} % Laplace distribution
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Ls}{\mathcal{L}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\emp}{\tilde{p}}
+\newcommand{\lr}{\alpha}
+\newcommand{\reg}{\lambda}
+\newcommand{\rect}{\mathrm{rectifier}}
+\newcommand{\softmax}{\mathrm{softmax}}
+\newcommand{\sigmoid}{\sigma}
+\newcommand{\softplus}{\zeta}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\standarderror}{\mathrm{SE}}
+\newcommand{\Cov}{\mathrm{Cov}}
+% Wolfram Mathworld says $L^2$ is for function spaces and $\ell^2$ is for vectors
+% But then they seem to use $L^2$ for vectors throughout the site, and so does
+% wikipedia.
+\newcommand{\normlzero}{L^0}
+\newcommand{\normlone}{L^1}
+\newcommand{\normltwo}{L^2}
+\newcommand{\normlp}{L^p}
+\newcommand{\normmax}{L^\infty}
+
+\newcommand{\parents}{Pa} % See usage in notation.tex. Chosen to match Daphne's book.
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\Tr}{Tr}
+\let\ab\allowbreak
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
