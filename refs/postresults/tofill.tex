@@ -176,8 +176,11 @@ Numerical experiments demonstrate that low-rank networks achieve faster converge
 \section{Introduction}
 \label{sec:intro}
 
-Neural networks have achieved remarkable success across a wide range of applications, including computer vision, natural language processing, scientific computing, and data-driven modeling. These advances have reshaped modern machine learning practice and enabled solutions to problems that were previously considered intractable. Despite this empirical success, theoretical understanding of neural network training remains limited.
-A central difficulty lies in the highly non-convex nature of the learning landscape. For most architectures and problem settings, the optimization process is poorly understood: it is generally unclear why gradient-based methods succeed in practice, how representations evolve during training, or under what conditions convergence can be guaranteed. As a result, much of current understanding relies on empirical observations rather than rigorous analysis.
+Neural networks have achieved remarkable success across computer vision, natural language processing, scientific computing, and data-driven modeling. Despite this empirical success, their training dynamics remain only partially understood. A central difficulty is that modern neural networks are highly non-convex: it is generally unclear why gradient-based methods find useful representations, how these representations evolve during training, and under which architectural constraints convergence to a global minimizer can still be guaranteed.
+
+This paper studies this question for low-rank neural networks with frozen random features. Low-rank structure is usually introduced as a compression device, because a factorization $W=LR^{\top}$ with $r\ll \min\{n,m\}$ reduces the number of trainable parameters and memory cost. We take a different viewpoint: low rank is also an architectural constraint that changes the mean-field dynamics and organizes feature learning through a small number of rank channels. The main theoretical question is therefore whether this structured dynamics preserves the global convergence guarantees known for full-rank mean-field models.
+
+The second motivation comes from high-frequency learning. Classical spectral-bias results show that neural networks tend to fit low-frequency components before high-frequency components \cite{rahaman2019spectral}. This is a severe limitation for oscillatory targets such as $\cos(\omega x)$ or $\cos(\omega x^2)$, where the useful signal lives at high frequency. We argue that low-rank random-feature networks provide a tractable setting in which global convergence and frequency learning can be studied together: frozen features keep a rich approximation basis, while trainable low-rank channels can specialize spatially and spectrally during training.
 
 
 
@@ -453,6 +456,14 @@ A key theoretical advance is the elimination of ad-hoc initialization. For stand
 Our RF-LR architecture is based on \cite{zhang2025structuredbalancedmulticomponentmultilayer}. Low-rank methods such as LoRA \cite{hu2021loralowrankadaptationlarge} are widely used; most theory focuses on expressivity rather than training dynamics. \cite{kamalakara2022exploringlowranktraining} study end-to-end low-rank training via reparameterization gradient descent (RGD); we train only post-activation parameters and freeze the other factor as random features. That choice yields convergence only to global minimizers and clarifies channel feature learning: each channel specializes to distinct spatial and frequency patterns.
 
 Random features provide a bridge between neural networks and kernel methods. In the mean-field width limit, fixing the first layer as random features connects the network to kernel methods governed by the neural tangent kernel (NTK) \cite{jacot2018neural}, offering tractable analyses of optimization and generalization. Our architecture embraces this by freezing the first-layer weights, so that low-rank mixing layers can learn task-specific representations atop a fixed random feature basis. Recent work establishes that low-rank structure suffices for the MLP NTK \cite{author2024lowrankntk}, while our results extend this to mean-field dynamics and global convergence. Together, these advances show that, both in NTK and mean-field regimes, low-rank networks can match the optimization guarantees of their full-rank counterparts.
+
+\paragraph{Bottleneck Rank and Optimal Rank}
+
+Recent work suggests a theoretical way to define the optimal low rank. Jacot~\cite{jacot2022implicitrank} shows that the representation cost of large-depth homogeneous networks converges toward a nonlinear notion of rank, related to Jacobian rank and bottleneck rank. The bottleneck rank is the smallest dimension $k$ through which a target can be factored as $f=h\circ g$ with $g:\Omega\to\mathbb{R}^k$. Follow-up work~\cite{jacot2023bottleneck} proves a bottleneck structure in learned features and shows that finite-depth corrections balance low dimension against regularity. In this view, the optimal rank is not always the smallest rank: it is the smallest rank that captures the target bottleneck dimension without producing an irregular rank-underestimating interpolant. This is also consistent with saddle-to-saddle dynamics in deep ReLU networks, where the first saddle escape has a low-rank bias and later saddles are conjectured to increase the effective bottleneck rank~\cite{bantzis2025saddle}.
+
+\paragraph{Spectral Bias and High-Frequency Learning}
+
+Rahaman et al.~\cite{rahaman2019spectral} showed that neural networks exhibit spectral bias: during training, low-frequency components are typically learned before high-frequency components. They also related this learning order to Fourier decay properties of ReLU networks, where continuous piecewise affine geometry creates anisotropic spectral decay. This perspective is directly relevant to the highly oscillatory functions considered here. Our contribution is complementary: rather than only measuring that high frequencies are learned late, we study how low-rank channel structure can organize feature learning and improve the recovery of oscillatory components under a fixed training budget. The rank channels observed in our experiments separate spatial locations and frequency components, suggesting that low-rank random-feature models can act as a structured mean-field mechanism for mitigating spectral bias.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% mean-field theory and proof ideas
@@ -1007,8 +1018,7 @@ We have shown that when the mean-field dynamics converges, the limit is a global
 % In the unusual situation where you want a paper to appear in the
 % references without citing it in the main text, use \nocite
 %\nocite{langley00}
-% TODO: Update bibliography file name if needed
-\bibliography{example_paper}
+\bibliography{../icml_sgdadamlandscapedynamical/example_paper}
 \bibliographystyle{icml2026}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

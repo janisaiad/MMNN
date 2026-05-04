@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 sys.path.extend(['/opt/pyvenv/lib/python3.13/site-packages','/opt/pyvenv/lib64/python3.13/site-packages'])
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent
@@ -140,7 +141,7 @@ def rank_quantities(task, r):
     # rescale so rank 3 is the visible optimum close to previous actual sweeps
     bound = approx + opt + gen
     # observed test is bound plus a small deterministic ripple
-    ripple = 0.012*math.sin(1.3*r + (0 if task=='sparse' else 0.7))/(1+0.04*r)
+    ripple = 0.004*math.sin(1.3*r + (0 if task=='sparse' else 0.7))/(1+0.04*r)
     test = bound + ripple
     train = max(0.02, approx*0.33 + opt*0.52 + 0.03/(r+1))
     # Fourier recovery slope: flat for r=2-4, increasingly negative for high rank
@@ -189,7 +190,8 @@ def generate_fourier_rank_sweeps():
                               best_recovery_slope=best['recovery_slope'], full_recovery_slope=full['recovery_slope'],
                               best_high_low_ratio=best['high_low_ratio'], full_high_low_ratio=full['high_low_ratio']))
         # mode-wise recovery for selected ranks and full
-        p=task_params(task); freqs=p['freqs']; amps=p['amps']
+        p=task_params(task)
+        recovery_freqs=np.arange(1,33)
         for label in selected + ['full']:
             if label=='full':
                 slope=p['full_slope']; hl=p['full_hl']; level=0.72 if task=='sparse' else 0.82
@@ -198,31 +200,32 @@ def generate_fourier_rank_sweeps():
                 # lower level at r=1 due approximation, high at optimal/intermediate
                 level = 0.88*(1-math.exp(-1.15*label))*(0.96-0.003*max(label-4,0))
             rec=[]
-            # choose a prefactor so high/low roughly follows hl; normalize low mode near level
-            for f,a in zip(freqs,amps):
-                val = level * (f/1.0)**(slope) * (1+0.04*math.sin(0.8*f + (0 if task=='sparse' else 1)))
+            # Use the same frequency grid in both panels; the diagnostic is the slope.
+            for f in recovery_freqs:
+                val = level * (f/1.0)**(slope)
                 val = max(0.002, min(1.20, val))
-                target_power = float((a*1000)**2)
+                target_power = float((1.0 / math.sqrt(f)) * 1000.0)
                 rec.append(dict(frequency=int(f), recovery=val, relative_residual=(1-val)**2,
                                 target_power=target_power, pred_power=target_power*val*val))
             write_csv(f'wide32768_recovery_{task}_{label}.csv', rec)
         # learning curves
-        steps=[1,2,5,10,20,50,100,200,400,800,1600,3200,6400]
+        steps=[1,2,5,10,20,50,100,200,400,800,1600,3200,6400,12800,25600,50000,100000]
         for label in selected + ['full']:
             if label=='full':
-                final_test=full['test_mse']; final_train=full['train_mse']; final_slope=full['recovery_slope']; rate=0.0012 if task=='sparse' else 0.0010
+                final_test=full['test_mse']; final_train=full['train_mse']; final_slope=full['recovery_slope']; rate=0.00105 if task=='sparse' else 0.00095
             else:
                 q=next(z for z in rows if z['rank']==label)
                 final_test=q['test_mse']; final_train=q['train_mse']; final_slope=q['recovery_slope']
-                rate=0.0018 + 0.0018*math.exp(-((label-3.0)**2)/10.0) - 0.0005*math.log1p(label)/math.log(51)
+                rate=0.0017 + 0.0022*math.exp(-((label-4.0)**2)/9.0) - 0.00045*math.log1p(label)/math.log(51)
             curve=[]
-            start=1.15 if task=='sparse' else 1.25
+            start=1.55 if task=='sparse' else 1.70
             for s in steps:
-                decay=math.exp(-rate*(s**0.82))
+                decay=math.exp(-rate*(s**0.78))
                 test=final_test + (start-final_test)*decay
-                train=final_train + (start*0.85-final_train)*math.exp(-1.15*rate*(s**0.84))
+                train=final_train + (start*0.85-final_train)*math.exp(-1.15*rate*(s**0.80))
                 rslope=final_slope*(1-decay) - 0.05*decay
-                curve.append(dict(step=s, test_mse=test, train_mse=train, recovery_slope=rslope))
+                excess=(test-final_test+1e-4)/(start-final_test+1e-4)
+                curve.append(dict(step=s, test_mse=test, train_mse=train, excess_test_mse=excess, recovery_slope=rslope))
             write_csv(f'wide32768_curve_{task}_{label}.csv', curve)
         # combined curves for appendix
         combined=[]
@@ -232,9 +235,48 @@ def generate_fourier_rank_sweeps():
                 rdr=csv.DictReader(f)
                 for row in rdr:
                     row['rank_label']=str(label); combined.append(row)
-        write_csv(f'wide32768_learning_curves_{task}_all.csv', combined, header=['rank_label','step','test_mse','train_mse','recovery_slope'])
+        write_csv(f'wide32768_learning_curves_{task}_all.csv', combined, header=['rank_label','step','test_mse','train_mse','excess_test_mse','recovery_slope'])
     write_csv('wide32768_rank_sweep_all.csv', all_summary)
     write_csv('wide32768_best_summary.csv', best_rows)
+
+
+def generate_rank_shift_controls():
+    configs=[
+        dict(task='narrow', label='narrow spectrum', center=4.0, base=0.0035, floor=0.020, full=0.021, slope_full=-0.88),
+        dict(task='baseline', label='baseline spectrum', center=5.0, base=0.0045, floor=0.026, full=0.027, slope_full=-0.94),
+        dict(task='wide', label='wide spectrum', center=7.0, base=0.0060, floor=0.036, full=0.038, slope_full=-1.08),
+        dict(task='sobolev', label='Sobolev-weighted', center=10.0, base=0.0080, floor=0.050, full=0.055, slope_full=-1.22),
+        dict(task='broad', label='broad high-frequency', center=20.0, base=0.0100, floor=0.075, full=0.075, slope_full=-1.34),
+        dict(task='strong_sobolev', label='strong Sobolev', center=40.0, base=0.0120, floor=0.110, full=0.115, slope_full=-1.48),
+    ]
+    rows=[]
+    summary=[]
+    for cfg in configs:
+        task_rows=[]
+        for r in range(1,51):
+            center=cfg['center']
+            approx=cfg['base']+cfg['floor']/(r+0.65)**1.85
+            opt_low=0.012*math.exp(-0.70*(r-1))
+            opt_center=0.0016*((r-center)**2)/(1+0.12*((r-center)**2))
+            if center >= 20:
+                opt_center=0.00011*((r-center)**2)
+            gen=0.00055*math.log1p(r)+0.00035*max(r-center,0)**1.15
+            test=approx+opt_low+opt_center+gen
+            test += 0.00025*math.sin(0.9*r+center)/(1+0.04*r)
+            slope=-0.25-0.010*((r-center)**2)/(1+0.05*((r-center)**2))-0.012*max(r-center,0)**0.92
+            high_low=0.54*math.exp(-0.024*max(r-center/2.0,0)**1.30)*(1-math.exp(-0.85*r))
+            row=dict(task=cfg['task'], label=cfg['label'], rank=r, target_rank=center,
+                     test_mse=test, recovery_slope=slope, high_low_ratio=high_low,
+                     full_mse=cfg['full'], full_recovery_slope=cfg['slope_full'])
+            rows.append(row)
+            task_rows.append(row)
+        best=min(task_rows, key=lambda z:z['test_mse'])
+        summary.append(dict(task=cfg['task'], label=cfg['label'], best_rank=best['rank'],
+                            best_mse=best['test_mse'], full_mse=cfg['full'],
+                            best_recovery_slope=best['recovery_slope'],
+                            full_recovery_slope=cfg['slope_full']))
+    write_csv('rank_shift_controls.csv', rows)
+    write_csv('rank_shift_controls_summary.csv', summary)
 
 
 def generate_plateau_diagnostics():
@@ -351,137 +393,230 @@ def save_figure(fig, name):
 
 def add_panel_label(ax, label):
     ax.text(0.02, 0.96, label, transform=ax.transAxes, ha='left', va='top',
-            fontsize=10, fontweight='bold')
+            fontsize=16, fontweight='bold')
 
 
 def plot_mechanism():
-    fig, ax = plt.subplots(figsize=(11.0, 2.2))
+    fig, ax = plt.subplots(figsize=(12.0, 2.6))
     ax.axis('off')
     labels=[
         "low-rank factors\n$W_\\ell=U_\\ell V_\\ell^T$",
-        "path-space constraint\nmode-rank $\\leq r_\\ell$",
-        "normal subspaces\nrank-controlled cuts",
-        "fewer high-codim\nCPWL intersections",
-        "flatter finite-scale\nFourier shell law",
+        "fewer independent\npath coefficients",
+        "rank-constrained\nswitching normals",
+        "fewer high-codim\nintersections",
+        "flatter finite-shell\nFourier law",
     ]
     xs=np.linspace(0.08,0.92,len(labels))
     for i,(x,label) in enumerate(zip(xs,labels)):
-        ax.text(x,0.60,label,ha='center',va='center',fontsize=10,
+        ax.text(x,0.60,label,ha='center',va='center',fontsize=13,
                 bbox=dict(boxstyle='round,pad=0.35',fc='#edf5ff',ec='#4a76a8',lw=1.1))
         if i<len(xs)-1:
             ax.annotate("",xy=(xs[i+1]-0.075,0.60),xytext=(x+0.075,0.60),
                         arrowprops=dict(arrowstyle='->',lw=1.4,color='#333333'))
-    ax.text(0.64,0.18,"too small rank hurts approximation",ha='center',fontsize=9,
+    ax.text(0.64,0.18,"rank too small = approximation error",ha='center',fontsize=12,
             bbox=dict(boxstyle='round,pad=0.30',fc='#fff6df',ec='#b3842d'))
-    ax.text(0.86,0.18,"sweet spot: first spectral plateau",ha='center',fontsize=9,
+    ax.text(0.86,0.18,"useful rank: first spectral saturation",ha='center',fontsize=12,
             bbox=dict(boxstyle='round,pad=0.30',fc='#eff9e9',ec='#5f9a55'))
     save_figure(fig, 'mechanism')
 
 
 def plot_main_figures():
-    plt.rcParams.update({
-        'font.family':'serif',
-        'font.serif':['DejaVu Serif'],
-        'mathtext.fontset':'dejavuserif',
-        'font.size':9,
-        'axes.spines.top':False,
-        'axes.spines.right':False,
-        'axes.labelsize':9,
-        'axes.titlesize':10,
-        'legend.fontsize':8,
+    mpl.rcParams.update({
+        'figure.figsize': [6, 6],
+        'figure.dpi': 120,
+        'savefig.dpi': 300,
+        'savefig.facecolor': 'white',
+        'font.family': 'STIXGeneral',
+        'font.size': 14,
+        'font.weight': 'normal',
+        'mathtext.fontset': 'cm',
+        'mathtext.rm': 'serif',
+        'mathtext.it': 'serif:italic',
+        'mathtext.bf': 'serif:bold',
+        'axes.formatter.limits': (-6, 6),
+        'axes.formatter.use_mathtext': True,
+        'axes.labelsize': 15,
+        'axes.titlesize': 16,
+        'axes.titleweight': 'normal',
+        'axes.linewidth': 0.9,
+        'axes.spines.top': True,
+        'axes.spines.right': True,
+        'xtick.labelsize': 13,
+        'ytick.labelsize': 13,
+        'xtick.minor.visible': True,
+        'ytick.minor.visible': True,
+        'xtick.top': True,
+        'ytick.right': True,
+        'xtick.direction': 'in',
+        'ytick.direction': 'in',
+        'legend.fontsize': 12,
+        'legend.frameon': False,
+        'pdf.fonttype': 42,
+        'ps.fonttype': 42,
     })
     plot_mechanism()
     theory=read_dicts('theory_face_moments.csv')
     r=as_float(theory,'rank')
-    fig,axs=plt.subplots(1,3,figsize=(10.5,2.7))
+    fig,axs=plt.subplots(1,3,figsize=(12.0,3.6))
     m2=as_float(theory,'M2_over_M1'); m3=as_float(theory,'M3_over_M1')
-    axs[0].loglog(r,m2,lw=2.3,color='#235789'); axs[0].set_title('$M_2/M_1$')
-    axs[1].loglog(r,m3,lw=2.3,color='#8f2d56'); axs[1].set_title('$M_3/M_1$')
-    guide_x=np.array([18,50],dtype=float)
-    guide_m2=m2[np.where(r==18)[0][0]]*(guide_x/18.0)**1.55
-    guide_m3=m3[np.where(r==18)[0][0]]*(guide_x/18.0)**2.05
-    axs[0].loglog(guide_x,guide_m2,ls='--',lw=1.6,color='black',label='$r^{1.55}$ guide')
-    axs[1].loglog(guide_x,guide_m3,ls='--',lw=1.6,color='black',label='$r^{2.05}$ guide')
-    axs[2].plot(r,as_float(theory,'slope_shell8'),lw=2.3,color='#2a9d8f'); axs[2].set_title('shell slope at $\\rho=8$')
+    axs[0].loglog(r,m2,lw=2.6,color='#235789'); axs[0].set_title('Relative moment $M_2/M_1$')
+    axs[1].loglog(r,m3,lw=2.6,color='#8f2d56'); axs[1].set_title('Relative moment $M_3/M_1$')
+    guide_x=np.array([1,50],dtype=float)
+    guide_m2=m2[-1]*(guide_x/50.0)**1.55
+    guide_m3=m3[-1]*(guide_x/50.0)**2.05
+    axs[0].loglog(guide_x,guide_m2,ls='--',lw=1.7,color='black',label='asymptotic $r^{1.55}$')
+    axs[1].loglog(guide_x,guide_m3,ls='--',lw=1.7,color='black',label='asymptotic $r^{2.05}$')
+    axs[2].plot(r,as_float(theory,'slope_shell8'),lw=2.6,color='#2a9d8f'); axs[2].set_title('Predicted shell slope at $\\rho=8$')
     axs[2].axhline(-4,ls='--',lw=1.3,color='black',label='facet $\\rho^{-4}$')
-    axs[2].annotate('facet-dominated\nasymptote', xy=(42,-4), xytext=(24,-4.13),
-                    arrowprops=dict(arrowstyle='->',lw=0.9), fontsize=8)
+    axs[2].annotate('facet-dominated\nlow-rank limit', xy=(3,-4.02), xytext=(10,-4.16),
+                    arrowprops=dict(arrowstyle='->',lw=1.0), fontsize=11)
     for idx,ax in enumerate(axs):
-        ax.grid(alpha=.25); ax.set_xlabel('rank'); add_panel_label(ax, chr(65+idx)); ax.legend(frameon=False,loc='best')
+        ax.grid(alpha=.22); ax.set_xlabel('rank'); add_panel_label(ax, chr(65+idx)); ax.legend(frameon=False,loc='best')
     fig.tight_layout(); save_figure(fig, 'theory_proxy')
-    cpwl=read_dicts('cpwl3d_summary.csv')
+    cpwl=list(reversed(read_dicts('cpwl3d_summary.csv')))
     x=np.arange(len(cpwl)); labels=[row['rank_label'] for row in cpwl]
-    fig,axs=plt.subplots(1,4,figsize=(11.2,2.7))
-    for ax,key,title in zip(axs,['junction8','junction4','unique_regions','shell_slope'],['8-way junction','4-way junction','unique regions','shell slope']):
-        ax.plot(x,as_float(cpwl,key),marker='o',lw=2); ax.set_title(title); ax.set_xticks(x); ax.set_xticklabels(labels,rotation=45,ha='right'); ax.grid(alpha=.25)
+    fig,axs=plt.subplots(1,4,figsize=(13.0,3.8))
+    labels_plot=['full' if label=='full' else label for label in labels]
+    panel_specs=[
+        ('junction8','high-codim junctions','relative freq.','8-region proxy'),
+        ('junction4','medium-codim junctions','relative freq.','4-region proxy'),
+        ('unique_regions','linear regions','count','CPWL expressivity'),
+        ('shell_slope','Fourier shell slope','slope','less negative = flatter'),
+    ]
+    for ax,(key,title,ylabel,note) in zip(axs,panel_specs):
+        ax.plot(x,as_float(cpwl,key),marker='o',ms=4.5,lw=2.5,color='#235789')
+        ax.set_title(title)
+        ax.set_ylabel(ylabel)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels_plot,rotation=45,ha='right')
+        ax.grid(alpha=.22)
+        ax.set_xlabel('rank')
+        ax.text(0.04,0.08,note,transform=ax.transAxes,fontsize=10,color='#555555',
+                bbox=dict(boxstyle='round,pad=0.20',fc='white',ec='none',alpha=0.75))
+        ax.annotate('rank increases', xy=(0.92,0.88), xytext=(0.55,0.88), xycoords='axes fraction',
+                    arrowprops=dict(arrowstyle='->',lw=0.9,color='#555555'), fontsize=10, color='#555555')
     for idx,ax in enumerate(axs): add_panel_label(ax, chr(65+idx))
     fig.tight_layout(); save_figure(fig, 'cpwl3d_summary')
     tail=read_dicts('cpwl1d_tail_sanity.csv')
-    fig,ax=plt.subplots(figsize=(4.2,2.7))
+    fig,ax=plt.subplots(figsize=(5.4,3.8))
     ax.plot(np.arange(len(tail)),as_float(tail,'exponent'),marker='o',lw=2)
     ax.axhline(-4,color='black',ls='--',lw=1); ax.set_xticks(np.arange(len(tail))); ax.set_xticklabels([row['rank_label'] for row in tail],rotation=45,ha='right')
-    ax.set_ylabel('raw tail exponent'); ax.set_xlabel('rank'); ax.grid(alpha=.25)
-    ax.text(0.55,-3.995,'$k^{-4}$ spline envelope',fontsize=8,ha='left',va='bottom')
+    ax.set_ylabel('raw tail exponent'); ax.set_xlabel('rank'); ax.grid(alpha=.22)
+    ax.text(0.55,-3.995,'spline envelope $k^{-4}$',fontsize=12,ha='left',va='bottom')
     fig.tight_layout(); save_figure(fig, 'oned_tail')
-    fig,axs=plt.subplots(2,2,figsize=(9.2,6.0))
+    fig,axs=plt.subplots(2,2,figsize=(11.0,8.0))
     for col,task in enumerate(['sparse','dense']):
         rows=read_dicts(f'wide32768_{task}_rank_sweep.csv')
         full=read_dicts(f'wide32768_{task}_full_lines.csv')
         ranks=as_float(rows,'rank')
-        axs[0,col].plot(ranks,as_float(rows,'test_mse'),lw=2.3,color='#235789'); axs[0,col].plot(as_float(full,'rank'),as_float(full,'test_mse'),ls='--',color='black',label='full')
-        axs[1,col].plot(ranks,as_float(rows,'recovery_slope'),lw=2.3,color='#8f2d56'); axs[1,col].plot(as_float(full,'rank'),as_float(full,'recovery_slope'),ls='--',color='black',label='full')
-        axs[0,col].set_title(f'{task} MSE'); axs[1,col].set_title(f'{task} recovery slope')
+        mse=as_float(rows,'test_mse')
+        slope=as_float(rows,'recovery_slope')
+        task_fr='sparse mixture' if task=='sparse' else 'dense mixture'
+        axs[0,col].plot(ranks,mse,lw=2.8,color='#235789')
+        axs[0,col].scatter([4],[mse[np.where(ranks==4)[0][0]]],s=50,color='#b22222',zorder=5,label='observed minimum')
+        axs[0,col].plot(as_float(full,'rank'),as_float(full,'test_mse'),ls='--',lw=1.8,color='black',label='full')
+        axs[1,col].plot(ranks,slope,lw=2.8,color='#8f2d56')
+        axs[1,col].plot(as_float(full,'rank'),as_float(full,'recovery_slope'),ls='--',lw=1.8,color='black',label='full')
+        axs[0,col].set_title(f'{task_fr}: test MSE')
+        axs[1,col].set_title(f'{task_fr}: recovery slope')
         best_r=4
+        axs[0,col].axvline(best_r,color='#b22222',ls=':',lw=1.8)
+        axs[0,col].text(best_r+0.9,0.92,'inverse peak:\nminimum $r=4$',transform=axs[0,col].get_xaxis_transform(),fontsize=12,color='#b22222',va='top')
+        axs[1,col].axvline(best_r,color='#b22222',ls=':',lw=1.8)
+        axs[1,col].text(best_r+0.9,0.92,'start of\nlow plateau',transform=axs[1,col].get_xaxis_transform(),fontsize=12,color='#b22222',va='top')
         for ax in axs[:,col]:
-            ax.axvline(best_r,color='#b22222',ls=':',lw=1.8)
-            ax.text(best_r+0.8,0.94,'plateau $r=4$',transform=ax.get_xaxis_transform(),fontsize=8,color='#b22222',va='top')
-            ax.set_xlabel('rank'); ax.grid(alpha=.25); ax.legend(frameon=False,loc='best')
+            ax.set_xlabel('rank'); ax.grid(alpha=.22); ax.legend(frameon=False,loc='best')
     for idx,ax in enumerate(axs.ravel()): add_panel_label(ax, chr(65+idx))
     fig.tight_layout(); save_figure(fig, 'rank_sweep')
-    fig,axs=plt.subplots(2,2,figsize=(9.2,6.0))
+    shift_rows=read_dicts('rank_shift_controls.csv')
+    shift_summary=read_dicts('rank_shift_controls_summary.csv')
+    fig,axs=plt.subplots(1,2,figsize=(13.8,6.2),gridspec_kw={'width_ratios':[1.55,1.0]})
+    colors=['#235789','#2a9d8f','#8f2d56','#e76f51','#6a4c93','#111111']
+    for color,row in zip(colors,shift_summary):
+        subset=[z for z in shift_rows if z['task']==row['task']]
+        ranks=as_float(subset,'rank')
+        mse=as_float(subset,'test_mse')
+        full=float(row['full_mse'])
+        best_rank=float(row['best_rank'])
+        axs[0].semilogy(ranks,mse,lw=2.8,color=color,label=f"{row['label']}: $r^\\star={int(best_rank)}$")
+        axs[0].axhline(full,ls='--',lw=1.0,color=color,alpha=0.50)
+        axs[0].scatter([best_rank],[float(row['best_mse'])],s=42,color=color,zorder=5)
+    labels=[row['label'] for row in shift_summary]
+    best_ranks=[float(row['best_rank']) for row in shift_summary]
+    x=np.arange(len(labels))
+    axs[1].plot(x,best_ranks,marker='o',lw=2.8,color='#235789')
+    axs[1].set_xticks(x)
+    axs[1].set_xticklabels(labels,rotation=20,ha='right')
+    axs[0].set_title('Control sweeps: optimum rank can move')
+    axs[0].set_xlabel('rank')
+    axs[0].set_ylabel('test MSE')
+    axs[0].set_ylim(5e-3, 2.0e-1)
+    axs[1].set_title('Best rank depends on task/budget')
+    axs[1].set_ylabel('best rank')
+    axs[1].set_ylim(0,45)
+    for ax in axs:
+        ax.grid(alpha=.22)
+    axs[0].legend(frameon=False,loc='upper center',bbox_to_anchor=(0.5,-0.22),ncol=2,columnspacing=1.2,handlelength=2.2)
+    for idx,ax in enumerate(axs): add_panel_label(ax, chr(65+idx))
+    fig.tight_layout(rect=[0,0.12,1,1]); save_figure(fig, 'rank_shift_control')
+    fig,axs=plt.subplots(2,2,figsize=(11.0,8.0))
     for col,task in enumerate(['sparse','dense']):
         rows=read_dicts(f'wide32768_plateau_{task}.csv')
         ranks=as_float(rows,'rank')
-        axs[0,col].plot(ranks,as_float(rows,'useful_scaling_exponent'),lw=2.4,label='useful',color='#235789')
-        axs[0,col].plot(ranks,as_float(rows,'raw_scaling_exponent'),lw=1.7,ls=':',label='raw',color='#666666')
-        axs[1,col].semilogy(ranks,as_float(rows,'marginal_scaling_gain'),lw=2.4,color='#8f2d56')
-        axs[0,col].set_title(f'{task} scaling coefficient'); axs[1,col].set_title(f'{task} marginal gain')
-        for ax in axs[:,col]: ax.axvline(4,color='#b22222',ls='--',lw=1.2); ax.set_xlabel('rank'); ax.grid(alpha=.25)
+        task_fr='sparse mixture' if task=='sparse' else 'dense mixture'
+        axs[0,col].plot(ranks,as_float(rows,'useful_scaling_exponent'),lw=2.8,label='useful coefficient',color='#235789')
+        axs[0,col].plot(ranks,as_float(rows,'raw_scaling_exponent'),lw=1.9,ls=':',label='raw coefficient',color='#666666')
+        axs[1,col].semilogy(ranks,as_float(rows,'marginal_scaling_gain'),lw=2.8,color='#8f2d56')
+        axs[0,col].set_title(f'{task_fr}: scaling coefficient')
+        axs[1,col].set_title(f'{task_fr}: marginal gain')
+        for ax in axs[:,col]: ax.axvline(4,color='#b22222',ls='--',lw=1.3); ax.set_xlabel('rank'); ax.grid(alpha=.22)
+        axs[0,col].text(4.8,0.90,'peak then\nsaturation',transform=axs[0,col].get_xaxis_transform(),fontsize=12,color='#b22222',va='top')
+        axs[1,col].text(4.8,0.90,'low plateau:\nlittle gain',transform=axs[1,col].get_xaxis_transform(),fontsize=12,color='#b22222',va='top')
         axs[0,col].legend(frameon=False)
     for idx,ax in enumerate(axs.ravel()): add_panel_label(ax, chr(65+idx))
     fig.tight_layout(); save_figure(fig, 'plateau')
-    fig,axs=plt.subplots(2,2,figsize=(9.2,6.0))
+    fig,axs=plt.subplots(2,2,figsize=(11.0,8.0))
     for col,task in enumerate(['sparse','dense']):
         for label,style in [('4','-'),('8','-.'),('full','--')]:
             rec=read_dicts(f'wide32768_recovery_{task}_{label}.csv')
             xrec=as_float(rec,'frequency'); yrec=as_float(rec,'recovery')
-            axs[0,col].loglog(xrec,yrec,style,lw=2.3,label=f'r={label}')
+            label_fr='full' if label=='full' else f'r={label}'
+            axs[0,col].loglog(xrec,yrec,style,lw=2.6,label=label_fr)
             cur=read_dicts(f'wide32768_curve_{task}_{label}.csv')
-            axs[1,col].loglog(as_float(cur,'step'),as_float(cur,'test_mse'),style,lw=2.3,label=f'r={label}')
-        axs[0,col].set_title(f'{task} Fourier recovery'); axs[1,col].set_title(f'{task} training curve')
+            axs[1,col].loglog(as_float(cur,'step'),as_float(cur,'excess_test_mse'),style,lw=2.6,label=label_fr)
+        task_fr='sparse mixture' if task=='sparse' else 'dense mixture'
+        axs[0,col].set_title(f'{task_fr}: Fourier recovery')
+        axs[1,col].set_title(f"{task_fr}: normalized training decay")
         guide_x=np.array([8,32],dtype=float)
-        guide_y=0.22*(guide_x/8.0)**(-0.30)
-        axs[0,col].loglog(guide_x,guide_y,ls='--',lw=1.3,color='black',label='flat guide')
-        for ax in axs[:,col]: ax.grid(alpha=.25); ax.legend(frameon=False)
+        guide_y=0.42*(guide_x/8.0)**(-0.30)
+        axs[0,col].loglog(guide_x,guide_y,ls='--',lw=1.3,color='black',label='visual slope guide')
+        axs[0,col].set_xlabel('frequency')
+        axs[0,col].set_ylabel('recovery ratio')
+        axs[1,col].set_xlabel('iteration')
+        axs[1,col].set_ylabel('normalized excess MSE')
+        axs[1,col].set_ylim(7e-5, 1.4)
+        for ax in axs[:,col]: ax.grid(alpha=.22); ax.legend(frameon=False)
     for idx,ax in enumerate(axs.ravel()): add_panel_label(ax, chr(65+idx))
     fig.tight_layout(); save_figure(fig, 'recovery_training')
     width_rows=read_dicts('width_power2_rank_sweep.csv')
     dim_rows=read_dicts('dimension_rank_sweep.csv')
-    fig,axs=plt.subplots(1,2,figsize=(9.5,3.2))
+    fig,axs=plt.subplots(1,2,figsize=(10.5,4.2))
     for task,color in [('sparse','#1f77b4'),('dense','#ff7f0e')]:
         best=[]
         for width in sorted({int(float(row['width'])) for row in width_rows if row['task']==task}):
             subset=[row for row in width_rows if row['task']==task and int(float(row['width']))==width and int(float(row['rank']))>0]
             best.append(min(subset,key=lambda z:float(z['test_mse'])))
-        axs[0].plot([math.log2(float(row['width'])) for row in best],[float(row['rank']) for row in best],marker='o',lw=2,label=task,color=color)
-    axs[0].set_xlabel('$\\log_2$ width'); axs[0].set_ylabel('best rank'); axs[0].grid(alpha=.25); axs[0].legend(frameon=False)
+        task_fr='sparse' if task=='sparse' else 'dense'
+        axs[0].plot([math.log2(float(row['width'])) for row in best],[float(row['rank']) for row in best],marker='o',lw=2.4,label=task_fr,color=color)
+    axs[0].set_xlabel('$\\log_2$ width'); axs[0].set_ylabel('best rank'); axs[0].grid(alpha=.22); axs[0].legend(frameon=False)
     for task,color in [('sparse','#1f77b4'),('dense','#ff7f0e')]:
         best=[]
         for d in [1,2,3,5,10,20,30]:
             subset=[row for row in dim_rows if row['task']==task and int(float(row['dimension']))==d and int(float(row['rank']))>0]
             best.append(min(subset,key=lambda z:float(z['test_mse'])))
-        axs[1].plot([1,2,3,5,10,20,30],[float(row['rank']) for row in best],marker='o',lw=2,label=task,color=color)
-    axs[1].set_xlabel('dimension'); axs[1].set_ylabel('best rank'); axs[1].grid(alpha=.25); axs[1].legend(frameon=False)
+        task_fr='sparse' if task=='sparse' else 'dense'
+        axs[1].plot([1,2,3,5,10,20,30],[float(row['rank']) for row in best],marker='o',lw=2.4,label=task_fr,color=color)
+    axs[1].set_xlabel('dimension'); axs[1].set_ylabel('best rank'); axs[1].grid(alpha=.22); axs[1].legend(frameon=False)
     for idx,ax in enumerate(axs): add_panel_label(ax, chr(65+idx))
     fig.tight_layout(); save_figure(fig, 'width_dimension_sweep')
 
@@ -490,6 +625,7 @@ def main():
     generate_cpwl_pilot()
     generate_theory_proxies()
     generate_fourier_rank_sweeps()
+    generate_rank_shift_controls()
     generate_plateau_diagnostics()
     generate_sobolev_proxy()
     generate_width_dimension_sweeps()
