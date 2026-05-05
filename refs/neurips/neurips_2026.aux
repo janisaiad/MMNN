@@ -16,122 +16,148 @@
 \gdef\HyperFirstAtBeginDocument#1{#1}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\citation{rahaman2019}
+\citation{yu2022tuning}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
 \citation{mei2018,chizat2018}
 \citation{pham2021,nguyen2023}
 \citation{hu2021}
+\citation{jang2024lora}
 \citation{jacot2022implicitrank}
 \citation{jacot2023bottleneck}
 \citation{bantzis2025saddle}
-\citation{rahaman2019}
-\citation{rahaman2019}
 \@writefile{toc}{\contentsline {paragraph}{Contributions.}{2}{section*.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{section.2}\protected@file@percent }
 \newlabel{sec:related}{{2}{2}{Related Work}{section.2}{}}
 \@writefile{toc}{\contentsline {paragraph}{Mean-field convergence.}{2}{section*.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Low-rank and random features.}{2}{section*.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Bottleneck rank and implicit low-rank bias.}{2}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Spectral bias.}{2}{section*.6}\protected@file@percent }
-\citation{jordan2024muon,boreiko2025muon}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Architecture of a three-layer low-rank random-feature network. The first layer consists of frozen random features, the second layer employs a low-rank mixing matrix $L$ of rank $r\ll N$, and the third layer contains trainable weights $w_2$. The red dashed box highlights the low-rank bottleneck that reduces dimensionality from $N$ to $r$ channels.\relax }}{3}{figure.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Bottleneck rank and implicit low-rank bias.}{2}{section*.6}\protected@file@percent }
+\citation{rahaman2019}
+\citation{yu2022tuning}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Architecture of a three-layer low-rank random-feature network with frozen random features, a rank-$r$ bottleneck, and trainable output weights.\relax }}{3}{figure.caption.5}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:architecture}{{1}{3}{Architecture of a three-layer low-rank random-feature network. The first layer consists of frozen random features, the second layer employs a low-rank mixing matrix $L$ of rank $r\ll N$, and the third layer contains trainable weights $w_2$. The red dashed box highlights the low-rank bottleneck that reduces dimensionality from $N$ to $r$ channels.\relax }{figure.caption.7}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3}Freezing Some Weights Allows Global Convergence}{3}{section.3}\protected@file@percent }
-\newlabel{sec:model}{{3}{3}{Freezing Some Weights Allows Global Convergence}{section.3}{}}
-\newlabel{eq:finite-rflr}{{1}{3}{Freezing Some Weights Allows Global Convergence}{equation.3.1}{}}
+\newlabel{fig:architecture}{{1}{3}{Architecture of a three-layer low-rank random-feature network with frozen random features, a rank-$r$ bottleneck, and trainable output weights.\relax }{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Spectral bias.}{3}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Freezing Half the Weights Allows Global Convergence}{3}{section.3}\protected@file@percent }
+\newlabel{sec:model}{{3}{3}{Freezing Half the Weights Allows Global Convergence}{section.3}{}}
+\newlabel{eq:finite-rflr}{{1}{3}{Freezing Half the Weights Allows Global Convergence}{equation.3.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Mean-Field Formulation}{3}{subsection.3.1}\protected@file@percent }
+\citation{jordan2024muon,boreiko2025muon}
+\citation{nguyen2023}
 \newlabel{eq:generic-flow}{{5}{4}{Mean-Field Formulation}{equation.3.5}{}}
-\newlabel{thm:convergence}{{3.1}{4}{Well-posedness and global convergence of RF-LR training}{theorem.3.1}{}}
+\newlabel{thm:convergence}{{3.1}{4}{Well-posedness and conditional global convergence of RF-LR training}{theorem.3.1}{}}
 \newlabel{eq:proofidea-dense-product}{{7}{4}{Mean-Field Formulation}{equation.3.7}{}}
-\newlabel{eq:proofidea-relu-channel}{{8}{4}{Mean-Field Formulation}{equation.3.8}{}}
-\newlabel{eq:proofidea-conditional-zero}{{9}{4}{Mean-Field Formulation}{equation.3.9}{}}
 \citation{rahaman2019}
-\citation{rahaman2019}
-\citation{rahaman2019}
-\citation{jacot2022implicitrank,jacot2023bottleneck}
+\citation{choromanska2015,hanin2019finite}
+\newlabel{eq:proofidea-conditional-zero}{{8}{5}{Mean-Field Formulation}{equation.3.8}{}}
+\newlabel{eq:proofidea-relu-channel}{{10}{5}{Mean-Field Formulation}{equation.3.10}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Low-Rank Spectral Bias}{5}{section.4}\protected@file@percent }
 \newlabel{sec:spectral-transition}{{4}{5}{Low-Rank Spectral Bias}{section.4}{}}
-\@writefile{toc}{\contentsline {paragraph}{Related work: spectral bias.}{5}{section*.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Mechanism summary.}{5}{section*.9}\protected@file@percent }
-\newlabel{eq:optimal-rank-tradeoff}{{15}{5}{Mechanism summary}{equation.4.15}{}}
+\@writefile{toc}{\contentsline {paragraph}{Connection to spectral bias.}{5}{section*.8}\protected@file@percent }
 \citation{rahaman2019}
+\citation{jacot2022implicitrank,jacot2023bottleneck}
 \citation{rahaman2019}
-\@writefile{toc}{\contentsline {paragraph}{Face Fourier expansion.}{6}{section*.10}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Mechanism summary linking low-rank factorization, path coefficients, switching normals, CPWL faces, and finite-shell Fourier transfer.\relax }}{6}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:mechanism-summary}{{2}{6}{Mechanism summary linking low-rank factorization, path coefficients, switching normals, CPWL faces, and finite-shell Fourier transfer.\relax }{figure.caption.10}{}}
+\newlabel{eq:path-expansion}{{15}{6}{Connection to spectral bias}{equation.4.15}{}}
+\@writefile{toc}{\contentsline {paragraph}{Mechanism summary.}{6}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Face Fourier expansion.}{6}{section*.11}\protected@file@percent }
 \newlabel{eq:face-expansion}{{17}{6}{Face Fourier expansion}{equation.4.17}{}}
 \newlabel{prop:shell-law}{{4.1}{6}{Fourier shell law for CPWL networks}{theorem.4.1}{}}
-\newlabel{eq:shell-law}{{20}{6}{Fourier shell law for CPWL networks}{equation.4.20}{}}
 \citation{rahaman2019}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Mechanism behind low-rank spectral bias. Low rank reduces independent path coefficients, constrains switching normals, and suppresses high-codimension CPWL faces. This moves finite-resolution Fourier behavior toward a flatter, facet-dominated transfer, but only at an intermediate rank where approximation error is already controlled.\relax }}{7}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:mechanism-summary}{{2}{7}{Mechanism behind low-rank spectral bias. Low rank reduces independent path coefficients, constrains switching normals, and suppresses high-codimension CPWL faces. This moves finite-resolution Fourier behavior toward a flatter, facet-dominated transfer, but only at an intermediate rank where approximation error is already controlled.\relax }{figure.caption.11}{}}
-\newlabel{eq:recovery}{{22}{7}{Face Fourier expansion}{equation.4.22}{}}
+\newlabel{eq:shell-law}{{20}{7}{Fourier shell law for CPWL networks}{equation.4.20}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Experiments}{7}{section.5}\protected@file@percent }
 \newlabel{sec:experiments}{{5}{7}{Experiments}{section.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Theory proxy for the Fourier shell law. The first two panels plot relative high-codimension face moments, namely proxies for $M_2/M_1$ and $M_3/M_1$. Under generic-position assumptions, increasing rank creates more independent switching constraints, so these ratios can grow polynomially with rank. The third panel translates this into the shell law: when high-codimension terms are suppressed, the finite-shell slope stays closer to the facet-dominated $\rho ^{-4}$ energy regime; as rank grows, higher-codimension contributions make the effective slope more negative.\relax }}{8}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:theory-proxy-main}{{3}{8}{Theory proxy for the Fourier shell law. The first two panels plot relative high-codimension face moments, namely proxies for $M_2/M_1$ and $M_3/M_1$. Under generic-position assumptions, increasing rank creates more independent switching constraints, so these ratios can grow polynomially with rank. The third panel translates this into the shell law: when high-codimension terms are suppressed, the finite-shell slope stays closer to the facet-dominated $\rho ^{-4}$ energy regime; as rank grows, higher-codimension contributions make the effective slope more negative.\relax }{figure.caption.12}{}}
-\newlabel{eq:rank-risk}{{26}{8}{Experiments}{equation.5.26}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Three-dimensional CPWL geometry proxy. Theory predicts that increasing rank creates more linear regions but also more independent switching constraints, so multi-region junctions, especially the high-codimension proxy in Panel A, become more frequent. The ``empirical fraction'' axis is not a Fourier frequency: it is the fraction of sampled grid locations whose local neighborhood behaves like a multi-region junction. Panel C checks expressivity through the number of linear regions. Panel D estimates the shell-averaged Fourier slope: as high-codimension moments grow, the effective finite-shell slope becomes more negative; reducing rank suppresses these intersections and flattens the spectrum until approximation becomes limiting.\relax }}{9}{figure.caption.13}\protected@file@percent }
-\newlabel{fig:cpwl3d-main}{{4}{9}{Three-dimensional CPWL geometry proxy. Theory predicts that increasing rank creates more linear regions but also more independent switching constraints, so multi-region junctions, especially the high-codimension proxy in Panel A, become more frequent. The ``empirical fraction'' axis is not a Fourier frequency: it is the fraction of sampled grid locations whose local neighborhood behaves like a multi-region junction. Panel C checks expressivity through the number of linear regions. Panel D estimates the shell-averaged Fourier slope: as high-codimension moments grow, the effective finite-shell slope becomes more negative; reducing rank suppresses these intersections and flattens the spectrum until approximation becomes limiting.\relax }{figure.caption.13}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Rank-shift control. The best rank is task-dependent: broadening the target spectrum or increasing the finite-budget weight on high frequencies moves the optimum from the baseline value to much larger ranks, up to about $20$ or $40$ in the strongest controls. Horizontal dashed colored lines show the corresponding full-rank MSE baselines for each setting. The Sobolev-weighted setting means that the loss gives larger weight to high-frequency modes, as in Sobolev or Fourier training objectives; this makes additional rank useful for recovering oscillatory components.\relax }}{9}{figure.caption.14}\protected@file@percent }
-\newlabel{fig:rank-shift-control}{{5}{9}{Rank-shift control. The best rank is task-dependent: broadening the target spectrum or increasing the finite-budget weight on high frequencies moves the optimum from the baseline value to much larger ranks, up to about $20$ or $40$ in the strongest controls. Horizontal dashed colored lines show the corresponding full-rank MSE baselines for each setting. The Sobolev-weighted setting means that the loss gives larger weight to high-frequency modes, as in Sobolev or Fourier training objectives; this makes additional rank useful for recovering oscillatory components.\relax }{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Theory proxy for the Fourier shell law. Panels A--B show relative face-moment proxies $M_2/M_1$ and $M_3/M_1$, i.e. how much higher-codimension geometry is present relative to facets. Panel C shows the induced finite-shell slope, separating the universal codimension exponents from the rank-dependent coefficients.\relax }}{7}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:theory-proxy-main}{{3}{7}{Theory proxy for the Fourier shell law. Panels A--B show relative face-moment proxies $M_2/M_1$ and $M_3/M_1$, i.e. how much higher-codimension geometry is present relative to facets. Panel C shows the induced finite-shell slope, separating the universal codimension exponents from the rank-dependent coefficients.\relax }{figure.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Three-dimensional CPWL geometry proxy. Panels A--B show the fraction of sampled neighborhoods where many affine regions meet, using thresholds of 8 and 4 regions as empirical high- and medium-codimension junction proxies. Panel C shows the number of linear regions, and Panel D shows the estimated shell slope.\relax }}{8}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:cpwl3d-main}{{4}{8}{Three-dimensional CPWL geometry proxy. Panels A--B show the fraction of sampled neighborhoods where many affine regions meet, using thresholds of 8 and 4 regions as empirical high- and medium-codimension junction proxies. Panel C shows the number of linear regions, and Panel D shows the estimated shell slope.\relax }{figure.caption.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Rank-shift control. The left panel shows finite-budget MSE versus rank for several target/weighting regimes; the right panel shows the best rank in each regime. Dashed lines are full-rank baselines. The plot emphasizes that the useful rank moves with the spectrum and objective rather than staying fixed.\relax }}{8}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:rank-shift-control}{{5}{8}{Rank-shift control. The left panel shows finite-budget MSE versus rank for several target/weighting regimes; the right panel shows the best rank in each regime. Dashed lines are full-rank baselines. The plot emphasizes that the useful rank moves with the spectrum and objective rather than staying fixed.\relax }{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Mode-wise recovery and training curves. Panels A and C show Fourier recovery ratios $R_r(k,t)$ across frequency modes: higher and flatter curves mean that high frequencies are recovered more evenly relative to low frequencies. Panels B and D show normalized excess MSE during training, so the useful ranks are those that combine low error with flatter spectral recovery.\relax }}{8}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:recovery-training-main}{{6}{8}{Mode-wise recovery and training curves. Panels A and C show Fourier recovery ratios $R_r(k,t)$ across frequency modes: higher and flatter curves mean that high frequencies are recovered more evenly relative to low frequencies. Panels B and D show normalized excess MSE during training, so the useful ranks are those that combine low error with flatter spectral recovery.\relax }{figure.caption.15}{}}
+\citation{yu2022tuning}
+\citation{yu2022tuning}
 \bibcite{bach2017}{{1}{}{{}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{9}{section.6}\protected@file@percent }
 \bibcite{barron1993}{{2}{}{{}}{{}}}
 \bibcite{bantzis2025saddle}{{3}{}{{}}{{}}}
 \bibcite{boreiko2025muon}{{4}{}{{}}{{}}}
 \bibcite{chizat2018}{{5}{}{{}}{{}}}
-\bibcite{czarnecki2017}{{6}{}{{}}{{}}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Mode-wise recovery and training curves. The recovery ratio is $R_r(k,t)=|\setbox \z@ \hbox {\mathsurround \z@ $\textstyle f$}\mathaccent "0362{f}_{r,t}(k)|/|\setbox \z@ \hbox {\mathsurround \z@ $\textstyle f$}\mathaccent "0362{f}^\star (k)|$: values near one mean that a Fourier mode is recovered, while values near zero mean that it is missing. The legend reports the fitted log-log recovery slope $\beta $ for each displayed curve. A steep negative slope indicates that high frequencies are much less recovered than low frequencies. The theory predicts the direction of these finite-resolution slopes through the face moments $M_q$ and spectral transfer coefficients, but not a universal numerical slope independent of task, budget, and frequency window.\relax }}{10}{figure.caption.15}\protected@file@percent }
-\newlabel{fig:recovery-training-main}{{6}{10}{Mode-wise recovery and training curves. The recovery ratio is $R_r(k,t)=|\widehat f_{r,t}(k)|/|\widehat f^\star (k)|$: values near one mean that a Fourier mode is recovered, while values near zero mean that it is missing. The legend reports the fitted log-log recovery slope $\beta $ for each displayed curve. A steep negative slope indicates that high frequencies are much less recovered than low frequencies. The theory predicts the direction of these finite-resolution slopes through the face moments $M_q$ and spectral transfer coefficients, but not a universal numerical slope independent of task, budget, and frequency window.\relax }{figure.caption.15}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{10}{section.6}\protected@file@percent }
-\bibcite{diaz2016}{{7}{}{{}}{{}}}
-\bibcite{jacot2018}{{8}{}{{}}{{}}}
-\bibcite{jacot2022implicitrank}{{9}{}{{}}{{}}}
-\bibcite{jacot2023bottleneck}{{10}{}{{}}{{}}}
-\bibcite{jordan2024muon}{{11}{}{{}}{{}}}
-\bibcite{hu2021}{{12}{}{{}}{{}}}
-\bibcite{mei2018}{{13}{}{{}}{{}}}
-\bibcite{montufar2014}{{14}{}{{}}{{}}}
-\bibcite{nguyen2023}{{15}{}{{}}{{}}}
-\bibcite{pham2021}{{16}{}{{}}{{}}}
-\bibcite{rahaman2019}{{17}{}{{}}{{}}}
-\bibcite{zaslavsky1975}{{18}{}{{}}{{}}}
+\bibcite{choromanska2015}{{6}{}{{}}{{}}}
+\bibcite{czarnecki2017}{{7}{}{{}}{{}}}
+\bibcite{diaz2016}{{8}{}{{}}{{}}}
+\bibcite{glorot2010}{{9}{}{{}}{{}}}
+\bibcite{hanin2019finite}{{10}{}{{}}{{}}}
+\bibcite{jacot2018}{{11}{}{{}}{{}}}
+\bibcite{jacot2022implicitrank}{{12}{}{{}}{{}}}
+\bibcite{jacot2023bottleneck}{{13}{}{{}}{{}}}
+\bibcite{jordan2024muon}{{14}{}{{}}{{}}}
+\bibcite{hu2021}{{15}{}{{}}{{}}}
+\bibcite{jang2024lora}{{16}{}{{}}{{}}}
+\bibcite{mei2018}{{17}{}{{}}{{}}}
+\bibcite{montufar2014}{{18}{}{{}}{{}}}
+\bibcite{nguyen2023}{{19}{}{{}}{{}}}
+\bibcite{pham2021}{{20}{}{{}}{{}}}
+\bibcite{rahaman2019}{{21}{}{{}}{{}}}
+\bibcite{zaslavsky1975}{{22}{}{{}}{{}}}
+\bibcite{yu2022tuning}{{23}{}{{}}{{}}}
+\citation{nguyen2023}
+\citation{glorot2010}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Assumptions and Dense-Span Property}{19}{appendix.A}\protected@file@percent }
 \newlabel{app:assumptions}{{A}{19}{Assumptions and Dense-Span Property}{appendix.A}{}}
 \newlabel{assump:regularity}{{A.1}{19}{Bounded activations and low-rank mixing}{theorem.A.1}{}}
 \newlabel{assump:init}{{A.2}{19}{Sub-Gaussian initialization}{theorem.A.2}{}}
 \newlabel{assump:data}{{A.3}{19}{Data distribution and loss}{theorem.A.3}{}}
 \newlabel{assump:loss}{{A.3}{19}{Data distribution and loss}{theorem.A.3}{}}
-\newlabel{eq:loss-identifiability}{{29}{19}{Data distribution and loss}{equation.A.29}{}}
+\newlabel{eq:loss-identifiability}{{26}{19}{Data distribution and loss}{equation.A.26}{}}
 \newlabel{assump:diversity}{{A.4}{19}{Diversity of frozen random features}{theorem.A.4}{}}
 \newlabel{assump:lr}{{A.5}{19}{Non-degenerate limit}{theorem.A.5}{}}
-\newlabel{assump:convergence}{{A.6}{19}{Convergence in the coupling topology}{theorem.A.6}{}}
-\newlabel{eq:conv-w1-neurips}{{32}{19}{Convergence in the coupling topology}{equation.A.32}{}}
-\newlabel{eq:conv-w2-neurips}{{33}{19}{Convergence in the coupling topology}{equation.A.33}{}}
-\newlabel{thm:uap-automatic}{{A.7}{19}{Universal approximation automatically maintained}{theorem.A.7}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {B}Proof Details for Global Convergence}{20}{appendix.B}\protected@file@percent }
-\newlabel{app:global-proof}{{B}{20}{Proof Details for Global Convergence}{appendix.B}{}}
-\newlabel{eq:app-first-stationary}{{37}{20}{Proof Details for Global Convergence}{equation.B.37}{}}
-\newlabel{eq:app-Bk}{{38}{20}{Proof Details for Global Convergence}{equation.B.38}{}}
-\newlabel{eq:app-dense-product}{{39}{20}{Proof Details for Global Convergence}{equation.B.39}{}}
-\newlabel{eq:app-conditional-zero}{{40}{20}{Proof Details for Global Convergence}{equation.B.40}{}}
-\newlabel{eq:channel-coupling-gap}{{41}{20}{Proof Details for Global Convergence}{equation.B.41}{}}
-\newlabel{eq:output-coupling-gap}{{43}{20}{Proof Details for Global Convergence}{equation.B.43}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {C}Detailed Proof of the CPWL Fourier Shell Law}{20}{appendix.C}\protected@file@percent }
-\newlabel{app:cpwl-proof}{{C}{20}{Detailed Proof of the CPWL Fourier Shell Law}{appendix.C}{}}
-\newlabel{eq:first-ibp-cell-app}{{46}{21}{Detailed Proof of the CPWL Fourier Shell Law}{equation.C.46}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {D}Additional Experimental Details}{22}{appendix.D}\protected@file@percent }
-\newlabel{app:exp-details}{{D}{22}{Additional Experimental Details}{appendix.D}{}}
-\@writefile{toc}{\contentsline {paragraph}{Common synthetic target families.}{22}{section*.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:mechanism-summary}: mechanism diagram.}{22}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:theory-proxy-main}: theory proxy.}{22}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:cpwl3d-main}: three-dimensional CPWL geometry proxy.}{22}{section*.21}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{\texttt  {oned\_tail}: one-dimensional CPWL sanity check.}{23}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Removed \texttt  {rank\_sweep}: Fourier-native rank sweep.}{23}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:rank-shift-control}: rank-shift control.}{23}{section*.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:recovery-training-main}: mode-wise recovery and training curves.}{23}{section*.25}\protected@file@percent }
+\citation{nguyen2023}
+\newlabel{assump:convergence}{{A.6}{20}{Convergence in a modified $\mathcal W_4$ coupling topology}{theorem.A.6}{}}
+\newlabel{eq:conv-w1-neurips}{{29}{20}{Convergence in a modified $\mathcal W_4$ coupling topology}{equation.A.29}{}}
+\newlabel{eq:conv-w2-neurips}{{30}{20}{Convergence in a modified $\mathcal W_4$ coupling topology}{equation.A.30}{}}
+\newlabel{thm:uap-automatic}{{A.7}{20}{Universal approximation automatically maintained}{theorem.A.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Supplementary Proof of Well-Posedness}{20}{appendix.B}\protected@file@percent }
+\newlabel{app:wellposed-proof}{{B}{20}{Supplementary Proof of Well-Posedness}{appendix.B}{}}
+\newlabel{eq:lr-mixing-constant}{{31}{20}{Supplementary Proof of Well-Posedness}{equation.B.31}{}}
+\newlabel{eq:picard-map}{{34}{20}{Supplementary Proof of Well-Posedness}{equation.B.34}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 1: low-rank forward Lipschitz estimates.}{20}{section*.18}\protected@file@percent }
+\newlabel{eq:H-lr-lipschitz}{{36}{20}{Step 1: low-rank forward Lipschitz estimates}{equation.B.36}{}}
+\citation{nguyen2023}
+\@writefile{toc}{\contentsline {paragraph}{Step 2: drift Lipschitz estimates on bounded sets.}{21}{section*.19}\protected@file@percent }
+\newlabel{eq:drift-good}{{38}{21}{Step 2: drift Lipschitz estimates on bounded sets}{equation.B.38}{}}
+\newlabel{eq:picard-difference}{{39}{21}{Step 2: drift Lipschitz estimates on bounded sets}{equation.B.39}{}}
+\@writefile{toc}{\contentsline {paragraph}{Step 3: invariance of the Picard map.}{21}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 4: Picard convergence.}{21}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Step 5: uniqueness and continuation.}{21}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Proof Details for Global Convergence}{21}{appendix.C}\protected@file@percent }
+\newlabel{app:global-proof}{{C}{21}{Proof Details for Global Convergence}{appendix.C}{}}
+\citation{nguyen2023}
+\newlabel{eq:app-first-stationary}{{47}{22}{Proof Details for Global Convergence}{equation.C.47}{}}
+\newlabel{eq:app-Bk}{{48}{22}{Proof Details for Global Convergence}{equation.C.48}{}}
+\newlabel{eq:app-dense-product}{{49}{22}{Proof Details for Global Convergence}{equation.C.49}{}}
+\newlabel{eq:app-dense-product-restated}{{50}{22}{Proof Details for Global Convergence}{equation.C.50}{}}
+\newlabel{eq:app-conditional-zero}{{51}{22}{Proof Details for Global Convergence}{equation.C.51}{}}
+\newlabel{eq:channel-coupling-gap}{{52}{22}{Proof Details for Global Convergence}{equation.C.52}{}}
+\newlabel{eq:output-coupling-gap}{{54}{22}{Proof Details for Global Convergence}{equation.C.54}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Detailed Proof of the CPWL Fourier Shell Law}{23}{appendix.D}\protected@file@percent }
+\newlabel{app:cpwl-proof}{{D}{23}{Detailed Proof of the CPWL Fourier Shell Law}{appendix.D}{}}
+\newlabel{eq:first-ibp-cell-app}{{57}{23}{Detailed Proof of the CPWL Fourier Shell Law}{equation.D.57}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Additional Experimental Details}{24}{appendix.E}\protected@file@percent }
+\newlabel{app:exp-details}{{E}{24}{Additional Experimental Details}{appendix.E}{}}
+\@writefile{toc}{\contentsline {paragraph}{Common synthetic target families.}{24}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:theory-proxy-main}: theory proxy.}{24}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:cpwl3d-main}: three-dimensional CPWL geometry proxy.}{25}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{One-dimensional CPWL sanity check.}{25}{section*.26}\protected@file@percent }
+\newlabel{eq:app-recovery}{{73}{25}{One-dimensional CPWL sanity check}{equation.E.73}{}}
+\@writefile{toc}{\contentsline {paragraph}{Removed Fourier-native rank sweep.}{25}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:rank-shift-control}: rank-shift control.}{25}{section*.28}\protected@file@percent }
+\citation{yu2022tuning}
+\citation{yu2022tuning}
 \providecommand\NAT@force@numbers{}\NAT@force@numbers
-\@writefile{toc}{\contentsline {paragraph}{\texttt  {plateau}: scaling-saturation diagnostic.}{24}{section*.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{\texttt  {width\_dimension\_sweep}: width and dimension controls.}{24}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{High-frequency MMNN sweeps.}{24}{section*.28}\protected@file@percent }
-\gdef \@abspage@last{24}
+\newlabel{eq:app-rank-risk}{{79}{27}{Figure~\ref {fig:rank-shift-control}: rank-shift control}{equation.E.79}{}}
+\@writefile{toc}{\contentsline {paragraph}{Figure\nobreakspace  {}\ref  {fig:recovery-training-main}: mode-wise recovery and training curves.}{27}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scaling-saturation diagnostic.}{27}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Width and dimension controls.}{27}{section*.31}\protected@file@percent }
+\gdef \@abspage@last{27}
