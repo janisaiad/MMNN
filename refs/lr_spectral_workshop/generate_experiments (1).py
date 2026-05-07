@@ -580,9 +580,12 @@ def plot_main_figures():
     for col,task in enumerate(['sparse','dense']):
         rec_ax=axs[2*col]
         train_ax=axs[2*col+1]
+        rank4_recovery=None
         for label,style in [('4','-'),('8','-.'),('full','--')]:
             rec=read_dicts(f'wide32768_recovery_{task}_{label}.csv')
             xrec=as_float(rec,'frequency'); yrec=as_float(rec,'recovery')
+            if label=='4':
+                rank4_recovery=(xrec,yrec)
             log_x=np.log(xrec)
             log_y=np.log(np.maximum(yrec, 1e-12))
             beta=float(np.polyfit(log_x, log_y, 1)[0])
@@ -594,9 +597,17 @@ def plot_main_figures():
         task_fr='sparse mixture' if task=='sparse' else 'dense mixture'
         rec_ax.set_title(f'{task_fr}: Fourier recovery', fontsize=10)
         train_ax.set_title(f"{task_fr}: training decay", fontsize=10)
-        rec_ax.text(0.97,0.08,'higher = better',transform=rec_ax.transAxes,
-                        ha='right',va='bottom',fontsize=8.5,color='#1b6e3a',
-                        bbox=dict(boxstyle='round,pad=0.25',fc='white',ec='#1b6e3a',alpha=0.85))
+        if rank4_recovery is not None:
+            x4,y4=rank4_recovery
+            anchor_idx=max(1,len(x4)-2)
+            rec_ax.annotate('higher = better',
+                            xy=(x4[anchor_idx],y4[anchor_idx]),
+                            xytext=(0.76,0.20),
+                            textcoords='axes fraction',
+                            ha='center',va='center',fontsize=8.5,color='#1f77b4',
+                            bbox=dict(boxstyle='round,pad=0.25',fc='white',ec='#1f77b4',alpha=0.88),
+                            arrowprops=dict(arrowstyle='->',color='#1f77b4',lw=1.0,
+                                            shrinkA=2,shrinkB=2))
         rec_ax.set_xlabel('frequency')
         rec_ax.set_ylabel('recovery ratio')
         train_ax.set_xlabel('iteration')
