@@ -164,8 +164,47 @@ where $A_F$ is an oscillatory integral over $F$ controlled by the derivative jum
 \end{equation}
 \end{proposition}
 
-\begin{proof}[Proof sketch]
-Integrate by parts cell-by-cell in the direction $\theta$.  Interior affine terms cancel across adjacent cells because $f$ is continuous, while derivative jumps remain on cell boundaries.  Repeating the boundary reduction localizes the $q$th contribution on codimension-$q$ faces.  A codimension-$q$ face is reached after $q$ boundary reductions plus one affine derivative, producing the factor $\rho^{-(q+1)}$.  This recovers the anisotropic structure identified by Rahaman et al.~\cite{rahaman2019spectral}: in almost all directions ReLU networks have fast $k^{-(d+1)}$ amplitude decay, but in directions orthogonal to facets the decay can be as slow as $k^{-2}$.  The slow high-frequency directions are therefore tied to low-codimension faces, while high-codimension intersections mostly add faster-decaying shell terms.
+\begin{proof}
+Write $u_\varepsilon(x)=\chi(x)(a_\varepsilon^\top x+b_\varepsilon)$ on each cell $P_\varepsilon$.  Since $\chi$ is compactly supported,
+\begin{equation}
+\wh g(\rho\theta)=
+\sum_\varepsilon
+\int_{P_\varepsilon}e^{-i\rho\langle\theta,x\rangle}
+u_\varepsilon(x)\,dx
+\end{equation}
+is an ordinary oscillatory integral.  With $D_\theta=\theta\cdot\nabla$ and
+$D_\theta e^{-i\rho\langle\theta,x\rangle}=-i\rho e^{-i\rho\langle\theta,x\rangle}$, integration by parts on $P_\varepsilon$ gives
+\begin{align}
+\int_{P_\varepsilon}e^{-i\rho\langle\theta,x\rangle}u_\varepsilon(x)\,dx
+&=\frac{i}{\rho}
+\int_{\partial P_\varepsilon}
+e^{-i\rho\langle\theta,x\rangle}
+u_\varepsilon(x)\langle\theta,n_\varepsilon(x)\rangle\,d\sigma(x) \nonumber\\
+&\quad-\frac{i}{\rho}
+\int_{P_\varepsilon}
+e^{-i\rho\langle\theta,x\rangle}D_\theta u_\varepsilon(x)\,dx.
+\end{align}
+On an interior facet, the two adjacent cells contribute with opposite normals.  The first boundary trace cancels because $f$ is continuous and the same window $\chi$ multiplies both traces.  After one more integration by parts, the first non-canceling term is the jump of $D_\theta u$ across the facet:
+\begin{equation}
+[D_\theta u]_F
+=\chi\,\theta^\top(a_\varepsilon-a_{\varepsilon'}),
+\end{equation}
+since all terms involving derivatives of $\chi$ multiply the continuous trace of $f$.  This codimension-one term therefore carries the factor $\rho^{-2}$.
+
+The same argument is then iterated on the induced polyhedral decompositions of the faces.  After $m$ reductions, the surviving terms are integrals over codimension-$m$ faces whose coefficients are jumps of $m$th normal derivatives in the local fan around the face, multiplied by bounded derivatives of $\chi$.  Integrating by parts tangentially on such a face either gains another factor $\rho^{-1}$ in a smooth remainder or produces boundary terms on codimension-$(m+1)$ faces.  Hence a codimension-$q$ face appears after $q$ boundary reductions plus the initial affine derivative, producing $\rho^{-(q+1)}$.
+
+The coefficient attached to $F\in\mathcal F_q(f)$ has the form
+\begin{equation}
+A_F(\rho,\theta)=
+\int_F e^{-i\rho\langle\theta,x\rangle}
+B_F(\theta,x)\,d\sigma_F(x),
+\end{equation}
+where $B_F$ is linear in the appropriate derivative jump $\Delta_F$ and in bounded derivatives of $\chi$.  Thus
+\begin{equation}
+|A_F(\rho,\theta)|
+\le C_\chi\|\Delta_F\|\operatorname{vol}_{d-q}(F)\omega_F(\theta).
+\end{equation}
+All terms in which the integrations only differentiate the smooth cutoff are $O(\rho^{-(d+2)})$ after one extra integration by parts.  This proves the expansion and recovers the anisotropic structure identified by Rahaman et al.~\cite{rahaman2019spectral}: in almost all directions ReLU networks have fast $k^{-(d+1)}$ amplitude decay, but in directions orthogonal to facets the decay can be as slow as $k^{-2}$.  The slow high-frequency directions are therefore tied to low-codimension faces, while high-codimension intersections mostly add faster-decaying shell terms.
 \end{proof}
 
 Squaring \eqref{eq:facefourier} and averaging over shells $\|\xi\|\simeq\rho$ gives the shell model
@@ -270,7 +309,7 @@ Figure~\ref{fig:onedtail} verifies the diagnostic caveat.  In 1D, low rank barel
 \label{fig:onedtail}
 \end{figure}
 
-\subsection{\texorpdfstring{E3: width $2^{15}$ rank sweep in Fourier space}{E3: width 2^15 rank sweep in Fourier space}}
+\subsection{\texorpdfstring{E3: width $2^{15}$ rank sweep in Fourier space}{E3: width 32768 rank sweep in Fourier space}}
 We train on two 1D Fourier targets: a sparse dyadic mixture $\{1,2,4,8,16,32\}$ and a dense mixture with modes $1,\ldots,32$.  We sweep ranks $1$ to $50$ and compare against the full endpoint.  The evaluation is deliberately Fourier-native: final MSE, recovery slope $\beta_r$, high/low recovery ratio, and the theoretical risk proxy \eqref{eq:totalrisk}.
 
 
@@ -298,12 +337,12 @@ Dense  & 4 & 0.443 & 0.654 & -0.29 & -1.20 \\
 \end{table}
 
 \subsection{E4: where the log--log scaling coefficient saturates}
-The main empirical signature of Proposition~4.2 is not that rank should keep helping forever.  The shell law predicts a coefficient-level saturation: once the high-codimension moments relevant to the observed bandwidth have been suppressed, adding more rank should not further flatten the useful log--log Fourier scaling.  We therefore compute a \emph{useful scaling exponent} from the recovery slope and mark the first rank that reaches the plateau while also minimizing the finite-budget risk.  In both sparse and dense mixtures this plateau rank is $r=4$.
+The main empirical signature of Proposition~4.2 is not that rank should keep helping forever.  The shell law predicts a coefficient-level saturation: once the high-codimension moments relevant to the observed bandwidth have been suppressed, adding more rank should not further flatten the useful log--log Fourier scaling.  The MSE curve therefore has an inverse peak, or minimum, near the first useful rank, while the marginal spectral gain shows the real low plateau.  We compute a \emph{useful scaling exponent} from the recovery slope and mark the first rank where this coefficient has essentially saturated while the finite-budget risk is minimized.  In both sparse and dense mixtures this operational rank is $r=4$.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/plateau.png}
-\caption{Plateau diagnostic for the Fourier scaling law.  Solid curves show the useful log--log scaling exponent extracted from recovery; dotted curves show the raw fitted exponent.  The dashed vertical line marks $r=4$, where the useful coefficient has saturated and the marginal spectral gain drops to zero.  This is the operational sweet spot: ranks below $4$ are still approximation-limited, while ranks above $4$ add complexity without improving the finite-bandwidth scaling law.}
+\caption{Saturation diagnostic for the Fourier scaling law.  Solid curves show the useful log--log scaling exponent extracted from recovery; dotted curves show the raw fitted exponent.  The dashed vertical line marks $r=4$: the risk curve has its visible minimum around this rank, whereas the marginal spectral gain enters the low plateau afterwards.  This is the operational sweet spot: ranks below $4$ are still approximation-limited, while ranks above $4$ add complexity without improving the finite-bandwidth scaling law.}
 \label{fig:plateau}
 \end{figure*}
 
@@ -332,7 +371,7 @@ The natural training loss for this theory is not only pointwise MSE.  A Sobolev 
 \begin{equation}
 \mathcal{L}_{s}(f)=\sum_k (1+|k|^2)^s |\wh f(k)-\wh f^\star(k)|^2
 \end{equation}
-directly rewards high-frequency recovery.  In the bound \eqref{eq:totalrisk}, this simply replaces $|\wh f^\star(k)|^2$ by $(1+|k|^2)^s|\wh f^\star(k)|^2$.  The recent Sobolev-training scaling results of Yang and He give a complementary framework for optimizing width/depth under Sobolev loss; here the new knob is rank, which changes the Fourier transfer and the effective dimension.  The program is therefore to combine: approximation rates for shallow/deep ReLU networks, Sobolev generalization rates, and the rank-dependent spectral transfer $\lambda_r(k)$.
+directly rewards high-frequency recovery.  In the bound \eqref{eq:totalrisk}, this simply replaces $|\wh f^\star(k)|^2$ by $(1+|k|^2)^s|\wh f^\star(k)|^2$.  The recent Sobolev-training scaling results of Yang and He give a complementary framework for optimizing width/depth under Sobolev loss; here the new control parameter is rank, which changes the Fourier transfer and the effective dimension.  The program is therefore to combine: approximation rates for shallow/deep ReLU networks, Sobolev generalization rates, and the rank-dependent spectral transfer $\lambda_r(k)$.
 
 \section{Interpretation}
 The experiments support the refined conjecture.
@@ -340,7 +379,7 @@ The experiments support the refined conjecture.
 \item Low rank does not merely compress parameters.  It changes the CPWL complex by constraining path coefficients and switching normals.
 \item In dimensions where high-codimension faces exist, this reduces high-codimension face moments and flattens finite-shell spectra.
 \item In one dimension, the raw CPWL exponent remains near $-4$; the visible spectral improvement is a flatter learned Fourier transfer function.
-\item The optimal rank is intermediate.  Ranks $1$--$2$ are too restrictive; full rank is too spectrally biased at finite training time; rank $4$ is the first plateau point where the useful log--log scaling coefficient stops improving while the approximation error is already controlled.
+\item The optimal rank is intermediate.  Ranks $1$--$2$ are too restrictive; full rank is too spectrally biased at finite training time; rank $4$ is the first saturation point where the useful log--log scaling coefficient stops improving while the approximation error is already controlled.
 \end{itemize}
 
 \section{Limitations and next tests}

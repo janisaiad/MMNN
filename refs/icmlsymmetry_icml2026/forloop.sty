@@ -1,0 +1,21 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{forloop}[2026/04/30 local minimal forloop compatibility]
+\RequirePackage{ifthen}
+
+\newcommand{\forloop}[5][]{%
+  \setcounter{#2}{#3}%
+  \ifx\relax#1\relax
+    \def\forloop@step{\stepcounter{#2}}%
+  \else
+    \def\forloop@step{#1}%
+  \fi
+  \forloop@iterate{#4}{#5}%
+}
+
+\newcommand{\forloop@iterate}[2]{%
+  \ifthenelse{#1}{%
+    #2%
+    \forloop@step%
+    \forloop@iterate{#1}{#2}%
+  }{}%
+}
