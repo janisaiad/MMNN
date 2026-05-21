@@ -256,12 +256,10 @@ For one layer \(W=\alpha UB\), with \(U^\top U=I_r\) and \(H=\partial \mathcal L
 \dot W_B=-\eta\alpha^2UU^\top H.
 \label{eq:frozen-left-flow}
 \end{equation}
-If \(U\) is also trained on the Stiefel manifold, the normal projected component contributes
+If \(U\) is also trained on the Stiefel manifold, the normal projected component contributes, up to rotations inside \(\operatorname{span}(U)\),
 \begin{equation}
 \dot W_U
-=-\eta\alpha^2 (I-UU^\top)H B^\top B
-\quad
-\text{up to rotations inside } \operatorname{span}(U)\text{ that can be absorbed into }B.
+=-\eta\alpha^2 (I-UU^\top)H B^\top B.
 \label{eq:moving-left-flow}
 \end{equation}
 Thus moving \(U\) adds \(U\)-\(B\) interaction blocks proportional to \(B^\top B\), absent from the frozen-left model and not controlled solely by cumulants of \(G=(n/r)UU^\top\).
@@ -280,11 +278,12 @@ The RF-LR bottleneck has a different recursion,
 \end{equation}
 Here we suppress the sample pair \((x,x')\). If \((g_x^{(\ell)},g_{x'}^{(\ell)})\) is the Gaussian preactivation pair induced by the previous-layer covariance, then
 \begin{equation}
+\begin{aligned}
 \Sigma^{(\ell)}(x,x')
-:=\E\!\left[\sigma(g_x^{(\ell)})\sigma(g_{x'}^{(\ell)})\right],
-\qquad
+&:=\E[\sigma(g_x^{(\ell)})\sigma(g_{x'}^{(\ell)})],\\
 \dot\Sigma^{(\ell)}(x,x')
-:=\E\!\left[\sigma'(g_x^{(\ell)})\sigma'(g_{x'}^{(\ell)})\right].
+&:=\E[\sigma'(g_x^{(\ell)})\sigma'(g_{x'}^{(\ell)})].
+\end{aligned}
 \label{eq:rflr-sigma-definitions}
 \end{equation}
 Thus \(\Sigma^{(\ell)}\) is the NNGP covariance term injected at layer \(\ell\), while \(\dot\Sigma^{(\ell)}\) is the derivative covariance multiplying an old NTK line. At the ReLU fixed point \(\dot\Sigma^{(\ell)}\to1/2\), so an old NTK contribution is multiplied by approximately \((2r)^{-(L-k)}\). This is a different model, not a perturbation of the dense MLP.
@@ -363,35 +362,9 @@ The key point is the conditional independence introduced by the rank-channel rep
 This elementary lemma is the right-factor-only analogue of the usual width power counting. It explains why finite-rank bias terms are typically \(O(r^{-1})\) after averaging over seeds, while single-seed fluctuations are \(O_{\Pp}(r^{-1/2})\). It also explains why the exact full-rank endpoint must be treated with the projector defect \(G-I\), rather than by the informal replacement \(n\mapsto r\).
 \fi
 
-The rank-channel power counting is the usual connected-cumulant counting for iid empirical averages: a connected \(s\)-point rank vertex scales as \(r^{1-s}\). Lemma \ref{lem:rank-cumulant-counting} in Appendix \ref{app:rank-power-counting} gives the precise statement and defines the channel atom \(Z_a^{(\ell)}\). This is why finite-rank bias terms are typically \(O(r^{-1})\), while the full-rank endpoint must be treated through the projector defect \(G-I\), not by the informal replacement \(n\mapsto r\).
+The rank-channel power counting is the usual connected-cumulant counting for iid empirical averages: a connected \(s\)-point rank vertex scales as \(r^{1-s}\). Lemma \ref{lem:rank-cumulant-counting} in Appendix \ref{app:rank-power-counting} gives the precise statement and defines the channel atom \(Z_a^{(\ell)}\). This is why finite-rank bias terms are typically \(O(r^{-1})\), while the full-rank endpoint must be treated through the projector defect \(G-I\), not by the informal replacement \(n\mapsto r\). The supporting projector and operator proxy plots are deferred to Appendix \ref{app:extended-experiments}.
 
-\begin{figure}[t]
-\centering
-\begin{minipage}{0.30\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/rank_defect_gamma.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.30\linewidth}
-\centering
-\begin{tikzpicture}
-\node[anchor=south west,inner sep=0pt] (img) at (0,0)
-{\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/stiefel_covariance.png}};
-\begin{scope}[x={(img.south east)},y={(img.north west)}]
-\fill[white] (0.08,0.88) rectangle (0.92,1.0);
-\node[font=\scriptsize] at (0.5,0.945) {Stiefel projector covariance, \(n=64\)};
-\end{scope}
-\end{tikzpicture}
-\end{minipage}
-\hfill
-\begin{minipage}{0.30\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/operator_proxy_ratio.pdf}
-\end{minipage}
-\vspace{-0.5em}
-\caption{Rank-projector and operator checks. Left: the rank-defect scale \(\gamma_{n,r}\) vanishes at full rank. Middle: empirical Stiefel-projector covariance matches the closed form. Right: the normalized operator proxy \(\|Z\|_{\op}/(L^{3/2}\sqrt{m\eps})\) is approximately stable across depth.}
-\label{fig:proxy-stiefel-operator}
-\end{figure}
+
 
 \vspace{-1.0em}
 \subsection{Triangular tensor recursion}
@@ -440,33 +413,19 @@ The layer recursion is triangular at first perturbative order:
 +\mathcal S_A^{(\ell)}.
 \label{eq:tensor-triangular-recursion}
 \end{align}
+The normalized cumulant-ratio panels are reported in Appendix \ref{app:extended-experiments}; the main text keeps the log-log plots because they show the effective depth exponents directly.
 
-\begin{figure}[H]
-\centering
-\begin{minipage}{0.30\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_V_same_off_over_eps_L.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.30\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_C_same_off_over_eps_L2.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.30\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_A_same_off_over_eps_L3.pdf}
-\end{minipage}
-\vspace{-0.5em}
-\caption{True finite-network cumulants from autodiff NTKs. These scalar-output cumulants are not isolated Feynman coefficients; they test the predicted polynomial control and rank-width scaling on actual finite networks.}
-\label{fig:true-cumulants}
-\end{figure}
+
 
 The source bounds used in Proposition \ref{prop:tensor-hierarchy} are
 \begin{equation}
-\|\mathcal S_V^{(\ell)}\|\le C,\qquad
-\|\mathcal S_C^{(\ell)}\|\le C(1+\ell+\|\mathcal V_\ell\|),\qquad
-\|\mathcal S_A^{(\ell)}\|\le C(1+\ell^2+\ell\|\mathcal V_\ell\|+\|\mathcal C_\ell\|+\|\mathcal V_\ell\|^2).
+\begin{aligned}
+\|\mathcal S_V^{(\ell)}\|&\le C,\\
+\|\mathcal S_C^{(\ell)}\|&\le C(1+\ell+\|\mathcal V_\ell\|),\\
+\|\mathcal S_A^{(\ell)}\|
+&\le C(1+\ell^2+\ell\|\mathcal V_\ell\|+\|\mathcal C_\ell\|
++\|\mathcal V_\ell\|^2).
+\end{aligned}
 \label{eq:tensor-source-bounds}
 \end{equation}
 These formulas are the visible mechanism behind the hierarchy: \(V\) feeds \(D,F\), and \(D,F\) feed \(A,B\).
@@ -522,9 +481,11 @@ where \(C\) denotes the mixed NNGP-NTK block \((D,F)\), and \(A\) denotes the NT
 \label{prop:tensor-hierarchy}
 Assume the low-rank cumulant recursion closes on the same tensor sectors as the dense finite-width Feynman hierarchy and that the ReLU edge-of-chaos transport is uniform away from the diagonal singularity. Then the isolated tensor coordinates satisfy
 \begin{equation}
+\begin{gathered}
 V_L=O(\barE L),\qquad
-D_L,F_L=O(\barE L^2),\qquad
+D_L,F_L=O(\barE L^2),\\
 A_L,B_L=O(\barE L^3).
+\end{gathered}
 \label{eq:tensor-hierarchy}
 \end{equation}
 Consequently, the perturbative mean-NTK correction is controlled in the regime \(L^3\barE\ll 1\).
@@ -570,9 +531,10 @@ The table should be read together with the plots. On the standard long run, the 
 \centering
 \caption{Effective log-log depth slopes from the same standard long run as Figure \ref{fig:main-cumulant-loglog}, using \(L\in\{2,3,4,5,6,8,10,12,14,16,20\}\). These slopes are diagnostics of scalar-output contracted observables, not isolated diagrammatic tensor exponents.}
 \label{tab:effective-cumulant-slopes}
+\scriptsize
 \begin{tabular}{rrrr}
 \toprule
-Rank \(r\) & \(V_{\mathrm{direct}}\) & \(C_{\mathrm{direct}}\) & \(A_{\mathrm{direct}}\) \\
+\(r\) & \(V_{\rm dir}\) & \(C_{\rm dir}\) & \(A_{\rm dir}\) \\
 \midrule
 8 & \(2.01\) & \(2.03\) & \(2.06\) \\
 16 & \(1.76\) & \(1.79\) & \(1.81\) \\
@@ -590,34 +552,39 @@ For a transported off-diagonal leg, \(\lambda=3\). Indeed, the leg is multiplied
 \]
 because the logarithm of the product is \(-3\sum_{j=k+1}^{L}j^{-1}+O(1/k)\). This is the source of the exponent \(3\). Appendix \ref{app:proof-endpoint-constants} gives the ReLU moment and Riemann-sum calculation behind the mixed and NTK-NTK endpoint integrals:
 \begin{equation}
-B_\lambda=\frac1{\lambda+1}\left(5-\frac4{\lambda+2}\right),
-\qquad
-A_{\lambda,\mu}=\frac{1}{(\lambda+1)(\mu+1)}\left(5-\frac4{\lambda+2}-\frac4{\mu+2}+\frac4{\lambda+\mu+3}\right).
+\begin{aligned}
+B_\lambda&=\frac1{\lambda+1}\left(5-\frac4{\lambda+2}\right),\\
+A_{\lambda,\mu}
+&=\frac{1}{(\lambda+1)(\mu+1)}
+\left(5-\frac4{\lambda+2}-\frac4{\mu+2}
++\frac4{\lambda+\mu+3}\right).
+\end{aligned}
 \end{equation}
 Thus for off-diagonal modes,
 \begin{equation}
-V: 5,
-\qquad
-C: B_3=\frac{21}{20},
-\qquad
+\begin{gathered}
+V: 5,\qquad C: B_3=\frac{21}{20},\\
 A: A_{3,3}=\frac{173}{720}.
+\end{gathered}
 \label{eq:endpoint-constants}
 \end{equation}
 The diagonal/off-diagonal endpoint table is
 \begin{center}
+\scriptsize
 \begin{tabular}{lc}
 \toprule
-Tensor coordinate & leading coefficient \\
+Coordinate & coefficient \\
 \midrule
 \(V(e,f)\) & \(5\) \\
-\(D(e,f),F(e,f)\), transported leg diagonal & \(B_0=3\) \\
-\(D(e,f),F(e,f)\), transported leg off-diagonal & \(B_3=21/20\) \\
-\(A(e,f),B(e,f)\), both legs diagonal & \(A_{0,0}=7/3\) \\
-\(A(e,f),B(e,f)\), one diagonal and one off-diagonal leg & \(A_{0,3}=43/60\) \\
-\(A(e,f),B(e,f)\), both legs off-diagonal & \(A_{3,3}=173/720\) \\
+\(D,F\), diag. leg & \(B_0=3\) \\
+\(D,F\), off-diag. leg & \(B_3=21/20\) \\
+\(A,B\), diag./diag. & \(A_{0,0}=7/3\) \\
+\(A,B\), diag./off-diag. & \(A_{0,3}=43/60\) \\
+\(A,B\), off/off & \(A_{3,3}=173/720\) \\
 \bottomrule
 \end{tabular}
 \end{center}
+The proxy convergence panels and RF-LR memory plot are deferred to Appendix \ref{app:extended-experiments}.
 Equivalently, for four distinct generic inputs and the three pairing vectors in \eqref{eq:V-full-dictionary}--\eqref{eq:A-full-dictionary},
 \begin{align}
 \mathcal V_L
@@ -633,31 +600,7 @@ Equivalently, for four distinct generic inputs and the three pairing vectors in 
 \end{align}
 up to the finite pairing-basis projection factors already absorbed in the \(O(\barE)\) normalization. This is the calculation from which the main \(L,L^2,L^3\) hierarchy is extracted.
 
-\begin{figure}[H]
-\centering
-\begin{minipage}{0.235\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_V.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.235\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_C.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.235\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_A.pdf}
-\end{minipage}
-\hfill
-\begin{minipage}{0.235\linewidth}
-\centering
-\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/rflr_memory_suppression.pdf}
-\end{minipage}
-\vspace{-0.5em}
-\caption{Tensor constants and RF-LR memory. The first three panels show convergence to the isolated constants \(5\), \(21/20\), and \(173/720\). The last panel shows geometric suppression of old NTK memory in the RF-LR bottleneck.}
-\label{fig:proxy-constants}
-\end{figure}
+
 
 These constants are tensor coefficients after pairing-basis extraction, not arbitrary scalar-output cumulants. Direct finite-network cumulants mix Wick/Wishart terms, radial modes, readout contractions, and several Feynman sectors; Appendix \ref{app:extended-experiments} reports the corresponding log-log diagnostics.
 
@@ -724,10 +667,13 @@ A layer martingale and Matrix Freedman yield the operator form. Matrix Freedman 
 \label{thm:operator}
 Assume \(L^3\barE\le c\). Assume further that the data are well-spread in the layerwise feature bases, so the entrywise tensor variance bounds upgrade to a matrix variance proxy of order \(mL^3\barE\). With probability at least \(1-\delta\),
 \begin{equation}
+\begin{aligned}
 \|\wh\Theta_L-\Theta_{\infty,L}\|_{\op}
-\le
-C L^{3/2}\sqrt{m\barE}\,\operatorname{polylog}(m,L,1/\delta)
+&\le
+C L^{3/2}\sqrt{m\barE}\,\operatorname{polylog}(m,L,1/\delta)\\
+&\quad
 +C mL^3\barE\,\operatorname{polylog}(m,L,1/\delta).
+\end{aligned}
 \label{eq:operator-bound}
 \end{equation}
 Without the well-spread data assumption, the same argument still gives a robust bound, but the variance term is weaker:
@@ -811,9 +757,7 @@ C t\|e_0\|_2\left(L^3\sqrt{m\barE}+mL^3\barE\right)\operatorname{polylog}(m,L,1/
 dNTK and ddNTK descendants use the same Gaussian-ReLU atoms and Stiefel-projector cumulants as the NTK itself; differentiation changes deterministic leg labels, not the low-rank random vertex set. The full statement is in Appendix \ref{app:ntk-descendants}.
 
 \paragraph{Experiments.}
-The main figures above give the projector, tensor-constant, memory, and slope diagnostics next to the claims they support. Appendix \ref{app:extended-experiments} reports the remaining true finite-network empirical NTKs, the deep cumulant stress test, and exact full-rank matching.
-
-The true finite-network NTK plots, log-log cumulant panels, effective slope table, and depth-\(200\) full-rank matching table are reported in Appendix \ref{app:extended-experiments}. They support the same claims: operator deviations follow the predicted normalization, finite-network cumulants exhibit polynomial effective slopes, and the full-rank endpoint matches the dense NTK to numerical precision.
+The main text keeps the log-log cumulant panels and effective slope table, since these directly display the observed depth exponents. Appendix \ref{app:extended-experiments} reports the non-log-log proxy panels, normalized cumulant ratios, remaining true finite-network NTK plots, the deep cumulant stress test, and exact full-rank matching.
 
 \FloatBarrier
 
@@ -2110,6 +2054,84 @@ For the clean true-NTK operator and rank-defect sweep, we use width \(n=128\), s
 For direct finite-network cumulants, we again use \(n=128\), \(m=8\), \(d=16\), and ranks \(r\in\{8,16,32,64,128\}\). For every \((r,L)\), 2000 independent initializations are used. The standard long sweep uses depths \(L\in\{2,3,4,5,6,8,10,12,14,16,20\}\). The deep stress test uses \(L\in\{20,50,100,200\}\). For each initialization we compute the final hidden-feature Gram matrix \(K=h_Lh_L^\top/n\) and the empirical NTK \(\Theta=JJ^\top\). Across seeds we estimate the centered second cumulants \(V=\cumul(K,K)\), \(C=\cumul(K,\Theta)\), and \(A=\cumul(\Theta,\Theta)\) on fixed same-off-diagonal and disjoint-off-diagonal sample pairings. The log-log slopes in Table \ref{tab:effective-cumulant-slopes} are ordinary least-squares fits of \(\log|\text{cumulant}|\) against \(\log L\) over the listed depth set for each rank. These slopes are diagnostic effective exponents of contracted scalar-output observables; they are not estimates of isolated pairing-basis tensor constants.
 
 The proxy experiments in the main text are separate Monte Carlo checks of closed-form quantities. The Stiefel-projector covariance experiment uses \(n=64\), ranks \(r\in\{4,8,16,32,64\}\), and 50,000 Stiefel samples to compare \(\Cov(G_{12},G_{12})\) with \(\gamma_{n,r}\). The scalar endpoint-constant experiment uses \(\varepsilon=10^{-3}\), depths \(L\in\{8,12,16,24,32,48,64,96,128,192,256\}\), and 200,000 Monte Carlo samples to check convergence of the normalized \(V\), \(C\), and \(A\) proxies to \(5\), \(21/20\), and \(173/720\). The operator proxy uses \(m=64\) and 300 repetitions per depth to check stability of the normalization \(L^{3/2}\sqrt{m\varepsilon}\). The RF-LR memory panel uses ranks \(2,4,8,16\) and tracks the product of old-NTK transport factors over ages up to 24 layers.
+
+\subsection{Proxy and normalized diagnostics}
+The following non-log-log panels support the constants and normalizations used in the main text. They are kept here so the main ICML narrative can focus on the depth-exponent evidence.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.30\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/rank_defect_gamma.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\linewidth}
+\centering
+\begin{tikzpicture}
+\node[anchor=south west,inner sep=0pt] (img) at (0,0)
+{\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/stiefel_covariance.png}};
+\begin{scope}[x={(img.south east)},y={(img.north west)}]
+\fill[white] (0.08,0.88) rectangle (0.92,1.0);
+\node[font=\scriptsize] at (0.5,0.945) {Stiefel projector covariance, \(n=64\)};
+\end{scope}
+\end{tikzpicture}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/operator_proxy_ratio.pdf}
+\end{minipage}
+\vspace{-0.5em}
+\caption{Rank-projector and operator checks. Left: the rank-defect scale \(\gamma_{n,r}\) vanishes at full rank. Middle: empirical Stiefel-projector covariance matches the closed form. Right: the normalized operator proxy \(\|Z\|_{\op}/(L^{3/2}\sqrt{m\eps})\) is approximately stable across depth.}
+\label{fig:proxy-stiefel-operator}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.30\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_V_same_off_over_eps_L.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_C_same_off_over_eps_L2.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/true_finite_ntk_cumulants_very_long/cumulant_ratio_A_same_off_over_eps_L3.pdf}
+\end{minipage}
+\vspace{-0.5em}
+\caption{True finite-network cumulants from autodiff NTKs. These scalar-output cumulants are not isolated Feynman coefficients; they test the predicted polynomial control and rank-width scaling on actual finite networks.}
+\label{fig:true-cumulants}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.235\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_V.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.235\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_C.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.235\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/convergence_A.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.235\linewidth}
+\centering
+\includegraphics[width=0.92\linewidth]{../../data/feynman/lowrank_ntk_proxy_outputs_clean/rflr_memory_suppression.pdf}
+\end{minipage}
+\vspace{-0.5em}
+\caption{Tensor constants and RF-LR memory. The first three panels show convergence to the isolated constants \(5\), \(21/20\), and \(173/720\). The last panel shows geometric suppression of old NTK memory in the RF-LR bottleneck.}
+\label{fig:proxy-constants}
+\end{figure}
 
 \begin{figure}[H]
 \centering
