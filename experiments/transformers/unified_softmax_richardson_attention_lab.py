@@ -113,6 +113,17 @@ def set_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
+def project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def resolve_outdir(outdir: str) -> Path:
+    p = Path(outdir)
+    if p.is_absolute():
+        return p
+    return project_root() / "data" / "transformers" / p.name
+
+
 def ensure_dir(p: str | Path) -> Path:
     p = Path(p)
     p.mkdir(parents=True, exist_ok=True)
@@ -622,7 +633,7 @@ def main() -> None:
     ap.add_argument("--mode", default="single", choices=["smoke", "single", "sweep_depth", "sweep_prompt", "sweep_capacity", "sweep_method", "sweep_temperature", "sweep_precond"])
     ap.add_argument("--task", default="weak_inverse", choices=["weak_inverse", "eb_denoise"])
     ap.add_argument("--device", default="cuda")
-    ap.add_argument("--outdir", default="runs_unified_softmax_richardson")
+    ap.add_argument("--outdir", default=str(resolve_outdir("runs_unified_softmax_richardson")))
     ap.add_argument("--seed", type=int, default=0)
 
     # weak task
@@ -668,7 +679,7 @@ def main() -> None:
     args = ap.parse_args()
     set_seed(args.seed)
     device = torch.device(args.device if args.device == "cpu" or torch.cuda.is_available() else "cpu")
-    outdir = ensure_dir(args.outdir)
+    outdir = ensure_dir(resolve_outdir(args.outdir))
     csv_path = outdir / "results.csv"
 
     def weak_task(K=None, prompt=None):
