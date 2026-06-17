@@ -1,8 +1,9 @@
 \documentclass[nohyperref]{article}
 
-\usepackage{icml2026_weightsymmetry}
+\usepackage[accepted,nohyperref]{icml2026_weightsymmetry}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsthm}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{subcaption}
@@ -12,6 +13,7 @@
 \usepackage{placeins}
 
 \usetikzlibrary{arrows.meta,positioning,calc}
+\newtheorem{proposition}{Proposition}
 \setlength{\textfloatsep}{6pt plus 1pt minus 2pt}
 \setlength{\floatsep}{6pt plus 1pt minus 2pt}
 \setlength{\intextsep}{6pt plus 1pt minus 2pt}
@@ -41,7 +43,8 @@ We study an empirical phenomenon in low-rank random-feature networks: even when 
 The effect is not explained by output invariance alone.
 Low-loss counterexamples exist where the output is nearly symmetric but the learned partial functions remain asymmetric.
 We therefore analyze symmetry simultaneously in function space, representation space, and weight space.
-Across one-dimensional sum of cosines experiments and new multidimensional batch-size-one experiments, low-rank bottleneck networks exhibit a distinctive regime where symmetry is visible in late partial functions and in mirror-paired first-layer atoms with matched outgoing weights.
+Across one-dimensional sum-of-cosines reruns, multidimensional batch-size-one experiments, and new positive-bias stress tests, RF-LR networks exhibit a distinctive regime where symmetry is visible in late partial functions and in mirror-paired first-layer atoms with matched outgoing weights.
+We isolate the provable core of this observation: mirror-paired atoms with matched outgoing coefficients exactly generate invariant partial functions, and approximate mirror pairing gives an explicit defect bound.
 \end{abstract}
 
 \section{Question}
@@ -136,6 +139,29 @@ The architectural bias is not an explicit equivariance constraint.
 The first random-feature layer is sampled asymmetrically, and mini-batches contain a single point.
 Nevertheless, the trained low-rank channel weights can organize mirror-related atoms into an approximately symmetric representation.
 
+\paragraph{Provable core.}
+The empirical claim is about optimization: RF-LR training often finds mirror-organized weights.
+The clean theorem is the implication from mirror organization to internal symmetry.
+For $p(x)=\sum_{j=1}^{W}c_j\sigma(a_j^\top x+b_j)$, write $\bar j$ for the atom nearest to $(-a_j,b_j)$.
+
+\begin{proposition}[Mirror atoms imply symmetric partials]
+\label{prop:mirror-bound}
+Assume the domain satisfies $\lVert x\rVert\le R$ and $\sigma$ is $1$-Lipschitz.
+If atoms are exactly paired, $a_{\bar j}=-a_j$, $b_{\bar j}=b_j$, and $c_{\bar j}=c_j$ for every pair, then $p(x)=p(-x)$.
+More generally, if $\lVert a_{\bar j}+a_j\rVert\le\delta_a$, $|b_{\bar j}-b_j|\le\delta_b$, $|c_{\bar j}-c_j|\le\eta$, and $|c_j|\le C$, then
+\[
+|p(x)-p(-x)|
+\le
+\eta\sum_{j=1}^{W}|\sigma(a_j^\top x+b_j)|
+  + CW(\delta_a R+\delta_b).
+\]
+The same statement applies coordinatewise to each bottleneck partial.
+\end{proposition}
+
+The proof is a direct pairing argument plus Lipschitz continuity of ReLU, and the exact statement propagates through RF-LR blocks by induction.
+A full optimization theorem can therefore target the remaining step: under a symmetric distribution, show that the bottleneck mixer suppresses the anti-symmetric channel component.
+The experiments test the two measurable premises of that theorem: small partial defects and small mirror-coefficient mismatch.
+
 \input{tables_generated}
 
 \section{Evidence}
@@ -147,13 +173,6 @@ This makes the task a controlled probe of whether RF-LR discovers even symmetry 
 Across six reliable low-loss runs, final test MSE ranges from $1.94\cdot10^{-5}$ to $3.26\cdot10^{-3}$.
 Output even defects range from $4.1\cdot10^{-6}$ to $8.0\cdot10^{-4}$, while active last-layer partial even defects range from $6.24\cdot10^{-5}$ to $5.22\cdot10^{-4}$.
 This is the cleanest evidence that the learned symmetry is internal, not only an output coincidence.
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=0.98\linewidth]{results/paper_assets/paper_sumcos_targets.png}
-\caption{Two one-dimensional sum of cosines targets used as controlled even functions. The smooth target tests low-frequency symmetry recovery; the hard target stresses high-frequency fitting while preserving the same $x\mapsto -x$ symmetry.}
-\label{fig:sumcos-targets}
-\end{figure}
 
 \begin{figure*}[!t]
 \centering
@@ -168,7 +187,7 @@ This is the cleanest evidence that the learned symmetry is internal, not only an
 \end{figure*}
 
 \paragraph{Counterexamples are useful.}
-The completed checkpoint set separates into 12 partial-symmetric, 28 output-only/asymmetric, 92 intermediate, and 9 underfit runs.
+The completed checkpoint set contains 149 one-dimensional RF-LR reruns: 12 partial-symmetric, 28 output-only/asymmetric, 100 intermediate, and 9 underfit runs.
 For example, one rank-5 depth-3 $f_2$ run reaches test MSE $9.53\cdot10^{-4}$ with partial defect $2.62\cdot10^{-5}$.
 In contrast, a rank-10 depth-1 $f_1$ run reaches test MSE $1.17\cdot10^{-4}$ but partial defect $2.17$.
 Thus low output loss does not force internal symmetry; the positive low-rank regime is a real representation phenomenon.
@@ -180,35 +199,43 @@ Thus low output loss does not force internal symmetry; the positive low-rank reg
 \label{fig:mismatch}
 \end{figure}
 
-\paragraph{Batch-one multidimensional stress test.}
+\paragraph{Batch-one multidimensional stress tests.}
 We then stress-test the strongest claim in two and three dimensions: symmetry can emerge from a fully asymmetric stochastic stream.
-All runs below use batch size one, non-paired uniform training samples, Adam, width $512$, and low-rank bottlenecks with rank $8$ or $16$.
+The main runs use batch size one, non-paired uniform training samples, Adam, width $512$, and bottlenecks with rank $8$ or $16$, with rank-$64/128$ RF-LR and matched MLP controls.
 The training algorithm is deliberately simple: sample all random-feature matrices $A^{(\ell)}$ and biases $b^{(\ell)}$ once, freeze them, initialize only the channel mixers $B^{(\ell)}$, then run gradient descent on MSE through the full RF-LR forward map while updating only $B^{(\ell)}$.
 For the multidimensional runs each optimizer step sees one unpaired point $x$, never the pair $(x,-x)$; best checkpoints are selected by held-out MSE, and all output, partial, and mirror-symmetry defects are computed only after training on a separate symmetric evaluation grid.
 The 2D Gaussian run with rank $8$ and depth $3$ reaches test MSE $1.20\cdot10^{-5}$, output defect $6.91\cdot10^{-5}$ under $x\mapsto -x$, and active last-partial defect $6.62\cdot10^{-4}$.
 The 3D quadratic run with rank $8$ and depth $3$ reaches test MSE $1.92\cdot10^{-4}$, output defect $9.76\cdot10^{-4}$, and active last-partial defect $1.81\cdot10^{-3}$.
+On the 2D quadratic target, increasing rank to $128$ keeps the output fit strong but worsens active partial symmetry to $1.37\cdot10^{-2}$, while a matched MLP reaches test MSE $7.5\cdot10^{-5}$ with active partial defect $2.4\cdot10^{-1}$.
 Thus the phenomenon survives beyond the original one-dimensional setting while using rank-to-width ratio $8/512=1.56\%$.
+
+We also ran 24 new positive-bias stress tests with width $256$, $N=128$, two seeds, 2D/3D Gaussian and quadratic targets, RF-LR ranks $8$ and $128$, and matched MLPs.
+The training distribution deliberately concentrates samples in the positive orthant, with mean nearest-mirror distance $0.22$ in 2D and $0.54$--$0.60$ in 3D.
+Among low-loss positive-bias runs, MLPs reach median test MSE $3.28\cdot10^{-4}$ but median active partial defect $1.30$.
+RF-LR reaches comparable median test MSE ($3.59\cdot10^{-4}$ for rank $8$, $2.93\cdot10^{-4}$ for rank $128$) with active partial defects $1.13\cdot10^{-2}$ and $6.57\cdot10^{-3}$.
+So the new controls support the representation claim sharply: ordinary MLPs can fit the same asymmetric stream, but their hidden features remain asymmetric by two orders of magnitude.
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.83\linewidth]{results/paper_assets/paper_representative_bars.png}
-\caption{Representative multidimensional RF-LR results as bars instead of a table. Blue bars are low-rank runs; orange bars are high-rank controls. Lower is better for all three metrics.}
-\label{fig:main-results-bars}
+\includegraphics[width=0.98\linewidth]{results/paper_assets/paper_model_partial_boxes.png}
+\caption{Aggregate multidimensional evidence over low-loss runs. RF-LR low rank means rank $8$ or $16$; RF-LR high rank means rank $64$ or $128$. Under both unpaired-uniform and positive-bias training, RF-LR partial functions are far more symmetric than MLP hidden features at comparable loss.}
+\label{fig:model-boxes}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.83\linewidth]{results/paper_assets/paper_multidim_dashboard.png}
-\caption{Multidimensional batch-one diagnostic. Circles are low-rank RF-LR, squares are higher-rank RF-LR. The three panels compare test error, output symmetry, and active-partial symmetry.}
-\label{fig:multidim}
+\includegraphics[width=0.98\linewidth]{results/paper_assets/paper_positive_bias_dashboard.png}
+\caption{New positive-bias stress test. Circles are rank-$8$ RF-LR, squares are rank-$128$ RF-LR, and triangles are MLP controls. Colors distinguish Gaussian and quadratic targets. MLPs can fit the output but stay high in active partial defect; RF-LR stays in the low-defect regime.}
+\label{fig:positive-bias}
 \end{figure}
 
 Figure~\ref{fig:mismatch} is the main weight-space evidence.
 It does not plot weights directly; instead it compresses the first-layer mirror-pair test into point size, so a good run should sit in the lower-left and avoid large markers.
 This is precisely the regime where RF-LR has low loss, symmetric partials, and comparatively matched outgoing weights on mirror atoms.
-Figure~\ref{fig:multidim} is the main multidimensional empirical summary: the important region is the lower-left corner, where both prediction error and symmetry defect are small.
-Its conclusion is that batch-one asymmetric training can recover symmetric outputs and, in the best low-rank RF-LR cases, symmetric internal partial functions.
-Figure~\ref{fig:main-results-bars} adds the rank ablation through low-rank and high-rank bars: more rank is not automatically better for internal symmetry, so the effect is not merely explained by capacity.
+Figures~\ref{fig:model-boxes} and~\ref{fig:positive-bias} are the main multidimensional summaries.
+They show that batch-one asymmetric training can recover symmetric outputs and, for RF-LR, symmetric internal partial functions.
+The rank comparison is deliberately nuanced: more rank is not a monotone explanation, and under the positive-bias stress test rank $128$ can also recover symmetric partials.
+The robust separation is between RF-LR bottleneck representations and unconstrained MLP hidden representations.
 
 The key message for weight-space symmetries is that useful symmetries need not be imposed as exact architectural equivariances or explicit path-norm constraints \citep{neyshabur2015path}.
 In low-rank random-feature networks, the optimizer can discover approximate, data-dependent symmetry in the trained low-rank weights.
@@ -216,10 +243,11 @@ This suggests a practical analysis program: compare models not only by their fun
 
 \section{Conclusion and Limitations}
 
-Our final conclusion is that low-rank RF-LR networks recover functional symmetry better in the regimes where the target is actually learned, and that this recovery leaves a measurable trace in weight space.
-The strongest evidence is not just small output defect: successful low-rank runs also show small active partial-function defects, meaning the symmetry is present inside the learned representation.
-The rank ablation shows that simply increasing rank does not monotonically improve this internal symmetry, and the mirror-pair measurements show the corresponding parameter signature: nearest mirrored atoms have more compatible outgoing low-rank weights in the successful regime.
-Thus the low-rank bottleneck acts as an implicit symmetry-recovery bias rather than merely as a parameter-count reduction.
+Our final conclusion is that RF-LR networks recover functional symmetry better in the regimes where the target is actually learned, and that this recovery leaves a measurable trace in weight space.
+The strongest evidence is not just small output defect: successful RF-LR runs also show small active partial-function defects, meaning the symmetry is present inside the learned representation.
+The rank ablations show that simply increasing rank is not the whole explanation; the decisive separation is between RF-LR bottleneck/random-feature representations and ordinary MLP hidden features.
+The mirror-pair measurements show the corresponding parameter signature: nearest mirrored atoms have more compatible outgoing weights in the successful regime.
+Thus the RF-LR bottleneck acts as an implicit symmetry-recovery bias rather than merely as a parameter-count reduction.
 The limitation is that the mirror metric is nearest-neighbor based and only probes the first layer; it supports the weight-space interpretation but remains weaker than the partial-function evidence.
 Some harder 3D soft-axis targets still generalize poorly despite tiny training error, so the multidimensional claim is for the low-loss Gaussian and quadratic regimes, not all symmetric targets.
 
