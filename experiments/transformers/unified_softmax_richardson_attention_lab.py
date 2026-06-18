@@ -143,6 +143,26 @@ def parse_grid(s: str, typ=int) -> List:
     return [typ(x) for x in str(s).split(",") if str(x).strip()]
 
 
+def capacity_regime_triples(K: int) -> List[Tuple[str, int, int]]:
+    """(regime, heads, d_head) with H*d_h < K, = K, > K."""
+    if K == 8:
+        return [("below", 1, 4), ("at", 1, 8), ("above", 1, 16)]
+    if K == 16:
+        return [("below", 1, 8), ("at", 1, 16), ("above", 1, 32)]
+    if K == 32:
+        return [("below", 1, 16), ("at", 1, 32), ("above", 1, 64)]
+    half = max(1, K // 2)
+    return [("below", 1, half), ("at", 1, K), ("above", 1, min(2 * K, 128))]
+
+
+def capacity_regime_label(hd: int, K: int) -> str:
+    if hd < K:
+        return "below"
+    if hd == K:
+        return "at"
+    return "above"
+
+
 def batch_eye(B: int, K: int, device: torch.device, dtype: torch.dtype) -> Tensor:
     return torch.eye(K, device=device, dtype=dtype).expand(B, K, K)
 
@@ -442,15 +462,20 @@ def weak_message(
             "attn_entropy_mean": float(np.mean(entropies)) if entropies else 0.0,
         }
 
-    if method == "softmax_vector":
-        # Bridge: softmax routes equations, value is signed vector g_i r_i.
+    if method in ("softmax_vector", "softmax_vector_projected"):
+        # Bridge: softmax routes equations; values carry signed weak-form evidence.
+        # full: v_i = g_i r_i in R^K (not rank-limited by P_h)
+        # projected: v_i^{(h)} = P_h^T P_h (g_i r_i) — V capacity matches Q/K rank
         signed_values = G * residual[:, :, None]  # [B,m,K]
         slot_messages = []
         for P in Ps:
+            vals = signed_values
+            if method == "softmax_vector_projected":
+                vals = torch.einsum("dk,bmd->bmk", P, torch.einsum("dk,bmk->bmd", P, signed_values))
             Kh = torch.einsum("dk,bmk->bmd", P, G)
             logits = Kh.transpose(1, 2) / max(temperature, 1e-8)  # [B,dh,m]
             A = torch.softmax(logits, dim=-1)
-            msg = torch.einsum("bdm,bmk->bdk", A, signed_values)  # [B,dh,K]
+            msg = torch.einsum("bdm,bmk->bdk", A, vals)  # [B,dh,K]
             slot_messages.append(msg)
             entropies.append((-(A.clamp_min(1e-12) * A.clamp_min(1e-12).log()).sum(-1)).mean().item())
             S0 = logits[0].detach()
@@ -630,7 +655,7 @@ def eval_weak(task: WeakCfg, run: WeakRunCfg, device: torch.device) -> Dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", default="single", choices=["smoke", "single", "sweep_depth", "sweep_prompt", "sweep_capacity", "sweep_method", "sweep_temperature", "sweep_precond"])
+    ap.add_argument("--mode", default="single", choices=["smoke", "single", "sweep_depth", "sweep_prompt", "sweep_capacity", "sweep_method", "sweep_temperature", "sweep_precond", "sweep_vector_capacity_cond", "sweep_vector_temp_capacity_cond"])
     ap.add_argument("--task", default="weak_inverse", choices=["weak_inverse", "eb_denoise"])
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--outdir", default=str(resolve_outdir("runs_unified_softmax_richardson")))
@@ -651,7 +676,7 @@ def main() -> None:
     ap.add_argument("--eb-mixture-sep", type=float, default=2.0)
 
     # recurrent / attention
-    ap.add_argument("--method", default="linear_richardson", choices=["linear_richardson", "softmax_scalar", "softmax_vector", "softmax_eb"])
+    ap.add_argument("--method", default="linear_richardson", choices=["linear_richardson", "softmax_scalar", "softmax_vector", "softmax_vector_projected", "softmax_eb"])
     ap.add_argument("--depth", type=int, default=8)
     ap.add_argument("--heads", type=int, default=1)
     ap.add_argument("--d-head", type=int, default=16)
@@ -675,6 +700,10 @@ def main() -> None:
     ap.add_argument("--method-grid", default="linear_richardson,softmax_scalar,softmax_vector")
     ap.add_argument("--temperature-grid", default="0.1,0.2,0.5,1.0,2.0,5.0")
     ap.add_argument("--precond-grid", default="scalar_opt,scalar_lmax,jacobi,lowrank_spectral,spectral_full")
+    ap.add_argument("--cond-grid", default="10,100,1000")
+    ap.add_argument("--compare-methods-grid", default="softmax_vector,softmax_vector_projected,linear_richardson", help="methods for sweep_vector_capacity_cond")
+    ap.add_argument("--precond-sweep-grid", default="", help="comma preconds for sweep_vector_capacity_cond; empty uses --precond only")
+    ap.add_argument("--temp-sweep-grid", default="", help="comma temperatures for sweep_vector_temp_capacity_cond; empty uses --temperature only")
 
     args = ap.parse_args()
     set_seed(args.seed)
@@ -682,14 +711,14 @@ def main() -> None:
     outdir = ensure_dir(resolve_outdir(args.outdir))
     csv_path = outdir / "results.csv"
 
-    def weak_task(K=None, prompt=None):
+    def weak_task(K=None, prompt=None, cond=None, design=None):
         return WeakCfg(
             K=args.K if K is None else K,
             prompt_len=args.prompt_len if prompt is None else prompt,
             prior_var=args.prior_var,
             noise_var=args.noise_var,
-            design=args.design,
-            cond=args.cond,
+            design=args.design if design is None else design,
+            cond=args.cond if cond is None else cond,
             dtype=args.dtype,
         )
 
@@ -729,11 +758,12 @@ def main() -> None:
             seed=args.seed,
         )
 
-    def run_one(tag: str, task_override=None, run_override=None):
+    def run_one(tag: str, task_override=None, run_override=None, capacity_regime: str | None = None):
         if args.task == "weak_inverse":
             task = task_override or weak_task()
             run = run_override or weak_run()
             extra = eval_weak(task, run, device)
+            hd = run.heads * run.d_head
             row = {
                 "task": "weak_inverse",
                 "tag": tag,
@@ -747,7 +777,8 @@ def main() -> None:
                 "depth": run.depth,
                 "heads": run.heads,
                 "d_head": run.d_head,
-                "capacity_rank": run.heads * run.d_head,
+                "capacity_rank": hd,
+                "capacity_regime": capacity_regime if capacity_regime is not None else capacity_regime_label(hd, task.K),
                 "head_scheme": run.head_scheme,
                 "precond": run.precond,
                 "temperature": run.temperature,
@@ -829,6 +860,46 @@ def main() -> None:
             raise ValueError("sweep_precond is for weak_inverse")
         for pc in [x for x in args.precond_grid.split(",") if x]:
             run_one(f"precond_{pc}", run_override=weak_run(precond=pc))
+        return
+
+    if args.mode == "sweep_vector_capacity_cond":
+        if args.task != "weak_inverse":
+            raise ValueError("sweep_vector_capacity_cond is for weak_inverse")
+        methods = [x for x in args.compare_methods_grid.split(",") if x]
+        preconds = [x for x in args.precond_sweep_grid.split(",") if x] if args.precond_sweep_grid.strip() else [args.precond]
+        for K in parse_grid(args.K_grid, int):
+            for regime, H, dh in capacity_regime_triples(K):
+                for c in parse_grid(args.cond_grid, float):
+                    for pc in preconds:
+                        for method in methods:
+                            tag = f"K{K}_cond{int(c)}_{regime}_H{H}_dh{dh}_{pc}_{method}"
+                            run_one(
+                                tag,
+                                task_override=weak_task(K=K, cond=c, design="correlated"),
+                                run_override=weak_run(heads=H, d_head=dh, method=method, precond=pc),
+                                capacity_regime=regime,
+                            )
+        return
+
+    if args.mode == "sweep_vector_temp_capacity_cond":
+        if args.task != "weak_inverse":
+            raise ValueError("sweep_vector_temp_capacity_cond is for weak_inverse")
+        methods = [x for x in args.compare_methods_grid.split(",") if x]
+        preconds = [x for x in args.precond_sweep_grid.split(",") if x] if args.precond_sweep_grid.strip() else [args.precond]
+        temps = parse_grid(args.temp_sweep_grid if args.temp_sweep_grid.strip() else args.temperature_grid, float)
+        for K in parse_grid(args.K_grid, int):
+            for regime, H, dh in capacity_regime_triples(K):
+                for c in parse_grid(args.cond_grid, float):
+                    for pc in preconds:
+                        for temp in temps:
+                            for method in methods:
+                                tag = f"K{K}_cond{int(c)}_{regime}_H{H}_dh{dh}_{pc}_tau{temp}_{method}"
+                                run_one(
+                                    tag,
+                                    task_override=weak_task(K=K, cond=c, design="correlated"),
+                                    run_override=weak_run(heads=H, d_head=dh, method=method, precond=pc, temp=temp),
+                                    capacity_regime=regime,
+                                )
         return
 
 
