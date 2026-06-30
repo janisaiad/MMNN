@@ -1,0 +1,1125 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\geometry{margin=2.35cm}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+
+\newcommand{\R}{\mathbb R}
+\newcommand{\E}{\mathbb E}
+\newcommand{\op}{\mathrm{op}}
+\newcommand{\fro}{\mathrm F}
+\newcommand{\Id}{I}
+\newcommand{\wh}{\widehat}
+\newcommand{\calC}{\mathcal C}
+\newcommand{\calE}{\mathcal E}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\Span}{\operatorname{span}}
+
+\title{Replica Bounds for the PDE Encoder and Linear-Attention Decoder}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Claim}
+
+The exact task-level correspondence with the low-rank ICL regression framework
+of \cite{takanami2026lowrankicl} is:
+\[
+    \text{one task} \quad\Longleftrightarrow\quad
+    \text{one coefficient vector } z,
+\]
+and one prompt for that task is the whole collection
+\[
+    \calC_z=\{(f_i,u_i)\}_{i=1}^{m}.
+\]
+The weak rows inside the prompt are examples for the same task; they are not
+independent tasks.  There are two uses of the same replica framework.
+
+\begin{enumerate}
+    \item \textbf{Encoder ICL.}  The weak-form encoder is trained so that the
+    produced system is consistent:
+    \[
+        \wh Gz-\wh b\approx 0 .
+    \]
+    This is a low-rank regression generalization error at the level of a full
+    prompt for a fixed $z$.
+
+    \item \textbf{Decoder ICL.}  The decoder is taken to be \emph{linear}
+    attention, not softmax attention.  Linear attention implements
+    \[
+        \wh z
+        =
+        W_{\rm dec}
+        \left(\frac{K}{M}\wh G^\top\wh b\right),
+        \qquad M=mR,
+    \]
+    so $W_{\rm dec}$ is a learned spectral preconditioner for the empirical
+    Gram matrix.  The paper's replica solution is precisely a distributional
+    formula for this learned preconditioner.
+\end{enumerate}
+
+The resulting end-to-end bound has the exact form
+\[
+    \boxed{
+    \frac1K\E\|\wh z-z\|_2^2
+    \;\lesssim\;
+    E_{\rm dec}^{\rm rep,GP}
+    +
+    B_{\rm dec}^2 C_{\rm GP}
+    E_{\rm enc}^{\rm rep,GP}
+    }
+\]
+and
+\[
+    \boxed{
+    \E\frac{\|\wh u_\star-u_\star\|_2^2}{\|u_\star\|_2^2}
+    \;\lesssim\;
+    C_{\rm elliptic}^2 B_\Psi^2K
+    \left(
+    E_{\rm dec}^{\rm rep,GP}
+    +
+    B_{\rm dec}^2 C_{\rm GP}
+    E_{\rm enc}^{\rm rep,GP}
+    \right)
+    +\text{dictionary/gauge bias}.
+    }
+\]
+Here $E_{\rm enc}^{\rm rep,GP}$ and $E_{\rm dec}^{\rm rep,GP}$ denote the
+replica errors for the exact GP-induced prompt law.  They reduce to the closed
+forms in the paper, with $D$ replaced by $K$, only in the special case where
+the weak-row design is task-independent and isotropic.
+
+\section{Exact Gaussian PDE Prompt Model}
+
+We work with the discretized elliptic family
+\[
+    A(z)=A_0+\sum_{k=1}^{K} z_kA_k,
+    \qquad
+    A(z)u=f.
+\]
+Assume a Gaussian low-rank latent law
+\[
+    z=\sqrt{\frac{K}{r_z}}\,B\eta,
+    \qquad
+    \eta\sim N(0,I_{r_z}),
+    \qquad
+    B^\top B=I_{r_z},
+\]
+so the task rank is $r_z$ and $\rho_z=r_z/K$.  The full-rank Gaussian case is
+included by taking $r_z=K$.
+
+Assume the forcing is a Gaussian process.  After discretization,
+\[
+    f_i\sim N(0,\Sigma_f),
+    \qquad
+    u_i=A(z)^{-1}f_i .
+\]
+For a test function $v_r$, define the exact weak row and label, with
+$j=(i,r)$,
+\[
+    g_{j,k}:=\langle A_ku_i,v_r\rangle,
+    \qquad
+    b_j:=\langle f_i-A_0u_i,v_r\rangle .
+\]
+Then, by the PDE,
+\[
+    b_j=g_j^\top z .
+\]
+Thus, for a fixed task $z$, the whole prompt induces the exact linear system
+\[
+    G_z z=b_z,
+    \qquad
+    G_z\in\R^{M\times K},
+    \qquad
+    M=mR.
+\]
+Conditionally on $z$, every row $g_j$ is Gaussian because it is a linear image
+of the Gaussian forcing $f_i$:
+\[
+    g_j\mid z
+    \sim
+    N\!\left(0,H_r(z)\right),
+    \qquad
+    H_r(z)
+    =
+    B_rA(z)^{-1}\Sigma_fA(z)^{-\top}B_r^\top,
+\]
+where $(B_ru)_k=\langle A_ku,v_r\rangle$.
+The exact task-conditional prompt law is therefore
+\[
+    P_z(dG,db)
+    =
+    P_z(dG)\,
+    \delta_{Gz}(db),
+\]
+where $P_z(dG)$ is the Gaussian law determined by the matrices
+$\{H_r(z)\}_{r=1}^R$ and the repeated forcing draws.
+
+\begin{proposition}[exact correspondence]
+\label{prop:exactcorrespondence}
+The PDE ICL training distribution is exactly a low-rank task distribution over
+prompts:
+\[
+    z^\mu\sim N(0,\Sigma_z),
+    \qquad
+    \calC^\mu\sim P_{z^\mu},
+    \qquad
+    b^\mu=G^\mu z^\mu .
+\]
+The task is $z^\mu$; the prompt is the whole matrix--vector pair
+$(G^\mu,b^\mu)$ generated from the many PDE pairs
+$\{(f_i^\mu,u_i^\mu)\}_{i=1}^{m}$.
+\end{proposition}
+
+\begin{proof}
+For every $i,r$,
+\[
+    b_{(i,r)}
+    =
+    \langle f_i-A_0u_i,v_r\rangle
+    =
+    \left\langle
+    \sum_{k=1}^K z_k A_ku_i,
+    v_r
+    \right\rangle
+    =
+    \sum_{k=1}^K z_k g_{(i,r),k}.
+\]
+Stacking all $mR$ rows gives $b=Gz$.  Since $f_i$ is Gaussian and
+$u_i=A(z)^{-1}f_i$, $G$ is conditionally Gaussian given $z$, with covariance
+given above.  This proves the prompt-level correspondence.
+\end{proof}
+
+\begin{remark}
+With $f\sim GP$, the design law $P_z(dG)$ depends on the task through
+$A(z)^{-1}$.  Therefore the exact GP-forcing model is not the paper's
+task-independent iid Gaussian design unless $H_r(z)$ is independent of $z$ and
+isotropic after normalization.  The paper is recovered exactly in that special
+case, or in the alternative data-generation convention where $u_i$ is sampled
+from a task-independent GP and $f_i=A(z)u_i$.
+\end{remark}
+
+\section{Task Diversity and GP-Induced Difficulty}
+
+The exact task diversity object is the empirical covariance of the distinct
+pretraining tasks:
+\[
+    S_z
+    :=
+    \frac1{M_0}\sum_{\mu=1}^{M_0}z^\mu(z^\mu)^\top .
+\]
+In the population model, $S_z$ concentrates around
+$\Sigma_z=\E[zz^\top]$.  Its rank, or more precisely its spectrum, is the exact
+analogue of the paper's low-rank task matrix.  Thus
+\[
+    r_z=\operatorname{rank}(\Sigma_z),
+    \qquad
+    \rho_z=\frac{r_z}{K},
+    \qquad
+    \kappa_z=\frac{M_0}{K}.
+\]
+The task-diversity transition is
+\[
+    M_0\simeq r_z
+    \qquad
+    \text{or equivalently}
+    \qquad
+    \kappa_z\simeq\rho_z .
+\]
+
+The GP forcing does not create new tasks.  It determines how well each task is
+observed through the prompt.  The exact observability, or prompt difficulty, is
+the collection of conditional row covariances
+\[
+    \mathcal H
+    :=
+    \{H_r(z):z\in\operatorname{supp}(\Sigma_z),\ r=1,\ldots,R\},
+    \qquad
+    H_r(z)=B_rA(z)^{-1}\Sigma_fA(z)^{-\top}B_r^\top .
+\]
+For a scalar summary one may inspect the spectrum of
+\[
+    H(z):=\frac1R\sum_{r=1}^{R}H_r(z),
+\]
+especially restricted to the active task subspace
+$\operatorname{range}(\Sigma_z)$.  Small eigenvalues of this restricted matrix
+mean that some coefficient directions are almost invisible to the GP prompts.
+This is difficulty, not diversity.
+
+\section{Replica Error Reused from the Paper}
+
+Let $\Pi\in\{\mathrm{TM},\mathrm{IDG},\mathrm{ODG}\}$ denote task
+memorization, in-distribution generalization, or out-of-distribution
+generalization.  In the notation of the paper, the exact task correspondence is
+\[
+    D\mapsto K,
+    \qquad
+    r\mapsto r_z,
+    \qquad
+    \rho=r/D\mapsto \rho_z=r_z/K,
+    \qquad
+    \kappa=M_0/D\mapsto \kappa_z=M_0/K .
+\]
+For the exact GP prompt law $P_z(dG,db)$, the same replica construction applies
+to a Hamiltonian averaged over the joint law $(z,G,b)$ with $b=Gz$.  Denote the
+resulting scalar errors by
+$E_{\rm TM}^{\rm rep,GP}$, $E_{\rm IDG}^{\rm rep,GP}$, and
+$E_{\rm ODG}^{\rm rep,GP}$.
+
+If, in addition, the prompt design is task-independent and isotropic,
+$H_r(z)=I_K/K$, the exact GP errors reduce to the paper's closed-form
+low-rank-design errors
+\[
+    E_{\rm TM}^{\rm rep}
+    =
+    1-2m+q+\frac{\bar q}{\widetilde\alpha},
+    \qquad
+    E_{\rm IDG}^{\rm rep}
+    =
+    1-2m_0+q_0+\frac{\bar q}{\widetilde\alpha},
+    \qquad
+    E_{\rm ODG}^{\rm rep}
+    =
+    1-2\bar m+\bar q+\frac{\bar q}{\widetilde\alpha},
+\]
+where $(q,m,q_0,m_0,\bar q,\bar m)$ solve the same self-consistent equations
+as in Appendix E of \cite{takanami2026lowrankicl}.  In the noiseless
+large-pretraining limit $\alpha\to\infty$, $\sigma=0$, $\kappa_z\gamma>1$,
+the paper's closed form becomes
+\[
+E_{\rm TM}^{\rm rep}
+=
+\frac{\min(\rho_z,\kappa_z)}{\widetilde\alpha}
+\left(
+1+\frac{1-\min(\rho_z,\kappa_z)}{\kappa_z\gamma-1}
+\right),
+\]
+and
+\[
+E_{\rm IDG}^{\rm rep}
+=
+\begin{cases}
+E_{\rm TM}^{\rm rep}, & \rho_z<\kappa_z,\\[2mm]
+1-\dfrac{\kappa_z}{\rho_z}
+-\dfrac{\kappa_z(\kappa_z-\rho_z)}
+        {\rho_z(\kappa_z\gamma-1)}
++E_{\rm TM}^{\rm rep}, & \rho_z\ge \kappa_z .
+\end{cases}
+\]
+This is the phase transition: below $\rho_z=\kappa_z$ the learned map exploits
+the low-rank task structure; above it, performance is bottlenecked by task
+diversity.
+
+\section{Encoder as Low-Rank ICL}
+
+The encoder is trained from PDE prompts to output weak rows and labels
+$(\wh G,\wh b)$.  Its relevant generalization metric is not coefficient error
+but weak consistency:
+\[
+    \calE_{\rm enc}
+    :=
+    \frac1M
+    \E\|\wh Gz-\wh b\|_2^2 .
+\]
+For each fixed task $z$, all $M=mR$ rows in the prompt obey
+$b_j=g_j^\top z$.  If the encoder is implemented by a one-layer linear
+attention model, its scalar prediction for a queried weak row $q$ has the form
+\[
+    \wh b(q)
+    =
+    \tr(W_{\rm enc}H_q^\top),
+    \qquad
+    H_q
+    =
+    \frac{K}{L_{\rm enc}}
+    q\sum_{\ell\le L_{\rm enc}} b_\ell x_\ell^\top ,
+\]
+with $x_\ell$ the representation of the $\ell$-th weak row.  The task variable
+used by the replica calculation is $z$; the full prompt generated from
+$P_z(dG,db)$ is the context for that task.
+
+\begin{proposition}[encoder residual bound]
+\label{prop:encoder}
+Suppose the encoder uses linear attention and is pretrained on the exact
+GP-induced prompt law of Proposition~\ref{prop:exactcorrespondence}.  Under
+the replica saddle-point prediction for this exact law,
+\[
+    \boxed{
+    \calE_{\rm enc}
+    =
+    \frac1M\E\|\wh Gz-\wh b\|_2^2
+    \le
+    E_{\Pi,\rm enc}^{\rm rep,GP}.
+    }
+\]
+When $H_r(z)=I_K/K$ exactly, this is the paper's
+$E_{\Pi,\rm enc}^{\rm rep}$ with $D=K$ and $r=r_z$.
+\end{proposition}
+
+\begin{proof}
+By Proposition~\ref{prop:exactcorrespondence}, each prompt is sampled by first
+drawing a single task $z$, then drawing the whole matrix--vector pair
+$(G,b)\sim P_z$ with $b=Gz$.  Thus every scalar residual component is a
+prediction error for the same task $z$:
+\[
+    \wh b_j-\wh g_j^\top z .
+\]
+The replicated partition function for the encoder is therefore the paper's
+linear-attention partition function with $D=K$, but with the example
+distribution inside each context replaced by the exact conditional law
+$P_z(dG,db)$.  The saddle-point prediction of this replicated system is, by
+definition, $E_{\Pi,\rm enc}^{\rm rep,GP}$.  Averaging the $M$ scalar residuals
+inside a prompt gives the displayed bound.  If $H_r(z)=I_K/K$, the conditional
+law is exactly the iid Gaussian design of the paper.
+\end{proof}
+
+\section{Decoder as a Learned Preconditioner}
+
+Now set the decoder attention to be linear, without softmax.  Given an encoded
+linear system $(\wh G,\wh b)$, define the empirical cross-correlation
+\[
+    s
+    :=
+    \frac{K}{M}\wh G^\top\wh b .
+\]
+For a query vector $q\in\R^K$, the paper's linear-attention feature is
+\[
+    H_q
+    =
+    q s^\top .
+\]
+The decoder prediction is
+\[
+    \wh y(q)
+    =
+    \tr(W_{\rm dec}H_q^\top)
+    =
+    q^\top W_{\rm dec}s .
+\]
+Thus the decoder's recovered latent vector is
+\[
+    \boxed{
+    \wh z=W_{\rm dec}s
+    =
+    W_{\rm dec}
+    \left(\frac{K}{M}\wh G^\top\wh b\right).
+    }
+\]
+Hence $W_{\rm dec}$ is a learned preconditioner.  In the paper's exact
+task-independent Gaussian design, the population normal matrix is the identity:
+\[
+    \E\left[\frac{K}{M}G^\top G\mid z\right]=I_K.
+\]
+For the GP-forced PDE prompt law, the exact population normal matrix is instead
+\[
+    \E\left[\frac{K}{M}G^\top G\mid z\right]
+    =
+    \frac{K}{R}\sum_{r=1}^{R}H_r(z),
+\]
+so the learned preconditioner is adapted to this task-dependent geometry.  In
+the paper's constant-design case, the replica calculation gives
+\[
+    W_{\rm dec}^{\star}
+    \overset{d}{=}
+    \left(
+        \sqrt{\wh\chi}\,T+
+        \sqrt{\wh{\bar\chi}}\,R+
+        \wh m S
+    \right)
+    \left(
+        \wh q S+(\lambda+\wh{\bar q})I_K
+    \right)^{-1},
+\]
+where
+\[
+    S=\frac1{M_0}\sum_{\mu=1}^{M_0}w^\mu(w^\mu)^\top
+\]
+is the task covariance and the hatted parameters are the conjugate order
+parameters of the paper.  This formula shows explicitly that linear attention
+learns a spectral preconditioner adapted to the low-rank task covariance $S$.
+
+\begin{assumption}[bounded learned preconditioner]
+\label{ass:boundedprec}
+On the high-probability replica event,
+\[
+    \|W_{\rm dec}^{\star}\|_{\op}\le B_{\rm dec}.
+\]
+\end{assumption}
+
+\begin{proposition}[decoder latent bound]
+\label{prop:decoder}
+Assume the decoder is linear attention and the encoded rows are sampled from
+the exact GP prompt law of Proposition~\ref{prop:exactcorrespondence}.  Let
+\[
+    e:=\wh b-\wh Gz
+\]
+be the encoder residual.  Define the exact GP row-transfer constant
+\[
+    C_{\rm GP}
+    :=
+    \frac{
+    \E\left[
+        \frac{K}{M^2}\|\wh G^\top e\|_2^2
+    \right]}
+    {
+    \E\left[
+        \frac1M\|e\|_2^2
+    \right]
+    },
+\]
+with the convention $C_{\rm GP}=0$ if the denominator is zero.  Under the
+replica saddle-point prediction for the exact GP prompt law and
+Assumption~\ref{ass:boundedprec},
+\[
+    \boxed{
+    \frac1K\E\|\wh z-z\|_2^2
+    \le
+    E_{\Pi,\rm dec}^{\rm rep,GP}
+    +
+    B_{\rm dec}^2 C_{\rm GP}
+    \calE_{\rm enc}.
+    }
+\]
+Combining with Proposition~\ref{prop:encoder},
+\[
+    \boxed{
+    \frac1K\E\|\wh z-z\|_2^2
+    \le
+    E_{\Pi,\rm dec}^{\rm rep,GP}
+    +
+    B_{\rm dec}^2 C_{\rm GP}
+    E_{\Pi,\rm enc}^{\rm rep,GP}.
+    }
+\]
+If the design is exactly isotropic iid with row covariance $I_K/K$ and the
+residual is conditionally independent of the rows, then
+$C_{\rm GP}=K/M=1/\widetilde\alpha_{\rm dec}$, recovering the paper's prompt
+scaling.
+\end{proposition}
+
+\begin{proof}
+Write the decoder statistic as
+\[
+    s
+    =
+    \frac{K}{M}\wh G^\top\wh b
+    =
+    \frac{K}{M}\wh G^\top\wh Gz
+    +
+    \frac{K}{M}\wh G^\top e .
+\]
+The first term is the noiseless prompt statistic analyzed by the exact GP
+replica calculation.  Therefore the scalar prediction error
+$\E_q[(q^\top W_{\rm dec}s_0-q^\top z)^2]$ equals
+$E_{\Pi,\rm dec}^{\rm rep,GP}$, where
+$s_0=(K/M)\wh G^\top\wh Gz$.  Since
+$q\sim N(0,I_K/K)$,
+\[
+    \E_q[(q^\top a)^2]=\frac1K\|a\|_2^2,
+\]
+so the noiseless latent contribution is $E_{\Pi,\rm dec}^{\rm rep,GP}$ after
+normalization by $K$.
+
+For the residual term, no isotropic approximation is used:
+\[
+    \frac1K\E\left\|
+    W_{\rm dec}\frac{K}{M}\wh G^\top e
+    \right\|_2^2
+    \le
+    B_{\rm dec}^2
+    \E\left[
+        \frac{K}{M^2}\|\wh G^\top e\|_2^2
+    \right]
+    =
+    B_{\rm dec}^2 C_{\rm GP}\calE_{\rm enc}.
+\]
+The two contributions give the claim.
+\end{proof}
+
+\section{PDE Solution Bound}
+
+Let the final reconstructed operator be
+\[
+    \wh A(\wh z)=\wh A_0+\sum_{k=1}^{K}\wh z_k\wh A_k.
+\]
+Because the dictionary is identifiable only up to a $GL_K$ gauge, assume we
+have fixed the best-conditioned gauge and write
+\[
+    \epsilon_{\rm dict}
+    :=
+    \left\|
+    \wh A_0-A_0
+    \right\|_{\op}
+    +
+    \|z\|_2
+    \left(
+    \sum_{k=1}^{K}\|\wh A_k-A_k\|_{\op}^2
+    \right)^{1/2},
+\]
+and
+\[
+    B_\Psi^2:=\sum_{k=1}^{K}\|\wh A_k\|_{\op}^2 .
+\]
+Then
+\[
+    \|\wh A(\wh z)-A(z)\|_{\op}
+    \le
+    \epsilon_{\rm dict}
+    +
+    B_\Psi\|\wh z-z\|_2 .
+\]
+
+\begin{assumption}[ellipticity]
+\label{ass:elliptic}
+For all admissible $z$, $A(z)$ is symmetric positive definite and
+\[
+    \lambda_{\min}(A(z))\ge\mu>0.
+\]
+On the event considered,
+\[
+    \|\wh A(\wh z)-A(z)\|_{\op}\le\mu/2 .
+\]
+\end{assumption}
+
+\begin{theorem}[end-to-end bound]
+\label{thm:endtoend}
+Under Proposition~\ref{prop:exactcorrespondence},
+Assumptions~\ref{ass:boundedprec} and \ref{ass:elliptic}, and the replica
+saddle-point prediction for the exact GP prompt law,
+\[
+\boxed{
+    \E\frac{\|\wh u_\star-u_\star\|_2^2}{\|u_\star\|_2^2}
+    \le
+    \frac{8}{\mu^2}
+    \E\epsilon_{\rm dict}^2
+    +
+    \frac{8B_\Psi^2K}{\mu^2}
+    \left(
+        E_{\Pi,\rm dec}^{\rm rep,GP}
+        +
+        B_{\rm dec}^2 C_{\rm GP}
+        E_{\Pi,\rm enc}^{\rm rep,GP}
+    \right).
+}
+\]
+If the final solve uses ridge
+$S_\gamma(B)f=(B^\top B+\gamma I)^{-1}B^\top f$, add the usual deterministic
+bias term
+\[
+    2\frac{\gamma^2}{(\mu^2+\gamma)^2}
+\]
+and replace $2/\mu$ in the proof by the Lipschitz constant of $S_\gamma$ on
+the uniformly elliptic operator class.
+\end{theorem}
+
+\begin{proof}
+For the exact solve,
+\[
+    \wh u_\star-u_\star
+    =
+    \wh A(\wh z)^{-1}
+    \bigl(A(z)-\wh A(\wh z)\bigr)u_\star .
+\]
+Since $\lambda_{\min}(\wh A(\wh z))\ge\mu/2$,
+\[
+    \frac{\|\wh u_\star-u_\star\|_2}{\|u_\star\|_2}
+    \le
+    \frac{2}{\mu}\|\wh A(\wh z)-A(z)\|_{\op}.
+\]
+Using
+\[
+    \|\wh A(\wh z)-A(z)\|_{\op}^2
+    \le
+    2\epsilon_{\rm dict}^2
+    +
+    2B_\Psi^2\|\wh z-z\|_2^2
+\]
+and Proposition~\ref{prop:decoder} proves the theorem.
+\end{proof}
+
+\section{Training Dynamics of the Encoder and Decoder}
+
+To fit exactly into the linear-attention training-dynamics framework, remove
+the auxiliary losses $L_u,L_a,L_A$ during this analysis.  Train the encoder
+with the prompt consistency loss and train the decoder with the latent
+least-squares loss:
+\[
+    L_{\rm enc}
+    =
+    \E\left[
+        \frac1M\|\wh G_\theta z-\wh b_\theta\|_2^2
+    \right],
+    \qquad
+    L_{\rm dec}
+    =
+    \frac1K\E\|\wh z_\theta-z\|_2^2 .
+\]
+The extra physical losses are useful experimentally, but they obscure the
+exact correspondence with linear regression ICL.
+
+\subsection{Collapsed Effective Dynamics}
+
+Let $P_{\rm enc}(t)$ and $P_{\rm dec}(t)$ denote the effective linear maps
+implemented by the trained linear-attention blocks after collapsing the value
+and key-query factors.  This is the analogue of the effective matrix in the
+linear-attention dynamics papers.
+
+For a context matrix $G_c$ with labels $b_c=G_cz$, define the context
+correlation statistic
+\[
+    s_c:=\frac{K}{M_c}G_c^\top b_c
+    =
+    \frac{K}{M_c}G_c^\top G_cz .
+\]
+For an encoder query weak row $q$, the linear-attention encoder predicts
+\[
+    \wh b(q,t)=q^\top P_{\rm enc}(t)s_c .
+\]
+The exact encoder training loss is therefore
+\[
+    L_{\rm enc}(P)
+    =
+    \E\left[
+        \bigl(q^\top z-q^\top Ps_c\bigr)^2
+    \right].
+\]
+Let
+\[
+    H_q(z):=\E[q q^\top\mid z],
+    \qquad
+    C^{\rm enc}_{zs}:=\E[H_q(z)zs_c^\top],
+    \qquad
+    \mathcal C^{\rm enc}_{ss}(P):=\E[H_q(z)P s_cs_c^\top].
+\]
+Then the exact gradient-flow dynamics of the collapsed encoder map is
+\[
+    \boxed{
+    \tau_{\rm enc}\dot P_{\rm enc}
+    =
+    C^{\rm enc}_{zs}
+    -
+    \mathcal C^{\rm enc}_{ss}(P_{\rm enc}).
+    }
+\]
+If the query row covariance is task-independent, $H_q(z)=H_q$, this becomes
+the closed linear matrix ODE
+\[
+    \tau_{\rm enc}\dot P_{\rm enc}
+    =
+    H_qC_{zs}-H_qP_{\rm enc}C_{ss},
+    \qquad
+    C_{zs}:=\E[zs_c^\top],
+    \quad
+    C_{ss}:=\E[s_cs_c^\top].
+\]
+When $H_q$ is invertible, the fixed point is
+\[
+    P_{\rm enc}^{\star}=C_{zs}C_{ss}^{-1}.
+\]
+Thus encoder training learns the preconditioner that maps the context
+correlation statistic $s_c$ back to the task $z$; consistency
+$\wh Gz-\wh b\approx0$ is obtained because the predicted row label is
+$q^\top P_{\rm enc}^{\star}s_c\approx q^\top z$.
+
+For the decoder, the statistic is
+\[
+    s:=\frac{K}{M}\wh G^\top\wh b .
+\]
+The decoder always has the least-squares form
+\[
+    \boxed{
+    \wh z(t)=P_{\rm dec}(t)s.
+    }
+\]
+Training changes only the preconditioner $P_{\rm dec}(t)$.  The exact
+collapsed decoder loss is
+\[
+    L_{\rm dec}(P)=\frac1K\E\|z-Ps\|_2^2,
+\]
+and gradient flow gives
+\[
+    \boxed{
+    \tau_{\rm dec}\dot P_{\rm dec}
+    =
+    C^{\rm dec}_{zs}-P_{\rm dec}C^{\rm dec}_{ss},
+    \qquad
+    C^{\rm dec}_{zs}:=\E[zs^\top],
+    \quad
+    C^{\rm dec}_{ss}:=\E[ss^\top].
+    }
+\]
+Hence
+\[
+    P_{\rm dec}^{\star}
+    =
+    C^{\rm dec}_{zs}
+    (C^{\rm dec}_{ss})^{-1},
+\]
+and
+\[
+    P_{\rm dec}(t)
+    =
+    P_{\rm dec}^{\star}
+    +
+    \bigl(P_{\rm dec}(0)-P_{\rm dec}^{\star}\bigr)
+    \exp\!\left(-C^{\rm dec}_{ss}t/\tau_{\rm dec}\right)
+\]
+whenever $C^{\rm dec}_{ss}$ is constant and diagonalizable.  In an eigenbasis
+of $C^{\rm dec}_{ss}$, each mode obeys
+\[
+    p_a(t)
+    =
+    p_a^\star
+    +
+    \bigl(p_a(0)-p_a^\star\bigr)
+    e^{-\lambda_a t/\tau_{\rm dec}}.
+\]
+Large-eigenvalue directions of the prompt statistic are learned first; weakly
+observed GP/PDE directions are learned slowly or not at all.
+
+\subsection{Factorized Linear-Attention Dynamics}
+
+The collapsed ODE above describes the algorithm learned by the effective map.
+The actual linear-attention parameters are factorized.  This factorization is
+what creates the abrupt or staged dynamics observed in the training-dynamics
+papers \cite{zhang2025trainingdynamics,mainali2025exactdynamics}.
+
+For merged key-query linear attention, Zhang et al. \cite{zhang2025trainingdynamics}
+show that the model is
+equivalent to a two-layer linear network on a cubic feature map and that
+training has two fixed points: the zero map and the global ICL solution.  From
+small initialization, the loss has a long plateau followed by one abrupt drop.
+In our notation, that abrupt drop is the moment when
+$P_{\rm enc}(t)$ or $P_{\rm dec}(t)$ rapidly moves from near zero to the
+preconditioning map $C_{zs}C_{ss}^{-1}$.
+
+For separate key and query, the same paper shows exponentially many fixed
+points and saddle-to-saddle dynamics.  The model learns principal components
+sequentially.  Translating to the PDE decoder, during the $(m+1)$-st plateau,
+\[
+    \wh z(t)
+    \approx
+    \sum_{a=1}^{m}
+    p_a^\star e_ae_a^\top s,
+\]
+where $e_a$ are eigenvectors of the prompt-statistic covariance.  This is
+principal-component least squares: the decoder is still applying a
+least-squares-style normal-equation statistic, but its preconditioner has rank
+$m$.  After all active modes are learned, the decoder becomes the full learned
+least-squares preconditioner.
+
+This staged spectral picture matches exact linear-transformer dynamics:
+timescale separation is controlled by the data covariance
+\cite{mainali2025exactdynamics}.  It also matches softmax-attention analyses:
+anisotropic covariates lead to learned preconditioned gradient descent
+\cite{he2025demystified}.
+
+For GP-forced PDE prompts, the ordering of the stages is governed by the
+spectrum of the exact observable normal statistic
+\[
+    \Gamma(z):=\frac{K}{M}G_z^\top G_z,
+    \qquad
+    \bar\Gamma:=\E[\Gamma(z)].
+\]
+Smooth GP kernels suppress high-frequency forcing modes, which shrinks the
+corresponding eigenvalues of $\bar\Gamma$ and delays those coefficient
+directions in training.  This is the exact sense in which the GP kernel changes
+training difficulty: it changes the spectrum of the statistics that drive the
+preconditioner ODE.
+
+\subsection{Training-Dynamics Summary}
+
+The encoder and decoder have the same dynamical skeleton:
+\[
+    \text{context correlations }s
+    \quad\longrightarrow\quad
+    \text{learned preconditioner }P(t)
+    \quad\longrightarrow\quad
+    \text{task estimate }P(t)s .
+\]
+The encoder uses this skeleton to make the prompt system consistent,
+$\wh Gz-\wh b\to0$.  The decoder uses the same skeleton to solve the normal
+equations.  At every time, the decoder has the form
+\[
+    \wh z(t)=P_{\rm dec}(t)\frac{K}{M}\wh G^\top\wh b.
+\]
+So the algorithmic primitive is always least squares; training dynamics only
+determines which spectral preconditioner has been learned, and how many
+observable task directions have entered that preconditioner.
+
+\section{Exact MP Training Curves in the Isotropic Design Limit}
+
+This section gives the fully explicit training curves in the regime where the
+weak-row design is exactly isotropic Gaussian on the active task subspace.  Let
+$B\in\R^{K\times r}$ have orthonormal columns, $r=r_z$, and write
+$z=B\zeta$ with
+\[
+    \zeta\sim N\!\left(0,\frac{K}{r}I_r\right).
+\]
+Assume
+\[
+    G B=\frac1{\sqrt K}X,
+    \qquad
+    X_{ja}\overset{\rm iid}{\sim}N(0,1),
+    \qquad
+    M=mR.
+\]
+The normalized active Gram matrix is
+\[
+    \Gamma
+    :=
+    \frac{K}{M}B^\top G^\top G B
+    =
+    \frac1M X^\top X
+    \in\R^{r\times r}.
+\]
+The decoder statistic restricted to the active subspace is exactly
+\[
+    s_B:=B^\top\frac{K}{M}G^\top b
+    =
+    \Gamma\zeta .
+\]
+
+\begin{theorem}[MP spectrum and exact preconditioner curve]
+\label{thm:mpcurve}
+Let
+\[
+    \widetilde\alpha:=\frac{M}{r},
+    \qquad
+    c:=\frac{r}{M}=\widetilde\alpha^{-1}.
+\]
+As $M,r\to\infty$ with $r/M\to c$, the empirical spectral distribution of
+$\Gamma$ converges almost surely to the Marchenko--Pastur law
+\[
+    \mu_{\rm MP,c}
+    =
+    (1-\widetilde\alpha)_+\delta_0
+    +
+    \frac{\widetilde\alpha}{2\pi\lambda}
+    \sqrt{(\lambda_+-\lambda)(\lambda-\lambda_-)}
+    \mathbf 1_{[\lambda_-,\lambda_+]}(\lambda)\,d\lambda,
+\]
+where
+\[
+    \lambda_\pm=(1\pm\sqrt c)^2
+    =
+    \left(1\pm\frac1{\sqrt{\widetilde\alpha}}\right)^2 .
+\]
+Equivalently, the nonzero squared singular values of the raw active design
+$GB$ are $(M/K)\lambda$ with $\lambda\sim\mu_{\rm MP,c}$.
+Train the collapsed decoder preconditioner with
+\[
+    L(P)=\frac1K\E_\zeta\|\zeta-P\Gamma\zeta\|_2^2
+    =
+    \frac1r\operatorname{tr}(I-P\Gamma)(I-P\Gamma)^\top
+\]
+and gradient flow
+\[
+    \tau\dot P=\Gamma-P\Gamma^2,
+    \qquad
+    P(0)=0.
+\]
+Then, for every finite $r,M$,
+\[
+    P(t)=\Gamma^\dagger\bigl(I-e^{-\Gamma^2t/\tau}\bigr),
+    \qquad
+    P(t)\Gamma=\Pi_{\operatorname{range}\Gamma}
+    \bigl(I-e^{-\Gamma^2t/\tau}\bigr).
+\]
+Consequently the exact finite-dimensional training curve is
+\[
+    \mathcal E_r(t)
+    :=
+    \frac1K\E_\zeta\|\zeta-P(t)\Gamma\zeta\|_2^2
+    =
+    \frac1r\operatorname{tr}e^{-2\Gamma^2t/\tau}.
+\]
+In the MP limit,
+\[
+    \boxed{
+    \mathcal E(t)
+    =
+    \int e^{-2\lambda^2t/\tau}\,\mu_{\rm MP,c}(d\lambda).
+    }
+\]
+\end{theorem}
+
+\begin{proof}
+Since $GB=K^{-1/2}X$,
+\[
+    \Gamma=\frac{K}{M}B^\top G^\top GB=\frac1M X^\top X,
+\]
+so the Marchenko--Pastur theorem gives the stated limit.  The loss identity
+follows from $\E[\zeta\zeta^\top]=(K/r)I_r$:
+\[
+    \frac1K\E\|\zeta-P\Gamma\zeta\|_2^2
+    =
+    \frac1r\operatorname{tr}(I-P\Gamma)(I-P\Gamma)^\top .
+\]
+Differentiating this quadratic loss gives
+\[
+    \tau\dot P=\Gamma-P\Gamma^2.
+\]
+Diagonalize $\Gamma=U\operatorname{diag}(\lambda_a)U^\top$.  Since $P(0)=0$,
+the solution remains diagonal in this eigenbasis.  Each eigenmode satisfies
+\[
+    \tau\dot p_a=\lambda_a-p_a\lambda_a^2,
+    \qquad
+    p_a(0)=0.
+\]
+Thus, if $\lambda_a>0$,
+\[
+    p_a(t)=\lambda_a^{-1}(1-e^{-\lambda_a^2t/\tau}),
+    \qquad
+    p_a(t)\lambda_a=1-e^{-\lambda_a^2t/\tau},
+\]
+while if $\lambda_a=0$, $p_a(t)\lambda_a=0$.  Therefore the residual
+eigenvalue is $1-p_a(t)\lambda_a=e^{-\lambda_a^2t/\tau}$, including zero
+modes.  Averaging the squared residual eigenvalues gives the finite curve; the
+MP limit follows by weak convergence of the empirical spectral measure.
+\end{proof}
+
+\begin{corollary}[spectrum of the learned normal-equation map]
+\label{cor:pgspectrum}
+The empirical spectrum of $P(t)\Gamma$ is the pushforward of
+$\mu_{\rm MP,c}$ by
+\[
+    \phi_t(\lambda)=
+    1-e^{-\lambda^2t/\tau}.
+\]
+Equivalently, away from atoms, with
+\[
+    \lambda(y)=
+    \sqrt{-\frac{\tau}{t}\log(1-y)},
+    \qquad
+    y\in \phi_t([\lambda_-,\lambda_+]),
+\]
+the density is
+\[
+    \rho_{P\Gamma,t}(y)
+    =
+    \rho_{\rm MP,c}(\lambda(y))
+    \frac{\tau}{2t\,\lambda(y)(1-y)}.
+\]
+As $t\to\infty$, $P(t)\Gamma$ converges to the projector onto
+$\operatorname{range}\Gamma$.  Hence the limiting error is
+\[
+    \lim_{t\to\infty}\mathcal E(t)
+    =
+    (1-\widetilde\alpha)_+ .
+\]
+\end{corollary}
+
+\begin{corollary}[early and late time laws]
+\label{cor:earlylate}
+At small time,
+\[
+    \mathcal E(t)
+    =
+    1-\frac{2t}{\tau}\int\lambda^2\,\mu_{\rm MP,c}(d\lambda)
+    +O(t^2)
+    =
+    1-\frac{2t}{\tau}(1+c)+O(t^2).
+\]
+If $\widetilde\alpha>1$, then $\lambda_->0$ and
+\[
+    \mathcal E(t)
+    \asymp
+    \exp(-2\lambda_-^2t/\tau)\,t^{-3/2}
+    \qquad
+    (t\to\infty).
+\]
+If $\widetilde\alpha=1$, then $\lambda_-=0$ and
+\[
+    \mathcal E(t)\asymp t^{-1/4}.
+\]
+If $\widetilde\alpha<1$, the curve converges to the unobservable-dimensional
+plateau $1-\widetilde\alpha$.
+\end{corollary}
+
+\begin{remark}
+The same theorem applies to the encoder after replacing $M$ by the number of
+weak rows in the encoder context and $\tau$ by $\tau_{\rm enc}$.  Its curve is
+the consistency curve for $\wh Gz-\wh b$.  For the exact GP-forced PDE law, the
+MP law is replaced by the spectral law of the deformed sample covariance with
+population covariance $H(z)$.  Thus the formulas above are exact for the
+isotropic reduction and become deformed-MP formulas for the full GP geometry.
+\end{remark}
+
+\section{What Has Been Reused}
+
+The imported statistical-mechanics step is the one from
+\cite{takanami2026lowrankicl}: the trained linear-attention matrix is replaced
+by a replica quadratic surrogate, whose solution is a spectral shrinkage or
+preconditioning map.  In the exact GP-forcing PDE model, the surrogate is
+averaged over the task-conditional prompt law $P_z$, not over a
+task-independent iid Gaussian design.  The paper's closed forms are recovered
+when $H_r(z)=I_K/K$ exactly.
+
+Everything specific to the PDE prompt law is exact:
+\[
+    f\sim GP
+    \Rightarrow
+    u=A(z)^{-1}f\ \text{Gaussian conditional on }z
+    \Rightarrow
+    g=\bigl(\langle A_ku,v\rangle\bigr)_{k=1}^{K}\ \text{Gaussian}
+    \Rightarrow
+    b=g^\top z .
+\]
+Thus the encoder residual is a full-prompt low-rank ICL prediction error for
+the task $z$, and the decoder is a learned-preconditioner problem applied to
+the normal-equation statistic $(K/M)G^\top b$.
+
+\begin{remark}[practical reading]
+The theorem predicts that improving the encoder residual helps the decoder only
+through the exact factor $C_{\rm GP}$.  In the isotropic iid design case,
+$C_{\rm GP}=K/M$; for GP-forced PDE prompts, $C_{\rm GP}$ is determined by the
+actual weak-row geometry.  The hard task-diversity transition is still governed
+by whether the number of distinct pretraining tasks $M_0$ is large enough
+relative to the latent rank $r_z$.
+\end{remark}
+
+\begin{thebibliography}{1}
+\bibitem{takanami2026lowrankicl}
+Kaito Takanami, Takashi Takahashi, and Yoshiyuki Kabashima.
+\newblock Learning Linear Regression with Low-Rank Tasks In-Context.
+\newblock \emph{AISTATS 2026 / arXiv:2510.04548}, 2026.
+\newblock \url{https://arxiv.org/pdf/2510.04548}.
+
+\bibitem{zhang2025trainingdynamics}
+Yedi Zhang, Aaditya K. Singh, Peter E. Latham, and Andrew Saxe.
+\newblock Training Dynamics of In-Context Learning in Linear Attention.
+\newblock \emph{ICML 2025 / arXiv:2501.16265}, 2025.
+\newblock \url{https://arxiv.org/abs/2501.16265}.
+
+\bibitem{mainali2025exactdynamics}
+Nischal Mainali and Lucas Teixeira.
+\newblock Exact Learning Dynamics of In-Context Learning in Linear Transformers
+and Its Application to Non-Linear Transformers.
+\newblock \emph{arXiv:2504.12916}, 2025.
+\newblock \url{https://arxiv.org/abs/2504.12916}.
+
+\bibitem{he2025demystified}
+Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang.
+\newblock In-Context Linear Regression Demystified: Training Dynamics and
+Mechanistic Interpretability of Multi-Head Softmax Attention.
+\newblock \emph{ICML 2025 / arXiv:2503.12734}, 2025.
+\newblock \url{https://arxiv.org/abs/2503.12734}.
+\end{thebibliography}
+
+\end{document}
