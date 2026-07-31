@@ -28,7 +28,7 @@
 \newcommand{\diag}{\operatorname{diag}}
 \newcommand{\Span}{\operatorname{span}}
 
-\title{Replica Bounds for the PDE Encoder and Linear-Attention Decoder}
+\title{Replica Bounds for the PDE Encoder and Prompt-Conditioned Polynomial Decoder}
 \author{}
 \date{}
 
@@ -36,15 +36,18 @@
 \maketitle
 
 \begin{remark}[Scope of this manuscript]
-The decoder analysis below concerns the collapsed one-shot linear map
-$W_{\rm dec}(K/M)\widehat G^\top\widehat b$.  It is not, by itself, a replica
-theory for the recurrent Heavy--Ball, Chebyshev, or PCG architectures developed
-later.  The rigorous controller-dependent transfer audit is given in
+The first decoder calculation below concerns the historical collapsed
+one-shot map \(W_{\rm dec}(K/M)\widehat G^\top\widehat b\).  The later
+sections extend its spectral order parameters to the prompt-conditioned
+matrix-free preconditioner and give the exact fixed-polynomial substitution
+for recurrent Heavy--Ball and Chebyshev.  The rigorous controller-dependent
+transfer audit is given in
 \texttt{experiments/transformers/three\_controller\_encoder\_decoder\_generalization.tex}.
-For Heavy--Ball and Chebyshev the Richardson spectral filter can be replaced
-by a right-hand-side-independent polynomial.  For PCG this substitution is
-invalid because the Krylov coefficients depend on the right-hand side.  The
-gradient-flow ODEs in this manuscript also do not describe Muon updates.
+Closing the full PDE asymptotic still requires the matrix-valued Ritz moments
+and teacher/physical overlaps stated below.  PCG additionally requires a
+layer-indexed state evolution because its Krylov coefficients depend on the
+right-hand side.  The gradient-flow ODEs in this manuscript do not describe
+Muon updates.
 \end{remark}
 
 \section{Claim}
@@ -1146,10 +1149,9 @@ the exact population matrix
     =\frac KR\sum_{r=1}^R H_r(z).
 \]
 
-Once the resulting raw normalized spectral law $\nu$ is known, the
-equivariant one-head preconditioner has an explicit closure.  With
-$S/K\to\sigma$, limiting query law $\pi$, and bounded invariant score
-$\ell(q,\lambda;\nu)$, define
+An idealized head that routes individual eigendirections has a scalar,
+commuting closure.  With \(S/K\to\sigma\), limiting query law \(\pi\), and
+bounded invariant score \(\ell(q,\lambda;\nu)\), define
 \begin{align*}
     Z(q)&=\int e^{\ell(q,t;\nu)}\nu(dt),\\
     g(\lambda;\nu)
@@ -1162,10 +1164,52 @@ $\nu_{\rm eff}=(T_\theta)_\#\nu$.  Therefore
 \eqref{eq:rep-hb-distributional-risk}--
 \eqref{eq:rep-hb-distributional-optimum} apply with $\phi_t$ replaced by
 $T_\theta$ and jointly predict the head parameters, slot density, HB pair,
-and depth.  No eigenvector or layer-indexed Krylov order parameter is added.
+and depth for that commuting oracle.  This is not the exact closure of the
+implemented block-power matrix-free head unless its routed subspace becomes
+invariant.
+
+For the implemented head, let \(Y_\theta\in\mathbb R^{K\times S}\) be the
+softmax-routed block before QR, \(A=H/s_H\), and \(r\) the fixed number of
+block-power refinements.  Assuming \(A^rY_\theta\) has full column rank, set
+\begin{align}
+ K_r&=Y_\theta^\top A^{2r}Y_\theta,
+ &J_r&=Y_\theta^\top A^{2r+1}Y_\theta,\\
+ U&=A^rY_\theta K_r^{-1/2},
+ &C&=K_r^{-1/2}J_rK_r^{-1/2}.
+ \label{eq:pde-mf-ritz-interface}
+\end{align}
+If \(c_\star=\lambda_{\min}(C)\), the actual preconditioner is exactly
+\begin{equation}
+ B_\theta=s_H^{-1}\left[
+ I-UU^\top+c_\star UC^{-1}U^\top\right].
+ \label{eq:pde-mf-preconditioner}
+\end{equation}
+Thus the neural component learns \(Y_\theta\), whereas all covariance
+contractions, the \(S\times S\) inverse, and the solver recurrence are exact.
+Because \(U\) need not be an invariant subspace of \(H\), the replica closure
+requires the limits of \((K_r,J_r)\) and the cross measures of \(U\) with the
+teacher, right-hand side, and physical decoder metric.  A scalar eigenvalue
+pushforward alone is insufficient; no layer-indexed order parameter is needed
+for HB or Chebyshev once these prompt-only quantities are fixed.
+
+There is also a sharp scaling boundary.  If
+\(A_\theta=B_\theta^{1/2}HB_\theta^{1/2}\), then
+\[
+ \operatorname{rank}(A_\theta-H/s_H)\leq2S,
+ \qquad
+ \sup_x|F_{A_\theta}(x)-F_{H/s_H}(x)|\leq 2S/K.
+\]
+A fixed-slot head therefore cannot alter an isotropic normalized bulk risk by
+order one.  It can alter the low-rank PDE risk by order one when the physical
+or teacher subspace has nonvanishing overlap with
+\(\operatorname{span}(U,HU)\).  This overlap, rather than a claim of universal
+spectral improvement, is the first-principles source of benefit against an
+unconditioned solver.  A bulk change requires \(S=\Theta(K)\), concentrating
+attention, or an equivalent proportional-rank mechanism.
+
 Gaussian forcing is used only for the explicit Wick covariance above; the
-finite-dimensional spectral-risk predictor itself requires only an SPD
-normal matrix and finite moments.
+finite-dimensional predictor requires only an SPD normal matrix, finite
+moments, and the stated nondegeneracy of the routed block.
 \end{remark}
 
 \begin{proposition}[prompt-free finite-$K$ hyperparameter prediction]
@@ -1179,18 +1223,43 @@ Fix $K,R$ and condition on a task $z$.  Let
     :=m\,\E[G_i^\top b_i\mid z],
 \]
 where both expectations are the exact Gaussian contractions above and $M$ is
-the covariant ridge metric.  Let $(H_m,c_m)$ be the normal matrix and
-right-hand side from an actual length-$m$ prompt.  Then
+the covariant ridge metric.  For probe \(r\), write \(g_r(u,z)^\top\) for its
+weak row, \(v_r=g_r/\|g_r\|\), and let \(\varphi_z(g_r)\) be the invariant row
+feature after replacing prompt centering and scaling by their conditional
+population values.  For slot \(s\), define the population-routed direction
+\[
+ \overline y_{\theta,s}(z)
+ =
+ \frac{\displaystyle\sum_{r=1}^R
+  \E\!\left[
+   e^{\ell_{\theta,s}(\varphi_z(g_r))}
+   v_r\mid z\right]}
+ {\displaystyle\sum_{r=1}^R
+  \E\!\left[
+   e^{\ell_{\theta,s}(\varphi_z(g_r))}\mid z\right]},
+ \qquad
+ \overline Y_\theta(z)
+ =[\overline y_{\theta,1},\ldots,\overline y_{\theta,S}].
+ \label{eq:population-routed-block}
+\]
+Let \((H_m,c_m,Y_{\theta,m})\) be the normal matrix, right-hand side, and
+softmax-routed block from an actual length-$m$ prompt.  If the score/value
+moments in \eqref{eq:population-routed-block} are finite and its population
+feature normalization is nondegenerate, then
 \[
     m^{-1}(H_m-\overline H_m(z))\longrightarrow0,
     \qquad
-    m^{-1}(c_m-\overline c_m(z))\longrightarrow0
+    m^{-1}(c_m-\overline c_m(z))\longrightarrow0,
+    \qquad
+    Y_{\theta,m}-\overline Y_\theta(z)\longrightarrow0
 \]
-almost surely.  If the population normal matrices remain uniformly SPD and
-the invariant one-head score is Lipschitz on the resulting compact spectral
-set, the effective spectral law, every fixed-depth HB or Chebyshev risk, and
+almost surely.  If the population normal matrices remain uniformly SPD, the
+invariant one-head score is Lipschitz on the resulting compact spectral set,
+and the routed block remains uniformly full rank, the effective spectral
+law, every fixed-depth HB or Chebyshev risk, and
 the corresponding physical linearized risk computed from
-$(\overline H_m,\overline c_m)$ converge to their prompt-law counterparts.
+$(\overline H_m,\overline c_m,\overline Y_\theta)$ converge to their
+prompt-law counterparts.
 Their conditional fluctuations are $O_{\mathbb P}(m^{-1/2})$.
 
 If, additionally, the latency-regularized population objective has a unique
@@ -1200,7 +1269,7 @@ interior minimizer with nonsingular Hessian, its prediction
  \in\arg\min_{\theta,\alpha,\beta,L}
  \left\{
  \E_z\mathcal R_L^{\rm HB}
-   (\overline H_m(z),\overline c_m(z);
+   (\overline H_m(z),\overline c_m(z),\overline Y_\theta(z);
     \theta,\alpha,\beta)
  +\tau_{\rm hw}T_{\rm HB}(L,\theta)
  \right\}
@@ -1212,13 +1281,21 @@ for the two Chebyshev endpoints and their exact recurrence.
 \begin{proof}
 The prompt is a sum over $m$ independent forcings, not over $mR$ independent
 rows.  The strong law applied to the finite-dimensional matrix-valued
-quadratic form $Y$ and its cross moment proves the two almost-sure limits.
-Gaussian quadratic forms have finite moments of every order, so their
-conditional central-limit fluctuations are $O_{\mathbb P}(m^{-1/2})$.
-Uniform SPD, continuity of eigenvalues, and the Lipschitz spectral head pass
-this convergence through the exact spectral pushforward and every
-fixed-degree residual polynomial.  The physical statement follows by the
-same argument for the bounded decoder Jacobian.  Standard argmin stability
+quadratic form $Y$ and its cross moment proves the first two almost-sure
+limits.
+Apply the same law to the numerator, denominator, and empirical feature
+normalization of each softmax slot.  The denominator is strictly positive,
+so the continuous-mapping theorem gives
+\eqref{eq:population-routed-block}.  Gaussian quadratic forms have finite
+moments of every order, and the assumed score/value moments permit the
+multivariate central limit theorem and delta method; the conditional
+fluctuations are therefore $O_{\mathbb P}(m^{-1/2})$.
+Uniform SPD, uniform rank of the routed block, continuity of QR and of the
+small Ritz functional calculus, and the Lipschitz spectral head pass this
+convergence through \eqref{eq:pde-mf-ritz-interface}--
+\eqref{eq:pde-mf-preconditioner} and every fixed-degree residual polynomial.
+The physical statement follows by the same argument for the bounded decoder
+Jacobian.  Standard argmin stability
 under the stated local identifiability condition gives consistency of the
 joint minimizer.
 \end{proof}

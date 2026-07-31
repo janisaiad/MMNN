@@ -705,6 +705,102 @@ $B_\theta\preceq s_H^{-1}I$ imply
 \]
 \end{proof}
 
+\begin{proposition}[exact matrix-free head interface]
+\label{prop:matrix-free-moment-interface}
+Let \(Y_\theta\in\mathbb R^{K\times S}\) denote the covariant block routed by
+the softmax head before its first QR factorization, let \(A=H/s_H\), and
+assume \(A^rY_\theta\) has full column rank.  Define the two small block
+moments
+\[
+ K_r=Y_\theta^\top A^{2r}Y_\theta,
+ \qquad
+ J_r=Y_\theta^\top A^{2r+1}Y_\theta .
+\]
+Up to an immaterial orthogonal change of slot coordinates, the matrix-free
+construction in Proposition~\ref{prop:matrix-free-prompt-head} is exactly
+\begin{align}
+ U&=A^rY_\theta K_r^{-1/2},
+ &C&=K_r^{-1/2}J_rK_r^{-1/2},\\
+ c_\star&=\lambda_{\min}(C),
+ &B_\theta&=s_H^{-1}\left[
+ I-UU^\top+c_\star UC^{-1}U^\top\right].
+ \label{eq:matrix-free-moment-interface}
+\end{align}
+Consequently the learned object is the routed subspace \(Y_\theta\), while
+the projected normal geometry, its spectral correction, and the
+preconditioner application are exact algebraic functions of
+\((K_r,J_r)\).  A finite-dimensional risk calculation for this head closes
+on these block moments together with the overlaps of \(U\) with the teacher,
+the right-hand side, and the physical decoder metric.  It does not in
+general close on the eigenvalue law of \(H\) alone.
+\end{proposition}
+\begin{proof}
+Symmetric orthogonalization of \(A^rY_\theta\) gives the displayed \(U\).
+Substitution yields \(U^\top AU=C\).  The implementation assigns multiplier
+\(c_\star/c_i\) to a Ritz eigenvector with eigenvalue \(c_i\); functional
+calculus therefore gives \(c_\star C^{-1}\) on \(\operatorname{span}U\) and
+the identity on its orthogonal complement.  QR produces a different
+orthonormal basis \(UO\), but the expression is unchanged after the
+corresponding conjugation of \(C\).  The last claim follows because the
+symmetric effective operator
+\(B_\theta^{1/2}HB_\theta^{1/2}\) need not share eigenvectors with \(H\).
+\end{proof}
+
+\begin{corollary}[fixed-slot bulk boundary and low-rank benefit]
+\label{cor:fixed-slot-boundary}
+Let
+\[
+ A_\theta=B_\theta^{1/2}HB_\theta^{1/2},
+ \qquad A=H/s_H .
+\]
+Then
+\[
+ \operatorname{rank}(A_\theta-A)\leq 2S,
+ \qquad
+ \sup_x\left|F_{A_\theta}(x)-F_A(x)\right|\leq\frac{2S}{K}.
+\]
+Thus a bounded-score head with fixed \(S\) cannot change a normalized bulk
+spectral risk by order one as \(K\to\infty\).  It can nevertheless change a
+low-rank inverse-problem risk by order one when the teacher or physical
+sensitivity has nonvanishing overlap with \(\operatorname{span}(U,HU)\).
+A bulk improvement instead requires \(S/K\to\sigma>0\), attention
+concentrating on a vanishing spectral set, or another structure that carries
+order-one task risk in finitely many directions.
+\end{corollary}
+\begin{proof}
+Write
+\(B_\theta^{1/2}=s_H^{-1/2}(I+UEU^\top)\) for the exact \(S\)-dimensional
+spectral function \(E\).  Expanding \(A_\theta-A\) shows that its image lies
+in \(\operatorname{span}(U,HU)\), hence its rank is at most \(2S\).  The
+empirical spectral-distribution bound is the Hermitian rank inequality.  For
+isotropic normalized trace losses this contribution vanishes with \(S/K\),
+whereas a teacher supported on the affected subspace assigns it nonvanishing
+mass.  This is precisely the low-rank-recovery regime.
+\end{proof}
+
+\begin{remark}[where improvement over a pure solver can occur]
+\label{rem:pure-solver-boundary}
+For the same \(H\), \(B_\theta\), initialization, and HVP budget, exact PCG
+still minimizes the \(H\)-energy error over the available Krylov space.
+Neither the learned head nor the choice of HB or Chebyshev reverses that
+Galerkin ordering.  The learned architecture can improve on a
+\emph{head-free} iterative baseline only through a better prompt-conditioned
+geometry and can improve on a dense direct solve only through setup, memory,
+amortization, or a task-risk objective different from exact algebraic error.
+
+For example, order the eigenvalues of \(A=H/s_H\) as
+\(\lambda_1(A)\leq\cdots\leq\lambda_K(A)\).  If \(U\) is the invariant
+subspace of the \(S\) largest eigenvalues, then
+\eqref{eq:matrix-free-moment-interface} maps all selected eigenvalues to the
+smallest selected one.  The global condition number decreases from
+\(\lambda_K(A)/\lambda_1(A)\) to
+\(\lambda_{K-S+1}(A)/\lambda_1(A)\).  Outside this invariant case there is no
+distribution-free dominance: the relevant comparison is the joint
+teacher/physical spectral risk plus measured total latency.  This is why the
+overlap order parameters in Corollary~\ref{cor:fixed-slot-boundary} are part
+of the theory rather than an optional diagnostic.
+\end{remark}
+
 This construction deliberately deflates high modes rather than trying to
 invert low modes: block power iteration finds the former without divisions,
 and multipliers below one preserve the certificate.  The price is that a
@@ -771,9 +867,11 @@ total still wins.  These are synthetic latency measurements with fixed stable
 polynomial endpoints; they establish the crossover mechanism but not
 large-$K$ PDE accuracy.
 
-This finite statement already closes the exact risk in
-Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
-limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset
+The exact-spectrum head admits a particularly simple commuting oracle limit.
+It is useful for identifying what perfect spectral routing would achieve, but
+it is not automatically the limit of the block-power matrix-free head in
+Proposition~\ref{prop:matrix-free-moment-interface}.  Suppose
+$\nu_K\Rightarrow\nu$ on a compact subset
 of $(0,\overline L]$, $S/K\to\sigma$, the empirical slot-query law converges
 to $\pi$, and the score
 $\ell(q,\lambda;\nu)=q^\top k_\theta(x(\lambda;\nu))/\sqrt{d_h}$ is bounded
@@ -799,6 +897,13 @@ preconditioner requires $S=\Theta(K)$ or a concentrating low-temperature
 attention regime.  This scaling distinction is part of the prediction, not
 an experimental tuning rule.
 
+For the implemented matrix-free head, the corresponding asymptotic closure
+is instead the limit of
+\((K_r,J_r)\) in Proposition~\ref{prop:matrix-free-moment-interface} and of
+the teacher/physical overlaps.  Equation~\eqref{eq:softmax-head-limit}
+becomes exact for it only when the routed block converges to an invariant
+spectral subspace (or under an additional asymptotic commutation theorem).
+
 Combining \eqref{eq:softmax-head-limit} with
 \eqref{eq:joint-hyperparameter-predictor} predicts
 $(\theta,\sigma,\alpha,\beta,L)$ jointly.  With only support information it
@@ -809,9 +914,17 @@ are not calibrated in two unrelated stages.
 \section{Replica and random-matrix substitutions}
 
 Let $\nu_\theta$ be the limiting joint spectral law of the encoded normal
-operator and the fixed learned preconditioner.  The preconditioner replica
-order parameters must include at least the physical-space overlap and the
-observable-space overlap
+operator and the fixed learned preconditioner.  For the actual matrix-free
+head, the replica state must first determine
+\[
+ \mathcal Q_{\theta,r}
+ =\left(\nu_H,K_r,J_r,
+   \Gamma_{U,T},\Gamma_{U,b},\Gamma_{U,\mathrm{phys}}\right),
+\]
+where the last three terms denote the limiting cross measures or finite-rank
+overlaps with the teacher, right-hand side, and physical metric.  The
+preconditioner replica order parameters must include at least the
+physical-space overlap and the observable-space overlap
 \[
  m_T=\frac1r\tr(P_{\widehat T}P_T),
  \qquad
@@ -819,7 +932,9 @@ observable-space overlap
 \]
 together with the projected Ritz spectral law.  A full learned matrix
 $W_{\rm dec}$ and a recovered projector $Q_\theta Q_\theta^\top$ are not the
-same order parameter.
+same order parameter.  Proposition~\ref{prop:matrix-free-moment-interface}
+then maps \(\mathcal Q_{\theta,r}\) deterministically to the fixed
+preconditioner used by every recurrent block.
 
 For a commuting model with isotropic query covariance, Richardson's filter is
 replaced by
@@ -935,7 +1050,11 @@ or covariant metric.\\
 \end{tabular}
 \end{center}
 
-This audit leaves the encoder replica calculation useful, but it prevents it
-from being cited as a completed theory of the three recurrent decoders.
+This audit leaves the encoder replica calculation useful.  Conditional on
+the matrix-free head order parameters, it gives a closed fixed-polynomial
+theory for Heavy--Ball and Chebyshev.  The remaining noncommuting PDE task is
+to derive those order parameters from the encoder saddle; PCG additionally
+requires the layer-indexed state evolution above.  It must therefore not be
+cited as a completed unconditional theory of all three recurrent decoders.
 
 \end{document}

@@ -1,3 +1,4 @@
+import math
 import sys
 from pathlib import Path
 
@@ -311,6 +312,94 @@ def test_matrix_free_nystrom_decoder_never_materializes_normal_or_preconditioner
     factor = torch.linalg.cholesky(dense)
     effective = factor.transpose(-1, -2) @ normal @ factor
     assert torch.linalg.eigvalsh(effective).amax() <= 2.5 + 1e-9
+
+
+def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
+    equations, _ = _problem()
+    ridge = 0.2
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=12,
+        slots=3,
+        controller="heavy_ball",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=3,
+    ).double()
+    head = decoder.preconditioner_head
+    preconditioner, _ = head(equations, ridge)
+
+    row_norm_squared = equations.square().sum(dim=-1).clamp_min(1e-12)
+    normalized_rows = equations / row_norm_squared.sqrt().unsqueeze(-1)
+    standardized_norm = head._standardize(0.5 * torch.log(row_norm_squared))
+    features = torch.stack(
+        [
+            standardized_norm,
+            head._standardize(standardized_norm.square()),
+            head._standardize(standardized_norm.pow(3)),
+            torch.ones_like(standardized_norm),
+        ],
+        dim=-1,
+    )
+    keys = head.key(features)
+    scores = torch.einsum("sd,bmd->bsm", head.slot_queries, keys)
+    attention = torch.softmax(scores / math.sqrt(head.head_dimension), dim=-1)
+    routed_block = torch.einsum(
+        "bsm,bmk->bks",
+        attention,
+        normalized_rows,
+    )
+
+    dimension = equations.shape[-1]
+    normal = equations.transpose(-1, -2) @ equations
+    normal = normal + ridge * torch.eye(dimension, dtype=equations.dtype)
+    scale = (
+        (row_norm_squared.sum(dim=-1) + ridge * dimension)
+        / head.spectral_lmax_bound
+    )
+    operator = normal / scale[:, None, None]
+    power_r = torch.linalg.matrix_power(operator, head.refinement_steps)
+    power_2r = torch.linalg.matrix_power(
+        operator,
+        2 * head.refinement_steps,
+    )
+    gram = routed_block.transpose(-1, -2) @ power_2r @ routed_block
+    gram_eigenvalues, gram_eigenvectors = torch.linalg.eigh(gram)
+    inverse_sqrt = torch.einsum(
+        "bsi,bi,bti->bst",
+        gram_eigenvectors,
+        gram_eigenvalues.rsqrt(),
+        gram_eigenvectors,
+    )
+    directions = power_r @ routed_block @ inverse_sqrt
+    projected = directions.transpose(-1, -2) @ operator @ directions
+    projected_eigenvalues, projected_eigenvectors = torch.linalg.eigh(projected)
+    target = projected_eigenvalues[:, :1]
+    slot_map = torch.einsum(
+        "bsi,bi,bti->bst",
+        projected_eigenvectors,
+        target / projected_eigenvalues,
+        projected_eigenvectors,
+    )
+    identity = torch.eye(dimension, dtype=equations.dtype).expand(
+        equations.shape[0],
+        -1,
+        -1,
+    )
+    formula = (
+        identity
+        - directions @ directions.transpose(-1, -2)
+        + directions @ slot_map @ directions.transpose(-1, -2)
+    ) / scale[:, None, None]
+    torch.testing.assert_close(
+        materialize_preconditioner(preconditioner),
+        formula,
+        rtol=2e-8,
+        atol=2e-8,
+    )
 
 
 def test_matrix_free_nystrom_head_is_gauge_covariant() -> None:
