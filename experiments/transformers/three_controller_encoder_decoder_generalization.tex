@@ -381,6 +381,61 @@ point on the risk--latency Pareto frontier.  Equation
 $\theta$, the controller, its depth, and its scalar hyperparameters jointly;
 it is not a post-hoc convergence bound.
 
+\begin{theorem}[risk-optimal fixed polynomial from spectral moments]
+\label{thm:risk-optimal-moment-polynomial}
+Suppose the conditional or population \(H\)-energy solver risk has the form
+\[
+ \mathcal E_L(p)=\int p(\lambda)^2\,\gamma(d\lambda),
+ \qquad p(0)=1,\qquad \deg p\leq L,
+\]
+for a finite positive spectral measure \(\gamma\) supported in
+\((0,\overline L]\).  Let \(m_k=\int\lambda^k\,\gamma(d\lambda)\) and assume
+the Hankel matrix
+\[
+ \mathsf H_L=(m_{i+j})_{i,j=1}^L
+\]
+is nonsingular.  The unique risk-optimal right-hand-side-independent
+polynomial is
+\[
+ p_L^\star(\lambda)=1+\sum_{j=1}^Lc_j^\star\lambda^j,
+ \qquad
+ \mathsf H_Lc^\star=-(m_1,\ldots,m_L)^\top .
+ \label{eq:moment-optimal-polynomial}
+\]
+It weakly dominates every HB or Chebyshev polynomial of the same degree for
+this measure.  It need not be minimax on the support and can be arbitrarily
+better when \(\gamma\) is concentrated on a small number of spectral
+clusters.  Instancewise PCG with the same preconditioner still weakly
+dominates it because PCG adapts its polynomial to the realized right-hand
+side.
+\end{theorem}
+\begin{proof}
+Write \(p=1+\sum_{j=1}^Lc_j\lambda^j\).  Expanding the integral gives
+\[
+ \mathcal E_L(p)
+ =m_0+2c^\top(m_1,\ldots,m_L)^\top+c^\top\mathsf H_Lc.
+\]
+The displayed linear system is the first-order condition of this strictly
+convex quadratic.  HB and Chebyshev are feasible fixed polynomials, while
+the final claim is the Galerkin optimality of PCG in the realized Krylov
+space.
+\end{proof}
+
+This theorem gives a first-principles role to a small MLP without asking it to
+approximate solver arithmetic.  The prompt head may estimate invariant
+cluster nodes and masses, or equivalently the moments
+\((m_0,\ldots,m_{2L})\).  The Hankel solve in
+\eqref{eq:moment-optimal-polynomial}, conversion of
+\((1-p_L^\star(\lambda))/\lambda\), and a fixed Horner or Clenshaw evaluator
+are hard-coded exact algebra.  An endpoint-only Chebyshev MLP is the
+support-only special case and necessarily discards cluster multiplicities.
+For numerical stability the implementation should solve the equivalent Gram
+system in a shifted Chebyshev basis rather than form high monomial powers.
+The same construction applies to the affine physical risk in
+\eqref{eq:exact-joint-risk}, where the averaged bivariate measure supplies a
+general positive-semidefinite Gram matrix instead of the scalar Hankel
+matrix.
+
 For HB, $\eta=(\alpha,\beta)$ and the feasible set is
 \[
  0\leq\beta<1,
@@ -866,6 +921,43 @@ takes $0.874$ ms and Chebyshev--10 takes $3.630$ ms.  At $K=2048$ the dense
 total still wins.  These are synthetic latency measurements with fixed stable
 polynomial endpoints; they establish the crossover mechanism but not
 large-$K$ PDE accuracy.
+
+\paragraph{Elliptic PDE learning audit.}
+The script
+\texttt{audit\_pde\_matrix\_free\_learning.py} tests the missing PDE claim on
+an exact uniformly elliptic one-dimensional weak-form law with
+\(K=32\), state dimension \(64\), \(M=128\), \(S=4\), depth \(8\), three
+training seeds, \(800\) training steps, and \(4096\) held-out tasks per seed.
+With two block-power refinements, trained-head PCG--8 has mean relative
+\(H\)-risk \(1.8113\times10^{-8}\).  A favorable head-free PCG--16 baseline,
+which receives \(rS=8\) extra iterations but is not charged for attention or
+QR, has risk \(4.7393\times10^{-8}\).  Thus the prompt-specific block
+geometry improves arithmetic work by a factor \(2.62\) on this law.
+
+This is \emph{not} evidence for learned softmax routing.  The initialized
+head with the same two refinements has risk \(1.81125\times10^{-8}\), and its
+mean overlap with the exact top-\(S\) eigenspace is \(0.9990\); training
+changes neither quantity detectably.  The exact block-power/Ritz algebra,
+not the learned score, explains the gain.  Moreover trained HB--8 has risk
+\(6.88\times10^{-1}\), while exact-interval Chebyshev--8 has
+\(7.79\times10^{-2}\).  Both are far from PCG on the same head.  The
+effective condition number is only about \(34.4\), but \(25\) of the \(32\)
+eigenvalues lie in one near-ridge cluster and the spectral effective rank is
+\(5.99\); PCG exploits this cluster structure whereas interval minimax
+polynomials discard it.
+
+All converged PCG variants have essentially the same statistical query MSE,
+\(8.33\times10^{-4}\), because their algebraic errors are already below the
+posterior/statistical floor.  This audit therefore rejects the hypotheses
+that HB is quasi-PCG on this PDE law and that the present softmax has
+demonstrated useful learning.  It supports the cluster-aware moment
+controller in Theorem~\ref{thm:risk-optimal-moment-polynomial}: on an
+independent split, an oracle promptwise degree-eight polynomial fitted to the
+unweighted effective spectral measure has spectral risk below \(10^{-15}\);
+its reconstructed float32 iterate reaches \(1.73\times10^{-8}\), the same
+numerical floor as PCG.  A single law-level polynomial reaches only about
+\(10^{-5}\).  The next learned object must therefore predict promptwise
+cluster statistics, not only global HB scalars or two support endpoints.
 
 The exact-spectrum head admits a particularly simple commuting oracle limit.
 It is useful for identifying what perfect spectral routing would achieve, but

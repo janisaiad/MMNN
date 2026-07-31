@@ -1115,6 +1115,49 @@ obtain \eqref{eq:rep-hb-distributional-risk}; minimizing it gives
 \eqref{eq:rep-hb-distributional-optimum}.
 \end{proof}
 
+\begin{corollary}[replica-predicted cluster-aware polynomial]
+\label{cor:replica-moment-polynomial}
+Let \(\gamma_q\) be the positive limiting \(H\)-energy spectral measure
+produced by the encoder--head replica order parameters \(q\), and fix a
+decoder depth \(L\).  If its moments
+\[
+ m_k(q)=\int\lambda^k\,\gamma_q(d\lambda),
+ \qquad 0\leq k\leq2L,
+\]
+are finite and \(\mathsf H_L(q)=(m_{i+j}(q))_{i,j=1}^L\) is nonsingular,
+then the replica-predicted optimal right-hand-side-independent residual
+polynomial is
+\[
+ p_{L,q}^\star(\lambda)
+ =1+\sum_{j=1}^Lc_j(q)\lambda^j,
+ \qquad
+ \mathsf H_L(q)c(q)=-(m_1(q),\ldots,m_L(q))^\top .
+ \label{eq:pde-replica-moment-polynomial}
+\]
+It minimizes the limiting energy risk over every fixed degree-\(L\)
+polynomial controller, and therefore weakly improves on the HB and
+support-only Chebyshev predictions at the same depth.  For clustered laws the
+improvement can be strict even when the support endpoints and condition
+number are unchanged.
+\end{corollary}
+\begin{proof}
+For \(p(\lambda)=1+\sum_{j=1}^Lc_j\lambda^j\), the limiting risk is
+\[
+ m_0+2\sum_{j=1}^Lc_jm_j
+ +\sum_{i,j=1}^Lc_ic_jm_{i+j}.
+\]
+Differentiate this strictly convex quadratic.  HB and Chebyshev are feasible
+members of the same polynomial class.
+\end{proof}
+
+This corollary is the principled version of a Chebyshev-weight MLP.  A neural
+head may predict promptwise invariant cluster nodes and masses, or the
+moments above, but the small Gram solve and polynomial evaluation remain
+hard-coded.  In finite precision the Gram system should be expressed in a
+shifted Chebyshev basis.  Predicting only \((\lambda_-,\lambda_+)\) recovers
+support minimax Chebyshev but discards precisely the multiplicities that
+allow a fixed polynomial to approach PCG on clustered PDE spectra.
+
 \begin{remark}[exact input to the deformed PDE law]
 For the GP-forced PDE prompt law, one must not simply count the $M=mR$ weak
 rows as iid samples.  Conditional on $z$, one forcing produces
