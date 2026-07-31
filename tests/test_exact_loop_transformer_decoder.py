@@ -11,6 +11,7 @@ from exact_loop_transformer_decoder import (  # noqa: E402
     ExactLoopTransformerDecoder,
     normal_equations,
 )
+from evaluate_trained_loop_controllers import solve_all  # noqa: E402
 from first_principles_decoder_cells import (  # noqa: E402
     materialize_preconditioner,
     run_chebyshev_state_machine,
@@ -544,6 +545,58 @@ def test_adaptive_hb_mlp_predicts_only_spectral_scalars_and_receives_gradient():
     assert info["momentum"].shape == (equations.shape[0],)
     assert torch.all((info["momentum"] >= 0) & (info["momentum"] < 1))
     assert all(parameter.grad is not None for parameter in model.interval_head.parameters())
+
+
+def test_cross_evaluator_reuses_hb_interval_mlp_for_chebyshev() -> None:
+    torch.manual_seed(31)
+    device = torch.device("cpu")
+    family = make_true_family(8, 4, 0.2, 2.0, device)
+    model = ParametricOperatorICL(
+        d=8,
+        K=4,
+        R=4,
+        lam_z=1e-2,
+        gamma_u=1e-5,
+        solver="primal_loop_heavy_ball",
+        z_depth=3,
+        learn_dictionary=False,
+        learn_probes=False,
+        true_family=family,
+        init="true",
+        init_noise=0.0,
+        heads=1,
+        d_head=8,
+        qk_from="g",
+        use_safe_scale=True,
+        hb_alpha_init=1.0,
+        hb_beta_init=0.05,
+        subspace_slots=2,
+        loop_lmax_bound=4.0,
+        loop_step_init=0.2,
+        adaptive_heavy_ball=True,
+        loop_preconditioner_head="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=1,
+    )
+    batch = sample_icl_batch(family, 3, 3, 0.5, 1.0, 0.0, device)
+    solutions, _, _, diagnostics = solve_all(
+        model,
+        batch,
+        hybrid_residual_threshold=1e-8,
+        hb_depth=3,
+        pcg_depth=2,
+    )
+    assert "learned_chebyshev" in solutions
+    assert "residual_guarded_chebyshev_pcg" in solutions
+    mask = diagnostics["chebyshev_fallback_mask"][:, None]
+    expected = torch.where(
+        mask,
+        solutions["pcg"],
+        solutions["learned_chebyshev"],
+    )
+    torch.testing.assert_close(
+        solutions["residual_guarded_chebyshev_pcg"],
+        expected,
+    )
 
 
 def test_exact_loop_decoder_is_connected_to_the_full_icl_model():

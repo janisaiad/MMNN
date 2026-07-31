@@ -724,6 +724,21 @@ without a certified positive lower endpoint.  The deterministic guarantee of
 the matrix-free head is the upper endpoint; the fallback is a robust routing
 rule unless such a lower certificate is supplied.
 
+The same interval head can be crossed with the fixed Chebyshev recurrence
+without retraining.  In a three-seed audit with $8192$ held-out prompts per
+seed and ten polynomial HVPs, learned Chebyshev lowers the arithmetic mean
+solver risk by $30\%$ relative to learned HB.  With the same residual guard
+and a four-step PCG fallback, the reduction is $25\%$ and the fallback rate
+drops from $0.826\%$ to $0.773\%$.  This is evidence that the MLP learns a
+reusable prompt spectral statistic rather than HB-specific arithmetic.
+Nevertheless, paired PCG with ten HVPs has mean risk
+$8.98\times10^{-12}$, compared with $2.11\times10^{-10}$ for guarded learned
+Chebyshev at $10.031$ expected HVPs.  Thus this experiment validates the
+Chebyshev architecture but rejects numerical superiority over PCG at equal
+HVP budget.  The oracle Chebyshev mean, $5.74\times10^{-12}$, localizes the
+remaining gap to rare endpoint-prediction failures rather than to the fixed
+recurrence.
+
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
 limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset

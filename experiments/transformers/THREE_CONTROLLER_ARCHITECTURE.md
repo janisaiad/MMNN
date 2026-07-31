@@ -605,6 +605,43 @@ contrôleur avec garde est environ quatre fois inférieur à PCG-4, mais ce n'es
 pas une comparaison à budget HVP égal : HB utilise dix étapes et les rares
 fallbacks ajoutent du calcul.
 
+### Audit multi-seed du MLP Chebyshev
+
+La même expérience a ensuite été répétée sur trois encodeurs indépendants,
+avec 8 192 tâches disjointes par seed. Le MLP d'intervalle entraîné pour HB
+est réutilisé **sans aucun réentraînement** pour construire le calendrier
+Chebyshev exact. PCG-4 et PCG-10 sont évalués sur exactement les mêmes prompts.
+Les nombres suivants sont les moyennes arithmétiques des risques moyens des
+trois seeds :
+
+| contrôleur | HVP espérés par prompt | erreur \(H\) moyenne | taux fallback |
+|---|---:|---:|---:|
+| HB appris | 10.000 | \(1.69\,10^{-2}\) | 0 % |
+| Chebyshev appris | 10.000 | \(1.19\,10^{-2}\) | 0 % |
+| HB + garde PCG-4 | 10.033 | \(2.80\,10^{-10}\) | 0.826 % |
+| Chebyshev + garde PCG-4 | 10.031 | \(2.11\,10^{-10}\) | 0.773 % |
+| PCG-4 | 4.000 | \(9.13\,10^{-10}\) | 0 % |
+| PCG-10 | 10.000 | \(8.98\,10^{-12}\) | 0 % |
+| HB oracle | 10.000 | \(8.48\,10^{-12}\) | 0 % |
+| Chebyshev oracle | 10.000 | \(5.74\,10^{-12}\) | 0 % |
+
+Chebyshev appris réduit donc le risque moyen brut de \(30\%\) par rapport à
+HB appris et la version avec garde de \(25\%\). Cela valide l'idée
+architecturale « un MLP prédit l'intervalle, la boucle Chebyshev reste
+hardcodée ». Cependant, PCG-10 est environ \(23.5\times\) meilleur que
+Chebyshev appris avec garde à budget voisin. Inversement, l'oracle Chebyshev
+montre que le polynôme n'est pas le goulot : c'est la couverture des rares
+extrémités spectrales par le MLP. Les moyennes HB/Chebyshev sans garde sont
+dominées par un prompt catastrophique alors que leurs médianes sont de l'ordre
+de \(10^{-10}\) ou moins.
+
+![Comparaison multi-seed des contrôleurs matrix-free](matrix_free_multiseed/matrix_free_multiseed_comparison.png)
+
+Cette expérience change la sélection : Chebyshev + garde est le meilleur
+**décodeur polynomial appris** testé, mais PCG reste le meilleur solveur pur à
+budget HVP égal. HB demeure le meilleur choix si l'objectif prioritaire est la
+cellule bouclée la plus simple et sans calendrier dépendant de la profondeur.
+
 La latence donne la frontière pratique. Sur H100, batch 1 et \(M=4K\) :
 
 | \(K\) | solve dense depuis tokens | PCG-10 identité matrix-free | tête \(r=4\) | tête + HB-10 |

@@ -189,6 +189,12 @@ def solve_all(
     oracle_richardson_step = 2.0 / (spectral_min + spectral_max)
 
     zero = learned_momentum.new_zeros(())
+    pcg_solution = run_pcg_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        pcg_depth,
+    )[0]
     solutions = {
         "exact": torch.linalg.solve(normal_matrix, rhs.unsqueeze(-1)).squeeze(-1),
         "learned_hb": run_heavy_ball_state_machine(
@@ -206,8 +212,17 @@ def solve_all(
         "oracle_chebyshev": run_chebyshev_state_machine(
             hvp, rhs, preconditioner, hb_depth, spectral_min, spectral_max
         )[0],
-        "pcg": run_pcg_state_machine(hvp, rhs, preconditioner, pcg_depth)[0],
+        "pcg": pcg_solution,
     }
+    if model.loop_decoder.adaptive_heavy_ball:
+        solutions["learned_chebyshev"] = run_chebyshev_state_machine(
+            hvp,
+            rhs,
+            preconditioner,
+            hb_depth,
+            learned_min,
+            learned_max,
+        )[0]
     if "effective_eigenvalues_predicted" in preconditioner_info:
         predicted_spectrum = preconditioner_info[
             "effective_eigenvalues_predicted"
@@ -220,26 +235,60 @@ def solve_all(
             predicted_spectrum.amin(dim=-1),
             predicted_spectrum.amax(dim=-1),
         )[0]
-    hb_final_residual = rhs - hvp(solutions["learned_hb"])
-    preconditioned_final_residual = apply_fixed_preconditioner(
-        preconditioner,
-        hb_final_residual,
-    )
     preconditioned_rhs = apply_fixed_preconditioner(preconditioner, rhs)
-    residual_ratio = torch.einsum(
-        "bi,bi->b", hb_final_residual, preconditioned_final_residual
-    ) / torch.einsum("bi,bi->b", rhs, preconditioned_rhs).clamp_min(1e-30)
-    fallback_mask = residual_ratio > hybrid_residual_threshold
+    residual_denominator = torch.einsum(
+        "bi,bi->b",
+        rhs,
+        preconditioned_rhs,
+    ).clamp_min(1e-30)
+
+    def preconditioned_residual_ratio(solution: Tensor) -> Tensor:
+        final_residual = rhs - hvp(solution)
+        preconditioned_final_residual = apply_fixed_preconditioner(
+            preconditioner,
+            final_residual,
+        )
+        return torch.einsum(
+            "bi,bi->b",
+            final_residual,
+            preconditioned_final_residual,
+        ) / residual_denominator
+
+    hb_residual_ratio = preconditioned_residual_ratio(solutions["learned_hb"])
+    fallback_mask = hb_residual_ratio > hybrid_residual_threshold
     solutions["certified_hb_pcg"] = torch.where(
-        fallback_mask[:, None], solutions["pcg"], solutions["learned_hb"]
+        fallback_mask[:, None],
+        pcg_solution,
+        solutions["learned_hb"],
     )
-    return solutions, normal_matrix, eigenvalues, {
+    diagnostics = {
         "learned_step": torch.as_tensor(learned_step).expand_as(spectral_max),
         "learned_momentum": torch.as_tensor(learned_momentum).expand_as(spectral_max),
         "jury_margin": 2.0 * (1.0 + learned_momentum) - learned_step * spectral_max,
-        "hb_final_preconditioned_residual_ratio": residual_ratio,
+        "hb_final_preconditioned_residual_ratio": hb_residual_ratio,
         "hybrid_fallback_mask": fallback_mask,
     }
+    if "learned_chebyshev" in solutions:
+        chebyshev_residual_ratio = preconditioned_residual_ratio(
+            solutions["learned_chebyshev"]
+        )
+        chebyshev_fallback_mask = (
+            chebyshev_residual_ratio > hybrid_residual_threshold
+        )
+        solutions["residual_guarded_chebyshev_pcg"] = torch.where(
+            chebyshev_fallback_mask[:, None],
+            pcg_solution,
+            solutions["learned_chebyshev"],
+        )
+        diagnostics.update(
+            {
+                "chebyshev_final_preconditioned_residual_ratio": (
+                    chebyshev_residual_ratio
+                ),
+                "chebyshev_fallback_mask": chebyshev_fallback_mask,
+            }
+        )
+    return solutions, normal_matrix, eigenvalues, diagnostics
 
 
 @torch.no_grad()
@@ -272,6 +321,8 @@ def evaluate(args) -> Dict:
     jury_margins = []
     hb_residual_ratios = []
     hybrid_fallback_masks = []
+    chebyshev_residual_ratios = []
+    chebyshev_fallback_masks = []
     prompt_length = args.prompt_length or saved["m"]
     z_scale = args.z_scale if args.z_scale is not None else saved["z_scale"]
     noise_std = args.noise_std if args.noise_std is not None else saved["noise_std"]
@@ -301,6 +352,15 @@ def evaluate(args) -> Dict:
             controller_diagnostics["hb_final_preconditioned_residual_ratio"]
         )
         hybrid_fallback_masks.append(controller_diagnostics["hybrid_fallback_mask"])
+        if "chebyshev_fallback_mask" in controller_diagnostics:
+            chebyshev_residual_ratios.append(
+                controller_diagnostics[
+                    "chebyshev_final_preconditioned_residual_ratio"
+                ]
+            )
+            chebyshev_fallback_masks.append(
+                controller_diagnostics["chebyshev_fallback_mask"]
+            )
         exact_z = solutions["exact"]
         exact_A = model.A0.unsqueeze(0) + torch.einsum("bk,kij->bij", exact_z, model.Abasis)
         exact_u = ridge_forward_solve(exact_A, batch.f_star, model.gamma_u)
@@ -331,6 +391,7 @@ def evaluate(args) -> Dict:
     output = {
         "checkpoint": str(Path(args.checkpoint).resolve()),
         "examples": args.repetitions * args.batch_size,
+        "eval_seed": args.eval_seed,
         "depth": saved["z_depth"],
         "hb_depth": args.hb_depth or saved["z_depth"],
         "pcg_depth": args.pcg_depth or saved["z_depth"],
@@ -349,6 +410,19 @@ def evaluate(args) -> Dict:
         "hybrid_fallback_rate": all_hybrid_fallback_masks.double().mean().item(),
         "controllers": {},
     }
+    if chebyshev_fallback_masks:
+        all_chebyshev_residual_ratios = torch.cat(chebyshev_residual_ratios)
+        all_chebyshev_fallback_masks = torch.cat(chebyshev_fallback_masks)
+        output.update(
+            {
+                "chebyshev_final_preconditioned_residual_ratio": (
+                    confidence_summary(all_chebyshev_residual_ratios)
+                ),
+                "chebyshev_fallback_rate": (
+                    all_chebyshev_fallback_masks.double().mean().item()
+                ),
+            }
+        )
     for name, metrics in collected.items():
         output["controllers"][name] = {
             metric: confidence_summary(torch.cat(chunks))
