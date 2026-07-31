@@ -443,6 +443,59 @@ et ne change pas la loi de bulk ; une correction de bulk exige
 outliers. Ce n'est pas un hyperparamètre à découvrir par sweep, mais une
 conséquence de la normalisation softmax.
 
+## Covariance globale contre préconditionnement contextuel
+
+Cette distinction nous sépare du régime *fixed structured covariance* de
+[Bordelon--Letey--Pehlevan](https://arxiv.org/abs/2510.01098). Leur matrice
+apprise globale \(\Gamma\) peut mémoriser \(\Sigma^{-1}\) lorsque la covariance
+est fixe. Dans le régime aléatoirement tourné, si
+\(H_{\mathcal C}=Q_{\mathcal C}^{\top}H Q_{\mathcal C}\) avec
+\(Q_{\mathcal C}\) Haar indépendant, alors, sans Gaussianité,
+
+\[
+\mathbb E[H_{\mathcal C}]
+=\frac{\mathbb E\operatorname{tr}H}{K}I.
+\]
+
+L'inverse-covariance de population est donc scalaire et perd toutes les
+directions. Notre tête dépend au contraire du prompt et vérifie exactement
+\(B_\theta(Q^\top H Q)=Q^\top B_\theta(H)Q\) : les orientations ne sont pas
+mémorisées dans les poids, mais récupérées dans le contexte.
+
+Un benchmark **PDE-RRS** a conjugué chaque normal latent et son second membre
+par une rotation Haar indépendante. Pour chaque préconditionneur, les deux
+scalaires HB-10 ont été réoptimisés sur 2 048 tâches tirées de la loi, puis
+évalués sur 4 096 tâches disjointes. Chebyshev-10 utilise les extrémités
+exactes de chaque opérateur effectif; PCG-4 mesure le régime tronqué et PCG-8
+le plafond algébrique puisque \(K=8\).
+
+| seed | \(\kappa\) global | \(\kappa\) tête | HB global | HB tête | Cheb global | Cheb tête | PCG-4 global | PCG-4 tête |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 18.041 | 2.751 | \(7.66\,10^{-2}\) | \(6.10\,10^{-12}\) | \(1.03\,10^{-3}\) | \(3.87\,10^{-11}\) | \(7.04\,10^{-3}\) | \(1.64\,10^{-7}\) |
+| 1 | 6.156 | 2.261 | \(1.20\,10^{-2}\) | \(1.75\,10^{-13}\) | \(1.79\,10^{-6}\) | \(4.14\,10^{-13}\) | \(8.24\,10^{-4}\) | \(1.50\,10^{-6}\) |
+| 2 | 5.063 | 2.205 | \(2.01\,10^{-5}\) | \(2.42\,10^{-13}\) | \(6.62\,10^{-7}\) | \(3.39\,10^{-13}\) | \(4.00\,10^{-4}\) | \(1.19\,10^{-6}\) |
+
+L'erreur indiquée est l'erreur solveur relative au carré dans la norme
+\(H\). La tête réduit le conditionnement moyen d'un facteur compris entre
+\(2.30\) et \(6.56\), l'erreur Chebyshev d'au moins \(1.95\,10^6\), et
+l'erreur PCG-4 d'au moins \(335\). Son erreur moyenne de covariance de jauge
+reste inférieure à \(1.5\,10^{-6}\) en float32.
+
+Les rares explosions HB globales ne sont pas cachées : pour les seeds 0 et 1,
+3 tâches sur 4 096 sortent du domaine de Jury appris sur la loi de calibration.
+Avec un forçage gaussien, \(\lambda_{\max}(H)\) n'a pas de borne uniforme; aucun
+pas HB global strictement positif ne peut donc être certifié sans hypothèse de
+queue. La normalisation prompt-par-prompt de la tête impose au contraire
+\(\lambda_{\max}(B_\theta H)\leq\bar L\) par construction et donne zéro
+violation sur les trois seeds.
+
+Enfin, l'inverse direct garde \(\kappa=1\) et atteint la précision machine.
+La tête actuelle diagonalise elle aussi le petit normal \(K\times K\) : ce
+benchmark prouve un bénéfice statistique et algorithmique contre une covariance
+globale, **pas** un avantage de complexité contre Cholesky. Un gain face au
+solveur direct exigera la version scalable qui approxime seulement le sous-
+espace lent sans eigendecomposition complète.
+
 Trois entraînements certifiés de 750 pas, depuis trois encodeurs elliptiques
 gelés, restent au plancher encodeur (\(u\)-MSE de l'ordre de \(10^{-9}\)).
 Pour chaque seed, sur 8 192 tâches nominales puis 8 192 tâches avec

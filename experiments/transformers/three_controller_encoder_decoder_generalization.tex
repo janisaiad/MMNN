@@ -559,6 +559,45 @@ needed only when the spectral decomposition is not materialized, or when its
 cost is deliberately amortized at larger coefficient dimension.
 \end{corollary}
 
+\begin{proposition}[a global covariance loses all directions under RRS]
+\label{prop:rrs-global-covariance}
+Let $H\succ0$ be any random prompt normal with
+$\mathbb E\operatorname{tr}H<\infty$, and let $Q$ be an independent Haar
+orthogonal matrix.  Then
+\[
+ \mathbb E_{H,Q}[Q^\top H Q]
+ =\frac{\mathbb E\operatorname{tr}H}{K}I.
+\]
+Consequently the inverse-population-covariance preconditioner is a scalar
+multiple of the identity and cannot retain a preferred eigenspace.  In
+contrast, every promptwise orthogonally covariant head satisfies
+\[
+ B_\theta(Q^\top H Q)=Q^\top B_\theta(H)Q,
+\]
+so $B_\theta(Q^\top H Q)^{1/2}(Q^\top H Q)
+B_\theta(Q^\top H Q)^{1/2}$ has the same eigenvalues as
+$B_\theta(H)^{1/2}HB_\theta(H)^{1/2}$.  Thus its directional correction
+survives arbitrary contextwise rotations without storing their orientation
+in the weights.
+\end{proposition}
+\begin{proof}
+Haar invariance makes $\mathbb E_Q[Q^\top H Q]$ commute with every orthogonal
+matrix, hence it is scalar; trace preservation fixes the scalar.  The second
+claim is Theorem~\ref{thm:equivariant-ritz-closure}, and orthogonal similarity
+preserves the effective spectrum.
+\end{proof}
+
+This statement needs neither Gaussianity nor a deterministic limiting
+spectrum.  It also exposes a stability distinction hidden by fixed-spectrum
+models.  If the largest eigenvalue of $H$ has unbounded support, then for any
+fixed scalar preconditioner, $\alpha>0$, and $\beta<1$, the HB Jury inequality
+fails with positive probability.  No nonzero globally fixed step can be
+uniformly certified without a spectral-tail assumption.  The promptwise
+normalization in \eqref{eq:equivariant-ritz-head}, however, gives
+$a_i\leq\overline L$ deterministically.  A finite-law risk or CVaR predictor
+can still select the best global coefficients, but it must report this tail
+risk rather than silently assuming bounded Gaussian quadratic forms.
+
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
 limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset
