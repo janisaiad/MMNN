@@ -218,6 +218,124 @@ class PromptSpectralMeasureMLP(nn.Module):
         return nodes, weights, basis_upper
 
 
+class PromptComplementMeasureMLP(nn.Module):
+    """Learn three conditional statistics around an exact Ritz measure.
+
+    The network changes only the resolved/complement energy gate, the
+    complement split balance, and its bounded spread. The two complement
+    nodes preserve the exact trace mean by construction and remain inside the
+    deterministic spectral certificate.
+    """
+
+    def __init__(
+        self,
+        input_dimension: int = 13,
+        hidden_dimension: int = 12,
+        maximum_log_odds_shift: float = 2.0,
+        minimum_balance: float = 0.05,
+        initial_spread_logit: float = -6.0,
+    ) -> None:
+        super().__init__()
+        if hidden_dimension <= 0:
+            raise ValueError("hidden dimension must be positive")
+        if maximum_log_odds_shift <= 0:
+            raise ValueError("maximum log-odds shift must be positive")
+        if not 0.0 < minimum_balance < 0.5:
+            raise ValueError("minimum balance must lie in (0, 0.5)")
+        self.maximum_log_odds_shift = float(maximum_log_odds_shift)
+        self.minimum_balance = float(minimum_balance)
+        self.initial_spread_logit = float(initial_spread_logit)
+        self.network = nn.Sequential(
+            nn.Linear(input_dimension, hidden_dimension),
+            nn.SiLU(),
+            nn.Linear(hidden_dimension, 3),
+        )
+        with torch.no_grad():
+            self.network[-1].weight.zero_()
+            self.network[-1].bias.zero_()
+
+    def forward(
+        self,
+        features: Tensor,
+        resolved_nodes: Tensor,
+        complement_trace: Tensor,
+        complement_dimension: int,
+        operator_trace: Tensor,
+        spectral_upper: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+        batch = features.shape[0]
+        if resolved_nodes.ndim != 2 or resolved_nodes.shape[0] != batch:
+            raise ValueError("resolved nodes must have shape [batch, nodes]")
+        if complement_dimension <= 0:
+            raise ValueError("a positive complement dimension is required")
+        for name, value in [
+            ("complement trace", complement_trace),
+            ("operator trace", operator_trace),
+            ("spectral upper", spectral_upper),
+        ]:
+            if value.shape != (batch,):
+                raise ValueError(f"{name} must have shape [batch]")
+        if (
+            torch.any(resolved_nodes <= 0)
+            or torch.any(complement_trace < 0)
+            or torch.any(operator_trace <= 0)
+            or torch.any(spectral_upper <= 0)
+        ):
+            raise ValueError("spectral inputs must be nonnegative and nondegenerate")
+
+        raw_gate, raw_balance, raw_spread = self.network(features).unbind(dim=-1)
+        resolved_trace = resolved_nodes.sum(dim=-1)
+        base_gate = (resolved_trace / operator_trace).clamp(1e-6, 1.0 - 1e-6)
+        base_log_odds = torch.log(base_gate) - torch.log1p(-base_gate)
+        gate = torch.sigmoid(
+            base_log_odds
+            + self.maximum_log_odds_shift * torch.tanh(raw_gate)
+        )
+        balance = self.minimum_balance + (
+            1.0 - 2.0 * self.minimum_balance
+        ) * torch.sigmoid(raw_balance)
+
+        complement_mean = complement_trace / complement_dimension
+        lower_room = complement_mean / (1.0 - balance).clamp_min(1e-8)
+        upper_room = (
+            spectral_upper - complement_mean
+        ).clamp_min(0.0) / balance.clamp_min(1e-8)
+        maximum_spread = 0.999 * torch.minimum(lower_room, upper_room)
+        spread = maximum_spread * torch.sigmoid(
+            raw_spread + self.initial_spread_logit
+        )
+        lower_node = complement_mean - (1.0 - balance) * spread
+        upper_node = complement_mean + balance * spread
+
+        resolved_weights = resolved_nodes / resolved_trace[:, None].clamp_min(1e-30)
+        lower_energy = balance * lower_node
+        upper_energy = (1.0 - balance) * upper_node
+        complement_weights = torch.stack(
+            [lower_energy, upper_energy],
+            dim=-1,
+        )
+        complement_weights = complement_weights / complement_weights.sum(
+            dim=-1,
+            keepdim=True,
+        ).clamp_min(1e-30)
+        nodes = torch.cat(
+            [
+                resolved_nodes,
+                lower_node[:, None],
+                upper_node[:, None],
+            ],
+            dim=-1,
+        )
+        weights = torch.cat(
+            [
+                gate[:, None] * resolved_weights,
+                (1.0 - gate[:, None]) * complement_weights,
+            ],
+            dim=-1,
+        )
+        return nodes, weights, gate, balance, spread
+
+
 def spectral_interval_coverage_loss(
     predicted_min: Tensor,
     predicted_max: Tensor,

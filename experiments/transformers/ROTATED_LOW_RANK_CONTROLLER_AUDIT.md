@@ -298,3 +298,52 @@ La contribution apprise commune est donc
 
 c'est-à-dire une covariance postérieure low-rank spécifique au prompt. Le
 solveur exact qui la consomme peut être changé sans réentraîner la géométrie.
+
+## Relation exacte avec Bordelon--Letey--Pehlevan
+
+Leur modèle réduit écrit la profondeur comme les puissances de
+\(I-L^{-1}\widehat\Sigma\Gamma\). Dans le cas à covariance fixe,
+\(\Gamma\) mémorise en poids une géométrie globale proche de
+\(\Sigma^{-1}\), donc une covariance inverse servant de préconditionneur.
+Quand les covariances sont aléatoirement tournées entre contextes, cette
+matrice globale ne peut plus blanchir chaque tâche et la solution devient une
+descente in-context non préconditionnée.
+
+Notre tête a la même lecture géométrique générale, mais pas le même statut :
+\(B_\theta(\mathcal C)\) est recalculé depuis la covariance du prompt courant,
+est covariant aux rotations, et n'est low-rank que dans les directions
+routées. L'apprentissage ne mémorise donc pas une covariance fixe; il apprend
+une règle contextuelle qui transforme les moments du prompt en métrique.
+
+## Correction conditionnelle minimale du complément
+
+La fermeture à un atome de Ritz--Chebyshev \(q=2\) connaît exactement la
+trace du complément, mais pas sa dispersion ni la répartition d'énergie de la
+tâche. Un MLP de largeur 12 est donc autorisé à apprendre seulement trois
+statistiques du prompt : (i) la porte d'énergie résolu/complément, (ii) la
+balance entre deux atomes du complément et (iii) leur dispersion bornée. Les
+deux nœuds restent positifs, sous le certificat spectral, et leur moyenne
+pondérée conserve exactement la trace du complément. La tête de covariance,
+les HVP, Ritz, le Gram solve et Clenshaw sont figés et exacts.
+
+| méthode | risque \(H\) moyen | ratio vs correction apprise |
+|---|---:|---:|
+| fermeture exacte à un atome, \(q=2\) | \(9.603\times10^{-6}\) | 19.8 |
+| correction conditionnelle à trois scalaires | **\(4.860\times10^{-7}\)** | 1 |
+| PCG-8 pur | \(2.192\times10^{-6}\) | 4.51 |
+| PCG pur à travail scalaire égal | \(4.739\times10^{-8}\) | 0.0975 |
+| même tête + PCG-8 | **\(1.811\times10^{-8}\)** | 0.0373 |
+
+Les paramètres appris sont cohérents entre graines : la masse d'énergie
+attribuée aux huit modes résolus passe de \(0.853\) à
+\(0.951,0.953,0.961\), la balance vaut \(0.621,0.620,0.706\), et la dispersion
+du complément reste petite (\(1.36\%,1.42\%,1.81\%\) du certificat). Le gain
+vient principalement d'une correction stable de la masse de tâche sur les
+directions résolues, pas d'un ajustement arbitraire de nombreux nœuds.
+
+La correction apprise bat donc PCG pur à profondeur huit, mais pas PCG pur à
+travail total égal et encore moins PCG utilisant la même géométrie. On la
+retient comme meilleur décodeur polynomial structuré; on ne la présente pas
+comme meilleur solveur numérique universel.
+
+![Correction spectrale apprise contre solveurs purs](pde_corrected_ritz_measure_training/pde_matrix_free_solver_comparison.png)

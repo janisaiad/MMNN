@@ -1363,6 +1363,30 @@ measure MLP.  Fine-tuning the routed head changes this to
 first-principles measure closes most of the fixed-polynomial estimation gap
 but does not reverse the Krylov boundary.
 
+The remaining complement closure can be relaxed without learning any solver
+arithmetic.  Keep the eight $q=2$ Ritz nodes and their exact trace, and learn
+only three prompt-conditioned statistics: a resolved/complement task-energy
+gate, a two-atom complement balance, and a bounded spread.  Parameterizing
+the two complement nodes around $\bar\vartheta_\perp$ preserves
+\[
+ \pi\vartheta_-+(1-\pi)\vartheta_+
+ =\bar\vartheta_\perp
+\]
+exactly, while sigmoid bounds keep both nodes positive and below the certified
+spectral upper endpoint.  The learned object is therefore a conditional
+closure for missing task-energy information, not an approximation of the
+Gram solve or Clenshaw recurrence.
+
+With the covariance head frozen, a width--12 map for these three scalars,
+trained for 800 steps over three seeds, lowers relative $H$-risk from
+$9.60\times10^{-6}$ at initialization to $4.86\times10^{-7}$.  This is a
+factor $19.8$ improvement over the one-atom complement closure and a factor
+$4.51$ over pure PCG--8.  It remains a factor $10.3$ worse than head-free PCG
+at equal scalar-HVP work ($4.74\times10^{-8}$), and a factor $26.8$ worse
+than same-head PCG--8 ($1.81\times10^{-8}$).  Hence the conditional
+three-statistic law is empirically real and useful, but it does not overturn
+the exact Krylov ordering.
+
 Gaussian forcing is used only for the explicit Wick covariance above; the
 finite-dimensional predictor requires only an SPD normal matrix, finite
 moments, and the stated nondegeneracy of the routed block.

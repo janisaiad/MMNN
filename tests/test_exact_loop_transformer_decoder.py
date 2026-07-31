@@ -25,6 +25,7 @@ from first_principles_decoder_cells import (  # noqa: E402
     shifted_chebyshev_basis,
 )
 from first_principles_inverse_decoder import (  # noqa: E402
+    PromptComplementMeasureMLP,
     PromptSpectralMeasureMLP,
 )
 from pure_icl_parametric_operator_richardson_attention import (  # noqa: E402
@@ -373,6 +374,63 @@ def test_spectral_measure_mlp_tolerates_one_ulp_certificate_roundoff() -> None:
     assert (basis_upper <= certified_upper).all()
 
 
+def test_complement_measure_mlp_preserves_trace_certificate_and_gradients() -> None:
+    torch.manual_seed(47)
+    dtype = torch.float64
+    batch, resolved_count, complement_dimension = 5, 4, 7
+    features = torch.randn(batch, 13, dtype=dtype)
+    resolved_nodes = 0.2 + torch.rand(batch, resolved_count, dtype=dtype)
+    spectral_upper = torch.full((batch,), 2.5, dtype=dtype)
+    complement_mean = 0.3 + 0.5 * torch.rand(batch, dtype=dtype)
+    complement_trace = complement_dimension * complement_mean
+    operator_trace = resolved_nodes.sum(dim=-1) + complement_trace
+    head = PromptComplementMeasureMLP(hidden_dimension=9).double()
+
+    nodes, weights, gate, balance, spread = head(
+        features,
+        resolved_nodes,
+        complement_trace,
+        complement_dimension,
+        operator_trace,
+        spectral_upper,
+    )
+    assert nodes.shape == weights.shape == (batch, resolved_count + 2)
+    assert torch.all(nodes > 0)
+    assert torch.all(nodes <= spectral_upper[:, None])
+    assert torch.all(weights > 0)
+    torch.testing.assert_close(
+        weights.sum(dim=-1),
+        torch.ones(batch, dtype=dtype),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    torch.testing.assert_close(
+        gate,
+        resolved_nodes.sum(dim=-1) / operator_trace,
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    lower_node, upper_node = nodes[:, -2], nodes[:, -1]
+    torch.testing.assert_close(
+        balance * lower_node + (1.0 - balance) * upper_node,
+        complement_mean,
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert torch.all(spread >= 0)
+
+    coefficients = risk_optimal_solution_chebyshev_coefficients(
+        nodes,
+        weights,
+        degree=4,
+        spectral_upper=spectral_upper,
+    )
+    coefficients.square().mean().backward()
+    gradients = [parameter.grad for parameter in head.parameters()]
+    assert all(gradient is not None for gradient in gradients)
+    assert all(torch.isfinite(gradient).all() for gradient in gradients)
+
+
 def test_moment_chebyshev_loop_is_matrix_free_and_differentiable(
     monkeypatch,
 ) -> None:
@@ -476,6 +534,81 @@ def test_ritz_moment_chebyshev_learns_only_probes_and_uses_exact_measure(
     assert head_gradients
     assert all(gradient is not None for gradient in head_gradients)
     assert all(torch.isfinite(gradient).all() for gradient in head_gradients)
+
+
+def test_corrected_ritz_measure_is_matrix_free_and_query_independent(
+    monkeypatch,
+) -> None:
+    import exact_loop_transformer_decoder as decoder_module
+
+    equations, _ = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=8,
+        slots=1,
+        controller="corrected_ritz_moment_chebyshev",
+        spectral_lmax_bound=2.5,
+        spectral_krylov_steps=2,
+        moment_gram_regularization=1e-8,
+        complement_measure_hidden_dimension=9,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=1,
+    ).double()
+
+    def forbidden_normal_matrix(*args, **kwargs):
+        raise AssertionError("corrected Ritz-moment Chebyshev materialized H")
+
+    monkeypatch.setattr(
+        decoder_module,
+        "normal_matrix_from_equations",
+        forbidden_normal_matrix,
+    )
+    observations = torch.randn(
+        equations.shape[0],
+        equations.shape[1],
+        3,
+        dtype=equations.dtype,
+    )
+    geometry = decoder.build_prompt_geometry(equations, ridge=0.2)
+    multi, info = decoder.solve_with_geometry(geometry, observations)
+    separate = torch.stack(
+        [
+            decoder.solve_with_geometry(geometry, observations[..., index])[0]
+            for index in range(observations.shape[-1])
+        ],
+        dim=-1,
+    )
+    torch.testing.assert_close(multi, separate, rtol=2e-10, atol=2e-10)
+    assert info["matrix_free"].all()
+    assert not info["normal_matrix_materialized"].any()
+    assert info["spectral_measure_nodes"].shape == (equations.shape[0], 4)
+    torch.testing.assert_close(
+        info["spectral_measure_weights"].sum(dim=-1),
+        torch.ones(equations.shape[0], dtype=equations.dtype),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert decoder.complement_measure_head is not None
+    multi.square().mean().backward()
+    gradients = [
+        parameter.grad for parameter in decoder.complement_measure_head.parameters()
+    ]
+    assert all(gradient is not None for gradient in gradients)
+    assert all(torch.isfinite(gradient).all() for gradient in gradients)
+
+
+def test_corrected_ritz_measure_requires_a_nonempty_complement() -> None:
+    with pytest.raises(ValueError, match="nonempty complement"):
+        ExactLoopTransformerDecoder(
+            dimension=4,
+            depth=4,
+            head_dimension=8,
+            slots=2,
+            controller="corrected_ritz_moment_chebyshev",
+            spectral_krylov_steps=2,
+            preconditioner_head_type="equivariant_matrix_free_nystrom",
+        )
 
 
 def test_moment_chebyshev_loop_reuses_prompt_geometry_for_multiple_rhs() -> None:

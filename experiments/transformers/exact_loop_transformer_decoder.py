@@ -29,6 +29,7 @@ try:
         run_precomputed_moment_chebyshev_state_machine,
     )
     from .first_principles_inverse_decoder import (
+        PromptComplementMeasureMLP,
         PromptSpectralIntervalMLP,
         PromptSpectralMeasureMLP,
     )
@@ -51,6 +52,7 @@ except ImportError:
         run_precomputed_moment_chebyshev_state_machine,
     )
     from first_principles_inverse_decoder import (
+        PromptComplementMeasureMLP,
         PromptSpectralIntervalMLP,
         PromptSpectralMeasureMLP,
     )
@@ -169,8 +171,9 @@ class ExactLoopTransformerDecoder(nn.Module):
     """One softmax geometry head and an exact tied recurrent solver cell.
 
     ``controller`` is one of ``richardson``, ``heavy_ball``, ``chebyshev``,
-    ``moment_chebyshev``, ``ritz_moment_chebyshev``, ``pcg`` or
-    ``certified_hb_pcg``.  The last
+    ``moment_chebyshev``, ``ritz_moment_chebyshev``,
+    ``corrected_ritz_moment_chebyshev``, ``pcg`` or ``certified_hb_pcg``.
+    The last
     (historically named) choice
     runs Heavy-Ball by default and hard-routes prompts whose final
     preconditioned residual fails a prescribed test to PCG.  The test
@@ -192,6 +195,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         spectral_measure_clusters: int = 8,
         spectral_measure_hidden_dimension: int = 32,
         spectral_krylov_steps: int = 2,
+        complement_measure_hidden_dimension: int = 12,
         moment_gram_regularization: float = 1e-8,
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
@@ -210,6 +214,7 @@ class ExactLoopTransformerDecoder(nn.Module):
             "chebyshev",
             "moment_chebyshev",
             "ritz_moment_chebyshev",
+            "corrected_ritz_moment_chebyshev",
             "pcg",
             "certified_hb_pcg",
         }:
@@ -223,14 +228,29 @@ class ExactLoopTransformerDecoder(nn.Module):
         if spectral_krylov_steps <= 0:
             raise ValueError("spectral_krylov_steps must be positive")
         if (
-            controller == "ritz_moment_chebyshev"
+            controller in {
+                "ritz_moment_chebyshev",
+                "corrected_ritz_moment_chebyshev",
+            }
             and spectral_krylov_steps * slots > dimension
         ):
             raise ValueError(
                 "spectral_krylov_steps times slots cannot exceed dimension"
             )
         if (
-            controller in {"moment_chebyshev", "ritz_moment_chebyshev"}
+            controller == "corrected_ritz_moment_chebyshev"
+            and spectral_krylov_steps * slots >= dimension
+        ):
+            raise ValueError(
+                "corrected Ritz-moment Chebyshev requires a nonempty complement"
+            )
+        if (
+            controller
+            in {
+                "moment_chebyshev",
+                "ritz_moment_chebyshev",
+                "corrected_ritz_moment_chebyshev",
+            }
             and preconditioner_head_type != "equivariant_matrix_free_nystrom"
         ):
             raise ValueError(
@@ -352,6 +372,14 @@ class ExactLoopTransformerDecoder(nn.Module):
                 clusters=spectral_measure_clusters,
             )
             if controller == "moment_chebyshev"
+            else None
+        )
+        self.complement_measure_head = (
+            PromptComplementMeasureMLP(
+                input_dimension=13,
+                hidden_dimension=complement_measure_hidden_dimension,
+            )
+            if controller == "corrected_ritz_moment_chebyshev"
             else None
         )
 
@@ -574,7 +602,10 @@ class ExactLoopTransformerDecoder(nn.Module):
                     "moment_solution_coefficients": coefficients,
                 }
             )
-        elif self.controller == "ritz_moment_chebyshev":
+        elif self.controller in {
+            "ritz_moment_chebyshev",
+            "corrected_ritz_moment_chebyshev",
+        }:
             if not hasattr(preconditioner, "sqrt_apply"):
                 raise TypeError(
                     "Ritz-moment Chebyshev requires a symmetric square-root action"
@@ -598,6 +629,84 @@ class ExactLoopTransformerDecoder(nn.Module):
                 info["effective_trace"],
                 spectral_upper,
             )
+            base_spectral_nodes = spectral_nodes
+            base_spectral_weights = spectral_weights
+            if self.controller == "corrected_ritz_moment_chebyshev":
+                assert self.complement_measure_head is not None
+                resolved_nodes = spectral_nodes[:, :-1]
+                complement_dimension = (
+                    self.dimension
+                    - self.spectral_krylov_steps
+                    * info["directions"].shape[-1]
+                )
+                complement_mean = complement_trace / complement_dimension
+                resolved_mean = resolved_nodes.mean(dim=-1)
+                resolved_std = resolved_nodes.std(dim=-1, unbiased=False)
+                correction_features = torch.cat(
+                    [
+                        info["interval_features"],
+                        torch.stack(
+                            [
+                                torch.log(
+                                    (
+                                        complement_mean
+                                        / spectral_upper
+                                    ).clamp_min(1e-12)
+                                ),
+                                torch.log(
+                                    (
+                                        complement_trace
+                                        / info["effective_trace"]
+                                    ).clamp_min(1e-12)
+                                ),
+                                torch.log(
+                                    (
+                                        resolved_nodes[:, 0]
+                                        / spectral_upper
+                                    ).clamp_min(1e-12)
+                                ),
+                                torch.log(
+                                    (
+                                        resolved_nodes[:, -1]
+                                        / spectral_upper
+                                    ).clamp_min(1e-12)
+                                ),
+                                torch.log1p(
+                                    resolved_std
+                                    / resolved_mean.clamp_min(1e-12)
+                                ),
+                                resolved_nodes.new_full(
+                                    (resolved_nodes.shape[0],),
+                                    resolved_nodes.shape[1] / self.dimension,
+                                ),
+                            ],
+                            dim=-1,
+                        ),
+                    ],
+                    dim=-1,
+                )
+                (
+                    spectral_nodes,
+                    spectral_weights,
+                    complement_energy_gate,
+                    complement_balance,
+                    complement_spread,
+                ) = self.complement_measure_head(
+                    correction_features,
+                    resolved_nodes,
+                    complement_trace,
+                    complement_dimension,
+                    info["effective_trace"],
+                    spectral_upper,
+                )
+                info.update(
+                    {
+                        "complement_measure_features": correction_features,
+                        "complement_energy_gate": complement_energy_gate,
+                        "complement_balance": complement_balance,
+                        "complement_spread": complement_spread,
+                    }
+                )
             coefficients = risk_optimal_solution_chebyshev_coefficients(
                 spectral_nodes,
                 spectral_weights,
@@ -616,6 +725,8 @@ class ExactLoopTransformerDecoder(nn.Module):
                 {
                     "spectral_measure_nodes": spectral_nodes,
                     "spectral_measure_weights": spectral_weights,
+                    "base_spectral_measure_nodes": base_spectral_nodes,
+                    "base_spectral_measure_weights": base_spectral_weights,
                     "spectral_upper": spectral_upper,
                     "moment_solution_coefficients": coefficients,
                     "projected_krylov_operator": projected_krylov_operator,

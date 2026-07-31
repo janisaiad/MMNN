@@ -938,6 +938,74 @@ one action of \(A_\theta\), hence one prompt HVP surrounded by two exact
 low-rank square-root applications.
 \end{proof}
 
+\begin{proposition}[three-statistic conditional complement correction]
+\label{prop:conditional-complement-correction}
+Assume the setting of Proposition~\ref{prop:routed-krylov-measure} with
+$qS<K$.  Write
+\[
+ \tau_\parallel=\sum_{i=1}^{qS}\vartheta_i,
+ \qquad \tau_\perp=\tau_\theta-\tau_\parallel,
+ \qquad \bar\vartheta_\perp=\frac{\tau_\perp}{K-qS},
+\]
+and let $\Lambda\geq\lambda_{\max}(A_\theta)$ be the deterministic
+certificate.  A prompt-only map predicts three scalars
+$(\delta,\pi,s)$ satisfying
+\[
+ |\delta|\leq D,\qquad \epsilon\leq\pi\leq1-\epsilon,
+ \qquad
+ 0\leq s<\min\left\{
+ \frac{\bar\vartheta_\perp}{1-\pi},
+ \frac{\Lambda-\bar\vartheta_\perp}{\pi}
+ \right\}.
+\]
+Define
+\begin{align*}
+ g_0&=\tau_\parallel/\tau_\theta,
+ &g&=\operatorname{sigmoid}\{\operatorname{logit}(g_0)+\delta\},\\
+ \vartheta_-&=\bar\vartheta_\perp-(1-\pi)s,
+ &\vartheta_+&=\bar\vartheta_\perp+\pi s,
+\end{align*}
+and
+\[
+ \widehat\nu_{q,\eta}
+ =g\sum_{i=1}^{qS}\frac{\vartheta_i}{\tau_\parallel}
+      \delta_{\vartheta_i}
+ +(1-g)\left[
+   \frac{\pi\vartheta_-}{\bar\vartheta_\perp}\delta_{\vartheta_-}
+  +\frac{(1-\pi)\vartheta_+}{\bar\vartheta_\perp}
+      \delta_{\vartheta_+}\right].
+\]
+Then $\widehat\nu_{q,\eta}$ is a positive probability measure supported in
+$(0,\Lambda]$, the exact complement trace closure is preserved because
+$\pi\vartheta_-+(1-\pi)\vartheta_+=\bar\vartheta_\perp$, and the resulting
+Gram solve and Clenshaw loop remain exact and query independent.  Only the
+resolved/complement task-energy gate, the unresolved multiplicity balance,
+and the unresolved spread are learned.
+
+Moreover, if $S_q$ denotes the prompt statistics entering this map, its
+population target is the conditional decision rule
+\[
+ \eta_\star(S_q)\in\arg\min_{\eta\in\mathcal E}
+ \mathbb E\!\left[
+   \int r_{L,\eta}(\lambda)^2\,\nu_{x,A_\theta}(d\lambda)
+   \ \middle|\ S_q
+ \right],
+\]
+where $r_{L,\eta}$ is produced by the exact Gram solve and
+$\nu_{x,A_\theta}$ is the task-energy spectral measure.  Thus learning this
+map estimates missing conditional law information; it does not approximate
+solver multiplication, division, or routing.
+\end{proposition}
+\begin{proof}
+The constraints give $0<\vartheta_-\leq\vartheta_+\leq\Lambda$.
+The displayed mean identity makes each bracketed set of masses sum to one,
+and $0<g<1$, proving positivity and normalization.  Every input to $\eta$ is
+a function of the prompt geometry, so changing the right-hand side leaves
+the measure and polynomial coefficients unchanged.  The final statement is
+the Bayes decision rule for the restricted compact three-scalar family; the
+polynomial associated with each decision is still computed algebraically.
+\end{proof}
+
 \begin{corollary}[fixed-slot bulk boundary and low-rank benefit]
 \label{cor:fixed-slot-boundary}
 Let

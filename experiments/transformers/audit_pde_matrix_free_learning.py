@@ -96,6 +96,7 @@ def decoder(
         step_init=args.step_init,
         momentum_init=args.momentum_init,
         spectral_krylov_steps=args.spectral_krylov_steps,
+        complement_measure_hidden_dimension=args.complement_measure_hidden_dimension,
         moment_gram_regularization=args.gram_regularization,
         preconditioner_head_type="equivariant_matrix_free_nystrom",
         prompt_subspace_refinement_steps=refinements,
@@ -144,9 +145,15 @@ def train(
             if name.startswith("preconditioner_head.")
         }
         model.preconditioner_head.load_state_dict(head_state)
+    if args.freeze_preconditioner_head:
+        for parameter in model.preconditioner_head.parameters():
+            parameter.requires_grad_(False)
     initial = copy.deepcopy(model.state_dict())
+    trainable_parameters = [
+        parameter for parameter in model.parameters() if parameter.requires_grad
+    ]
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        trainable_parameters,
         lr=args.learning_rate,
         weight_decay=args.weight_decay,
     )
@@ -163,7 +170,7 @@ def train(
         loss = mean_energy + args.cvar_weight * cvar + args.query_weight * query
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), args.gradient_clip)
+        torch.nn.utils.clip_grad_norm_(trainable_parameters, args.gradient_clip)
         optimizer.step()
         if step == 1 or step % args.log_every == 0 or step == args.training_steps:
             row = {
@@ -341,7 +348,11 @@ def evaluate(
         # comparing with sequential scalar-HVP work.
         extra_measure_rounds = (
             args.spectral_krylov_steps
-            if args.training_controller == "ritz_moment_chebyshev"
+            if args.training_controller
+            in {
+                "ritz_moment_chebyshev",
+                "corrected_ritz_moment_chebyshev",
+            }
             else 0
         )
         equal_depth = (
@@ -382,20 +393,39 @@ def evaluate(
                 }
             )
         else:
+            trained_name = f"trained_head_{args.training_controller}"
+            initial_name = f"initial_head_{args.training_controller}"
+            trained_solution, trained_controller_info = trained(
+                equations,
+                observations,
+                ridge,
+            )
+            initial_solution, initial_controller_info = initial(
+                equations,
+                observations,
+                ridge,
+            )
             methods.update(
                 {
-                    "trained_head_ritz_moment_chebyshev": trained(
-                        equations,
-                        observations,
-                        ridge,
-                    )[0],
-                    "initial_head_ritz_moment_chebyshev": initial(
-                        equations,
-                        observations,
-                        ridge,
-                    )[0],
+                    trained_name: trained_solution,
+                    initial_name: initial_solution,
                 }
             )
+            if args.training_controller == "corrected_ritz_moment_chebyshev":
+                for prefix, controller_info in [
+                    ("trained", trained_controller_info),
+                    ("initial", initial_controller_info),
+                ]:
+                    overlaps[f"{prefix}_complement_gate"].append(
+                        controller_info["complement_energy_gate"]
+                    )
+                    overlaps[f"{prefix}_complement_balance"].append(
+                        controller_info["complement_balance"]
+                    )
+                    overlaps[f"{prefix}_complement_spread_fraction"].append(
+                        controller_info["complement_spread"]
+                        / controller_info["spectral_upper"]
+                    )
         (
             oracle_hb,
             oracle_chebyshev,
@@ -548,14 +578,30 @@ def plot(rows: list[dict], outdir: Path) -> None:
         "trained_head_hb",
         "trained_head_ritz_moment_chebyshev",
         "initial_head_ritz_moment_chebyshev",
-        "trained_head_oracle_chebyshev",
+        "trained_head_corrected_ritz_moment_chebyshev",
+        "initial_head_corrected_ritz_moment_chebyshev",
+        "identity_pcg",
         "trained_head_pcg",
         "oracle_prompt_esd_polynomial",
-        "initial_head_pcg",
         "identity_pcg_equal_work",
         "jacobi_pcg_equal_work",
-        "oracle_top_pcg",
     ]
+    labels = {
+        "trained_head_hb": "learned geometry\n+ HB-8",
+        "trained_head_ritz_moment_chebyshev": "Ritz--Cheb-8\ntrained probes",
+        "initial_head_ritz_moment_chebyshev": "Ritz--Cheb-8\nfrozen probes",
+        "trained_head_corrected_ritz_moment_chebyshev": (
+            "learned 3-stat\nRitz--Cheb-8"
+        ),
+        "initial_head_corrected_ritz_moment_chebyshev": (
+            "exact closure\nRitz--Cheb-8"
+        ),
+        "identity_pcg": "pure PCG-8",
+        "trained_head_pcg": "learned geometry\n+ PCG-8",
+        "oracle_prompt_esd_polynomial": "oracle spectral\npolynomial-8",
+        "identity_pcg_equal_work": "pure PCG\nequal work",
+        "jacobi_pcg_equal_work": "Jacobi PCG\nequal work",
+    }
     refinements = sorted({row["refinements"] for row in rows})
     figure, axes = plt.subplots(len(refinements), 2, figsize=(12, 4 * len(refinements)), squeeze=False)
     for index, refinement in enumerate(refinements):
@@ -578,7 +624,7 @@ def plot(rows: list[dict], outdir: Path) -> None:
             axis.set_yscale("log")
             axis.set_xticks(
                 range(len(names)),
-                [name.replace("_", "\n") for name in names],
+                [labels[name] for name in names],
                 fontsize=7,
             )
             axis.grid(axis="y", alpha=0.25)
@@ -612,10 +658,15 @@ def main() -> None:
     parser.add_argument("--momentum-init", type=float, default=0.1)
     parser.add_argument(
         "--training-controller",
-        choices=["heavy_ball", "ritz_moment_chebyshev"],
+        choices=[
+            "heavy_ball",
+            "ritz_moment_chebyshev",
+            "corrected_ritz_moment_chebyshev",
+        ],
         default="heavy_ball",
     )
     parser.add_argument("--spectral-krylov-steps", type=int, default=2)
+    parser.add_argument("--complement-measure-hidden-dimension", type=int, default=12)
     parser.add_argument("--gram-regularization", type=float, default=1e-5)
     parser.add_argument("--training-steps", type=int, default=800)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -635,6 +686,7 @@ def main() -> None:
         type=Path,
         default=None,
     )
+    parser.add_argument("--freeze-preconditioner-head", action="store_true")
     args = parser.parse_args()
     if args.slots >= args.dimension:
         raise ValueError("slots must be smaller than dimension")
