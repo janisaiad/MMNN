@@ -114,6 +114,7 @@ def solve_all(
     batch,
     hybrid_residual_threshold: float,
     hb_depth: int,
+    pcg_depth: int,
 ) -> tuple[Dict[str, Tensor], Tensor, Tensor, Dict[str, Tensor]]:
     if model.loop_decoder is None:
         raise ValueError("checkpoint must contain a primal_loop controller")
@@ -134,7 +135,6 @@ def solve_all(
         )
         return moment + model.lam_z * ridge_action
 
-    depth = model.z_depth
     effective = symmetric_effective_operator(preconditioner, normal_matrix)
     if model.loop_decoder.adaptive_heavy_ball:
         features = effective_spectrum_features(effective, equations.shape[1])
@@ -174,7 +174,7 @@ def solve_all(
         "oracle_chebyshev": run_chebyshev_state_machine(
             hvp, rhs, preconditioner, hb_depth, spectral_min, spectral_max
         )[0],
-        "pcg": run_pcg_state_machine(hvp, rhs, preconditioner, depth)[0],
+        "pcg": run_pcg_state_machine(hvp, rhs, preconditioner, pcg_depth)[0],
     }
     hb_final_residual = rhs - hvp(solutions["learned_hb"])
     preconditioned_final_residual = torch.einsum(
@@ -237,8 +237,13 @@ def evaluate(args) -> Dict:
             device,
         )
         hb_depth = args.hb_depth or model.z_depth
+        pcg_depth = args.pcg_depth or model.z_depth
         solutions, normal_matrix, eigenvalues, controller_diagnostics = solve_all(
-            model, batch, args.hybrid_residual_threshold, hb_depth
+            model,
+            batch,
+            args.hybrid_residual_threshold,
+            hb_depth,
+            pcg_depth,
         )
         condition_numbers.append(eigenvalues[:, -1] / eigenvalues[:, 0])
         jury_margins.append(controller_diagnostics["jury_margin"])
@@ -278,6 +283,7 @@ def evaluate(args) -> Dict:
         "examples": args.repetitions * args.batch_size,
         "depth": saved["z_depth"],
         "hb_depth": args.hb_depth or saved["z_depth"],
+        "pcg_depth": args.pcg_depth or saved["z_depth"],
         "slots": saved["subspace_slots"],
         "prompt_length": prompt_length,
         "z_scale": z_scale,
@@ -332,7 +338,13 @@ def main() -> None:
         "--hb-depth",
         type=int,
         default=0,
-        help="HB/polynomial depth; zero uses the checkpoint/PCG depth",
+        help="HB/polynomial depth; zero uses the checkpoint depth",
+    )
+    parser.add_argument(
+        "--pcg-depth",
+        type=int,
+        default=0,
+        help="PCG depth; zero uses the checkpoint depth",
     )
     args = parser.parse_args()
     result = evaluate(args)

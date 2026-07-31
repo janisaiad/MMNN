@@ -286,6 +286,192 @@ solver term and $\mathfrak F_{\rm cov}$; an $N^{-1/2}$ bound for marginal
 coverage alone does not control the latter without a bound on task
 sensitivity or a sensitivity-weighted calibration loss.
 
+\section{Joint predictive theory for controller and hyperparameters}
+\label{sec:joint-predictive}
+
+The preceding envelopes certify a controller chosen in advance.  They do not
+yet predict which controller, depth, or coefficients minimize the physical
+risk.  We now give an exact finite-dimensional objective before taking any
+replica limit.
+
+For one encoded task, write
+\[
+ A_\theta=B_\theta^{1/2}\widehat H B_\theta^{1/2},
+ \qquad d_\theta=B_\theta^{1/2}\widehat c,
+ \qquad y^\star=A_\theta^{-1}d_\theta,
+ \qquad \widehat z^\star=B_\theta^{1/2}y^\star.
+\]
+Let $p_{s,L}(\,\cdot\,;\eta)$ be the exact residual polynomial for controller
+$s\in\{\mathrm{HB},\mathrm{Ch},\mathrm{R}\}$, depth $L$, and scalar
+hyperparameters $\eta$.  Starting from zero gives
+\[
+ z_{s,L}-\widehat z^\star
+ =-B_\theta^{1/2}p_{s,L}(A_\theta;\eta)y^\star.
+\]
+Let $F_{\mathcal C}(z)$ be the physical query decoder, put
+$r_{\mathcal C}=F_{\mathcal C}(\widehat z^\star)-u_\star$, and denote its
+Jacobian at $\widehat z^\star$ by $J_{\mathcal C}$.  If
+$A_\theta=U\operatorname{diag}(\lambda_i)U^\top$, define
+\[
+ v=U^\top y^\star,
+ \qquad
+ C=U^\top B_\theta^{1/2}J_{\mathcal C}^\top J_{\mathcal C}
+ B_\theta^{1/2}U.
+\]
+Two taskwise signed spectral measures contain all quantities needed by the
+linearized physical risk:
+\begin{align*}
+ \Gamma_{\mathcal C}
+ &=\sum_{i,j}v_i v_j C_{ij}\,
+ \delta_{(\lambda_i,\lambda_j)},\\
+ \zeta_{\mathcal C}
+ &=\sum_i v_i
+ \left\langle r_{\mathcal C},
+ J_{\mathcal C}B_\theta^{1/2}Ue_i\right\rangle
+ \delta_{\lambda_i}.
+\end{align*}
+Although $\Gamma_{\mathcal C}$ need not be a positive measure, its quadratic
+form is nonnegative for every real polynomial.  No commutation between the
+physical Jacobian and $A_\theta$ has been assumed.
+
+\begin{theorem}[Exact joint polynomial risk]
+\label{thm:joint-polynomial-risk}
+If $F_{\mathcal C}$ is affine in $z$, the population physical risk of any
+right-hand-side-independent polynomial controller is exactly
+\begin{align}
+ \mathcal R_{s,L}(\theta,\eta)
+ ={}&\mathcal R_{\rm enc}(\theta)
+ -2\int p_{s,L}(\lambda;\eta)\,
+ d\overline\zeta_\theta(\lambda)\notag\\
+ &+\iint p_{s,L}(\lambda;\eta)
+ p_{s,L}(\lambda';\eta)\,
+ d\overline\Gamma_\theta(\lambda,\lambda'),
+ \label{eq:exact-joint-risk}
+\end{align}
+where $\mathcal R_{\rm enc}=\E\|r_{\mathcal C}\|^2$ and the bars denote
+expectation over tasks.  If $F_{\mathcal C}$ has a locally Lipschitz Jacobian,
+the same display is the risk of its first-order physical linearization and
+the omitted remainder is
+$O(\E[\|r_{\mathcal C}\|\|e_{s,L}\|^2]
++\E\|e_{s,L}\|^3+\E\|e_{s,L}\|^4)$ under bounded moments, where
+$e_{s,L}=z_{s,L}-\widehat z^\star$.
+\end{theorem}
+\begin{proof}
+For an affine decoder, insert
+$F_{\mathcal C}(z_{s,L})-u_\star
+=r_{\mathcal C}-J_{\mathcal C}B_\theta^{1/2}
+p_{s,L}(A_\theta)y^\star$ and expand its squared norm in the eigenbasis of
+$A_\theta$.  The nonlinear statement follows from Taylor's theorem and
+Cauchy--Schwarz.
+\end{proof}
+
+The predictive, latency-aware choice is consequently
+\begin{equation}
+ (s^\star,L^\star,\eta^\star,\theta^\star)
+ \in\operatorname*{argmin}_{s,L,\eta,\theta}
+ \left\{\mathcal R_{s,L}(\theta,\eta)
+ +\tau_{\rm hw}T_s(L,\theta)\right\},
+ \label{eq:joint-hyperparameter-predictor}
+\end{equation}
+subject to the controller's deterministic stability constraints.  Here
+$T_s$ is a measured or analytic hardware cost and $\tau_{\rm hw}$ selects a
+point on the risk--latency Pareto frontier.  Equation
+\eqref{eq:joint-hyperparameter-predictor} predicts the preconditioner through
+$\theta$, the controller, its depth, and its scalar hyperparameters jointly;
+it is not a post-hoc convergence bound.
+
+For HB, $\eta=(\alpha,\beta)$ and the feasible set is
+\[
+ 0\leq\beta<1,
+ \qquad
+ \alpha\lambda_+(\theta)<2(1+\beta).
+\]
+Given the two averaged measures, the distribution-aware optimum is only a
+two-dimensional deterministic minimization.  Its gradients require no
+learned arithmetic: differentiate the exact recurrence according to
+\begin{align*}
+ \partial_\alpha p_{\ell+1}
+ &=-\lambda p_\ell+(1+\beta-\alpha\lambda)
+ \partial_\alpha p_\ell-\beta\partial_\alpha p_{\ell-1},\\
+ \partial_\beta p_{\ell+1}
+ &=p_\ell-p_{\ell-1}+(1+\beta-\alpha\lambda)
+ \partial_\beta p_\ell-\beta\partial_\beta p_{\ell-1}.
+\end{align*}
+If only a support certificate $[\mu,M]$ is known, the distribution-free
+minimax prediction is the closed form
+\[
+ \alpha_{\rm mm}=\frac{4}{(\sqrt M+\sqrt\mu)^2},
+ \qquad
+ \beta_{\rm mm}=
+ \left(\frac{\sqrt M-\sqrt\mu}{\sqrt M+\sqrt\mu}\right)^2.
+\]
+Thus the closed-form theory and the distribution-aware theory are two levels
+of the same predictor, not competing heuristics.
+
+For a prompt-conditioned Chebyshev controller, the Bayes-optimal interval
+policy is likewise defined without reference to a neural network:
+\begin{equation}
+ h^\star(\xi)
+ \in\operatorname*{argmin}_{\widehat\mu,\widehat M}
+ \E\!\left[\mathcal R_{\mathrm{Ch},L}
+ (\widehat\mu,\widehat M)\mid\xi\right],
+ \label{eq:bayes-chebyshev-policy}
+\end{equation}
+including the sensitivity-weighted failure cost from
+\eqref{eq:sensitivity-coverage-failure}.  The small MLP is merely a
+norm-controlled function class used to estimate $h^\star$ from finitely many
+tasks.  Training it on endpoint MSE alone targets a different and generally
+suboptimal object.
+
+The assumptions used so far are only: SPD encoded normal operators, a
+preconditioner and scalar policy fixed before seeing the query right-hand
+side, differentiability of the physical decoder for the local nonlinear
+statement, and the displayed moments.  Gaussianity, simultaneous
+diagonalization, isotropy, and a large-system limit are not required.  If the
+physical metric is the solver energy itself, $C$ is diagonal in the spectral
+basis and $\Gamma$ reduces to a positive one-dimensional measure.
+
+\subsection{What joint training can and cannot change}
+
+Let $\mathcal L_L(\vartheta)$ be the training loss through a depth-$L$
+polynomial decoder and $\mathcal L_\infty(\vartheta)$ the same loss through
+the exact encoded solve, where $\vartheta$ denotes encoder and preconditioner
+parameters.  On a compact uniformly stable parameter set, define
+\[
+ \delta_L=\sup_{\vartheta}\left(
+ \|p_L(A_\vartheta)\|_{\op}
+ +\|D_Ap_L(A_\vartheta)\|_{\op\to\op}\right).
+\]
+
+\begin{proposition}[Gradient fidelity of a deep fixed polynomial]
+\label{prop:gradient-fidelity}
+If the weak encoder, preconditioner, and physical loss have uniformly bounded
+first derivatives on that set, then for a constant $K$ independent of $L$,
+\[
+ \|\nabla_\vartheta\mathcal L_L
+ -\nabla_\vartheta\mathcal L_\infty\|
+ \leq K\delta_L.
+\]
+For stable minimax HB or Chebyshev, $\delta_L$ is a polynomial factor in $L$
+and $1/\mu$ times $q^L$; for optimal Richardson its exponential factor is
+$(\kappa-1)/(\kappa+1)$ instead of
+$(\sqrt\kappa-1)/(\sqrt\kappa+1)$.
+\end{proposition}
+\begin{proof}
+Differentiate the exact identity
+$z_L-\widehat z^\star=-B_\theta^{1/2}p_L(A_\theta)y^\star$ and apply the chain
+rule.  Uniform derivative bounds control every factor except the polynomial
+and its Fr\'echet derivative, which are precisely the two terms in
+$\delta_L$.  The rates follow from the corresponding stable polynomial
+recurrences and their differentiated recurrences.
+\end{proof}
+
+This proposition predicts that sufficiently deep HB and Richardson can learn
+the same identifiable operator subspace even though HB reaches a prescribed
+gradient fidelity at a smaller asymptotic depth.  The controller advantage
+appears when depth or latency is binding, or on spectral tails.  It should not
+be misreported as a different identifiability theorem for the encoder.
+
 \section{Replica and random-matrix substitutions}
 
 Let $\nu_\theta$ be the limiting joint spectral law of the encoded normal
@@ -335,6 +521,40 @@ The same joint law can evaluate the sensitivity-weighted coverage failure in
 \eqref{eq:sensitivity-coverage-failure}.  No layer-indexed Krylov order
 parameters are needed: once $\xi$ is fixed, both HB and Chebyshev are fixed
 polynomials independent of the right-hand side.
+
+For the genuinely joint prediction, the replica saddle must also determine
+the averaged bivariate measure and cross measure from
+Theorem~\ref{thm:joint-polynomial-risk}.  Let $q$ collect the encoder overlap,
+preconditioner overlap, spectral law, and physical sensitivity order
+parameters.  The required closure is
+\[
+ (\overline\Gamma_\theta,\overline\zeta_\theta,
+ \mathcal R_{\rm enc}(\theta),T_s)
+ \longrightarrow
+ (\Gamma_q,\zeta_q,\mathcal R_{\rm enc}(q),T_s(q)).
+\]
+If hyperparameters affect representation learning, one must not optimize them
+after solving a controller-independent encoder saddle.  Instead, with
+$\Psi_{\rm tr}$ the replica training action, the predictive construction is
+\begin{align}
+ q_{s,L,\eta}
+ &\in\operatorname*{extr}_q
+ \Psi_{\rm tr}(q;s,L,\eta),
+ \label{eq:controller-dependent-replica-saddle}\\
+ (s^\star,L^\star,\eta^\star)
+ &\in\operatorname*{argmin}_{s,L,\eta}
+ \left\{\mathcal R_{s,L}^{\rm test}
+ (q_{s,L,\eta},\eta)+\tau_{\rm hw}T_s(L,q_{s,L,\eta})\right\}.
+ \label{eq:replica-hyperparameter-prediction}
+\end{align}
+The test risk in \eqref{eq:replica-hyperparameter-prediction} is obtained by
+replacing the finite-task measures in \eqref{eq:exact-joint-risk} with
+$(\Gamma_q,\zeta_q)$.  Equations
+\eqref{eq:controller-dependent-replica-saddle}--
+\eqref{eq:replica-hyperparameter-prediction} are the promised joint
+encoder--decoder hyperparameter theory.  A frozen-encoder two-scalar HB fit is
+the special case in which $q$ is fixed; the full theory predicts when that
+modular approximation is valid through Proposition~\ref{prop:gradient-fidelity}.
 
 There is no analogous fixed-filter substitution for PCG.  A PCG replica or
 state evolution needs layer-indexed overlaps, for example residual norm,

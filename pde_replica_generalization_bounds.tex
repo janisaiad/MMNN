@@ -1037,6 +1037,91 @@ $\operatorname{range}\Gamma$.  Hence the limiting error is
 \]
 \end{corollary}
 
+\begin{corollary}[replica-predicted HB and Chebyshev hyperparameters]
+\label{cor:replicahbhyperparameters}
+Assume $\widetilde\alpha>1$, $t>0$, and consider the ridge-free active
+subspace, so $\lambda_->0$ and $P(t)\succ0$.  Define the replica-predicted
+support of the preconditioned normal operator by
+\[
+    a_-(t,c)=\phi_t(\lambda_-),
+    \qquad
+    a_+(t,c)=\phi_t(\lambda_+).
+\]
+Then the distribution-free minimax Heavy--Ball hyperparameters are predicted
+without a validation sweep:
+\begin{align}
+    \alpha_{\rm HB}^{\rm rep}(t,c)
+    &=\frac{4}{
+        \bigl(\sqrt{a_+(t,c)}+\sqrt{a_-(t,c)}\bigr)^2},
+        \label{eq:rep-hb-alpha}\\
+    \beta_{\rm HB}^{\rm rep}(t,c)
+    &=\left(
+        \frac{\sqrt{a_+(t,c)}-\sqrt{a_-(t,c)}}
+             {\sqrt{a_+(t,c)}+\sqrt{a_-(t,c)}}
+      \right)^2.
+        \label{eq:rep-hb-beta}
+\end{align}
+The same endpoints determine the complete exact Chebyshev coefficient
+schedule.
+
+More generally, let $p_L^{\rm HB}(a;\alpha,\beta)$ be the depth-$L$ HB
+residual polynomial.  For an isotropic active coefficient vector, the
+normalized $\Gamma$-energy error converges almost surely to
+\begin{equation}
+    \mathcal R_L^{\rm HB}(\alpha,\beta;t,c)
+    =
+    \frac{
+      \displaystyle\int
+      \lambda\,
+      p_L^{\rm HB}(\phi_t(\lambda);\alpha,\beta)^2
+      \,\mu_{\rm MP,c}(d\lambda)
+    }{
+      \displaystyle\int\lambda\,\mu_{\rm MP,c}(d\lambda)
+    }.
+    \label{eq:rep-hb-distributional-risk}
+\end{equation}
+Consequently the distribution-aware prediction is the deterministic
+two-scalar problem
+\begin{equation}
+    (\alpha_L^\star,\beta_L^\star)
+    \in\operatorname*{argmin}_{
+      0\leq\beta<1,
+      \ \alpha a_+(t,c)<2(1+\beta)}
+    \mathcal R_L^{\rm HB}(\alpha,\beta;t,c).
+    \label{eq:rep-hb-distributional-optimum}
+\end{equation}
+If $T_s(L)$ is the hardware cost of controller $s$, its predicted depth and
+controller are obtained by minimizing the corresponding replica risk plus
+$\tau_{\rm hw}T_s(L)$.  Thus $c$, $t/\tau$, and the hardware tradeoff replace
+an empirical hyperparameter grid in this isotropic model.
+\end{corollary}
+
+\begin{proof}
+Corollary~\ref{cor:pgspectrum} gives the support endpoints of $P(t)\Gamma$.
+The classical HB minimax formulas on that interval yield
+\eqref{eq:rep-hb-alpha}--\eqref{eq:rep-hb-beta}.  Since $P(t)$ is a spectral
+function of $\Gamma$, the matrices commute.  Starting from zero, the error is
+$p_L^{\rm HB}(P(t)\Gamma)\zeta$.  Isotropy of $\zeta$ turns its expected
+$\Gamma$-energy into the normalized trace
+\[
+    \frac{\tr\!\left[
+      \Gamma p_L^{\rm HB}(P(t)\Gamma)^2\right]}{\tr\Gamma}.
+\]
+Apply the Marchenko--Pastur convergence and the continuous mapping theorem to
+obtain \eqref{eq:rep-hb-distributional-risk}; minimizing it gives
+\eqref{eq:rep-hb-distributional-optimum}.
+\end{proof}
+
+\begin{remark}[deformed PDE law]
+For the GP-forced PDE prompt law, replace $\mu_{\rm MP,c}$ by the deformed
+sample-covariance law induced by the population weak-row covariance $H(z)$,
+and replace $\phi_t$ by the shrinkage map selected by the corresponding
+replica saddle.  Equations \eqref{eq:rep-hb-distributional-risk}--
+\eqref{eq:rep-hb-distributional-optimum} are unchanged.  No layer-indexed
+order parameter is added because HB and Chebyshev remain fixed polynomials;
+only the encoder/preconditioner spectral law changes.
+\end{remark}
+
 \begin{corollary}[early and late time laws]
 \label{cor:earlylate}
 At small time,

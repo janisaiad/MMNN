@@ -5,9 +5,12 @@ from pathlib import Path
 import torch
 
 TRANSFORMER_DIR = Path(__file__).resolve().parents[1] / "experiments" / "transformers"
+if str(TRANSFORMER_DIR) not in sys.path:
+    sys.path.insert(0, str(TRANSFORMER_DIR))
 for module_name in [
     "constructive_weakform_richardson_transformer",
     "first_principles_decoder_cells",
+    "predict_heavy_ball_hyperparameters",
 ]:
     module_path = TRANSFORMER_DIR / f"{module_name}.py"
     spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -18,6 +21,7 @@ for module_name in [
 
 REFERENCE = sys.modules["constructive_weakform_richardson_transformer"]
 CELLS = sys.modules["first_principles_decoder_cells"]
+HB_PREDICTOR = sys.modules["predict_heavy_ball_hyperparameters"]
 
 
 def random_spd_problem(batch_size: int = 4, dimension: int = 7):
@@ -248,3 +252,47 @@ def test_pcg_energy_error_is_no_worse_than_fixed_polynomial_controllers() -> Non
 
         assert torch.all(energy_error(pcg) <= energy_error(heavy_ball) + 1e-10)
         assert torch.all(energy_error(pcg) <= energy_error(chebyshev) + 1e-10)
+
+
+def test_weighted_spectral_hb_risk_matches_explicit_state_machine() -> None:
+    torch.manual_seed(17)
+    batch, dimension, depth = 5, 4, 7
+    factor_h = torch.randn(batch, dimension, dimension, dtype=torch.float64)
+    matrix = (
+        factor_h.transpose(-1, -2) @ factor_h
+        + 0.5 * torch.eye(dimension, dtype=torch.float64)
+    )
+    factor_b = torch.randn(batch, dimension, dimension, dtype=torch.float64)
+    preconditioner = torch.linalg.inv(
+        factor_b.transpose(-1, -2) @ factor_b
+        + 2.0 * torch.eye(dimension, dtype=torch.float64)
+    )
+    rhs = torch.randn(batch, dimension, dtype=torch.float64)
+    step = torch.tensor(0.08, dtype=torch.float64)
+    momentum = torch.tensor(0.12, dtype=torch.float64)
+    hvp = lambda vector: torch.einsum("bij,bj->bi", matrix, vector)
+
+    prediction = CELLS.run_heavy_ball_state_machine(
+        hvp, rhs, preconditioner, depth, step, momentum
+    )[0]
+    target = torch.linalg.solve(matrix, rhs.unsqueeze(-1)).squeeze(-1)
+    error = prediction - target
+    direct = torch.einsum("bi,bij,bj->b", error, matrix, error)
+    direct /= torch.einsum("bi,bij,bj->b", target, matrix, target)
+
+    cholesky = torch.linalg.cholesky(preconditioner)
+    effective = cholesky.transpose(-1, -2) @ matrix @ cholesky
+    eigenvalues, eigenvectors = torch.linalg.eigh(effective)
+    transformed_rhs = torch.einsum("bji,bj->bi", cholesky, rhs)
+    spectral_rhs = torch.einsum("bji,bj->bi", eigenvectors, transformed_rhs)
+    spectral_solution = spectral_rhs / eigenvalues
+    energy_weights = eigenvalues * spectral_solution.square()
+    normalized_weights = energy_weights / energy_weights.sum(dim=-1, keepdim=True)
+    spectral = HB_PREDICTOR.spectral_h_relative_squared(
+        eigenvalues,
+        normalized_weights,
+        depth,
+        step,
+        momentum,
+    )
+    torch.testing.assert_close(spectral, direct, rtol=2e-11, atol=2e-12)

@@ -291,3 +291,103 @@ contient aucun MLP, obtient un écart OOD de 1.64 % à PCG et sa théorie se ré
 comme contrôle adaptatif ICL et comme option pour les familles où une
 profondeur HB fixe ne couvre pas la queue spectrale. PCG reste le contrôle
 numérique, non le modèle dont on cherche à faire scaler la théorie replica.
+
+## Apprentissage conjoint du sous-espace par la loss HB
+
+L'expérience elliptique précédente gelait un sous-espace d'opérateurs appris
+avec le solveur exact. Pour vérifier que la loss HB peut elle-même apprendre la
+représentation, HB-40 et Richardson-40 ont été entraînés depuis la même base
+aléatoire, avec la même tête softmax à une tête, le même budget de 1000 pas et
+aucune supervision directe du dictionnaire. Sur trois graines :
+
+| Loss d'entraînement | MSE PDE moyenne | overlap moyen du sous-espace |
+|---|---:|---:|
+| HB-40 | \(1.0626\cdot10^{-9}\) | 0.99999986 |
+| Richardson-40 | \(1.0617\cdot10^{-9}\) | 0.99999982 |
+
+Les deux contrôleurs apprennent donc le même espace identifiable lorsqu'ils
+sont assez profonds. L'avantage HB n'est pas une nouvelle identifiabilité de
+l'encodeur ; c'est une meilleure fidélité de gradient à profondeur limitée et
+un meilleur filtre sur les queues spectrales.
+
+Chaque encodeur HB appris est ensuite gelé. Les deux scalaires HB sont ajustés
+avec une loss moyenne + CVaR, sans modifier la tête softmax ni le dictionnaire,
+puis tous les contrôleurs sont rejoués sur les mêmes 12 288 tâches :
+
+| Contrôleur | nominal, ratio à PCG-16 | OOD, ratio à PCG-16 |
+|---|---:|---:|
+| HB-40 calibré en queue | 1.000005 | 1.03147 |
+| Richardson-40, même pas | 1.000027 | 1.08219 |
+| Chebyshev-40 oracle | 0.999872 | 0.999979 |
+| PCG-16 | 1.000000 | 1.000000 |
+
+Les ratios OOD HB par graine sont 1.0072, 1.0017 et 1.0883, avec une marge de
+Jury minimale de 0.425. HB respecte donc le seuil quasi-PCG de 10 % sur les
+trois espaces appris et réduit de 4.69 % la MSE moyenne de Richardson. Le
+résultat Chebyshev est ici un oracle spectral : il montre le potentiel du
+polynôme, pas encore la généralisation d'une tête d'intervalle sur ces trois
+encodeurs particuliers. L'audit causal précédent établit séparément cette
+généralisation sur un encodeur gelé.
+
+## Théorie conjointe prédictive des hyperparamètres
+
+La théorie ne sélectionne plus \((\alpha,\beta)\) après coup. Pour
+\(A_\theta=B_\theta^{1/2}\widehat H B_\theta^{1/2}\), elle construit la mesure
+spectrale bivariée pondérée par le Jacobien physique et prédit conjointement
+\[
+(s^\star,L^\star,\eta^\star,\theta^\star)
+=\arg\min_{s,L,\eta,\theta}
+\{\mathcal R_{s,L}(\theta,\eta)+\tau_{\rm hw}T_s(L,\theta)\}.
+\]
+Cette expression est exacte pour un décodeur physique affine et fournit la
+linéarisation contrôlée du solveur PDE non linéaire. Elle ne suppose ni
+Gaussianité, ni isotropie, ni commutation du Jacobien avec l'opérateur. Les
+seules hypothèses structurelles sont SPD, un préconditionneur fixé avant le
+second membre de requête, des moments finis et une marge de stabilité.
+
+Dans la fermeture replica, les mesures spectrales deviennent des fonctions
+des paramètres d'ordre de l'encodeur et de la tête softmax. Pour HB, la
+prédiction distributionnelle des meilleurs coefficients est alors une
+optimisation déterministe en deux variables dans le domaine de Jury. Si seule
+la borne spectrale \([\mu,M]\) est disponible, elle se réduit aux formules
+minimax fermées. Pour Chebyshev, la cible théorique du MLP est la politique de
+Bayes conditionnelle qui minimise le risque physique sensible aux échecs de
+couverture, et non la simple MSE des extrémités spectrales.
+
+Le niveau fini de cette théorie a été implémenté sans entraînement réseau. Sur
+4096 tâches de calibration, on construit la mesure spectrale positive de
+l'erreur (H), puis on minimise exactement le risque polynomial moyen + CVaR
+en seulement deux variables. Sur 8192 tâches OOD disjointes par encodeur :
+
+| Seed | \(\alpha_{\rm pred}\) | \(\beta_{\rm pred}\) | HB prédit / PCG | HB Adam / PCG | réduction de l'erreur solveur |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0.98495 | 0.23242 | 1.000071 | 1.000529 | 98.1 % |
+| 1 | 1.01161 | 0.26578 | 1.000702 | 1.003999 | 96.6 % |
+| 2 | 0.96926 | 0.21279 | 1.009650 | 1.031363 | 88.2 % |
+
+Toutes les marges de Jury restent positives ; la plus faible vaut 0.187. Pour
+le seed 0, le momentum prédit coïncide avec le minimax spectral et le pas est
+simplement tronqué par le certificat global (L_{\max}=2.5). Pour les deux
+autres seeds, l'optimum pondéré par la distribution s'écarte du minimax de
+support, comme le prévoit la théorie conjointe.
+
+Rejoués sur les mêmes 12 288 tâches que la comparaison multi-seed précédente,
+les coefficients prédits donnent HB-40 / PCG-16 = **1.000172**. Richardson-40
+avec son pas oracle calculé séparément pour chaque prompt donne 3.9899, tandis
+que Chebyshev-40 oracle donne 0.999979. Ainsi la prédiction HB supprime la queue
+qui pénalisait les scalaires appris et bat nettement même le Richardson
+spectralement calibré ; elle rejoint PCG sans quotients de Krylov.
+
+Cette validation est prédictive mais encore **empirique-spectrale** : la mesure
+est estimée sur des prompts de calibration. La fermeture replica formulée dans
+`three_controller_encoder_decoder_generalization.tex` doit remplacer cette
+mesure par sa limite auto-moyennée pour obtenir une prédiction à partir des
+seuls paramètres d'ordre et des ratios de dimensions. Cette dernière
+substitution, et non l'optimisation HB en deux scalaires, est le morceau
+analytique restant.
+
+Conclusion soutenable : **HB est le meilleur compromis de boucle exacte dans
+la famille testée, mais il ne domine pas PCG en erreur pure par HVP.** PCG et
+Chebyshev oracle atteignent le plancher numérique. La revendication défendable
+est une frontière risque--latence--simplicité, pas « meilleur que tout solveur
+sur toute métrique ».
