@@ -23,7 +23,10 @@ from predict_pde_law_hyperparameters import (
     exact_prompt_normal_rhs,
 )
 from first_principles_decoder_cells import run_chebyshev_state_machine
-from structured_one_head_heavyball import EquivariantRitzSoftmaxPreconditioner
+from structured_one_head_heavyball import (  # noqa: E402
+    EquivariantPromptNystromPreconditioner,
+    EquivariantRitzSoftmaxPreconditioner,
+)
 
 
 def _problem(dtype=torch.float64):
@@ -175,6 +178,83 @@ def test_equivariant_ritz_softmax_head_is_gauge_covariant_and_spectral() -> None
     assert head.slot_queries.grad is not None
     assert head.key.weight.grad[:3, :3].norm() > 0
     assert head.slot_queries.grad[:, :3].norm() > 0
+
+
+def test_prompt_nystrom_head_is_gauge_covariant_and_certified() -> None:
+    equations, _ = _problem()
+    normal = equations.transpose(-1, -2) @ equations
+    normal = normal + 0.2 * torch.eye(normal.shape[-1], dtype=normal.dtype)
+    head = EquivariantPromptNystromPreconditioner(
+        dimension=normal.shape[-1],
+        head_dimension=12,
+        slots=3,
+        spectral_lmax_bound=2.5,
+        refinement_steps=2,
+    ).double()
+    preconditioner, info = head(equations, normal)
+    generator = torch.Generator().manual_seed(39)
+    gauge = torch.linalg.qr(
+        torch.randn(4, 4, generator=generator, dtype=torch.float64)
+    ).Q
+    rotated_equations = equations @ gauge
+    rotated_normal = gauge.transpose(-1, -2) @ normal @ gauge
+    rotated_preconditioner, rotated_info = head(
+        rotated_equations,
+        rotated_normal,
+    )
+    expected = gauge.transpose(-1, -2) @ preconditioner @ gauge
+    torch.testing.assert_close(
+        rotated_preconditioner,
+        expected,
+        rtol=3e-9,
+        atol=3e-9,
+    )
+    torch.testing.assert_close(
+        rotated_info["interval_features"],
+        info["interval_features"],
+        rtol=3e-9,
+        atol=3e-9,
+    )
+
+    permutation = torch.randperm(equations.shape[1], generator=generator)
+    permuted_preconditioner, _ = head(equations[:, permutation], normal)
+    torch.testing.assert_close(
+        permuted_preconditioner,
+        preconditioner,
+        rtol=3e-9,
+        atol=3e-9,
+    )
+    factor = torch.linalg.cholesky(preconditioner)
+    effective = factor.transpose(-1, -2) @ normal @ factor
+    assert torch.linalg.eigvalsh(effective).amax() <= 2.5 + 1e-9
+    assert info["projected_operator"].shape[-1] == 3
+    assert not info["uses_full_eigendecomposition"].any()
+
+    loss = preconditioner.square().sum()
+    loss.backward()
+    assert head.key.weight.grad is not None
+    assert head.slot_queries.grad is not None
+    assert head.slot_queries.grad.norm() > 0
+
+
+def test_prompt_nystrom_loop_decoder_is_finite_without_full_eigenspectrum() -> None:
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=8,
+        head_dimension=12,
+        slots=3,
+        controller="heavy_ball",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        preconditioner_head_type="equivariant_prompt_nystrom",
+        prompt_subspace_refinement_steps=2,
+    ).double()
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert torch.isfinite(solution).all()
+    assert not info["uses_full_eigendecomposition"].any()
+    assert (info["certified_effective_lmax"] == 2.5).all()
 
 
 def test_exact_head_spectrum_chebyshev_reuses_ritz_eigenvalues() -> None:

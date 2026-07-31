@@ -496,6 +496,68 @@ globale, **pas** un avantage de complexité contre Cholesky. Un gain face au
 solveur direct exigera la version scalable qui approxime seulement le sous-
 espace lent sans eigendecomposition complète.
 
+## Audit de la tête scalable sans spectre complet
+
+La variante **equivariant_prompt_nystrom** réalise cette approximation avec
+une seule tête softmax sur les lignes faibles (g_i). Les scores ne voient que
+des invariants (norme et quotient de Rayleigh); les valeurs sont exactement
+(g_i/|g_i|). Si (Gmapsto GQ), les poids restent identiques et les
+directions routées vérifient (Ymapsto Q^	op Y). Le reste est hardcodé :
+
+\[
+U=\operatorname{orth}\left[
+\left(I-\frac{H}{\operatorname{tr}H}\right)^rY
+\right],\qquad
+C=U^	op\frac{H}{s_H}U,
+\]
+
+\[
+\widetilde B=I+U(C^{-1}-I)U^	op,qquad
+B=\frac{\widetilde B}{s_H\tau}.
+\]
+
+Seul (C\in\mathbb R^{S\times S}) est diagonalisé. Le scalaire invariant
+(	au) est construit depuis la norme de Frobenius de l'opérateur effectif,
+ce qui certifie exactement (lambda_{max}(BH)leqar L). Les produits
+denses intermédiaires ont été développés en mises à jour low-rank; une fois
+(H) disponible, le coût est
+(O(MKd_h+rK^2S+KS^2+S^3)).
+
+Un MLP optionnel reçoit sept invariants de prompt et prédit seulement
+((\widehat\mu,\widehat L)). Les coefficients HB ou Chebyshev sont ensuite
+calculés par les formules exactes. Sur le seed 0, (K=8,S=6), avec HB-10 :
+
+| raffinements (r) | (kappa(BH)) | HB oracle | Chebyshev oracle | PCG-4 |
+|---:|---:|---:|---:|---:|
+| 2 | 14.14 | (1.56,10^{-3}) | (4.10,10^{-4}) | (1.59,10^{-3}) |
+| 8 | 8.69 | (2.83,10^{-4}) | (8.40,10^{-5}) | (2.66,10^{-4}) |
+| 12 | 5.44 | (4.16,10^{-5}) | (1.32,10^{-5}) | (3.86,10^{-6}) |
+| 24 | 2.61 | (2.53,10^{-6}) | (9.09,10^{-7}) | (5.59,10^{-12}) |
+
+Après entraînement conjoint de la tête (r=12) et du MLP d'intervalle sur
+750 pas, HB-10 atteint (5.02,10^{-5}) d'erreur relative (H), sans aucune
+violation de Jury sur 4 096 tâches. Le MLP est donc proche du HB oracle, mais
+la tête exacte reste beaucoup plus précise à cette petite dimension.
+
+Le benchmark H100 de construction confirme le scaling mais invalide une
+revendication trop forte :
+
+| (K), batch 1 | tête spectre exact | Nyström (r=2) | Nyström (r=12) | Cholesky + solve |
+|---:|---:|---:|---:|---:|
+| 256 | 5.718 ms | 2.028 ms | 3.047 ms | 0.216 ms |
+| 512 | 15.103 ms | 2.051 ms | 3.078 ms | 0.366 ms |
+| 1024 | 12.400 ms | 2.045 ms | 3.102 ms | 0.671 ms |
+| 2048 | 31.164 ms | 4.162 ms | 5.242 ms | 1.343 ms |
+
+Nyström bat donc nettement la tête à eigendecomposition complète, mais pas le
+solveur dense Cholesky hautement optimisé. Cette version est une preuve de
+scalabilité algébrique, pas encore le décodeur pratique retenu. Pour obtenir
+un avantage contre les solveurs purs, il faut l'étape suivante : ne plus
+matérialiser (H) ni (B), appliquer la correction sous forme low-rank et
+utiliser uniquement les HVP (G^	op(Gv)+\lambda Mv). C'est dans ce régime
+matrix-free/mémoire (O(MK+KS)), inaccessible au Cholesky dense, que le
+préconditionneur appris peut avoir un bénéfice de complexité.
+
 Trois entraînements certifiés de 750 pas, depuis trois encodeurs elliptiques
 gelés, restent au plancher encodeur (\(u\)-MSE de l'ordre de \(10^{-9}\)).
 Pour chaque seed, sur 8 192 tâches nominales puis 8 192 tâches avec

@@ -674,6 +674,7 @@ class ParametricOperatorICL(nn.Module):
         freeze_A0: bool = False,
         covariant_ridge: bool = False,
         loop_preconditioner_head: str = "coordinate_ritz",
+        prompt_subspace_refinement_steps: int = 2,
         chebyshev_interval_policy: str = "learned",
     ):
         super().__init__()
@@ -774,6 +775,7 @@ class ParametricOperatorICL(nn.Module):
                 interval_upper_calibration=interval_upper_calibration,
                 hybrid_residual_threshold=hybrid_residual_threshold,
                 preconditioner_head_type=loop_preconditioner_head,
+                prompt_subspace_refinement_steps=prompt_subspace_refinement_steps,
                 chebyshev_interval_policy=chebyshev_interval_policy,
             )
         else:
@@ -1034,6 +1036,7 @@ def train(args, device) -> None:
         freeze_A0=bool(args.freeze_A0),
         covariant_ridge=bool(args.covariant_ridge),
         loop_preconditioner_head=args.loop_preconditioner_head,
+        prompt_subspace_refinement_steps=args.prompt_subspace_refinement_steps,
         chebyshev_interval_policy=args.chebyshev_interval_policy,
     ).to(device)
     if args.checkpoint:
@@ -1220,9 +1223,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--loop-step-init", type=float, default=0.25)
     p.add_argument(
         "--loop-preconditioner-head",
-        choices=["coordinate_ritz", "equivariant_ritz_softmax"],
+        choices=[
+            "coordinate_ritz",
+            "equivariant_ritz_softmax",
+            "equivariant_prompt_nystrom",
+        ],
         default="coordinate_ritz",
     )
+    p.add_argument("--prompt-subspace-refinement-steps", type=int, default=2)
     p.add_argument(
         "--chebyshev-interval-policy",
         choices=["learned", "exact_head_spectrum"],

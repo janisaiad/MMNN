@@ -93,6 +93,10 @@ def build_model(saved: Dict, true_family, device: torch.device) -> ParametricOpe
             "loop_preconditioner_head",
             "coordinate_ritz",
         ),
+        prompt_subspace_refinement_steps=saved.get(
+            "prompt_subspace_refinement_steps",
+            2,
+        ),
         chebyshev_interval_policy=saved.get(
             "chebyshev_interval_policy",
             "learned",
@@ -147,7 +151,9 @@ def solve_all(
 
     effective = symmetric_effective_operator(preconditioner, normal_matrix)
     if model.loop_decoder.adaptive_heavy_ball:
-        features = effective_spectrum_features(effective, equations.shape[1])
+        features = preconditioner_info.get("interval_features")
+        if features is None:
+            features = effective_spectrum_features(effective, equations.shape[1])
         learned_min, learned_max = model.loop_decoder.interval_head(features)
         learned_min = learned_min / model.loop_decoder.interval_lower_calibration
         learned_max = learned_max * model.loop_decoder.interval_upper_calibration

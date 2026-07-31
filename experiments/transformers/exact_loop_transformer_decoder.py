@@ -24,6 +24,7 @@ try:
     )
     from .first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from .structured_one_head_heavyball import (
+        EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
         OneHeadSpectralPreconditioner,
     )
@@ -36,6 +37,7 @@ except ImportError:
     )
     from first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from structured_one_head_heavyball import (
+        EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
         OneHeadSpectralPreconditioner,
     )
@@ -141,6 +143,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
         preconditioner_head_type: str = "coordinate_ritz",
+        prompt_subspace_refinement_steps: int = 2,
         chebyshev_interval_policy: str = "learned",
         adaptive_heavy_ball: bool = False,
         interval_lower_calibration: float = 1.0,
@@ -213,6 +216,14 @@ class ExactLoopTransformerDecoder(nn.Module):
                 head_dimension=head_dimension,
                 slots=slots,
                 spectral_lmax_bound=spectral_lmax_bound,
+            )
+        elif preconditioner_head_type == "equivariant_prompt_nystrom":
+            self.preconditioner_head = EquivariantPromptNystromPreconditioner(
+                dimension=dimension,
+                head_dimension=head_dimension,
+                slots=slots,
+                spectral_lmax_bound=spectral_lmax_bound,
+                refinement_steps=prompt_subspace_refinement_steps,
             )
         else:
             raise ValueError(
@@ -290,8 +301,17 @@ class ExactLoopTransformerDecoder(nn.Module):
         if self.controller in {"richardson", "heavy_ball", "certified_hb_pcg"}:
             if self.adaptive_heavy_ball:
                 assert self.interval_head is not None
-                operator = symmetric_effective_operator(preconditioner, normal_matrix)
-                features = effective_spectrum_features(operator, equations.shape[1])
+                if "interval_features" in info:
+                    features = info["interval_features"]
+                else:
+                    operator = symmetric_effective_operator(
+                        preconditioner,
+                        normal_matrix,
+                    )
+                    features = effective_spectrum_features(
+                        operator,
+                        equations.shape[1],
+                    )
                 spectral_min, spectral_max = self.interval_head(features)
                 spectral_min = spectral_min / self.interval_lower_calibration
                 spectral_max = spectral_max * self.interval_upper_calibration
@@ -373,14 +393,17 @@ class ExactLoopTransformerDecoder(nn.Module):
                 features = effective_eigenvalues
             else:
                 assert self.interval_head is not None
-                operator = symmetric_effective_operator(
-                    preconditioner,
-                    normal_matrix,
-                )
-                features = effective_spectrum_features(
-                    operator,
-                    equations.shape[1],
-                )
+                if "interval_features" in info:
+                    features = info["interval_features"]
+                else:
+                    operator = symmetric_effective_operator(
+                        preconditioner,
+                        normal_matrix,
+                    )
+                    features = effective_spectrum_features(
+                        operator,
+                        equations.shape[1],
+                    )
                 spectral_min, spectral_max = self.interval_head(features)
                 spectral_min = spectral_min / self.interval_lower_calibration
                 spectral_max = spectral_max * self.interval_upper_calibration

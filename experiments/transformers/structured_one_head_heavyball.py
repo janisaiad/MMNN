@@ -280,6 +280,322 @@ class OneHeadSpectralPreconditioner(nn.Module):
         return preconditioner, info
 
 
+class EquivariantPromptNystromPreconditioner(nn.Module):
+    """One equation-token head plus exact low-rank Ritz algebra.
+
+    This scalable head never diagonalizes the full ``K x K`` normal matrix.
+    Softmax learns only invariant weights over weak-equation tokens.  Their
+    normalized coefficient vectors are routed as values, so an orthogonal
+    coefficient change ``G -> G Q`` sends every selected direction through
+    ``Q^T``.  QR, slow-mode polynomial filtering, and the projected ``S x S``
+    inverse are fixed operations.
+    """
+
+    def __init__(
+        self,
+        dimension: int,
+        head_dimension: int,
+        slots: int,
+        spectral_lmax_bound: float = 4.0,
+        refinement_steps: int = 2,
+    ) -> None:
+        super().__init__()
+        if slots <= 0 or slots >= dimension:
+            raise ValueError(
+                "prompt Nystrom slots must lie in [1, dimension)"
+            )
+        if head_dimension <= 0:
+            raise ValueError("head_dimension must be positive")
+        if spectral_lmax_bound <= 0:
+            raise ValueError("spectral_lmax_bound must be positive")
+        if refinement_steps < 0:
+            raise ValueError("refinement_steps must be nonnegative")
+        self.dimension = dimension
+        self.head_dimension = head_dimension
+        self.slots = slots
+        self.spectral_lmax_bound = spectral_lmax_bound
+        self.refinement_steps = refinement_steps
+        self.key = nn.Linear(4, head_dimension, bias=False)
+        self.slot_queries = nn.Parameter(torch.zeros(slots, head_dimension))
+        self._initialize_slow_row_geometry()
+
+    def _initialize_slow_row_geometry(self) -> None:
+        with torch.no_grad():
+            self.key.weight.zero_()
+            active = min(4, self.head_dimension)
+            self.key.weight[:active, :active] = torch.eye(
+                active,
+                dtype=self.key.weight.dtype,
+                device=self.key.weight.device,
+            )
+            positions = torch.linspace(
+                0.75,
+                2.5,
+                self.slots,
+                dtype=self.slot_queries.dtype,
+                device=self.slot_queries.device,
+            )
+            # The second invariant feature is a row Rayleigh quotient.  The
+            # negative initialization favors rows carrying slow-mode mass;
+            # training remains free to change every query and key direction.
+            if self.head_dimension >= 2:
+                self.slot_queries[:, 1] = -positions
+            self.slot_queries[:, 0] = 0.1 * torch.linspace(
+                -1.0,
+                1.0,
+                self.slots,
+                dtype=self.slot_queries.dtype,
+                device=self.slot_queries.device,
+            )
+            if self.head_dimension >= 3:
+                self.slot_queries[:, 2] = 0.05 * torch.cos(
+                    torch.linspace(
+                        0.0,
+                        math.pi,
+                        self.slots,
+                        dtype=self.slot_queries.dtype,
+                        device=self.slot_queries.device,
+                    )
+                )
+
+    @staticmethod
+    def _standardize(values: Tensor) -> Tensor:
+        centered = values - values.mean(dim=-1, keepdim=True)
+        scale = centered.square().mean(dim=-1, keepdim=True).sqrt()
+        return centered / scale.clamp_min(1e-6)
+
+    def forward(
+        self,
+        equations: Tensor,
+        normal_matrix: Tensor,
+    ) -> Tuple[Tensor, Dict[str, Tensor]]:
+        if equations.shape[1] == 0:
+            raise ValueError(
+                "the prompt Nystrom head requires weak-equation tokens"
+            )
+        batch = normal_matrix.shape[0]
+        eye = torch.eye(
+            self.dimension,
+            device=normal_matrix.device,
+            dtype=normal_matrix.dtype,
+        ).expand(batch, -1, -1)
+        trace = torch.diagonal(
+            normal_matrix,
+            dim1=-2,
+            dim2=-1,
+        ).sum(dim=-1).clamp_min(1e-10)
+        scale = trace / self.spectral_lmax_bound
+        normalized_operator = normal_matrix / scale[:, None, None]
+
+        row_norm_squared = equations.square().sum(dim=-1).clamp_min(1e-12)
+        normalized_rows = equations / row_norm_squared.sqrt().unsqueeze(-1)
+        operator_rows = torch.einsum(
+            "bij,bmj->bmi",
+            normalized_operator,
+            normalized_rows,
+        )
+        row_rayleigh = torch.einsum(
+            "bmi,bmi->bm",
+            normalized_rows,
+            operator_rows,
+        )
+        log_norm = 0.5 * torch.log(row_norm_squared)
+        standardized_norm = self._standardize(log_norm)
+        standardized_rayleigh = self._standardize(row_rayleigh)
+        features = torch.stack(
+            [
+                standardized_norm,
+                standardized_rayleigh,
+                standardized_norm * standardized_rayleigh,
+                torch.ones_like(standardized_norm),
+            ],
+            dim=-1,
+        )
+        keys = self.key(features)
+        scores = torch.einsum("sd,bmd->bsm", self.slot_queries, keys)
+        scores = scores / math.sqrt(self.head_dimension)
+        attention = torch.softmax(scores, dim=-1)
+        raw_directions = torch.einsum(
+            "bsm,bmk->bks",
+            attention,
+            normalized_rows,
+        )
+        directions = torch.linalg.qr(raw_directions, mode="reduced").Q
+
+        # Since tr(H / scale) = spectral_lmax_bound, all eigenvalues of the
+        # normalized SPD operator lie in (0, spectral_lmax_bound].  Therefore
+        # I-H/L is a certified slow-mode filter requiring only fixed HVPs.
+        slow_filter = eye - normalized_operator / self.spectral_lmax_bound
+        for _ in range(self.refinement_steps):
+            directions = torch.linalg.qr(
+                torch.einsum("bkl,bls->bks", slow_filter, directions),
+                mode="reduced",
+            ).Q
+
+        projected_operator = torch.einsum(
+            "bks,bkl,blt->bst",
+            directions,
+            normalized_operator,
+            directions,
+        )
+        projected_operator = 0.5 * (
+            projected_operator + projected_operator.transpose(-1, -2)
+        )
+        projected_eigenvalues, projected_eigenvectors = torch.linalg.eigh(
+            projected_operator
+        )
+        projected_eigenvalues = projected_eigenvalues.clamp_min(1e-10)
+        projected_inverse = torch.einsum(
+            "bsi,bi,bti->bst",
+            projected_eigenvectors,
+            projected_eigenvalues.reciprocal(),
+            projected_eigenvectors,
+        )
+        projected_inverse_sqrt = torch.einsum(
+            "bsi,bi,bti->bst",
+            projected_eigenvectors,
+            projected_eigenvalues.rsqrt(),
+            projected_eigenvectors,
+        )
+        slot_eye = torch.eye(
+            self.slots,
+            device=normal_matrix.device,
+            dtype=normal_matrix.dtype,
+        ).expand(batch, -1, -1)
+        normalized_inverse = eye + torch.einsum(
+            "bks,bst,blt->bkl",
+            directions,
+            projected_inverse - slot_eye,
+            directions,
+        )
+        # The symmetric square root is available from the same S x S Ritz
+        # problem.  Its effective operator is materialized only through
+        # matrix products, never a K x K eigensolve.  The invariant Frobenius
+        # norm is an exact upper bound on lambda_max and is much tighter than
+        # the generic product ||B|| ||H|| for a well-aligned Ritz subspace.
+        square_root_correction = projected_inverse_sqrt - slot_eye
+        operator_directions = torch.einsum(
+            "bkl,bls->bks",
+            normalized_operator,
+            directions,
+        )
+        routed_directions = torch.einsum(
+            "bks,bst->bkt",
+            directions,
+            square_root_correction,
+        )
+        left_update = torch.einsum(
+            "bks,bls->bkl",
+            routed_directions,
+            operator_directions,
+        )
+        quadratic_slot = torch.einsum(
+            "bsi,bij,bjt->bst",
+            square_root_correction,
+            projected_operator,
+            square_root_correction,
+        )
+        quadratic_update = torch.einsum(
+            "bks,bst,blt->bkl",
+            directions,
+            quadratic_slot,
+            directions,
+        )
+        unscaled_effective = (
+            normalized_operator
+            + left_update
+            + left_update.transpose(-1, -2)
+            + quadratic_update
+        )
+        effective_frobenius_bound = torch.linalg.matrix_norm(
+            unscaled_effective,
+            ord="fro",
+            dim=(-2, -1),
+        )
+        # Use the full certified scale rather than only shrinking violations:
+        # scalar rescaling changes neither the condition number nor PCG, and
+        # placing every prompt at ||A_eff||_F = Lbar avoids wasting most of the
+        # stable HB step range on well-conditioned prompts.
+        certificate_normalizer = (
+            effective_frobenius_bound / self.spectral_lmax_bound
+        ).clamp_min(1e-10)
+        effective_operator = (
+            unscaled_effective / certificate_normalizer[:, None, None]
+        )
+        subspace_residual = (
+            operator_directions
+            - torch.einsum("bks,bst->bkt", directions, projected_operator)
+        )
+        residual_fraction = torch.linalg.matrix_norm(
+            subspace_residual,
+            ord="fro",
+            dim=(-2, -1),
+        ) / torch.linalg.matrix_norm(
+            normalized_operator,
+            ord="fro",
+            dim=(-2, -1),
+        ).clamp_min(1e-12)
+        effective_diagonal = torch.diagonal(
+            effective_operator,
+            dim1=-2,
+            dim2=-1,
+        )
+        interval_features = torch.stack(
+            [
+                torch.log(effective_diagonal.sum(dim=-1).clamp_min(1e-12)),
+                torch.log(
+                    torch.linalg.matrix_norm(
+                        effective_operator,
+                        ord="fro",
+                        dim=(-2, -1),
+                    ).clamp_min(1e-12)
+                ),
+                torch.log(projected_eigenvalues[:, 0]),
+                torch.log(projected_eigenvalues[:, -1]),
+                torch.log(
+                    normal_matrix.new_full(
+                        (batch,),
+                        self.spectral_lmax_bound,
+                    )
+                ),
+                torch.log1p(residual_fraction),
+                normal_matrix.new_full(
+                    (batch,),
+                    math.log1p(equations.shape[1]),
+                ),
+            ],
+            dim=-1,
+        )
+        normalized_inverse = (
+            normalized_inverse / certificate_normalizer[:, None, None]
+        )
+        preconditioner = normalized_inverse / scale[:, None, None]
+        info = {
+            "attention": attention,
+            "directions": directions,
+            "normalized_inverse": normalized_inverse,
+            "base_inverse": eye
+            / (scale * certificate_normalizer)[:, None, None],
+            "normal_scale": scale,
+            "projected_operator": projected_operator,
+            "projected_eigenvalues": projected_eigenvalues,
+            "effective_frobenius_bound": effective_frobenius_bound,
+            "certificate_normalizer": certificate_normalizer,
+            "subspace_residual_fraction": residual_fraction,
+            "interval_features": interval_features,
+            "spectral_features": features,
+            "certified_effective_lmax": normal_matrix.new_full(
+                (batch,),
+                self.spectral_lmax_bound,
+            ),
+            "uses_full_eigendecomposition": normal_matrix.new_zeros(
+                (batch,),
+                dtype=torch.bool,
+            ),
+        }
+        return preconditioner, info
+
+
 class EquivariantRitzSoftmaxPreconditioner(nn.Module):
     """One softmax head allocates a finite correction budget over Ritz modes.
 

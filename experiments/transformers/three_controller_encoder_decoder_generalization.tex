@@ -598,6 +598,64 @@ $a_i\leq\overline L$ deterministically.  A finite-law risk or CVaR predictor
 can still select the best global coefficients, but it must report this tail
 risk rather than silently assuming bounded Gaussian quadratic forms.
 
+\begin{proposition}[an eigendecomposition-free prompt-token Ritz head]
+\label{prop:prompt-nystrom-head}
+Let $G\in\mathbb R^{M\times K}$ be the weak-equation tokens,
+$H=G^\top G+\lambda M\succ0$, and $\overline L>0$.  Suppose a single softmax
+head forms $W_\theta\in\mathbb R^{S\times M}$ from scalar token features that
+are invariant under $G\mapsto GQ$, and set
+\[
+ Y=G^\top W_\theta^\top,
+ \qquad
+ U=\operatorname{orth}\!\left[
+ \left(I-\frac{H}{\operatorname{tr}H}\right)^rY
+ \right],
+ \qquad
+ C=U^\top\frac{H}{s_H}U,
+ \quad s_H=\frac{\operatorname{tr}H}{\overline L}.
+\]
+Define
+\[
+ \widetilde B=I+U(C^{-1}-I)U^\top,
+ \quad
+ \widetilde B^{1/2}=I+U(C^{-1/2}-I)U^\top,
+ \quad
+ A_0=\widetilde B^{1/2}\frac{H}{s_H}\widetilde B^{1/2},
+\]
+and $\tau=\|A_0\|_{\mathrm F}/\overline L$,
+$B_\theta=\widetilde B/(s_H\tau)$.  Then $B_\theta\succ0$,
+\[
+ B_\theta(Q^\top H Q;GQ)=Q^\top B_\theta(H;G)Q,
+ \qquad
+ \lambda_{\max}(B_\theta^{1/2}HB_\theta^{1/2})
+ \leq\overline L.
+\]
+The construction uses no $K\times K$ eigendecomposition: its only spectral
+operation is the $S\times S$ decomposition of $C$.  Once $H$ is available,
+its low-rank algebra costs
+$O(MKd_h+rK^2S+KS^2+S^3)$ rather than $O(K^3)$ when $S\ll K$.
+\end{proposition}
+\begin{proof}
+The trace scale gives
+$0\prec H/s_H\preceq\overline L I$, so
+$I-H/\operatorname{tr}H\succeq0$.  Invariant attention scores are unchanged by
+$G\mapsto GQ$, while the values give $Y\mapsto Q^\top Y$; polynomial
+filtering and orthogonalization therefore transform the selected projector
+covariantly.  Since $C\succ0$, both displayed low-rank spectral functions are
+SPD and the square-root identity follows by restricting to
+$\operatorname{span}U$ and its orthogonal complement.  Finally
+$\lambda_{\max}(A_0/\tau)\leq\|A_0/\tau\|_{\mathrm F}=\overline L$.
+Only $C$ is diagonalized.
+\end{proof}
+
+The Frobenius certificate is deliberately assumption-free but can be looser
+than the exact endpoint.  A seven-scalar invariant summary (effective trace
+and Frobenius norm, projected endpoints, certified upper bound, subspace
+residual, and context length) may feed an interval MLP.  The MLP then predicts
+only $(\widehat\mu,\widehat L)$; the HB or Chebyshev coefficients remain exact
+analytic functions of these scalars.  Stability still requires calibrated
+coverage or the certified HB--PCG fallback.
+
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
 limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset
