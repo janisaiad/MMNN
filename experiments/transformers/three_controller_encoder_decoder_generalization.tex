@@ -4,6 +4,7 @@
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
 \newtheorem{assumption}{Assumption}
 \newtheorem{remark}{Remark}
 \newcommand{\R}{\mathbb R}
@@ -539,6 +540,24 @@ Finally, the union bound gives
 $g_i\leq\sum_r\omega_{ri}$ and summing over $i$ gives
 $\sum_i g_i\leq S$.
 \end{proof}
+
+\begin{corollary}[exact-spectrum Chebyshev needs no interval MLP]
+\label{cor:exact-head-chebyshev}
+Under Theorem~\ref{thm:equivariant-ritz-closure}, the endpoints
+\[
+    \mu_{\mathcal C}=\min_i a_i,
+    \qquad
+    L_{\mathcal C}=\max_i a_i
+\]
+are already produced by the exact Ritz algebra of the preconditioner head.
+Feeding these two scalars to the hard-coded Chebyshev coefficient recurrence
+gives the exact promptwise Chebyshev controller that is minimax on the
+enclosing interval $[\mu_{\mathcal C},L_{\mathcal C}]$, without an interval
+MLP and without an additional eigendecomposition.  This does not claim
+minimaxity on the finite discrete spectrum itself.  A learned interval head is
+needed only when the spectral decomposition is not materialized, or when its
+cost is deliberately amortized at larger coefficient dimension.
+\end{corollary}
 
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable

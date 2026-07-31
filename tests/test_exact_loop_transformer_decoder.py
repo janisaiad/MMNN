@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 
 TRANSFORMER_DIR = Path(__file__).resolve().parents[1] / "experiments" / "transformers"
@@ -174,6 +175,54 @@ def test_equivariant_ritz_softmax_head_is_gauge_covariant_and_spectral() -> None
     assert head.slot_queries.grad is not None
     assert head.key.weight.grad[:3, :3].norm() > 0
     assert head.slot_queries.grad[:, :3].norm() > 0
+
+
+def test_exact_head_spectrum_chebyshev_reuses_ritz_eigenvalues() -> None:
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=7,
+        head_dimension=12,
+        slots=3,
+        controller="chebyshev",
+        spectral_lmax_bound=4.0,
+        preconditioner_head_type="equivariant_ritz_softmax",
+        chebyshev_interval_policy="exact_head_spectrum",
+    ).double()
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert decoder.interval_head is None
+    predicted = info["effective_eigenvalues_predicted"]
+    torch.testing.assert_close(info["spectral_min"], predicted.amin(dim=-1))
+    torch.testing.assert_close(info["spectral_max"], predicted.amax(dim=-1))
+
+    normal = info["normal_matrix"]
+    preconditioner = info["preconditioner"]
+    factor = torch.linalg.cholesky(
+        preconditioner
+        + 1e-10 * torch.eye(normal.shape[-1], dtype=normal.dtype)
+    )
+    effective = factor.transpose(-1, -2) @ normal @ factor
+    actual = torch.linalg.eigvalsh(effective)
+    torch.testing.assert_close(
+        predicted.sort(dim=-1).values,
+        actual,
+        rtol=2e-9,
+        atol=2e-9,
+    )
+    assert torch.isfinite(solution).all()
+
+
+def test_exact_head_spectrum_rejects_coordinate_ritz_head() -> None:
+    with pytest.raises(ValueError, match="requires the equivariant Ritz head"):
+        ExactLoopTransformerDecoder(
+            dimension=4,
+            depth=5,
+            head_dimension=8,
+            slots=2,
+            controller="chebyshev",
+            preconditioner_head_type="coordinate_ritz",
+            chebyshev_interval_policy="exact_head_spectrum",
+        )
 
 
 def test_richardson_is_zero_momentum_heavy_ball():

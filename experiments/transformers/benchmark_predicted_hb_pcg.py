@@ -16,8 +16,10 @@ try:
     from .evaluate_trained_loop_controllers import build_model
     from .exact_loop_transformer_decoder import normal_equations
     from .first_principles_decoder_cells import (
+        chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
+        run_precomputed_chebyshev_state_machine,
     )
     from .pure_icl_parametric_operator_richardson_attention import (
         make_true_family,
@@ -28,8 +30,10 @@ except ImportError:
     from evaluate_trained_loop_controllers import build_model
     from exact_loop_transformer_decoder import normal_equations
     from first_principles_decoder_cells import (
+        chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
+        run_precomputed_chebyshev_state_machine,
     )
     from pure_icl_parametric_operator_richardson_attention import (
         make_true_family,
@@ -135,9 +139,18 @@ def run(args) -> dict:
             model.lam_z,
             ridge_metric,
         )
-        preconditioner, _ = model.loop_decoder.preconditioner_head(
+        preconditioner, preconditioner_info = model.loop_decoder.preconditioner_head(
             equations,
             normal_matrix,
+        )
+        predicted_spectrum = preconditioner_info[
+            "effective_eigenvalues_predicted"
+        ]
+        chebyshev_steps, chebyshev_momenta = chebyshev_coefficient_schedule(
+            rhs,
+            args.hb_depth,
+            predicted_spectrum.amin(dim=-1),
+            predicted_spectrum.amax(dim=-1),
         )
 
         def hvp(vector):
@@ -174,8 +187,18 @@ def run(args) -> dict:
                 args.pcg_depth,
             )[0]
 
+        def chebyshev():
+            return run_precomputed_chebyshev_state_machine(
+                hvp,
+                rhs,
+                preconditioner,
+                chebyshev_steps,
+                chebyshev_momenta,
+            )[0]
+
         head_timing = benchmark(head, args.repeats, device)
         hb_timing = benchmark(heavy_ball, args.repeats, device)
+        chebyshev_timing = benchmark(chebyshev, args.repeats, device)
         pcg_timing = benchmark(pcg, args.repeats, device)
         rows.append(
             {
@@ -184,12 +207,20 @@ def run(args) -> dict:
                 "pcg_depth": args.pcg_depth,
                 "head_median_ms": head_timing["median_ms"],
                 "hb_median_ms": hb_timing["median_ms"],
+                "chebyshev_median_ms": chebyshev_timing["median_ms"],
                 "pcg_median_ms": pcg_timing["median_ms"],
                 "hb_over_pcg": (
                     hb_timing["median_ms"] / pcg_timing["median_ms"]
                 ),
+                "chebyshev_over_pcg": (
+                    chebyshev_timing["median_ms"] / pcg_timing["median_ms"]
+                ),
                 "head_plus_hb_ms": (
                     head_timing["median_ms"] + hb_timing["median_ms"]
+                ),
+                "head_plus_chebyshev_ms": (
+                    head_timing["median_ms"]
+                    + chebyshev_timing["median_ms"]
                 ),
                 "head_plus_pcg_ms": (
                     head_timing["median_ms"] + pcg_timing["median_ms"]

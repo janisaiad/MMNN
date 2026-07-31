@@ -674,6 +674,7 @@ class ParametricOperatorICL(nn.Module):
         freeze_A0: bool = False,
         covariant_ridge: bool = False,
         loop_preconditioner_head: str = "coordinate_ritz",
+        chebyshev_interval_policy: str = "learned",
     ):
         super().__init__()
         self.d = d
@@ -773,6 +774,7 @@ class ParametricOperatorICL(nn.Module):
                 interval_upper_calibration=interval_upper_calibration,
                 hybrid_residual_threshold=hybrid_residual_threshold,
                 preconditioner_head_type=loop_preconditioner_head,
+                chebyshev_interval_policy=chebyshev_interval_policy,
             )
         else:
             self.loop_decoder = None
@@ -1032,6 +1034,7 @@ def train(args, device) -> None:
         freeze_A0=bool(args.freeze_A0),
         covariant_ridge=bool(args.covariant_ridge),
         loop_preconditioner_head=args.loop_preconditioner_head,
+        chebyshev_interval_policy=args.chebyshev_interval_policy,
     ).to(device)
     if args.checkpoint:
         checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=True)
@@ -1219,6 +1222,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--loop-preconditioner-head",
         choices=["coordinate_ritz", "equivariant_ritz_softmax"],
         default="coordinate_ritz",
+    )
+    p.add_argument(
+        "--chebyshev-interval-policy",
+        choices=["learned", "exact_head_spectrum"],
+        default="learned",
     )
     p.add_argument("--chebyshev-hidden-dimension", type=int, default=16)
     p.add_argument("--adaptive-heavy-ball", type=int, default=0)

@@ -93,6 +93,10 @@ def build_model(saved: Dict, true_family, device: torch.device) -> ParametricOpe
             "loop_preconditioner_head",
             "coordinate_ritz",
         ),
+        chebyshev_interval_policy=saved.get(
+            "chebyshev_interval_policy",
+            "learned",
+        ),
     ).to(device)
 
 
@@ -126,7 +130,10 @@ def solve_all(
     normal_matrix, rhs = normal_equations(
         equations, observations, model.lam_z, ridge_metric
     )
-    preconditioner, _ = model.loop_decoder.preconditioner_head(equations, normal_matrix)
+    preconditioner, preconditioner_info = model.loop_decoder.preconditioner_head(
+        equations,
+        normal_matrix,
+    )
 
     def hvp(vector: Tensor) -> Tensor:
         scores = torch.einsum("bmk,bk->bm", equations, vector)
@@ -179,6 +186,18 @@ def solve_all(
         )[0],
         "pcg": run_pcg_state_machine(hvp, rhs, preconditioner, pcg_depth)[0],
     }
+    if "effective_eigenvalues_predicted" in preconditioner_info:
+        predicted_spectrum = preconditioner_info[
+            "effective_eigenvalues_predicted"
+        ]
+        solutions["head_exact_chebyshev"] = run_chebyshev_state_machine(
+            hvp,
+            rhs,
+            preconditioner,
+            hb_depth,
+            predicted_spectrum.amin(dim=-1),
+            predicted_spectrum.amax(dim=-1),
+        )[0]
     hb_final_residual = rhs - hvp(solutions["learned_hb"])
     preconditioned_final_residual = torch.einsum(
         "bij,bj->bi", preconditioner, hb_final_residual

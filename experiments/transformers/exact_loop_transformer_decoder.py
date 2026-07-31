@@ -141,6 +141,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
         preconditioner_head_type: str = "coordinate_ritz",
+        chebyshev_interval_policy: str = "learned",
         adaptive_heavy_ball: bool = False,
         interval_lower_calibration: float = 1.0,
         interval_upper_calibration: float = 1.0,
@@ -159,10 +160,23 @@ class ExactLoopTransformerDecoder(nn.Module):
             raise ValueError("slots cannot exceed the coefficient dimension")
         if spectral_lmax_bound <= 0:
             raise ValueError("spectral_lmax_bound must be positive")
+        if chebyshev_interval_policy not in {"learned", "exact_head_spectrum"}:
+            raise ValueError(
+                f"unknown Chebyshev interval policy {chebyshev_interval_policy}"
+            )
+        if (
+            chebyshev_interval_policy == "exact_head_spectrum"
+            and controller == "chebyshev"
+            and preconditioner_head_type != "equivariant_ritz_softmax"
+        ):
+            raise ValueError(
+                "exact_head_spectrum requires the equivariant Ritz head"
+            )
         self.dimension = dimension
         self.depth = depth
         self.controller = controller
         self.spectral_lmax_bound = spectral_lmax_bound
+        self.chebyshev_interval_policy = chebyshev_interval_policy
         self.adaptive_heavy_ball = bool(adaptive_heavy_ball)
         self.interval_lower_calibration = float(interval_lower_calibration)
         self.interval_upper_calibration = float(interval_upper_calibration)
@@ -225,7 +239,13 @@ class ExactLoopTransformerDecoder(nn.Module):
             self.register_parameter("raw_step", None)
         self.interval_head = (
             PromptSpectralIntervalMLP(chebyshev_hidden_dimension)
-            if controller == "chebyshev" or self.adaptive_heavy_ball
+            if (
+                (
+                    controller == "chebyshev"
+                    and chebyshev_interval_policy == "learned"
+                )
+                or self.adaptive_heavy_ball
+            )
             else None
         )
 
@@ -346,12 +366,24 @@ class ExactLoopTransformerDecoder(nn.Module):
                 self.depth,
             )
         else:
-            assert self.interval_head is not None
-            operator = symmetric_effective_operator(preconditioner, normal_matrix)
-            features = effective_spectrum_features(operator, equations.shape[1])
-            spectral_min, spectral_max = self.interval_head(features)
-            spectral_min = spectral_min / self.interval_lower_calibration
-            spectral_max = spectral_max * self.interval_upper_calibration
+            if self.chebyshev_interval_policy == "exact_head_spectrum":
+                effective_eigenvalues = info["effective_eigenvalues_predicted"]
+                spectral_min = effective_eigenvalues.amin(dim=-1)
+                spectral_max = effective_eigenvalues.amax(dim=-1)
+                features = effective_eigenvalues
+            else:
+                assert self.interval_head is not None
+                operator = symmetric_effective_operator(
+                    preconditioner,
+                    normal_matrix,
+                )
+                features = effective_spectrum_features(
+                    operator,
+                    equations.shape[1],
+                )
+                spectral_min, spectral_max = self.interval_head(features)
+                spectral_min = spectral_min / self.interval_lower_calibration
+                spectral_max = spectral_max * self.interval_upper_calibration
             step_schedule, momentum_schedule = chebyshev_coefficient_schedule(
                 rhs, self.depth, spectral_min, spectral_max
             )

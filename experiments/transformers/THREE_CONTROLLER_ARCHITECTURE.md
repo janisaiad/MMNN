@@ -21,7 +21,7 @@ donne l'interprétation tokenique équivalente.
 | Cellule | Appris en plus de la tête | État | Divisions | Rôle |
 |---|---|---:|---:|---|
 | Heavy-Ball | deux scalaires stables, ou un intervalle prédit | deux vecteurs | non | architecture principale |
-| Chebyshev | \([\widehat\mu,\widehat L]\) via un petit MLP | deux vecteurs + scalaires | récurrence fixe | meilleur polynôme non adaptatif |
+| Chebyshev | spectre exact de la tête, ou \([\widehat\mu,\widehat L]\) via MLP | deux vecteurs + scalaires | récurrence fixe | meilleur polynôme non adaptatif |
 | PCG | rien | cinq vecteurs/scalaires | quotients exacts | plafond numérique par HVP |
 | HB certifié → PCG | seuil résiduel fixe | état HB, PCG seulement en queue | quotients au fallback | décodeur robuste final |
 
@@ -37,6 +37,16 @@ La même tête scalaire peut rendre HB adaptatif : elle prédit
 \]
 construisent ses deux poids. Le MLP ne remplace donc toujours aucune opération
 de la boucle.
+
+Lorsque la tête **equivariant_ritz_softmax** est utilisée, elle calcule déjà
+les valeurs de Ritz du petit normal primal pour former le préconditionneur.
+La politique **exact_head_spectrum** réutilise directement leur minimum et
+leur maximum : aucun MLP et aucune seconde eigendecomposition. Sur 8 192
+tâches, son erreur \(H\) à profondeur 10 diffère de Chebyshev oracle de moins
+de \(10^{-4}\) en relatif, l'écart restant étant celui de l'arithmétique
+flottante. La politique MLP n'est donc requise que pour la variante où le
+spectre exact n'est pas matérialisé ou lorsque l'on veut amortir ce calcul à
+plus grand \(K\).
 
 ## Règle de sélection
 
@@ -527,9 +537,12 @@ PCG-8. Sur \(3\times2\times8192=49\,152\) tâches nominales ou avec
 
 Après suppression des synchronisations GPU dues aux historiques de diagnostic,
 un benchmark séquentiel sur H100 donne, pour batch \(1,64,1024\), des rapports
-de latence cellule HB-10 / PCG-8 de \(0.566\), \(0.606\) et \(0.610\).
-En incluant la tête spectrale commune, HB reste respectivement \(33.3\%\),
-\(31.1\%\) et \(30.7\%\) plus rapide. C'est le premier point mesuré où HB est
+de latence cellule HB-10 / PCG-8 de \(0.544\), \(0.620\) et \(0.597\).
+En incluant la tête spectrale commune, HB reste respectivement \(29.9\%\),
+\(29.8\%\) et \(31.7\%\) plus rapide. Chebyshev-10 exact est encore légèrement
+plus rapide que HB-10 et \(32.6\%\) à \(35.9\%\) plus rapide que PCG-8 tête
+incluse, mais son erreur est moins uniformément bonne entre seeds. C'est le
+premier point mesuré où HB est
 simultanément plus précis et plus rapide que la baseline PCG choisie. La
 revendication reste locale à cette famille, ces dimensions et ce matériel ;
 elle ne signifie pas que HB domine tout PCG sur tout problème.
