@@ -447,16 +447,16 @@ general positive-semidefinite Gram matrix instead of the scalar Hankel
 matrix.
 
 There is an unavoidable stability boundary.  If the Clenshaw interval is
-([0,\widehat L]), its shifted coordinate is
-(x(\lambda)=2\lambda/\widehat L-1).  For a missed eigenvalue
-(\lambda>\widehat L),
+$[0,\widehat L]$, its shifted coordinate is
+$x(\lambda)=2\lambda/\widehat L-1$.  For a missed eigenvalue
+$\lambda>\widehat L$,
 \[
  T_j(x(\lambda))
  =\cosh\!\left(j\operatorname{arcosh}x(\lambda)\right),
 \]
 so a rare upper-endpoint miss can grow exponentially with degree and dominate
 an arithmetic-mean risk.  Consequently, high average validation coverage is
-not a certificate: either (\widehat L) must be a genuine upper bound, or an
+not a certificate: either $\widehat L$ must be a genuine upper bound, or an
 explicit residual guard must handle misses.  This conclusion uses only the
 exact Chebyshev identity and does not depend on a neural approximation
 argument.
@@ -755,13 +755,28 @@ For $c_\star=\min_i c_i$, let
  \quad
  D=V_C\operatorname{diag}(d_i-1)V_C^\top,
  \quad
- B_\theta v=\frac1{s_H}\left[v+UDU^\top v\right].
+ \widetilde B=I+UDU^\top.
+\]
+Writing $A=H/s_H$, define
+\[
+ R=AU-UC,
+ \qquad
+ d_\perp=\overline L-\operatorname{tr}C,
+ \qquad
+ \gamma=\|R(I+D)^{1/2}\|_{\mathrm F},
+\]
+\[
+ \widehat L_{\rm post}
+ =\frac{c_\star+d_\perp+
+ \sqrt{(c_\star-d_\perp)^2+4\gamma^2}}{2},
+ \qquad
+ \zeta=\widehat L_{\rm post}/\overline L,
+ \qquad
+ B_\theta=\frac{\widetilde B}{s_H\zeta}.
 \]
 Then $B_\theta$ is SPD, orthogonally covariant and permutation invariant in
 the weak tokens.  Moreover
 \[
- 0\prec B_\theta\preceq s_H^{-1}I,
- \qquad
  \lambda_{\max}(B_\theta^{1/2}HB_\theta^{1/2})
  \leq\overline L.
 \]
@@ -775,48 +790,71 @@ All attention features are scalar row invariants, whereas the routed values
 transform as $G^\top W^\top\mapsto Q^\top G^\top W^\top$.  HVPs, QR and the
 projected spectral function therefore give the covariance claim.  Since
 $c_i>0$ and $d_i\in(0,1]$, the low-rank operator in brackets has eigenvalues
-$d_i$ on $\operatorname{span}U$ and one on its complement.  Thus it lies in
-$(0,I]$.  Finally $H\preceq\operatorname{tr}(H)I=s_H\overline L I$ and
-$B_\theta\preceq s_H^{-1}I$ imply
+$d_i$ on $\operatorname{span}U$ and one on its complement, so it is SPD.
+In the orthogonal decomposition
+$\operatorname{span}U\oplus\operatorname{span}U^\perp$, positivity gives
+\[
+ A=\begin{bmatrix}C&R^\top\\R&A_\perp\end{bmatrix},
+ \qquad
+ \lambda_{\max}(A_\perp)
+ \leq\operatorname{tr}A_\perp
+ =\overline L-\operatorname{tr}C=d_\perp.
+\]
+Because $I+D=c_\star C^{-1}$ on the selected space, the selected block of
+$\widetilde B^{1/2}A\widetilde B^{1/2}$ is exactly $c_\star I$ and its cross
+block has operator norm at most $\gamma$.  Its largest eigenvalue is bounded
+by that of the scalar majorant
+$\begin{bmatrix}c_\star&\gamma\\
+\gamma&d_\perp\end{bmatrix}$, namely
+$\widehat L_{\rm post}$.  Rescaling by $1/\zeta$ proves
 \[
  \lambda_{\max}(B_\theta^{1/2}HB_\theta^{1/2})
- =\lambda_{\max}(H^{1/2}B_\theta H^{1/2})
- \leq s_H^{-1}\lambda_{\max}(H)\leq\overline L.
+ \leq\widehat L_{\rm post}/\zeta=\overline L.
 \]
+Every quantity in the sharper certificate is an $S\times S$ Ritz
+quantity, the block residual already computed by the construction, or a
+trace; no full spectrum is introduced.
 \end{proof}
 
 \begin{proposition}[exact matrix-free head interface]
 \label{prop:matrix-free-moment-interface}
 Let \(Y_\theta\in\mathbb R^{K\times S}\) denote the covariant block routed by
 the softmax head before its first QR factorization, let \(A=H/s_H\), and
-assume \(A^rY_\theta\) has full column rank.  Define the two small block
+assume \(A^rY_\theta\) has full column rank.  Define the three small block
 moments
 \[
  K_r=Y_\theta^\top A^{2r}Y_\theta,
  \qquad
- J_r=Y_\theta^\top A^{2r+1}Y_\theta .
+ J_r=Y_\theta^\top A^{2r+1}Y_\theta,
+ \qquad
+ L_r=Y_\theta^\top A^{2r+2}Y_\theta .
 \]
 Up to an immaterial orthogonal change of slot coordinates, the matrix-free
 construction in Proposition~\ref{prop:matrix-free-prompt-head} is exactly
 \begin{align}
  U&=A^rY_\theta K_r^{-1/2},
  &C&=K_r^{-1/2}J_rK_r^{-1/2},\\
+ R^\top R&=K_r^{-1/2}L_rK_r^{-1/2}-C^2,
+ &\zeta&=\zeta(C,R,\operatorname{tr}A),\\
  c_\star&=\lambda_{\min}(C),
- &B_\theta&=s_H^{-1}\left[
+ &B_\theta&=(s_H\zeta)^{-1}\left[
  I-UU^\top+c_\star UC^{-1}U^\top\right].
  \label{eq:matrix-free-moment-interface}
 \end{align}
 Consequently the learned object is the routed subspace \(Y_\theta\), while
-the projected normal geometry, its spectral correction, and the
-preconditioner application are exact algebraic functions of
-\((K_r,J_r)\).  A finite-dimensional risk calculation for this head closes
+the projected normal geometry, its spectral correction, the tight
+certificate, and the preconditioner application are exact algebraic functions
+of \((K_r,J_r,L_r,\operatorname{tr}A)\).  A finite-dimensional risk
+calculation for this head closes
 on these block moments together with the overlaps of \(U\) with the teacher,
 the right-hand side, and the physical decoder metric.  It does not in
 general close on the eigenvalue law of \(H\) alone.
 \end{proposition}
 \begin{proof}
 Symmetric orthogonalization of \(A^rY_\theta\) gives the displayed \(U\).
-Substitution yields \(U^\top AU=C\).  The implementation assigns multiplier
+Substitution yields \(U^\top AU=C\), while expanding
+\((AU-UC)^\top(AU-UC)\) gives the displayed residual Gram.  The
+implementation assigns multiplier
 \(c_\star/c_i\) to a Ritz eigenvector with eigenvalue \(c_i\); functional
 calculus therefore gives \(c_\star C^{-1}\) on \(\operatorname{span}U\) and
 the identity on its orthogonal complement.  QR produces a different
@@ -831,13 +869,13 @@ symmetric effective operator
 Let
 \[
  A_\theta=B_\theta^{1/2}HB_\theta^{1/2},
- \qquad A=H/s_H .
+ \qquad A_0=H/(s_H\zeta) .
 \]
 Then
 \[
- \operatorname{rank}(A_\theta-A)\leq 2S,
+ \operatorname{rank}(A_\theta-A_0)\leq 2S,
  \qquad
- \sup_x\left|F_{A_\theta}(x)-F_A(x)\right|\leq\frac{2S}{K}.
+ \sup_x\left|F_{A_\theta}(x)-F_{A_0}(x)\right|\leq\frac{2S}{K}.
 \]
 Thus a bounded-score head with fixed \(S\) cannot change a normalized bulk
 spectral risk by order one as \(K\to\infty\).  It can nevertheless change a
@@ -849,8 +887,8 @@ order-one task risk in finitely many directions.
 \end{corollary}
 \begin{proof}
 Write
-\(B_\theta^{1/2}=s_H^{-1/2}(I+UEU^\top)\) for the exact \(S\)-dimensional
-spectral function \(E\).  Expanding \(A_\theta-A\) shows that its image lies
+\(B_\theta^{1/2}=(s_H\zeta)^{-1/2}(I+UEU^\top)\) for the exact
+\(S\)-dimensional spectral function \(E\).  Expanding \(A_\theta-A_0\) shows that its image lies
 in \(\operatorname{span}(U,HU)\), hence its rank is at most \(2S\).  The
 empirical spectral-distribution bound is the Hermitian rank inequality.  For
 isotropic normalized trace losses this contribution vanishes with \(S/K\),
@@ -880,6 +918,30 @@ teacher/physical spectral risk plus measured total latency.  This is why the
 overlap order parameters in Corollary~\ref{cor:fixed-slot-boundary} are part
 of the theory rather than an optional diagnostic.
 \end{remark}
+
+\paragraph{Paired randomly rotated low-rank audit.}
+The script \texttt{audit\_rotated\_low\_rank\_controller\_learning.py}
+isolates the two axes in Remark~\ref{rem:pure-solver-boundary}.  Every
+$K=12$ prompt has two rank-two covariance outliers of strength $100$ with an
+independent Haar orientation.  Richardson, HB and PCG start from identical
+head weights, receive identical minibatches for $1000$ updates, and are
+crossed with every exact cell on $4096$ fresh prompts for each of three seeds.
+With no block-power refinement, HB training raises outlier-space overlap from
+$0.878$ to $0.945$, reduces mean effective condition number from $320.1$ to
+$115.7$, and lowers HB--4 risk from $0.148$ to $0.104$; Richardson training
+changes the overlap only to $0.885$.  Thus the HB objective really can train
+the routed space.  With one exact block-power step, however, every head has
+overlap about $0.9998$ and condition number about $6.25$: the hard-coded
+linear relation dominates the learned routing.
+
+In this second regime, mean relative $H$-risks are $1.19\times10^{-2}$ for
+HB--4, $1.97\times10^{-3}$ for Chebyshev--4, and $1.06\times10^{-4}$ for
+PCG--4.  Including two block-HVP setup rounds, head+PCG--4 is $3.43$ times
+better than head-free PCG--6.  Counting the three block directions as six
+sequential scalar HVPs reverses the result: PCG--10 is $42.9$ times better.
+This is a hardware-parallel latency benefit, not solver dominance.  The exact
+weighted-polynomial prediction and realized stationary risks agree with
+maximum mean absolute gap $3.36\times10^{-7}$.
 
 This construction deliberately deflates high modes rather than trying to
 invert low modes: block power iteration finds the former without divisions,
@@ -1058,7 +1120,7 @@ an experimental tuning rule.
 
 For the implemented matrix-free head, the corresponding asymptotic closure
 is instead the limit of
-\((K_r,J_r)\) in Proposition~\ref{prop:matrix-free-moment-interface} and of
+\((K_r,J_r,L_r)\) in Proposition~\ref{prop:matrix-free-moment-interface} and of
 the teacher/physical overlaps.  Equation~\eqref{eq:softmax-head-limit}
 becomes exact for it only when the routed block converges to an invariant
 spectral subspace (or under an additional asymptotic commutation theorem).
@@ -1077,7 +1139,7 @@ operator and the fixed learned preconditioner.  For the actual matrix-free
 head, the replica state must first determine
 \[
  \mathcal Q_{\theta,r}
- =\left(\nu_H,K_r,J_r,
+ =\left(\nu_H,K_r,J_r,L_r,
    \Gamma_{U,T},\Gamma_{U,b},\Gamma_{U,\mathrm{phys}}\right),
 \]
 where the last three terms denote the limiting cross measures or finite-rank

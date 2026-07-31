@@ -526,7 +526,10 @@ class ExactLoopTransformerDecoder(nn.Module):
             # to the smallest selected Ritz value.  The MLP predicts only a
             # compressed measure below that prompt-dependent reference; all
             # coefficient construction and vector arithmetic remain exact.
-            reference_upper = info["projected_eigenvalues"][:, 0]
+            reference_upper = info.get(
+                "projected_effective_target",
+                info["projected_eigenvalues"][:, 0],
+            )
             spectral_nodes, spectral_weights, spectral_upper = self.measure_head(
                 features,
                 reference_upper,

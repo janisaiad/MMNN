@@ -1163,7 +1163,7 @@ separately.  The implemented controller predicts ordered positive nodes,
 positive normalized masses, and a positive expansion of a Ritz reference;
 the expansion is capped by the matrix-free global upper certificate.  If an
 actual eigenvalue exceeds the Clenshaw endpoint \(\widehat L\), then its
-shifted coordinate (x=2\lambda/\widehat L-1) is larger than one and
+shifted coordinate \(x=2\lambda/\widehat L-1\) is larger than one and
 
 \[
  T_j(x)=\cosh\!\left(j\operatorname{arcosh}x\right).
@@ -1177,15 +1177,15 @@ assumption or a residual fallback.
 
 The finite-dimensional audit
 \texttt{audit\_pde\_moment\_chebyshev\_learning.py} tests the corollary with
-only the spectral-measure MLP trainable.  At (K=32,M=128,S=4,L=8,r=2),
+only the spectral-measure MLP trainable.  At $K=32,M=128,S=4,L=8,r=2$,
 three seeds and 4096 fresh tasks per seed, the correlated elliptic law gives
-mean relative (H)-risk (9.00\times10^{-4}).  This improves on
-oracle-interval Richardson ((3.78\times10^{-1})), HB
-((8.65\times10^{-1})), and Chebyshev ((7.79\times10^{-2})), showing that
+mean relative $H$-risk $9.00\times10^{-4}$.  This improves on
+oracle-interval Richardson ($3.78\times10^{-1}$), HB
+($8.65\times10^{-1}$), and Chebyshev ($7.79\times10^{-2}$), showing that
 the learned multiplicities are genuine useful statistics.  It does not
-approach same-preconditioner PCG--8 ((1.81\times10^{-8})) or head-free
-PCG--8 ((2.19\times10^{-6})).  On the well-conditioned elliptic law the
-learned risk is (7.44\times10^{-7}), while the exact-interval stationary
+approach same-preconditioner PCG--8 ($1.81\times10^{-8}$) or head-free
+PCG--8 ($2.19\times10^{-6}$).  On the well-conditioned elliptic law the
+learned risk is $7.44\times10^{-7}$, while the exact-interval stationary
 methods are already at the float32 floor.  In both laws the spectral formula
 and realized Clenshaw risk agree to plotting precision.  Therefore the
 replica moment law is predictive for the implemented controller, but it does
@@ -1245,25 +1245,39 @@ implemented block-power matrix-free head unless its routed subspace becomes
 invariant.
 
 For the implemented head, let \(Y_\theta\in\mathbb R^{K\times S}\) be the
-softmax-routed block before QR, \(A=H/s_H\), and \(r\) the fixed number of
+softmax-routed block before QR,
+\(s_H=\operatorname{tr}(H)/\overline L\), \(A=H/s_H\), and \(r\) the fixed number of
 block-power refinements.  Assuming \(A^rY_\theta\) has full column rank, set
 \begin{align}
  K_r&=Y_\theta^\top A^{2r}Y_\theta,
  &J_r&=Y_\theta^\top A^{2r+1}Y_\theta,\\
  U&=A^rY_\theta K_r^{-1/2},
- &C&=K_r^{-1/2}J_rK_r^{-1/2}.
+ &C&=K_r^{-1/2}J_rK_r^{-1/2},\\
+ L_r&=Y_\theta^\top A^{2r+2}Y_\theta,
+ &R=AU-UC,&
+ R^\top R&=K_r^{-1/2}L_rK_r^{-1/2}-C^2.
  \label{eq:pde-mf-ritz-interface}
 \end{align}
-If \(c_\star=\lambda_{\min}(C)\), the actual preconditioner is exactly
+If \(c_\star=\lambda_{\min}(C)\), let
+\(M=c_\star C^{-1}\),
+\(d_\perp=\overline L-\operatorname{tr}C\), and
+\[
+ \gamma=\|RM^{1/2}\|_{\mathrm F},\qquad
+ \widehat L_{\rm post}
+ =\frac{c_\star+d_\perp+
+ \sqrt{(c_\star-d_\perp)^2+4\gamma^2}}{2},qquad
+ \zeta=\widehat L_{\rm post}/\overline L.
+\]
+The actual preconditioner is exactly
 \begin{equation}
- B_\theta=s_H^{-1}\left[
+ B_\theta=(s_H\zeta)^{-1}\left[
  I-UU^\top+c_\star UC^{-1}U^\top\right].
  \label{eq:pde-mf-preconditioner}
 \end{equation}
 Thus the neural component learns \(Y_\theta\), whereas all covariance
 contractions, the \(S\times S\) inverse, and the solver recurrence are exact.
 Because \(U\) need not be an invariant subspace of \(H\), the replica closure
-requires the limits of \((K_r,J_r)\) and the cross measures of \(U\) with the
+requires the limits of \((K_r,J_r,L_r)\) and the cross measures of \(U\) with the
 teacher, right-hand side, and physical decoder metric.  A scalar eigenvalue
 pushforward alone is insufficient; no layer-indexed order parameter is needed
 for HB or Chebyshev once these prompt-only quantities are fixed.
@@ -1271,9 +1285,9 @@ for HB or Chebyshev once these prompt-only quantities are fixed.
 There is also a sharp scaling boundary.  If
 \(A_\theta=B_\theta^{1/2}HB_\theta^{1/2}\), then
 \[
- \operatorname{rank}(A_\theta-H/s_H)\leq2S,
+ \operatorname{rank}(A_\theta-H/(s_H\zeta))\leq2S,
  \qquad
- \sup_x|F_{A_\theta}(x)-F_{H/s_H}(x)|\leq 2S/K.
+ \sup_x|F_{A_\theta}(x)-F_{H/(s_H\zeta)}(x)|\leq 2S/K.
 \]
 A fixed-slot head therefore cannot alter an isotropic normalized bulk risk by
 order one.  It can alter the low-rank PDE risk by order one when the physical

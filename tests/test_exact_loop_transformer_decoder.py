@@ -531,7 +531,19 @@ def test_matrix_free_nystrom_decoder_never_materializes_normal_or_preconditioner
     normal = normal + 0.2 * torch.eye(normal.shape[-1], dtype=normal.dtype)
     factor = torch.linalg.cholesky(dense)
     effective = factor.transpose(-1, -2) @ normal @ factor
-    assert torch.linalg.eigvalsh(effective).amax() <= 2.5 + 1e-9
+    effective_lmax = torch.linalg.eigvalsh(effective)[:, -1]
+    assert effective_lmax.amax() <= 2.5 + 1e-9
+    assert (
+        effective_lmax * info["certificate_normalizer"]
+        <= info["post_deflation_lmax_bound"] + 1e-9
+    ).all()
+    torch.testing.assert_close(
+        info["post_deflation_lmax_bound"]
+        / info["certificate_normalizer"],
+        torch.full_like(info["certificate_normalizer"], 2.5),
+        rtol=2e-10,
+        atol=2e-10,
+    )
 
 
 def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
@@ -604,6 +616,34 @@ def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
         target / projected_eigenvalues,
         projected_eigenvectors,
     )
+    multiplier_sqrt = torch.einsum(
+        "bsi,bi,bti->bst",
+        projected_eigenvectors,
+        (target / projected_eigenvalues).sqrt(),
+        projected_eigenvectors,
+    )
+    residual = operator @ directions - directions @ projected
+    cross_bound = torch.linalg.matrix_norm(
+        residual @ multiplier_sqrt,
+        ord="fro",
+        dim=(-2, -1),
+    )
+    complement_trace = (
+        head.spectral_lmax_bound
+        - torch.diagonal(projected, dim1=-2, dim2=-1).sum(dim=-1)
+    ).clamp_min(0.0)
+    selected_bound = target[:, 0]
+    post_deflation_bound = 0.5 * (
+        selected_bound
+        + complement_trace
+        + torch.sqrt(
+            (selected_bound - complement_trace).square()
+            + 4.0 * cross_bound.square()
+        )
+    )
+    certificate_normalizer = (
+        post_deflation_bound / head.spectral_lmax_bound
+    ).clamp_min(1e-10)
     identity = torch.eye(dimension, dtype=equations.dtype).expand(
         equations.shape[0],
         -1,
@@ -613,7 +653,7 @@ def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
         identity
         - directions @ directions.transpose(-1, -2)
         + directions @ slot_map @ directions.transpose(-1, -2)
-    ) / scale[:, None, None]
+    ) / (scale * certificate_normalizer)[:, None, None]
     torch.testing.assert_close(
         materialize_preconditioner(preconditioner),
         formula,

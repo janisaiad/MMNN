@@ -828,11 +828,6 @@ class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
             multipliers - 1.0,
             projected_eigenvectors,
         )
-        preconditioner = LowRankSPDPreconditioner(
-            scale=scale,
-            directions=directions,
-            slot_correction=slot_correction,
-        )
         residual = operator_directions - torch.einsum(
             "bks,bst->bkt",
             directions,
@@ -847,12 +842,64 @@ class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
             ord="fro",
             dim=(-2, -1),
         ).clamp_min(1e-12)
+        # Tight post-deflation certificate without a K x K spectrum.  In the
+        # orthogonal basis [U,U_perp], the normalized operator has blocks
+        # [[C,R^T],[R,D]].  The selected multiplier commutes with C and maps
+        # its block exactly to target*I.  Positivity gives
+        # lambda_max(D) <= tr(D) = tr(A)-tr(C), while the cross-block norm is
+        # bounded by ||R M^{1/2}||_F.  The largest eigenvalue of the resulting
+        # scalar 2 x 2 majorant is therefore a deterministic upper bound.
+        multiplier_sqrt = torch.einsum(
+            "bsi,bi,bti->bst",
+            projected_eigenvectors,
+            multipliers.sqrt(),
+            projected_eigenvectors,
+        )
+        routed_residual = torch.einsum(
+            "bks,bst->bkt",
+            residual,
+            multiplier_sqrt,
+        )
+        cross_bound = torch.linalg.matrix_norm(
+            routed_residual,
+            ord="fro",
+            dim=(-2, -1),
+        )
+        complement_trace_bound = (
+            self.spectral_lmax_bound
+            - torch.diagonal(
+                projected_operator,
+                dim1=-2,
+                dim2=-1,
+            ).sum(dim=-1)
+        ).clamp_min(0.0)
+        selected_bound = target[:, 0]
+        post_deflation_bound = 0.5 * (
+            selected_bound
+            + complement_trace_bound
+            + torch.sqrt(
+                (selected_bound - complement_trace_bound).square()
+                + 4.0 * cross_bound.square()
+            )
+        )
+        certificate_normalizer = (
+            post_deflation_bound / self.spectral_lmax_bound
+        ).clamp_min(1e-10)
+        effective_target = selected_bound / certificate_normalizer
+        effective_complement_trace = (
+            complement_trace_bound / certificate_normalizer
+        )
+        preconditioner = LowRankSPDPreconditioner(
+            scale=scale * certificate_normalizer,
+            directions=directions,
+            slot_correction=slot_correction,
+        )
         norm_spread = log_norm.std(dim=-1, unbiased=False)
         interval_features = torch.stack(
             [
-                torch.log(projected_eigenvalues[:, 0]),
-                torch.log(projected_eigenvalues[:, -1]),
-                torch.log(target[:, 0]),
+                torch.log(effective_target.clamp_min(1e-12)),
+                torch.log(effective_complement_trace.clamp_min(1e-12)),
+                torch.log(post_deflation_bound.clamp_min(1e-12)),
                 torch.log1p(residual_fraction),
                 torch.log1p(norm_spread),
                 equations.new_full(
@@ -871,11 +918,17 @@ class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
             "directions": directions,
             "slot_correction": slot_correction,
             "slot_multipliers": multipliers,
-            "normal_scale": scale,
+            "normal_scale": scale * certificate_normalizer,
+            "raw_normal_scale": scale,
             "normal_trace": normal_trace,
             "projected_operator": projected_operator,
             "projected_eigenvalues": projected_eigenvalues,
+            "projected_effective_target": effective_target,
             "subspace_residual_fraction": residual_fraction,
+            "cross_block_bound": cross_bound,
+            "complement_trace_bound": complement_trace_bound,
+            "post_deflation_lmax_bound": post_deflation_bound,
+            "certificate_normalizer": certificate_normalizer,
             "interval_features": interval_features,
             "certified_effective_lmax": equations.new_full(
                 (batch,),
