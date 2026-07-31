@@ -17,17 +17,21 @@ import torch.nn as nn
 
 try:
     from .first_principles_decoder_cells import (
+        chebyshev_coefficient_schedule,
         run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
+        run_precomputed_chebyshev_state_machine,
     )
     from .first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from .structured_one_head_heavyball import OneHeadSpectralPreconditioner
 except ImportError:
     from first_principles_decoder_cells import (
+        chebyshev_coefficient_schedule,
         run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
+        run_precomputed_chebyshev_state_machine,
     )
     from first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from structured_one_head_heavyball import OneHeadSpectralPreconditioner
@@ -331,19 +335,19 @@ class ExactLoopTransformerDecoder(nn.Module):
             spectral_min, spectral_max = self.interval_head(features)
             spectral_min = spectral_min / self.interval_lower_calibration
             spectral_max = spectral_max * self.interval_upper_calibration
-            solution, _, _ = run_chebyshev_state_machine(
-                hvp,
-                rhs,
-                preconditioner,
-                self.depth,
-                spectral_min,
-                spectral_max,
+            step_schedule, momentum_schedule = chebyshev_coefficient_schedule(
+                rhs, self.depth, spectral_min, spectral_max
+            )
+            solution, _, _ = run_precomputed_chebyshev_state_machine(
+                hvp, rhs, preconditioner, step_schedule, momentum_schedule
             )
             info.update(
                 {
                     "spectral_min": spectral_min,
                     "spectral_max": spectral_max,
                     "spectral_features": features,
+                    "chebyshev_step_schedule": step_schedule,
+                    "chebyshev_momentum_schedule": momentum_schedule,
                 }
             )
         info.update(

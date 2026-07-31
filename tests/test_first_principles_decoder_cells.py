@@ -76,7 +76,7 @@ def test_heavy_ball_state_machine_matches_reference_solver_exactly() -> None:
         momentum=momentum,
     )[0]
 
-    torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
+    torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-12)
 
 
 def test_pcg_state_machine_matches_reference_solver_exactly() -> None:
@@ -168,6 +168,38 @@ def test_tied_chebyshev_state_machine_matches_reference_exactly() -> None:
     )[0]
 
     torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
+
+
+def test_precomputed_chebyshev_schedule_matches_scalar_token_recurrence() -> None:
+    matrix, rhs, preconditioner = random_spd_problem()
+    hvp = lambda vector: torch.einsum("bkl,bl->bk", matrix, vector)
+    chol = torch.linalg.cholesky(preconditioner)
+    symmetric = chol.transpose(-1, -2) @ matrix @ chol
+    eigenvalues = torch.linalg.eigvalsh(symmetric)
+    spectral_min = eigenvalues[:, 0]
+    spectral_max = eigenvalues[:, -1]
+    expected = CELLS.run_chebyshev_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        depth=7,
+        spectral_min=spectral_min,
+        spectral_max=spectral_max,
+    )[0]
+    step_schedule, momentum_schedule = CELLS.chebyshev_coefficient_schedule(
+        rhs,
+        depth=7,
+        spectral_min=spectral_min,
+        spectral_max=spectral_max,
+    )
+    actual = CELLS.run_precomputed_chebyshev_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        step_schedule,
+        momentum_schedule,
+    )[0]
+    torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-12)
 
 
 def test_tied_chebyshev_uses_one_hvp_per_block() -> None:

@@ -268,6 +268,94 @@ def run_chebyshev_state_machine(
     return state.x, mse_history, residual_history
 
 
+def chebyshev_coefficient_schedule(
+    rhs: Tensor,
+    depth: int,
+    spectral_min: float | Tensor,
+    spectral_max: float | Tensor,
+) -> Tuple[Tensor, Tensor]:
+    """Precompute the exact per-block Chebyshev scalar-token schedule.
+
+    This is algebraically identical to updating the scalar state inside every
+    block.  It exposes the intended loop-Transformer interface directly: an
+    interval head supplies two endpoints, fixed arithmetic constructs
+    ``[alpha_l, beta_l]``, and the vector loop only consumes those weights.
+    """
+
+    lower = _batch_scalar(spectral_min, rhs)
+    upper = _batch_scalar(spectral_max, rhs)
+    if torch.any(lower <= 0) or torch.any(upper < lower):
+        raise ValueError("Chebyshev requires 0 < spectral_min <= spectral_max")
+    if depth <= 0:
+        raise ValueError("Chebyshev depth must be positive")
+    center = 0.5 * (upper + lower)
+    half_width = 0.5 * (upper - lower)
+    quarter_half_width_squared = 0.25 * half_width.pow(2)
+
+    # If p_0=1, p_1=d and p_{l+2}=d p_{l+1}-q p_l, then
+    # alpha_l=p_l/p_{l+1}.  Writing the characteristic roots as r+ and r-
+    # gives the stable vectorized ratio below.  It is the closed form of the
+    # scalar recurrence, not an approximation learned by the MLP.
+    discriminant = torch.sqrt(
+        (center.square() - 4.0 * quarter_half_width_squared).clamp_min(1e-30)
+    )
+    root_plus = 0.5 * (center + discriminant)
+    root_minus = 0.5 * (center - discriminant)
+    root_ratio = root_minus / root_plus
+    # ``cumprod`` generates t, t^2, ..., t^depth without invoking the costly
+    # general floating-point ``pow`` kernel for every batch/layer pair.
+    ratio_powers = torch.cumprod(
+        root_ratio[:, None].expand(-1, depth), dim=1
+    )
+    next_ratio_powers = ratio_powers * root_ratio[:, None]
+    step_schedule = root_plus[:, None].reciprocal() * (
+        1.0 - ratio_powers
+    ) / (1.0 - next_ratio_powers).clamp_min(1e-30)
+    momentum_schedule = torch.zeros_like(step_schedule)
+    if depth > 1:
+        momentum_schedule[:, 1:] = (
+            quarter_half_width_squared[:, None]
+            * step_schedule[:, :-1]
+            * step_schedule[:, 1:]
+        )
+    return step_schedule, momentum_schedule
+
+
+def run_precomputed_chebyshev_state_machine(
+    hvp: HVP,
+    rhs: Tensor,
+    preconditioner: Preconditioner,
+    step_schedule: Tensor,
+    momentum_schedule: Tensor,
+    target: Tensor | None = None,
+) -> Tuple[Tensor, List[float], List[float]]:
+    """Run exact Chebyshev vector blocks from a precomputed scalar schedule."""
+
+    if step_schedule.shape != momentum_schedule.shape:
+        raise ValueError("Chebyshev step and momentum schedules must match")
+    if step_schedule.ndim != 2 or step_schedule.shape[0] != rhs.shape[0]:
+        raise ValueError("Chebyshev schedules must have shape [batch, depth]")
+    x = torch.zeros_like(rhs)
+    x_previous = torch.zeros_like(rhs)
+    mse_history: List[float] = []
+    residual_history: List[float] = []
+    for layer in range(step_schedule.shape[1]):
+        residual = rhs - hvp(x)
+        preconditioned_residual = apply_fixed_preconditioner(
+            preconditioner, residual
+        )
+        x_next = (
+            x
+            + step_schedule[:, layer, None] * preconditioned_residual
+            + momentum_schedule[:, layer, None] * (x - x_previous)
+        )
+        x_previous, x = x, x_next
+        residual_history.append(torch.norm(residual, dim=-1).mean().item())
+        if target is not None:
+            mse_history.append(((x - target) ** 2).mean().item())
+    return x, mse_history, residual_history
+
+
 @dataclass(frozen=True)
 class PCGState:
     """Persistent tokens of the tied PCG macro-block: [X,R,S,P,RHO]."""

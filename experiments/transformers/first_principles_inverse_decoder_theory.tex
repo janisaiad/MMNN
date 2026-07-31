@@ -262,6 +262,37 @@ $0<\widehat\mu<\widehat L$.  Its guarantee is conditional on the coverage
 event $[\mu_{\rm true},L_{\rm true}]\subseteq
 [\widehat\mu,\widehat L]$.
 
+\paragraph{Strict loop form versus compiled schedule.}
+The strict recurrent realization stores
+$[Z_\ell,Z_{\ell-1},\alpha_\ell,\beta_\ell]$ and applies one tied vector block
+plus the exact scalar recurrence above.  Equivalently, let
+$q=h^2/4$ and let $r_\pm$ be the roots of $r^2-dr+q=0$.  If
+$t=r_-/r_+$, then all layer weights can be constructed simultaneously as
+\[
+ \alpha_\ell=\frac{1}{r_+}
+ \frac{1-t^{\ell+1}}{1-t^{\ell+2}},
+ \qquad
+ \beta_0=0,
+ \qquad
+ \beta_\ell=q\alpha_{\ell-1}\alpha_\ell.
+\]
+This closed form is the exact solution of the scalar-token recurrence.  It is
+a compilation optimization and does not turn the MLP into an approximation of
+solver arithmetic.
+
+\paragraph{When the interval head is genuinely in-context.}
+Let $s(\mathcal C)$ be fixed invariant reductions of the prompt-induced
+effective operator and let
+$(\widehat\mu,\widehat L)=\Phi_\psi(s(\mathcal C))$.  The meta-parameters
+$\psi$ are frozen at test time, but a new prompt changes the interval and hence
+the entire exact Chebyshev weight schedule.  This is in-context conditioning,
+not test-time optimization.  A necessary causal audit compares the conditioned
+head with (i) prompt features permuted between tasks, (ii) a prompt-independent
+interval calibrated on disjoint tasks, and (iii) exact spectral endpoints.
+If permutation does not hurt and the constant control is indistinguishable,
+the head has not demonstrated useful ICL and must be reported only as a global
+spectral calibration device.
+
 \begin{theorem}[Exact realization and convergence]
 Assume $H$ and $B_Q$ are SPD.  The three macro-blocks reproduce the
 preconditioned HB, PCG, and Chebyshev recurrences exactly.  In particular,

@@ -155,9 +155,50 @@ $p_L^{\rm Ch}(x)$ independent of the right-hand side and gives
 \end{equation}
 Outside $\mathcal E_{\rm cov}$ there is no convergence guarantee.  A valid
 population-risk statement must therefore include either a deterministic
-certificate or an additive failure term proportional to
-$\Pr(\mathcal E_{\rm cov}^{c})$.  Reporting only the interval-regression MSE is
-insufficient.
+certificate or a sensitivity-weighted failure term.  More precisely, if
+$S(\mathcal C)$ is any taskwise envelope for the squared physical error when
+coverage fails, then the uncontrolled contribution is
+\begin{equation}
+ \mathfrak F_{\rm cov}
+ =\E\!\left[S(\mathcal C)\mathbf 1_{\mathcal E_{\rm cov}^{c}}\right],
+ \label{eq:sensitivity-coverage-failure}
+\end{equation}
+not merely a constant times $\Pr(\mathcal E_{\rm cov}^{c})$ unless $S$ is
+uniformly bounded.  This distinction is necessary because a prompt-independent
+interval can attain high marginal coverage while missing a small set of
+spectrally sensitive tasks.  Reporting only interval-regression MSE or marginal
+coverage is therefore insufficient.
+
+The scalar recurrence is also a strict tied loop.  If
+$z_{-1}=z_0=0$, its state is
+$[z_\ell,z_{\ell-1},\alpha_\ell,\beta_\ell]$, and the next block performs the
+exact hard-coded update
+\[
+ z_{\ell+1}=z_\ell+\alpha_\ell
+ (\widehat b-\widehat H z_\ell)
+ +\beta_\ell(z_\ell-z_{\ell-1}).
+\]
+For fixed predicted endpoints, the scalar coefficient state has a closed-form
+solution and may equivalently be compiled once into a length-$L$ schedule.
+This compilation changes neither the polynomial nor the hypothesis class; it
+does not turn the controller into a non-looping architecture.
+
+To call the interval head an in-context controller rather than a global
+calibration artefact, let $\xi(\mathcal C)$ be its prompt-derived features and
+$h_\phi(\xi)=(\widehat\mu,\widehat M)$.  At test time $\phi$ is fixed and only
+$\xi$ changes.  A necessary causal audit compares
+\begin{equation}
+ h_\phi(\xi(\mathcal C)),\qquad
+ h_\phi(\xi(\pi(\mathcal C))),\qquad
+ (\overline\mu,\overline M),
+ \label{eq:icl-causal-audit}
+\end{equation}
+on identical held-out tasks, where $\pi$ is an independent task permutation
+and $(\overline\mu,\overline M)$ is calibrated on disjoint tasks.  A material
+loss of solver accuracy under permutation, beyond any change in aggregate
+coverage, proves that the frozen head uses task-specific prompt information.
+It does not by itself prove optimality, but it rules out the claim that the
+gain is solely due to a learned global interval.
 
 \subsection{PCG}
 
@@ -187,7 +228,10 @@ envelope from \eqref{eq:hb-envelope}, \eqref{eq:cheb-envelope}, or
  \label{eq:common-transfer}
 \end{align}
 For Chebyshev the first expectation is restricted to
-$\mathcal E_{\rm cov}$, plus a separately bounded coverage-failure term.
+$\mathcal E_{\rm cov}$, plus the sensitivity-weighted term
+$\mathfrak F_{\rm cov}$ from
+\eqref{eq:sensitivity-coverage-failure} after composition with the physical
+decoder.
 \end{theorem}
 \begin{proof}
 Apply $(a+b)^2\leq2a^2+2b^2$ to
@@ -232,6 +276,16 @@ a Lipschitz truncated loss, standard parameter-covering or Rademacher arguments
 retain an $N^{-1/2}$ leading rate.  The constants and entropy terms differ and
 must not be hidden inside the old one-parameter Richardson bound.
 
+For the Chebyshev interval head, this across-task generalization statement is
+about the frozen map $h_\phi:\xi(\mathcal C)\mapsto
+(\widehat\mu,\widehat M)$, not about approximating multiplication, division,
+or the matrix--vector recurrence with an MLP.  Those algebraic operations are
+exact architectural primitives.  The learned class contains only the
+low-dimensional task-to-interval policy.  Its risk must combine the covered
+solver term and $\mathfrak F_{\rm cov}$; an $N^{-1/2}$ bound for marginal
+coverage alone does not control the latter without a bound on task
+sensitivity or a sensitivity-weighted calibration loss.
+
 \section{Replica and random-matrix substitutions}
 
 Let $\nu_\theta$ be the limiting joint spectral law of the encoded normal
@@ -262,15 +316,25 @@ replaced by
 up to the query-variance scale.  These substitutions are valid because the
 coefficients are conditionally independent of the right-hand side.
 
-For adaptive HB, let $\xi(\widehat H,B_\theta)$ denote the finite vector of
-fixed spectral summaries supplied to the interval MLP.  If $\xi$ self-averages
-under the replica saddle, then $(\alpha,\beta)$ converges to a deterministic
-function of the existing spectral order parameters and the first integral
-above is used with that limiting pair.  Without self-averaging, the joint law
-must be enlarged to $\nu_\theta(\widehat a,p,\xi)$ and the HB filter is averaged
-conditionally on $\xi$.  No layer-indexed Krylov order parameters are needed:
-once $\xi$ is fixed, HB is still a fixed polynomial independent of the
-right-hand side.
+For adaptive HB or Chebyshev, let $\xi(\widehat H,B_\theta)$ denote the finite
+vector of fixed spectral summaries supplied to the interval MLP.  If $\xi$
+self-averages under the replica saddle, then the predicted endpoints and hence
+the HB pair or Chebyshev schedule converge to deterministic functions of the
+existing spectral order parameters.  The corresponding integral above is then
+used with that limiting polynomial.  Without self-averaging, the joint law
+must be enlarged to $\nu_\theta(\widehat a,p,\xi)$ and the appropriate filter
+is averaged conditionally on $\xi$:
+\[
+ \mathcal R_{\rm solve,L}^{\rm Ch}
+ \longrightarrow
+ \int \frac{p_L^{\rm Ch}(p\widehat a;h_\phi(\xi))^2}
+ {\widehat a^2}
+ \,d\nu_\theta(\widehat a,p,\xi).
+\]
+The same joint law can evaluate the sensitivity-weighted coverage failure in
+\eqref{eq:sensitivity-coverage-failure}.  No layer-indexed Krylov order
+parameters are needed: once $\xi$ is fixed, both HB and Chebyshev are fixed
+polynomials independent of the right-hand side.
 
 There is no analogous fixed-filter substitution for PCG.  A PCG replica or
 state evolution needs layer-indexed overlaps, for example residual norm,

@@ -251,3 +251,43 @@ Décision elliptique : **retenir HB-32 à deux scalaires, sans MLP, comme
 architecture principale tant que le ratio end-to-end reste sous 1.10 ; garder
 PCG-16 comme contrôle numérique et mécanisme de sûreté.** Cette sélection est
 latency-matched et non HVP-matched. Richardson est nettement dominé.
+
+## Audit causal du MLP Chebyshev
+
+Chebyshev reste bien une architecture bouclée dans sa forme théorique. Le MLP
+est appliqué une fois à un token spectral construit depuis le prompt et produit
+seulement \([\widehat\mu,\widehat L]\). Le bloc lié conserve les tokens
+\((z_\ell,z_{\ell-1},\alpha_\ell,\beta_\ell)\) et met exactement à jour les
+deux derniers. La forme fermée vectorisée du calendrier
+\((\alpha_\ell,\beta_\ell)_{\ell<L}\) est une compilation algébriquement
+équivalente de cette récurrence, pas une approximation supplémentaire.
+
+Pour vérifier que le MLP fait réellement de l'ICL plutôt qu'apprendre un
+intervalle global, quatre contrôles partagent encodeur, tête softmax, prompts
+et préconditionneur : conditionnement correct, features permutées entre
+tâches, intervalle constant calibré sur un ensemble disjoint, et bornes oracle.
+Sur 8192 tâches elliptiques OOD :
+
+| Contrôleur | MSE \(u_\star\) | ratio à PCG-16 | couverture |
+|---|---:|---:|---:|
+| PCG-16 | \(1.5659\cdot10^{-9}\) | 1.0000 | -- |
+| HB global-32 | \(1.7784\cdot10^{-9}\) | 1.1357 | -- |
+| HB global-40 | \(1.5915\cdot10^{-9}\) | 1.0164 | -- |
+| Chebyshev-32 conditionné | \(1.6451\cdot10^{-9}\) | 1.0506 | 98.22 % |
+| Chebyshev-32, features permutées | \(2.0417\cdot10^{-3}\) | \(1.30\cdot10^6\) | 83.03 % |
+| Chebyshev-32, intervalle constant | \(1.0542\cdot10^{-3}\) | \(6.73\cdot10^5\) | 98.13 % |
+| Chebyshev-32 oracle | \(1.5659\cdot10^{-9}\) | 1.0000 | 100 % |
+
+Le contrôle constant est décisif : sa couverture globale est presque la même
+que celle du MLP, mais il couvre les mauvaises tâches et échoue sur une queue
+physiquement très sensible. Le MLP apprend donc une correspondance utile entre
+le prompt et les poids de la boucle, sans adaptation de paramètres à
+l'inférence. C'est un effet ICL causal, pas seulement une meilleure
+approximation moyenne du spectre.
+
+La décision principale reste néanmoins **HB-40** : il est plus simple, ne
+contient aucun MLP, obtient un écart OOD de 1.64 % à PCG et sa théorie se réduit
+à un filtre polynomial indépendant du second membre. Chebyshev-MLP est retenu
+comme contrôle adaptatif ICL et comme option pour les familles où une
+profondeur HB fixe ne couvre pas la queue spectrale. PCG reste le contrôle
+numérique, non le modèle dont on cherche à faire scaler la théorie replica.
