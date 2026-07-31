@@ -606,21 +606,22 @@ class LowRankSPDPreconditioner:
 
     def apply(self, vector: Tensor) -> Tensor:
         slot_coordinates = torch.einsum(
-            "bks,bk->bs",
+            "bks,bk...->bs...",
             self.directions,
             vector,
         )
         routed = torch.einsum(
-            "bst,bt->bs",
+            "bst,bt...->bs...",
             self.slot_correction,
             slot_coordinates,
         )
         correction = torch.einsum(
-            "bks,bs->bk",
+            "bks,bs...->bk...",
             self.directions,
             routed,
         )
-        return (vector + correction) / self.scale[:, None]
+        scale_shape = (self.scale.shape[0],) + (1,) * (vector.ndim - 1)
+        return (vector + correction) / self.scale.reshape(scale_shape)
 
     def materialize(self) -> Tensor:
         batch, dimension, _ = self.directions.shape

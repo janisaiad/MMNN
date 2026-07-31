@@ -10,6 +10,7 @@ division.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import Dict, Tuple
 
 import torch
@@ -17,6 +18,7 @@ import torch.nn as nn
 
 try:
     from .first_principles_decoder_cells import (
+        Preconditioner,
         apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
@@ -32,6 +34,7 @@ try:
     )
 except ImportError:
     from first_principles_decoder_cells import (
+        Preconditioner,
         apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
@@ -49,6 +52,18 @@ except ImportError:
 Tensor = torch.Tensor
 
 
+@dataclass(frozen=True)
+class PromptGeometryCache:
+    """Prompt-only geometry reusable across any number of observations."""
+
+    equations: Tensor
+    ridge: float
+    ridge_metric: Tensor | None
+    preconditioner: Preconditioner
+    normal_matrix: Tensor | None
+    head_info: Dict[str, Tensor]
+
+
 def _logit(value: float) -> float:
     value = min(max(value, 1e-6), 1.0 - 1e-6)
     return math.log(value / (1.0 - value))
@@ -62,6 +77,22 @@ def normal_equations(
 ) -> Tuple[Tensor, Tensor]:
     """Hard-coded moment contraction with an optional covariant ridge metric."""
 
+    normal_matrix = normal_matrix_from_equations(
+        equations,
+        ridge,
+        ridge_metric,
+    )
+    rhs = torch.einsum("bmk,bm...->bk...", equations, observations)
+    return normal_matrix, rhs
+
+
+def normal_matrix_from_equations(
+    equations: Tensor,
+    ridge: float,
+    ridge_metric: Tensor | None = None,
+) -> Tensor:
+    """Materialize only the observation-independent normal geometry."""
+
     batch, _, dimension = equations.shape
     identity = torch.eye(
         dimension,
@@ -74,9 +105,7 @@ def normal_equations(
         metric = ridge_metric.expand(batch, -1, -1)
     else:
         metric = ridge_metric
-    normal_matrix = equations.transpose(-1, -2) @ equations + ridge * metric
-    rhs = torch.einsum("bmk,bm->bk", equations, observations)
-    return normal_matrix, rhs
+    return equations.transpose(-1, -2) @ equations + ridge * metric
 
 
 def symmetric_effective_operator(preconditioner: Tensor, normal_matrix: Tensor) -> Tensor:
@@ -292,25 +321,12 @@ class ExactLoopTransformerDecoder(nn.Module):
         step = 0.999 * cap * torch.sigmoid(self.raw_step)
         return step, momentum
 
-    def forward(
+    def build_prompt_geometry(
         self,
         equations: Tensor,
-        observations: Tensor,
         ridge: float,
         ridge_metric: Tensor | None = None,
-    ) -> Tuple[Tensor, Dict[str, Tensor]]:
-        def hvp(vector: Tensor) -> Tensor:
-            scores = torch.einsum("bmk,bk->bm", equations, vector)
-            moment = torch.einsum("bmk,bm->bk", equations, scores)
-            if ridge_metric is None:
-                ridge_action = vector
-            elif ridge_metric.ndim == 2:
-                ridge_action = torch.einsum("kl,bl->bk", ridge_metric, vector)
-            else:
-                ridge_action = torch.einsum("bkl,bl->bk", ridge_metric, vector)
-            return moment + ridge * ridge_action
-
-        rhs = torch.einsum("bmk,bm->bk", equations, observations)
+    ) -> PromptGeometryCache:
         if self.matrix_free_preconditioner:
             normal_matrix = None
             preconditioner, info = self.preconditioner_head(
@@ -319,9 +335,8 @@ class ExactLoopTransformerDecoder(nn.Module):
                 ridge_metric,
             )
         else:
-            normal_matrix, rhs = normal_equations(
+            normal_matrix = normal_matrix_from_equations(
                 equations,
-                observations,
                 ridge,
                 ridge_metric,
             )
@@ -329,6 +344,61 @@ class ExactLoopTransformerDecoder(nn.Module):
                 equations,
                 normal_matrix,
             )
+        return PromptGeometryCache(
+            equations=equations,
+            ridge=ridge,
+            ridge_metric=ridge_metric,
+            preconditioner=preconditioner,
+            normal_matrix=normal_matrix,
+            head_info=info,
+        )
+
+    def forward(
+        self,
+        equations: Tensor,
+        observations: Tensor,
+        ridge: float,
+        ridge_metric: Tensor | None = None,
+    ) -> Tuple[Tensor, Dict[str, Tensor]]:
+        geometry = self.build_prompt_geometry(
+            equations,
+            ridge,
+            ridge_metric,
+        )
+        return self.solve_with_geometry(geometry, observations)
+
+    def solve_with_geometry(
+        self,
+        geometry: PromptGeometryCache,
+        observations: Tensor,
+    ) -> Tuple[Tensor, Dict[str, Tensor]]:
+        equations = geometry.equations
+        ridge = geometry.ridge
+        ridge_metric = geometry.ridge_metric
+        normal_matrix = geometry.normal_matrix
+        preconditioner = geometry.preconditioner
+        info = dict(geometry.head_info)
+
+        def hvp(vector: Tensor) -> Tensor:
+            scores = torch.einsum("bmk,bk...->bm...", equations, vector)
+            moment = torch.einsum("bmk,bm...->bk...", equations, scores)
+            if ridge_metric is None:
+                ridge_action = vector
+            elif ridge_metric.ndim == 2:
+                ridge_action = torch.einsum(
+                    "kl,bl...->bk...",
+                    ridge_metric,
+                    vector,
+                )
+            else:
+                ridge_action = torch.einsum(
+                    "bkl,bl...->bk...",
+                    ridge_metric,
+                    vector,
+                )
+            return moment + ridge * ridge_action
+
+        rhs = torch.einsum("bmk,bm...->bk...", equations, observations)
 
         if self.controller in {"richardson", "heavy_ball", "certified_hb_pcg"}:
             if self.adaptive_heavy_ball:
@@ -381,9 +451,13 @@ class ExactLoopTransformerDecoder(nn.Module):
                     rhs,
                 )
                 residual_ratio = torch.einsum(
-                    "bi,bi->b", final_residual, preconditioned_final_residual
+                    "bi...,bi...->b...",
+                    final_residual,
+                    preconditioned_final_residual,
                 ) / torch.einsum(
-                    "bi,bi->b", rhs, preconditioned_rhs
+                    "bi...,bi...->b...",
+                    rhs,
+                    preconditioned_rhs,
                 ).clamp_min(1e-30)
                 fallback_mask = residual_ratio > self.hybrid_residual_threshold
                 if fallback_mask.any():
@@ -394,7 +468,7 @@ class ExactLoopTransformerDecoder(nn.Module):
                         self.depth,
                     )
                     solution = torch.where(
-                        fallback_mask[:, None],
+                        fallback_mask.unsqueeze(1),
                         fallback_solution,
                         solution,
                     )

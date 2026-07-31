@@ -739,6 +739,38 @@ HVP budget.  The oracle Chebyshev mean, $5.74\times10^{-12}$, localizes the
 remaining gap to rare endpoint-prediction failures rather than to the fixed
 recurrence.
 
+\begin{corollary}[amortized multiple-query complexity]
+\label{cor:matrix-free-multiple-rhs}
+Fix one prompt geometry $G$ and let $Q$ observation vectors share it.  After
+one construction of Proposition~\ref{prop:matrix-free-prompt-head}, $T$ exact
+HB, Chebyshev, or PCG blocks applied jointly to all right-hand sides cost
+\[
+ O\!\left((r+1)MKS+MKd_h+KS^2+S^3
+          +TQ(MK+KS)\right)
+\]
+and require $O(MK+KS+KQ+S^2)$ storage.  Forming the dense normal matrix,
+factorizing it, and applying the factor to the same queries costs
+$O(MK^2+K^3+K^2Q)$ and stores $O(MK+K^2+KQ)$.  Hence, when $M\asymp K$ and
+$S,T,Q,d_h=O(1)$, the two paths scale as $O(K^2)$ and $O(K^3)$ respectively.
+No distributional assumption is needed for this comparison.
+\end{corollary}
+\begin{proof}
+The head cost is Proposition~\ref{prop:matrix-free-prompt-head}.  A block HVP
+on $Q$ vectors consists of $GV$ and $G^\top(GV)$, costing $O(MKQ)$, while the
+low-rank preconditioner costs $O(KSQ)$.  Dense normal formation, Cholesky,
+and triangular solution give the three classical terms.
+\end{proof}
+
+This asymptotic advantage is a setup statement, not a claim that an iterative
+step beats a cached triangular solve.  A paired H100 benchmark with $M=4K$
+confirms the distinction.  At $K=4096,Q=1$, dense setup plus solve takes
+$17.519$ ms, while head plus HB--10, Chebyshev--10, and PCG--10 take $8.407$,
+$8.113$, and $8.742$ ms.  With both geometries already cached, the dense solve
+takes $0.874$ ms and Chebyshev--10 takes $3.630$ ms.  At $K=2048$ the dense
+total still wins.  These are synthetic latency measurements with fixed stable
+polynomial endpoints; they establish the crossover mechanism but not
+large-$K$ PDE accuracy.
+
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
 limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset

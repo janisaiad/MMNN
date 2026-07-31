@@ -13,8 +13,11 @@ from exact_loop_transformer_decoder import (  # noqa: E402
 )
 from evaluate_trained_loop_controllers import solve_all  # noqa: E402
 from first_principles_decoder_cells import (  # noqa: E402
+    fixed_prompt_linear_attention_hvp,
     materialize_preconditioner,
     run_chebyshev_state_machine,
+    run_heavy_ball_state_machine,
+    run_pcg_state_machine,
 )
 from pure_icl_parametric_operator_richardson_attention import (  # noqa: E402
     ParametricOperatorICL,
@@ -386,6 +389,121 @@ def test_matrix_free_certified_hb_routes_to_pcg_without_dense_normal(
     assert info["pcg_fallback_mask"].all()
     assert info["pcg_fallback_rate"] == 1.0
     assert "normal_matrix" not in info
+
+
+def test_matrix_free_cells_vectorize_multiple_right_hand_sides() -> None:
+    equations, _ = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=5,
+        head_dimension=12,
+        slots=3,
+        controller="heavy_ball",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=2,
+    ).double()
+    preconditioner, _ = decoder.preconditioner_head(equations, 0.2)
+    rhs = torch.randn(
+        equations.shape[0],
+        equations.shape[-1],
+        5,
+        dtype=equations.dtype,
+    )
+
+    def hvp(vector):
+        return fixed_prompt_linear_attention_hvp(
+            equations,
+            vector,
+            noise_precision=1.0,
+            prior_precision=0.2,
+        )
+
+    dense = materialize_preconditioner(preconditioner)
+    normal = equations.transpose(-1, -2) @ equations
+    normal = normal + 0.2 * torch.eye(normal.shape[-1], dtype=normal.dtype)
+    factor = torch.linalg.cholesky(dense)
+    spectrum = torch.linalg.eigvalsh(
+        factor.transpose(-1, -2) @ normal @ factor
+    )
+    spectral_min, spectral_max = spectrum[:, 0], spectrum[:, -1]
+
+    multi_hb = run_heavy_ball_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        5,
+        0.5,
+        0.08,
+    )[0]
+    multi_chebyshev = run_chebyshev_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        5,
+        spectral_min,
+        spectral_max,
+    )[0]
+    multi_pcg = run_pcg_state_machine(hvp, rhs, preconditioner, 5)[0]
+
+    for multi, solver in [
+        (
+            multi_hb,
+            lambda column: run_heavy_ball_state_machine(
+                hvp, column, preconditioner, 5, 0.5, 0.08
+            )[0],
+        ),
+        (
+            multi_chebyshev,
+            lambda column: run_chebyshev_state_machine(
+                hvp,
+                column,
+                preconditioner,
+                5,
+                spectral_min,
+                spectral_max,
+            )[0],
+        ),
+        (
+            multi_pcg,
+            lambda column: run_pcg_state_machine(
+                hvp, column, preconditioner, 5
+            )[0],
+        ),
+    ]:
+        separate = torch.stack(
+            [solver(rhs[..., index]) for index in range(rhs.shape[-1])],
+            dim=-1,
+        )
+        torch.testing.assert_close(multi, separate, rtol=2e-10, atol=2e-10)
+
+    observations = torch.randn(
+        equations.shape[0],
+        equations.shape[1],
+        5,
+        dtype=equations.dtype,
+    )
+    geometry = decoder.build_prompt_geometry(equations, ridge=0.2)
+    cached_multi, multi_info = decoder.solve_with_geometry(
+        geometry,
+        observations,
+    )
+    cached_separate = torch.stack(
+        [
+            decoder.solve_with_geometry(geometry, observations[..., index])[0]
+            for index in range(observations.shape[-1])
+        ],
+        dim=-1,
+    )
+    torch.testing.assert_close(
+        cached_multi,
+        cached_separate,
+        rtol=2e-10,
+        atol=2e-10,
+    )
+    assert multi_info["rhs"].shape == cached_multi.shape
 
 
 def test_exact_head_spectrum_chebyshev_reuses_ritz_eigenvalues() -> None:

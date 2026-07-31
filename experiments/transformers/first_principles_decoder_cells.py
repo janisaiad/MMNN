@@ -38,8 +38,12 @@ def fixed_prompt_linear_attention_hvp(
     summed with values ``g_i``.  All projection weights are fixed.
     """
 
-    token_scores = torch.einsum("bmk,bk->bm", equations, vector)
-    prompt_value_sum = torch.einsum("bmk,bm->bk", equations, token_scores)
+    token_scores = torch.einsum("bmk,bk...->bm...", equations, vector)
+    prompt_value_sum = torch.einsum(
+        "bmk,bm...->bk...",
+        equations,
+        token_scores,
+    )
     return noise_precision * prompt_value_sum + prior_precision * vector
 
 
@@ -50,7 +54,7 @@ def apply_fixed_preconditioner(preconditioner: Preconditioner, vector: Tensor) -
         return preconditioner.apply(vector)
     if callable(preconditioner):
         return preconditioner(vector)
-    return torch.einsum("bkl,bl->bk", preconditioner, vector)
+    return torch.einsum("bkl,bl...->bk...", preconditioner, vector)
 
 
 def materialize_preconditioner(preconditioner: Preconditioner) -> Tensor:
@@ -66,16 +70,23 @@ def materialize_preconditioner(preconditioner: Preconditioner) -> Tensor:
 def batch_inner(left: Tensor, right: Tensor) -> Tensor:
     """Fixed batchwise scalar-reduction primitive."""
 
-    return torch.einsum("bk,bk->b", left, right)
+    return torch.einsum("bk...,bk...->b...", left, right)
 
 
 def _batch_scalar(value: float | Tensor, reference: Tensor) -> Tensor:
     scalar = torch.as_tensor(value, device=reference.device, dtype=reference.dtype)
+    target_shape = (reference.shape[0], *reference.shape[2:])
     if scalar.ndim == 0:
-        return scalar.expand(reference.shape[0])
-    if scalar.shape != (reference.shape[0],):
-        raise ValueError(f"expected scalar or batch vector, got {tuple(scalar.shape)}")
-    return scalar
+        return scalar.expand(target_shape)
+    if scalar.shape == target_shape:
+        return scalar
+    if scalar.shape == (reference.shape[0],):
+        view_shape = (reference.shape[0],) + (1,) * (reference.ndim - 2)
+        return scalar.reshape(view_shape).expand(target_shape)
+    raise ValueError(
+        "expected a scalar, batch vector, or one scalar per right-hand side; "
+        f"got {tuple(scalar.shape)} for state {tuple(reference.shape)}"
+    )
 
 
 def safe_positive_quotient(
@@ -136,8 +147,8 @@ def heavy_ball_macro_block(
     preconditioned_residual = apply_fixed_preconditioner(preconditioner, residual)
     x_next = (
         state.x
-        + alpha[:, None] * preconditioned_residual
-        + beta[:, None] * (state.x - state.x_previous)
+        + alpha.unsqueeze(1) * preconditioned_residual
+        + beta.unsqueeze(1) * (state.x - state.x_previous)
     )
     return HeavyBallStep(
         state=HeavyBallState(x=x_next, x_previous=state.x),
@@ -171,7 +182,7 @@ def run_heavy_ball_state_machine(
         state = step.state
         if record_history:
             residual_history.append(
-                torch.norm(step.residual, dim=-1).mean().item()
+                torch.norm(step.residual, dim=1).mean().item()
             )
         if target is not None:
             mse_history.append(((state.x - target) ** 2).mean().item())
@@ -235,8 +246,8 @@ def chebyshev_macro_block(
     preconditioned_residual = apply_fixed_preconditioner(preconditioner, residual)
     x_next = (
         state.x
-        + state.step_size[:, None] * preconditioned_residual
-        + state.momentum[:, None] * (state.x - state.x_previous)
+        + state.step_size.unsqueeze(1) * preconditioned_residual
+        + state.momentum.unsqueeze(1) * (state.x - state.x_previous)
     )
     next_step_size = (
         state.center
@@ -279,7 +290,7 @@ def run_chebyshev_state_machine(
         state = step.state
         if record_history:
             residual_history.append(
-                torch.norm(step.residual, dim=-1).mean().item()
+                torch.norm(step.residual, dim=1).mean().item()
             )
         if target is not None:
             mse_history.append(((state.x - target) ** 2).mean().item())
@@ -323,18 +334,19 @@ def chebyshev_coefficient_schedule(
     # ``cumprod`` generates t, t^2, ..., t^depth without invoking the costly
     # general floating-point ``pow`` kernel for every batch/layer pair.
     ratio_powers = torch.cumprod(
-        root_ratio[:, None].expand(-1, depth), dim=1
+        root_ratio.unsqueeze(-1).expand(*root_ratio.shape, depth),
+        dim=-1,
     )
-    next_ratio_powers = ratio_powers * root_ratio[:, None]
-    step_schedule = root_plus[:, None].reciprocal() * (
+    next_ratio_powers = ratio_powers * root_ratio.unsqueeze(-1)
+    step_schedule = root_plus.unsqueeze(-1).reciprocal() * (
         1.0 - ratio_powers
     ) / (1.0 - next_ratio_powers).clamp_min(1e-30)
     momentum_schedule = torch.zeros_like(step_schedule)
     if depth > 1:
-        momentum_schedule[:, 1:] = (
-            quarter_half_width_squared[:, None]
-            * step_schedule[:, :-1]
-            * step_schedule[:, 1:]
+        momentum_schedule[..., 1:] = (
+            quarter_half_width_squared.unsqueeze(-1)
+            * step_schedule[..., :-1]
+            * step_schedule[..., 1:]
         )
     return step_schedule, momentum_schedule
 
@@ -352,8 +364,12 @@ def run_precomputed_chebyshev_state_machine(
 
     if step_schedule.shape != momentum_schedule.shape:
         raise ValueError("Chebyshev step and momentum schedules must match")
-    if step_schedule.ndim != 2 or step_schedule.shape[0] != rhs.shape[0]:
-        raise ValueError("Chebyshev schedules must have shape [batch, depth]")
+    scalar_shape = _batch_scalar(1.0, rhs).shape
+    if step_schedule.shape[:-1] != scalar_shape:
+        raise ValueError(
+            "Chebyshev schedule leading dimensions must match the batch and "
+            "right-hand-side dimensions"
+        )
     x = torch.zeros_like(rhs)
     x_previous = torch.zeros_like(rhs)
     mse_history: List[float] = []
@@ -365,13 +381,13 @@ def run_precomputed_chebyshev_state_machine(
         )
         x_next = (
             x
-            + step_schedule[:, layer, None] * preconditioned_residual
-            + momentum_schedule[:, layer, None] * (x - x_previous)
+            + step_schedule[..., layer].unsqueeze(1) * preconditioned_residual
+            + momentum_schedule[..., layer].unsqueeze(1) * (x - x_previous)
         )
         x_previous, x = x, x_next
         if record_history:
             residual_history.append(
-                torch.norm(residual, dim=-1).mean().item()
+                torch.norm(residual, dim=1).mean().item()
             )
         if target is not None:
             mse_history.append(((x - target) ** 2).mean().item())
@@ -430,15 +446,17 @@ def pcg_macro_block(
     relative_threshold = eps * state.rho_initial.clamp_min(machine.tiny)
     active = (state.rho.abs() > relative_threshold) & (delta > machine.tiny)
     alpha = safe_positive_quotient(state.rho, delta, active, machine.tiny)
-    x_next = state.x + alpha[:, None] * state.direction
-    residual_next = state.residual - alpha[:, None] * operator_direction
+    x_next = state.x + alpha.unsqueeze(1) * state.direction
+    residual_next = state.residual - alpha.unsqueeze(1) * operator_direction
     preconditioned_residual_next = apply_fixed_preconditioner(
         preconditioner,
         residual_next,
     )
     rho_next = batch_inner(residual_next, preconditioned_residual_next)
     beta = safe_positive_quotient(rho_next, state.rho, active, machine.tiny)
-    direction_next = preconditioned_residual_next + beta[:, None] * state.direction
+    direction_next = (
+        preconditioned_residual_next + beta.unsqueeze(1) * state.direction
+    )
     next_state = PCGState(
         x_next,
         residual_next,
@@ -464,7 +482,7 @@ def run_pcg_state_machine(
     for _ in range(depth):
         if record_history:
             residual_history.append(
-                torch.norm(state.residual, dim=-1).mean().item()
+                torch.norm(state.residual, dim=1).mean().item()
             )
         step = pcg_macro_block(state, hvp, preconditioner)
         state = step.state

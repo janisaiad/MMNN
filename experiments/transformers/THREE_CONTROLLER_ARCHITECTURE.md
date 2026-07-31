@@ -642,23 +642,51 @@ Cette expérience change la sélection : Chebyshev + garde est le meilleur
 budget HVP égal. HB demeure le meilleur choix si l'objectif prioritaire est la
 cellule bouclée la plus simple et sans calendrier dépendant de la profondeur.
 
-La latence donne la frontière pratique. Sur H100, batch 1 et \(M=4K\) :
+### Latence et amortissement sur plusieurs seconds membres
 
-| \(K\) | solve dense depuis tokens | PCG-10 identité matrix-free | tête \(r=4\) | tête + HB-10 |
-|---:|---:|---:|---:|---:|
-| 256 | 0.292 ms | 2.256 ms | 1.655 ms | 3.416 ms |
-| 512 | 0.444 ms | 2.265 ms | 1.690 ms | 3.494 ms |
-| 1024 | 1.032 ms | 2.285 ms | 1.695 ms | 3.471 ms |
-| 2048 | 3.274 ms | 2.275 ms | 1.951 ms | 3.757 ms |
+Les cellules acceptent maintenant exactement un état
+\([B,K,Q]\). La tête dépend seulement de \(G\), jamais des observations :
+`build_prompt_geometry` la construit une fois, puis `solve_with_geometry`
+réutilise le même objet low-rank pour les \(Q\) seconds membres. La baseline
+dense est traitée de la même manière : on sépare formation de \(H\), Cholesky
+et solves triangulaires cachés.
 
-À \(K=2048\), PCG matrix-free sans tête franchit déjà le solveur dense, mais
-tête + HB-10 ne le franchit pas encore. Sur le vrai problème PDE actuel
-\(K=8\), tête + HB-10 prend \(3.183\) ms contre \(0.173\) ms pour le solveur
-dense : le solveur direct reste la baseline pratique. Le préconditionnement
-appris devient pertinent lorsque la même géométrie est amortie sur plusieurs
-seconds membres, lorsque \(K\) ou la mémoire excluent la factorisation, ou
-après fusion du noyau tête--HVP. Il n'y a à ce stade aucune preuve que le
-décodeur appris batte tous les solveurs purs.
+Pour \(Q\) requêtes et \(T\) blocs, le chemin matrix-free coûte
+
+\[
+O\!\left((r+1)MKS+MKd_h+KS^2+S^3
+       +TQ(MK+KS)\right),
+\]
+
+contre \(O(MK^2+K^3+K^2Q)\) pour normal + Cholesky. Si \(M\asymp K\) et
+\(S,T,Q,d_h\) restent fixes, cela donne \(O(K^2)\) contre \(O(K^3)\), sans
+hypothèse probabiliste. Mais après factorisation déjà payée, le solve dense
+reste \(O(K^2Q)\) avec une constante GPU très favorable.
+
+Le benchmark H100, batch 1, \(M=4K\), inclut tous les setups :
+
+| \(K\) | \(Q\) | dense total | tête + HB-10 | tête + Chebyshev-10 | tête + PCG-10 |
+|---:|---:|---:|---:|---:|---:|
+| 2048 | 1 | 3.247 ms | 4.843 ms | 4.723 ms | 6.411 ms |
+| 2048 | 4 | 3.777 ms | 5.347 ms | 5.212 ms | 7.389 ms |
+| 4096 | 1 | 17.519 ms | 8.407 ms | 8.113 ms | 8.742 ms |
+| 4096 | 4 | 18.257 ms | 10.030 ms | 9.643 ms | 10.200 ms |
+
+Le crossover total se produit donc entre \(K=2048\) et \(K=4096\) dans ce
+prototype : à \(K=4096,Q=1\), Chebyshev matrix-free est \(2.16\times\) plus
+rapide. Le mécanisme est bien l'évitement du setup dense : à \(K=4096\), la
+géométrie normale + Cholesky prend 16.446 ms contre 4.533 ms pour la tête.
+Une fois les deux setups exclus, Cholesky reprend l'avantage : pour \(Q=1\),
+solve triangulaire 0.874 ms contre 3.630 ms pour Chebyshev-10 caché.
+
+![Crossover de latence amortie](amortized_multi_rhs/amortized_runtime.png)
+
+Ce benchmark est un audit de latence synthétique avec coefficients stables
+fixes, pas une validation d'accuracy à \(K=4096\). Sur le vrai problème PDE
+actuel \(K=8\), tête + HB-10 prend \(3.183\) ms contre \(0.173\) ms pour le
+solveur dense : le solveur direct reste la baseline pratique. Le gain appris
+est donc démontré en complexité et observé à grande dimension avec setup
+inclus, mais pas comme domination universelle de Cholesky ou PCG.
 
 Conceptuellement, la tête n'apprend donc pas simplement « une covariance ».
 Elle apprend, à partir du prompt, **où comprimer la géométrie inverse** dans
