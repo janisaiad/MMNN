@@ -18,23 +18,27 @@ import torch.nn as nn
 try:
     from .first_principles_decoder_cells import (
         chebyshev_coefficient_schedule,
-        run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
         run_precomputed_chebyshev_state_machine,
     )
     from .first_principles_inverse_decoder import PromptSpectralIntervalMLP
-    from .structured_one_head_heavyball import OneHeadSpectralPreconditioner
+    from .structured_one_head_heavyball import (
+        EquivariantRitzSoftmaxPreconditioner,
+        OneHeadSpectralPreconditioner,
+    )
 except ImportError:
     from first_principles_decoder_cells import (
         chebyshev_coefficient_schedule,
-        run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
         run_precomputed_chebyshev_state_machine,
     )
     from first_principles_inverse_decoder import PromptSpectralIntervalMLP
-    from structured_one_head_heavyball import OneHeadSpectralPreconditioner
+    from structured_one_head_heavyball import (
+        EquivariantRitzSoftmaxPreconditioner,
+        OneHeadSpectralPreconditioner,
+    )
 
 Tensor = torch.Tensor
 
@@ -136,6 +140,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         chebyshev_hidden_dimension: int = 16,
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
+        preconditioner_head_type: str = "coordinate_ritz",
         adaptive_heavy_ball: bool = False,
         interval_lower_calibration: float = 1.0,
         interval_upper_calibration: float = 1.0,
@@ -173,20 +178,32 @@ class ExactLoopTransformerDecoder(nn.Module):
             raise ValueError(
                 "adaptive_heavy_ball is defined only for HB-based controllers"
             )
-        self.preconditioner_head = OneHeadSpectralPreconditioner(
-            dimension=dimension,
-            head_dimension=head_dimension,
-            slots=slots,
-            max_strength=0.999,
-            strength_init=0.1,
-            base_preconditioner=base_preconditioner,
-            base_blocks=2,
-            strength_scaling="fixed",
-            reference_prompt_length=32,
-            slot_orthogonalization="qr",
-            correction_mode=correction_mode,
-            subspace_refinement_steps=0,
-        )
+        if preconditioner_head_type == "coordinate_ritz":
+            self.preconditioner_head = OneHeadSpectralPreconditioner(
+                dimension=dimension,
+                head_dimension=head_dimension,
+                slots=slots,
+                max_strength=0.999,
+                strength_init=0.1,
+                base_preconditioner=base_preconditioner,
+                base_blocks=2,
+                strength_scaling="fixed",
+                reference_prompt_length=32,
+                slot_orthogonalization="qr",
+                correction_mode=correction_mode,
+                subspace_refinement_steps=0,
+            )
+        elif preconditioner_head_type == "equivariant_ritz_softmax":
+            self.preconditioner_head = EquivariantRitzSoftmaxPreconditioner(
+                dimension=dimension,
+                head_dimension=head_dimension,
+                slots=slots,
+                spectral_lmax_bound=spectral_lmax_bound,
+            )
+        else:
+            raise ValueError(
+                f"unknown preconditioner head type {preconditioner_head_type}"
+            )
         if controller in {"richardson", "heavy_ball", "certified_hb_pcg"}:
             if controller == "richardson":
                 momentum_init = 0.0

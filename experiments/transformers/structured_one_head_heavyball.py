@@ -280,6 +280,151 @@ class OneHeadSpectralPreconditioner(nn.Module):
         return preconditioner, info
 
 
+class EquivariantRitzSoftmaxPreconditioner(nn.Module):
+    """One softmax head allocates a finite correction budget over Ritz modes.
+
+    The eigendirections and inverse correction are exact.  Learned parameters
+    see invariant eigenvalue features only, so for every orthogonal change of
+    coefficient gauge ``R`` the map obeys
+    ``B(R^T H R) = R^T B(H) R``.  Equal eigenvalues receive equal gates, making
+    the construction independent of the basis selected inside a degenerate
+    eigenspace.
+    """
+
+    def __init__(
+        self,
+        dimension: int,
+        head_dimension: int,
+        slots: int,
+        spectral_lmax_bound: float = 4.0,
+    ) -> None:
+        super().__init__()
+        if slots <= 0 or slots > dimension:
+            raise ValueError("slots must lie in [1, dimension]")
+        if head_dimension <= 0:
+            raise ValueError("head_dimension must be positive")
+        if spectral_lmax_bound <= 1.0:
+            raise ValueError("spectral_lmax_bound must exceed one")
+        self.dimension = dimension
+        self.head_dimension = head_dimension
+        self.slots = slots
+        self.spectral_lmax_bound = spectral_lmax_bound
+        self.key = nn.Linear(4, head_dimension, bias=False)
+        self.slot_queries = nn.Parameter(
+            torch.zeros(slots, head_dimension)
+        )
+        self._initialize_slow_mode_geometry()
+
+    def _initialize_slow_mode_geometry(self) -> None:
+        with torch.no_grad():
+            self.key.weight.zero_()
+            # Keep the invariant polynomial features alive at initialization.
+            # Initializing both a key row and the matching query coordinates
+            # to zero would create an exactly dead bilinear subspace.
+            active = min(3, self.head_dimension)
+            self.key.weight[:active, :active] = torch.eye(
+                active,
+                dtype=self.key.weight.dtype,
+                device=self.key.weight.device,
+            )
+            # Different inverse temperatures, all initially favoring the slow
+            # end of the spectrum.  Training remains free to move every query.
+            self.slot_queries.zero_()
+            positions = torch.linspace(
+                1.0,
+                3.0,
+                self.slots,
+                dtype=self.slot_queries.dtype,
+                device=self.slot_queries.device,
+            )
+            self.slot_queries[:, 0] = -positions
+            if active >= 2:
+                self.slot_queries[:, 1] = 0.05 * torch.linspace(
+                    -1.0,
+                    1.0,
+                    self.slots,
+                    dtype=self.slot_queries.dtype,
+                    device=self.slot_queries.device,
+                )
+            if active >= 3:
+                phases = torch.linspace(
+                    0.0,
+                    math.pi,
+                    self.slots,
+                    dtype=self.slot_queries.dtype,
+                    device=self.slot_queries.device,
+                )
+                self.slot_queries[:, 2] = 0.05 * torch.cos(phases)
+
+    def forward(
+        self,
+        equations: Tensor,
+        normal_matrix: Tensor,
+    ) -> Tuple[Tensor, Dict[str, Tensor]]:
+        del equations
+        batch = normal_matrix.shape[0]
+        eye = torch.eye(
+            self.dimension,
+            device=normal_matrix.device,
+            dtype=normal_matrix.dtype,
+        ).expand(batch, -1, -1)
+        # Exact invariant safety scale: the uncorrected largest eigenvalue is
+        # the decoder's certified bound.  Since every learned gate moves its
+        # eigenvalue toward one, the corrected operator remains in
+        # ``(0, spectral_lmax_bound]`` for every prompt.
+        raw_eigenvalues, eigenvectors = torch.linalg.eigh(normal_matrix)
+        raw_eigenvalues = raw_eigenvalues.clamp_min(1e-10)
+        scale = (
+            raw_eigenvalues[:, -1] / self.spectral_lmax_bound
+        ).clamp_min(1e-10)
+        eigenvalues = raw_eigenvalues / scale[:, None]
+
+        log_eigenvalues = torch.log(eigenvalues)
+        centered = log_eigenvalues - log_eigenvalues.mean(dim=-1, keepdim=True)
+        spread = centered.square().mean(dim=-1, keepdim=True).sqrt().clamp_min(1e-6)
+        standardized = centered / spread
+        features = torch.stack(
+            [
+                standardized,
+                standardized.square(),
+                standardized.pow(3),
+                torch.ones_like(standardized),
+            ],
+            dim=-1,
+        )
+        keys = self.key(features)
+        scores = torch.einsum("sd,bkd->bsk", self.slot_queries, keys)
+        scores = scores / math.sqrt(self.head_dimension)
+        attention = torch.softmax(scores, dim=-1)
+        # Union probability of the slot allocations.  It lies in [0,1] and
+        # its total mass is at most the number of slots.
+        gates = 1.0 - torch.prod(1.0 - attention, dim=1)
+        inverse_multipliers = (
+            1.0 - gates + gates / eigenvalues
+        )
+        normalized_inverse = torch.einsum(
+            "bki,bi,bli->bkl",
+            eigenvectors,
+            inverse_multipliers,
+            eigenvectors,
+        )
+        base_inverse = eye / scale[:, None, None]
+        preconditioner = normalized_inverse / scale[:, None, None]
+        effective_eigenvalues = (1.0 - gates) * eigenvalues + gates
+        info = {
+            "attention": attention,
+            "directions": eigenvectors,
+            "strengths": gates,
+            "normalized_inverse": normalized_inverse,
+            "base_inverse": base_inverse,
+            "spectral_eigenvalues": eigenvalues,
+            "spectral_gates": gates,
+            "effective_eigenvalues_predicted": effective_eigenvalues,
+            "spectral_features": features,
+        }
+        return preconditioner, info
+
+
 class OneHeadSymmetricKernelPreconditioner(nn.Module):
     """Tied Q=K self-attention, symmetrically normalized into an SPD map."""
 

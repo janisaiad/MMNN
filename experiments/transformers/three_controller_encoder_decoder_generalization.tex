@@ -472,6 +472,109 @@ gradient fidelity at a smaller asymptotic depth.  The controller advantage
 appears when depth or latency is binding, or on spectral tails.  It should not
 be misreported as a different identifiability theorem for the encoder.
 
+\subsection{An equivariant one-head closure with no eigenvector order parameter}
+
+The coordinate-token Ritz head used in the first experiments is not invariant
+under an orthogonal change of coefficient dictionary.  Its replica closure
+therefore needs coordinate/eigenvector overlaps in addition to eigenvalues.
+The following alternative removes that hidden assumption.  All Ritz algebra
+is exact; one softmax head learns only how to allocate correction mass among
+the spectral tokens.
+
+Let $\widehat H=V\operatorname{diag}(h_1,\ldots,h_K)V^\top\succ0$, fix a certified
+$\overline L>1$, and set
+\[
+ s_H=h_{\max}/\overline L,
+ \qquad \lambda_i=h_i/s_H\in(0,\overline L].
+\]
+Let $x_i=x(\lambda_i;\nu_K)$ contain only permutation-invariant spectral
+features, where $\nu_K=K^{-1}\sum_i\delta_{\lambda_i}$.  For slot $r$, define
+\begin{equation}
+\begin{aligned}
+ \omega_{ri}
+ &=\frac{\exp\{q_r^\top k_\theta(x_i)/\sqrt{d_h}\}}
+ {\sum_j\exp\{q_r^\top k_\theta(x_j)/\sqrt{d_h}\}},\\
+ g_i&=1-\prod_{r=1}^{S}(1-\omega_{ri}),\\
+ B_\theta(\widehat H)
+ &=V\operatorname{diag}\!\left(
+ \frac{1-g_i}{s_H}+\frac{g_i}{h_i}
+ \right)V^\top .
+\end{aligned}
+ \label{eq:equivariant-ritz-head}
+\end{equation}
+There is no MLP and no learned multiplication, reciprocal, eigensolver, or
+recurrence in this definition.
+
+\begin{theorem}[Exact finite-$K$ spectral closure]
+\label{thm:equivariant-ritz-closure}
+The map in \eqref{eq:equivariant-ritz-head} is SPD and orthogonally covariant:
+for every orthogonal $Q$,
+\[
+ B_\theta(Q^\top\widehat H Q)=Q^\top B_\theta(\widehat H)Q.
+\]
+It is independent of the eigenbasis selected inside repeated eigenspaces.
+Moreover,
+\begin{equation}
+\begin{aligned}
+ A_\theta
+ &=B_\theta^{1/2}\widehat H B_\theta^{1/2}
+ =V\operatorname{diag}(a_1,\ldots,a_K)V^\top,\\
+ a_i&=(1-g_i)\lambda_i+g_i,
+ \qquad 0<a_i\leq\overline L,
+ \qquad \sum_i g_i\leq S.
+\end{aligned}
+ \label{eq:effective-pushforward-finite}
+\end{equation}
+Hence the effective spectral law is known exactly from the raw eigenvalue law
+and the one-head gates; no eigenvector replica order parameter is required.
+In particular the HB Jury constraint holds for every prompt whenever
+$\alpha\overline L<2(1+\beta)$.
+\end{theorem}
+\begin{proof}
+Equal eigenvalues have equal invariant features and therefore equal gates, so
+the spectral functional is well defined on the corresponding eigenspace and
+is orthogonally covariant.  Multiplication of the commuting eigenvalue factors
+gives $a_i$.  Since $g_i\in[0,1]$, $a_i$ lies between $\lambda_i$ and $1$.
+Finally, the union bound gives
+$g_i\leq\sum_r\omega_{ri}$ and summing over $i$ gives
+$\sum_i g_i\leq S$.
+\end{proof}
+
+This finite statement already closes the exact risk in
+Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable
+limit is also available.  Suppose $\nu_K\Rightarrow\nu$ on a compact subset
+of $(0,\overline L]$, $S/K\to\sigma$, the empirical slot-query law converges
+to $\pi$, and the score
+$\ell(q,\lambda;\nu)=q^\top k_\theta(x(\lambda;\nu))/\sqrt{d_h}$ is bounded
+and continuous.  Then
+\begin{equation}
+\begin{aligned}
+ Z(q)&=\int e^{\ell(q,t;\nu)}\,\nu(dt),\\
+ g_{\theta,\sigma}(\lambda;\nu)
+ &=1-\exp\!\left[-\sigma\int
+ \frac{e^{\ell(q,\lambda;\nu)}}{Z(q)}\,\pi(dq)\right],\\
+ \nu_{\rm eff}
+ &=\bigl[(1-g_{\theta,\sigma})\lambda
+       +g_{\theta,\sigma}\bigr]_{\#}\nu .
+\end{aligned}
+ \label{eq:softmax-head-limit}
+\end{equation}
+This follows from the softmax law of large numbers and
+$\log(1-\omega)=-\omega+o(K^{-1})$.  It requires neither Gaussian prompts,
+isotropic eigenvectors, nor commutation with the physical Jacobian.  If $S$
+is fixed, then $\sigma=0$ and a bounded-score head cannot change the bulk
+law: it is a finite spectral/outlier correction.  A nontrivial bulk
+preconditioner requires $S=\Theta(K)$ or a concentrating low-temperature
+attention regime.  This scaling distinction is part of the prediction, not
+an experimental tuning rule.
+
+Combining \eqref{eq:softmax-head-limit} with
+\eqref{eq:joint-hyperparameter-predictor} predicts
+$(\theta,\sigma,\alpha,\beta,L)$ jointly.  With only support information it
+uses the closed-form minimax HB pair; with the limiting weighted law it uses
+the two-scalar distribution-aware risk.  Thus the head and HB coefficients
+are not calibrated in two unrelated stages.
+
 \section{Replica and random-matrix substitutions}
 
 Let $\nu_\theta$ be the limiting joint spectral law of the encoded normal

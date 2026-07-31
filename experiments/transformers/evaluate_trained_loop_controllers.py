@@ -16,7 +16,6 @@ import math
 from pathlib import Path
 from typing import Dict
 
-import numpy as np
 import torch
 
 try:
@@ -90,6 +89,10 @@ def build_model(saved: Dict, true_family, device: torch.device) -> ParametricOpe
         dictionary_projection=saved.get("dictionary_projection", "none"),
         freeze_A0=bool(saved.get("freeze_A0", 0)),
         covariant_ridge=bool(saved.get("covariant_ridge", 0)),
+        loop_preconditioner_head=saved.get(
+            "loop_preconditioner_head",
+            "coordinate_ritz",
+        ),
     ).to(device)
 
 

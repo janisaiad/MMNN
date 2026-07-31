@@ -16,6 +16,7 @@ from pure_icl_parametric_operator_richardson_attention import (
     sample_icl_batch,
     solve_z_exact,
 )
+from structured_one_head_heavyball import EquivariantRitzSoftmaxPreconditioner
 
 
 def _problem(dtype=torch.float64):
@@ -33,6 +34,55 @@ def test_normal_equations_are_the_exact_prompt_moments():
     assert torch.allclose(normal, equations.transpose(-1, -2) @ equations + ridge * eye)
     expected_rhs = (equations.transpose(-1, -2) @ observations.unsqueeze(-1)).squeeze(-1)
     assert torch.allclose(rhs, expected_rhs)
+
+
+def test_equivariant_ritz_softmax_head_is_gauge_covariant_and_spectral() -> None:
+    torch.manual_seed(29)
+    batch, dimension = 6, 5
+    factor = torch.randn(batch, dimension, dimension, dtype=torch.float64)
+    normal = (
+        factor.transpose(-1, -2) @ factor
+        + 0.4 * torch.eye(dimension, dtype=torch.float64)
+    )
+    equations = torch.zeros(batch, 17, dimension, dtype=torch.float64)
+    head = EquivariantRitzSoftmaxPreconditioner(
+        dimension=dimension,
+        head_dimension=12,
+        slots=3,
+    ).double()
+    preconditioner, info = head(equations, normal)
+
+    gauge = torch.linalg.qr(
+        torch.randn(batch, dimension, dimension, dtype=torch.float64)
+    ).Q
+    rotated_normal = gauge.transpose(-1, -2) @ normal @ gauge
+    rotated_preconditioner, _ = head(equations, rotated_normal)
+    expected = gauge.transpose(-1, -2) @ preconditioner @ gauge
+    torch.testing.assert_close(
+        rotated_preconditioner,
+        expected,
+        rtol=2e-10,
+        atol=2e-10,
+    )
+
+    cholesky = torch.linalg.cholesky(preconditioner)
+    effective = cholesky.transpose(-1, -2) @ normal @ cholesky
+    actual_eigenvalues = torch.linalg.eigvalsh(effective)
+    predicted_eigenvalues = info["effective_eigenvalues_predicted"].sort(dim=-1).values
+    torch.testing.assert_close(
+        actual_eigenvalues,
+        predicted_eigenvalues,
+        rtol=2e-10,
+        atol=2e-10,
+    )
+    assert actual_eigenvalues.max() <= 4.0 + 1e-10
+    assert torch.all(info["spectral_gates"].sum(dim=-1) <= 3.0 + 1e-12)
+
+    actual_eigenvalues.square().mean().backward()
+    assert head.key.weight.grad is not None
+    assert head.slot_queries.grad is not None
+    assert head.key.weight.grad[:3, :3].norm() > 0
+    assert head.slot_queries.grad[:, :3].norm() > 0
 
 
 def test_richardson_is_zero_momentum_heavy_ball():

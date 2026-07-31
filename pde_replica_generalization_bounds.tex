@@ -1112,14 +1112,60 @@ obtain \eqref{eq:rep-hb-distributional-risk}; minimizing it gives
 \eqref{eq:rep-hb-distributional-optimum}.
 \end{proof}
 
-\begin{remark}[deformed PDE law]
-For the GP-forced PDE prompt law, replace $\mu_{\rm MP,c}$ by the deformed
-sample-covariance law induced by the population weak-row covariance $H(z)$,
-and replace $\phi_t$ by the shrinkage map selected by the corresponding
-replica saddle.  Equations \eqref{eq:rep-hb-distributional-risk}--
-\eqref{eq:rep-hb-distributional-optimum} are unchanged.  No layer-indexed
-order parameter is added because HB and Chebyshev remain fixed polynomials;
-only the encoder/preconditioner spectral law changes.
+\begin{remark}[exact input to the deformed PDE law]
+For the GP-forced PDE prompt law, one must not simply count the $M=mR$ weak
+rows as iid samples.  Conditional on $z$, one forcing produces
+$u\sim\mathcal N(0,C_z)$ with
+\[
+    C_z=A(z)^{-1}\Sigma_fA(z)^{-\top},
+\]
+and its $R$ weak rows share this same $u$.  If $b_{rk}^\top$ is row $k$ of
+$B_r$ and
+\[
+    S_{k\ell}
+    :=\frac12\sum_{r=1}^R
+    (b_{rk}b_{r\ell}^\top+b_{r\ell}b_{rk}^\top),
+\]
+then one forcing contributes the random normal-matrix entry
+$Y_{k\ell}=u^\top S_{k\ell}u$.  Gaussian Wick calculus gives the exact
+conditional first two moments
+\begin{align}
+    \E[Y_{k\ell}\mid z]
+    &=\tr(S_{k\ell}C_z),\\
+    \operatorname{Cov}(Y_{k\ell},Y_{pq}\mid z)
+    &=2\tr(S_{k\ell}C_zS_{pq}C_z).
+    \label{eq:pde-normal-wick}
+\end{align}
+The prompt normal matrix is a sum of $m$ independent copies of this
+\emph{matrix-valued quadratic form}.  Equation \eqref{eq:pde-normal-wick},
+not an iid-row MP ansatz, is therefore the correct finite-$K$ input to a CLT,
+matrix Dyson equation, or operator-valued replica closure.  It also recovers
+the exact population matrix
+\[
+    \E\left[\frac K{mR}G^\top G\mid z\right]
+    =\frac KR\sum_{r=1}^R H_r(z).
+\]
+
+Once the resulting raw normalized spectral law $\nu$ is known, the
+equivariant one-head preconditioner has an explicit closure.  With
+$S/K\to\sigma$, limiting query law $\pi$, and bounded invariant score
+$\ell(q,\lambda;\nu)$, define
+\begin{align*}
+    Z(q)&=\int e^{\ell(q,t;\nu)}\nu(dt),\\
+    g(\lambda;\nu)
+    &=1-\exp\left[-\sigma\int
+      \frac{e^{\ell(q,\lambda;\nu)}}{Z(q)}\pi(dq)\right],\\
+    T_\theta(\lambda;\nu)&=(1-g(\lambda;\nu))\lambda+g(\lambda;\nu).
+\end{align*}
+The effective law is exactly the pushforward
+$\nu_{\rm eff}=(T_\theta)_\#\nu$.  Therefore
+\eqref{eq:rep-hb-distributional-risk}--
+\eqref{eq:rep-hb-distributional-optimum} apply with $\phi_t$ replaced by
+$T_\theta$ and jointly predict the head parameters, slot density, HB pair,
+and depth.  No eigenvector or layer-indexed Krylov order parameter is added.
+Gaussian forcing is used only for the explicit Wick covariance above; the
+finite-dimensional spectral-risk predictor itself requires only an SPD
+normal matrix and finite moments.
 \end{remark}
 
 \begin{corollary}[early and late time laws]

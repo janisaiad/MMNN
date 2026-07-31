@@ -386,6 +386,88 @@ seuls paramètres d'ordre et des ratios de dimensions. Cette dernière
 substitution, et non l'optimisation HB en deux scalaires, est le morceau
 analytique restant.
 
+## Tête spectrale équivariante et fermeture sans eigenvectors cachés
+
+Un audit par rotation aléatoire du dictionnaire a révélé que la première tête
+Ritz à tokens de coordonnées n'était pas gauge-covariante : erreur moyenne de
+covariance \(0.446\), quantile 95 % \(0.620\), maximum \(0.763\). Une théorie
+fermée uniquement par la loi des valeurs propres aurait donc été incorrecte
+pour cette tête.
+
+La nouvelle option **equivariant_ritz_softmax** diagonalise exactement le petit
+normal primal \(K\times K\). Le Transformer n'apprend ni l'eigendecomposition,
+ni un inverse, ni la récurrence. Sa tête softmax unique alloue seulement des
+portes \(g_i\) aux tokens spectraux. Si \(h_i\) sont les valeurs propres du
+normal, \(s_H=h_{\max}/\bar L\), et \(\lambda_i=h_i/s_H\), alors
+
+\[
+B_\theta(H)=V\operatorname{diag}\!\left(
+\frac{1-g_i}{s_H}+\frac{g_i}{h_i}\right)V^\top,
+\qquad
+a_i=(1-g_i)\lambda_i+g_i.
+\]
+
+Ces identités sont exactes. Elles donnent simultanément : covariance
+orthogonale, indépendance du choix de base dans les espaces propres
+dégénérés, budget \(\sum_i g_i\le S\), et certificat
+\(0<a_i\le\bar L\). Le test numérique de covariance passe à
+\(2\cdot10^{-10}\) et les valeurs propres effectives prédites coïncident avec
+celles calculées à la même tolérance.
+
+Avec \(S/K\to\sigma\), la limite de la tête est elle-même explicite :
+
+\[
+g_{\theta,\sigma}(\lambda;\nu)
+=1-\exp\left[-\sigma\int
+\frac{e^{\ell_\theta(q,\lambda;\nu)}}
+{\int e^{\ell_\theta(q,t;\nu)}\nu(dt)}\,\pi(dq)\right],
+\qquad
+\nu_{\rm eff}=[(1-g)\lambda+g]_\#\nu.
+\]
+
+Il ne reste donc aucun paramètre d'ordre d'eigenvectors pour la tête. Cette
+formule met aussi au jour une contrainte de scaling : avec un nombre fixe de
+slots et des scores bornés, la tête corrige seulement un nombre fini de modes
+et ne change pas la loi de bulk ; une correction de bulk exige
+\(S=\Theta(K)\) ou une attention basse température qui se concentre sur des
+outliers. Ce n'est pas un hyperparamètre à découvrir par sweep, mais une
+conséquence de la normalisation softmax.
+
+Trois entraînements certifiés de 750 pas, depuis trois encodeurs elliptiques
+gelés, restent au plancher encodeur (\(u\)-MSE de l'ordre de \(10^{-9}\)).
+Pour chaque seed, sur 8 192 tâches nominales puis 8 192 tâches avec
+\(z_{\rm scale}=1\), HB-40 n'a aucune violation de Jury et aucun fallback. Le
+rapport moyen de MSE solveur HB-40 / PCG-16 vaut \(0.500\) en nominal et
+\(0.282\) au shift ; ces nombres au plancher de précision flottante ne doivent
+pas être interprétés comme une domination asymptotique de PCG.
+
+À profondeur contrainte \(L=8\), où les coefficients sont identifiables, la
+théorie spectrale sur 4 096 prompts prédit
+\((\alpha,\beta)=(0.817095,0.072361)\), contre les scalaires entraînés
+\((0.750000,0.080007)\). Sur 8 192 tâches disjointes, elle réduit l'erreur
+relative \(H\) de HB par un facteur \(14.2\) en nominal et \(16.3\) au shift
+\(z_{\rm scale}=1\). Même en extrapolation \(z_{\rm scale}=1.5\), hors du
+domaine de calibration \([0.1,1]\), le gain reste \(10.0\times\). PCG-8 reste
+nettement meilleur en erreur pure à ce faible budget : la conclusion demeure
+une frontière erreur--latence--simplicité, pas « HB bat PCG à HVP égal ».
+
+La théorie prédictive possède maintenant trois niveaux clairement séparés :
+
+1. le risque spectral fini exact, qui ne suppose que SPD, moments finis et
+   politique fixée avant le second membre de requête ;
+2. l'objectif estimé sur prompts de calibration, qui permet de sélectionner
+   conjointement tête, \((\alpha,\beta)\) et profondeur sans hypothèse
+   gaussienne ; la validation ci-dessus en fixe la tête et \(L=8\) pour isoler
+   la prédiction des deux scalaires ;
+3. une fermeture analytique random-matrix qui remplace la calibration par la
+   loi GP/PDE, au prix d'hypothèses asymptotiques explicites.
+
+Il est impossible de prédire un optimum population à partir des seuls ratios
+de dimensions sans aucune information sur la loi spectrale ou la sensibilité
+physique. La version « peu d'hypothèses » est donc le niveau 1 ; la version
+« zéro calibration » est nécessairement le niveau 3 et doit annoncer ses
+hypothèses.
+
 Conclusion soutenable : **HB est le meilleur compromis de boucle exacte dans
 la famille testée, mais il ne domine pas PCG en erreur pure par HVP.** PCG et
 Chebyshev oracle atteignent le plancher numérique. La revendication défendable
