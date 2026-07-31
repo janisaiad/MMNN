@@ -569,7 +569,7 @@ orthonormale \(U\), elle diagonalise seulement
 \(C=U^\top(H/s_H)U\in\mathbb R^{S\times S}\), puis applique
 
 \[
-Bv=\frac1{s_H}\left[v+UDU^\top v\right],
+Bv=\frac1{s_H\zeta}\left[v+UDU^\top v\right],
 \qquad
 D=V_C\operatorname{diag}\!\left(
 \min\{1,c_\star/c_i\}-1
@@ -598,7 +598,7 @@ Le préconditionneur est rescalé par
 \(\zeta=\widehat L_{\rm post}/\bar L\). Il sature donc
 \(\lambda_{\max}(B^{1/2}HB^{1/2})\leq\bar L\) sans hypothèse de queue, mais
 avec une borne beaucoup plus serrée après suppression des outliers. Cette
-amélioration n'ajoute ni spectre complet ni HVP : (C), (R) et la trace
+amélioration n'ajoute ni spectre complet ni HVP : $C$, $R$ et la trace
 sont déjà disponibles. Le
 coût de construction est
 \(O((r+1)MKS+MKd_h+KS^2+S^3)\), la mémoire
@@ -608,26 +608,43 @@ du HVP.
 ### Audit causal du sous-espace appris
 
 Un benchmark RRS shallow contrôle maintenant directement l'effet de la
-cellule d'entraînement. Chaque normal (K=12) possède deux outliers de force
+cellule d'entraînement. Chaque normal $K=12$ possède deux outliers de force
 100 tournés indépendamment par prompt. Richardson, HB et PCG partent de la
 même tête, voient les mêmes minibatches pendant 1000 pas et sont croisés avec
 toutes les cellules sur 4096 tâches nouvelles pour chacune de trois seeds.
 
 Sans étape de puissance hardcodée, HB apprend réellement une meilleure
-géométrie que Richardson : le recouvrement outlier passe de (0.878) à
-(0.945), le conditionnement de (320.1) à (115.7), et le risque HB-4 de
-(0.148) à (0.104). PCG apprend un espace proche. Une seule étape de
-puissance en bloc porte toutefois le recouvrement à (0.9998) et le
-conditionnement à (6.25) avant que le choix de l'objectif ait un effet
+géométrie que Richardson : le recouvrement outlier passe de $0.878$ à
+$0.945$, le conditionnement de $320.1$ à $115.7$, et le risque HB-4 de
+$0.148$ à $0.104$. PCG apprend un espace proche. Une seule étape de
+puissance en bloc porte toutefois le recouvrement à $0.9998$ et le
+conditionnement à $6.25$ avant que le choix de l'objectif ait un effet
 matériel. Il est donc first-principles de hardcoder cette étape.
 
-Dans ce régime (r=1), les risques sont (1.19\,10^{-2}) pour HB-4,
-(1.97\,10^{-3}) pour Chebyshev-4 et (1.06\,10^{-4}) pour PCG-4. Tête +
-PCG-4 bat PCG pur à six rounds HVP d'un facteur (3.43), mais PCG pur à dix
-HVP scalaires est (42.9\) fois meilleur. Le gain concerne donc la latence
+Dans ce régime $r=1$, les risques sont $1.19\,10^{-2}$ pour HB-4,
+$1.97\,10^{-3}$ pour Chebyshev-4 et $1.06\,10^{-4}$ pour PCG-4. Tête +
+PCG-4 bat PCG pur à six rounds HVP d'un facteur $3.43$, mais PCG pur à dix
+HVP scalaires est $42.9$ fois meilleur. Le gain concerne donc la latence
 parallèle des HVP en bloc, pas les FLOPs séquentiels. Le rapport complet et les
 deux figures sont dans
 [`ROTATED_LOW_RANK_CONTROLLER_AUDIT.md`](ROTATED_LOW_RANK_CONTROLLER_AUDIT.md).
+
+Le contrôle PDE $K=32,M=128,S=4,r=2,L=8$ confirme que la nouvelle
+certification change matériellement HB : son risque entraîné passe de
+$6.88\,10^{-1}$ avec l'ancienne échelle de trace à $7.34\,10^{-5}$, un gain
+d'environ $9.38\,10^3$. PCG-8 sans tête reste néanmoins à
+$2.19\,10^{-6}$. La tête suivie de PCG-8 atteint $1.81\,10^{-8}$ et bat même
+PCG pur à vingt HVP scalaires ($4.74\,10^{-8}$) d'un facteur $2.62$. La
+conclusion est donc renforcée : HB devient un loop decoder crédible après
+rescaling first-principles, mais le meilleur solveur-décodeur pratique reste
+la même géométrie suivie de PCG explicite.
+
+![Audit PDE avec certification serrée](pde_matrix_free_learning_tight_certificate/pde_matrix_free_solver_comparison.png)
+
+Les deux audits d'intervalle ci-dessous ont été produits avec l'ancienne
+normalisation par la trace. Ils restent informatifs sur les erreurs rares de
+couverture et le fallback, mais leurs risques HB/Chebyshev absolus ne sont pas
+ceux de la nouvelle architecture rescalée ci-dessus.
 
 Sur 8 192 tâches du seed 0, avec \(K=8,S=6,r=4\), le conditionnement effectif
 moyen vaut \(1.647\). Le MLP d'intervalle ne reçoit que des invariants

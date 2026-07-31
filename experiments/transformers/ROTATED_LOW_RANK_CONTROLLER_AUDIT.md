@@ -177,6 +177,36 @@ très petite profondeur. Les deux scalaires HB entraînés directement sur le
 risque fini sont alors préférables. Chebyshev demeure le meilleur polynôme
 minimax d'intervalle à horizon fixé.
 
+## Régression PDE avec la certification serrée
+
+Le benchmark PDE corrélé (K=32,M=128,S=4,r=2,L=8) a été réentraîné avec le
+même protocole à trois seeds. C'est un contrôle nécessaire : l'ancienne
+normalisation par la seule trace imposait une échelle HB très conservatrice,
+même après une excellente déflation.
+
+| méthode | profondeur solveur | risque (H) moyen |
+|---|---:|---:|
+| HB-8, tête initiale | 8 | 1.893e-4 |
+| HB-8, tête et scalaires entraînés | 8 | **7.339e-5** |
+| PCG-8 sans tête | 8 | 2.192e-6 |
+| PCG-8, tête entraînée | 8 | **1.811e-8** |
+| PCG-20 sans tête, travail scalaire égal | 20 | 4.739e-8 |
+
+La correction de certification réduit le risque HB entraîné de `0.6883` à
+`7.339e-5`, soit un facteur d'environ `9.38e3`. Cela confirme que le principal
+défaut HB précédent était une échelle certifiée trop lâche, pas la cellule
+bouclée elle-même. Néanmoins PCG-8 sans tête reste `33.5` fois meilleur que
+HB-8, et tête + PCG-8 reste environ `4.05e3` fois meilleur. Heavy--Ball n'est
+donc toujours pas quasi-identique à PCG sur cette loi à profondeur huit.
+
+Le résultat positif contre solveur pur est plus précis : tête + PCG-8 utilise
+trois rounds HVP en bloc pour le setup, c'est-à-dire douze HVP scalaires. Même
+contre PCG pur à vingt HVP, il réduit le risque d'un facteur `2.62`. Ici le
+préconditionnement appris apporte donc un gain à la fois au comptage parallèle
+et au comptage scalaire égal.
+
+![Audit PDE avec certificat post-déflation](pde_matrix_free_learning_tight_certificate/pde_matrix_free_solver_comparison.png)
+
 ## Décision architecturale
 
 La sélection finale dépend du sens exact de « Transformer pur » :

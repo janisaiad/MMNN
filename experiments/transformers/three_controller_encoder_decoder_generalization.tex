@@ -943,6 +943,17 @@ This is a hardware-parallel latency benefit, not solver dominance.  The exact
 weighted-polynomial prediction and realized stationary risks agree with
 maximum mean absolute gap $3.36\times10^{-7}$.
 
+The correlated PDE regression at $K=32,M=128,S=4,r=2,L=8$ isolates the
+effect of the sharper certificate.  Across three seeds, trained HB risk drops
+from $6.88\times10^{-1}$ under trace-only scaling to
+$7.34\times10^{-5}$ under post-deflation scaling.  Head-free PCG--8 reaches
+$2.19\times10^{-6}$, while the same learned head followed by PCG--8 reaches
+$1.81\times10^{-8}$.  Charging the setup as twelve sequential scalar HVPs,
+head-free PCG--20 reaches $4.74\times10^{-8}$, so the learned geometry still
+wins by a factor $2.62$ at equal sequential work.  HB is therefore a viable
+exact stationary loop after tight rescaling, but it remains $33.5$ times less
+accurate than head-free PCG--8 on this law.
+
 This construction deliberately deflates high modes rather than trying to
 invert low modes: block power iteration finds the former without divisions,
 and multipliers below one preserve the certificate.  The price is that a

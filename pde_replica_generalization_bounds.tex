@@ -1297,6 +1297,16 @@ spectral improvement, is the first-principles source of benefit against an
 unconditioned solver.  A bulk change requires \(S=\Theta(K)\), concentrating
 attention, or an equivalent proportional-rank mechanism.
 
+The finite-dimensional correlated-PDE audit at
+$K=32,M=128,S=4,r=2,L=8$ verifies that the scalar certificate order parameter
+$\zeta$ is not cosmetic.  Across three seeds, replacing trace-only scaling by
+the post-deflation block bound reduces trained HB relative $H$-risk from
+$6.88\times10^{-1}$ to $7.34\times10^{-5}$.  The same prompt head followed by
+PCG--8 reaches $1.81\times10^{-8}$, versus $4.74\times10^{-8}$ for head-free
+PCG--20 at equal sequential scalar-HVP work.  Thus the block moments and
+$\zeta$ predict a real amortized geometry benefit, while the PCG boundary
+remains necessary: HB--8 is still less accurate than head-free PCG--8.
+
 Gaussian forcing is used only for the explicit Wick covariance above; the
 finite-dimensional predictor requires only an SPD normal matrix, finite
 moments, and the stated nondegeneracy of the routed block.

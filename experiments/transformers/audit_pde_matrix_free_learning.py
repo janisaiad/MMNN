@@ -316,7 +316,10 @@ def evaluate(
             torch.diagonal(batch.H, dim1=-2, dim2=-1).reciprocal()
         )
         oracle, oracle_directions = oracle_top(batch.H, args.slots)
-        equal_depth = args.depth + refinements * args.slots
+        # The final projected Ritz matrix needs one additional block HVP
+        # beyond the refinement steps.  Charge every block column when
+        # comparing with sequential scalar-HVP work.
+        equal_depth = args.depth + (refinements + 1) * args.slots
         alpha, beta = trained.heavy_ball_coefficients()
         alpha0, beta0 = initial.heavy_ball_coefficients()
         methods = {
@@ -432,7 +435,7 @@ def evaluate(
                 "refinements": refinements,
                 "method": name,
                 "depth": (
-                    args.depth + refinements * args.slots
+                    args.depth + (refinements + 1) * args.slots
                     if name.endswith("equal_work")
                     else args.depth
                 ),
