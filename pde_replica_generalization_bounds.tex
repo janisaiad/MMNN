@@ -1320,6 +1320,49 @@ PCG--20 at equal sequential scalar-HVP work.  Thus the block moments and
 $\zeta$ predict a real amortized geometry benefit, while the PCG boundary
 remains necessary: HB--8 is still less accurate than head-free PCG--8.
 
+The same closure now yields a spectral controller without a free measure MLP.
+Let \(A_\theta=B_\theta^{1/2}HB_\theta^{1/2}\),
+\(\tau_\theta=\operatorname{tr}A_\theta\), and let \(Q\) orthonormalize
+\(\{U,A_\theta U,\ldots,A_\theta^{q-1}U\}\), assumed to have dimension
+\(qS\).  If \(\vartheta_i\) are the eigenvalues of
+\(T_q=Q^\top A_\theta Q\), define
+\[
+ \bar\vartheta_\perp
+ =\frac{\tau_\theta-\operatorname{tr}T_q}{K-qS},
+ \qquad
+ \widehat\nu_q
+ =\tau_\theta^{-1}\left[
+ \sum_{i=1}^{qS}\vartheta_i\delta_{\vartheta_i}
+ +(K-qS)\bar\vartheta_\perp\delta_{\bar\vartheta_\perp}\right].
+ \label{eq:pde-routed-krylov-measure}
+\]
+Here
+\[
+ \tau_\theta
+ =\zeta^{-1}\left[\overline L+
+ \operatorname{tr}\{(c_\star C^{-1}-I)C\}\right]
+\]
+is already a deterministic function of the matrix-free block moments.  The
+Chebyshev-basis Gram solve applied to \(\widehat\nu_q\) is exact fixed
+algebra; only the initial block \(U\) is learned.  If \(qS=K\), this measure
+is the exact energy-weighted ESD and gives the exact expected-risk polynomial
+under an isotropic coefficient prior.  Otherwise it is an explicit
+first-moment complement closure whose replica prediction requires only the
+joint law of the existing block moments and the additional finite Krylov
+blocks.
+
+On the correlated PDE audit, \(q=2,S=4\) gives
+\(9.676\times10^{-6}\) relative \(H\)-risk, compared with
+\(7.339\times10^{-5}\) for trained HB and \(1.509\times10^{-4}\) for the
+measure MLP.  Fine-tuning the routed head changes this to
+\(9.945\times10^{-6}\), providing no gain.  Same-head PCG remains at
+\(1.812\times10^{-8}\), and head-free PCG--28 at equal scalar-HVP work gives
+\(4.739\times10^{-8}\).  Increasing to \(q=3\) gives
+\(8.868\times10^{-6}\), while \(q=4\) is statistically unchanged at
+\(8.862\times10^{-6}\).  Thus \(q=2\) is the risk--work knee: the
+first-principles measure closes most of the fixed-polynomial estimation gap
+but does not reverse the Krylov boundary.
+
 Gaussian forcing is used only for the explicit Wick covariance above; the
 finite-dimensional predictor requires only an SPD normal matrix, finite
 moments, and the stated nondegeneracy of the routed block.

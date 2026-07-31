@@ -623,6 +623,43 @@ class LowRankSPDPreconditioner:
         scale_shape = (self.scale.shape[0],) + (1,) * (vector.ndim - 1)
         return (vector + correction) / self.scale.reshape(scale_shape)
 
+    def sqrt_apply(self, vector: Tensor) -> Tensor:
+        """Apply the symmetric positive square root using only slot algebra."""
+
+        batch, _, slots = self.directions.shape
+        identity = torch.eye(
+            slots,
+            device=self.directions.device,
+            dtype=self.directions.dtype,
+        ).expand(batch, -1, -1)
+        slot_operator = identity + self.slot_correction
+        eigenvalues, eigenvectors = torch.linalg.eigh(slot_operator)
+        if torch.any(eigenvalues <= 0):
+            raise ValueError("the low-rank preconditioner must be positive definite")
+        square_root_correction = torch.einsum(
+            "bsi,bi,bti->bst",
+            eigenvectors,
+            eigenvalues.sqrt() - 1.0,
+            eigenvectors,
+        )
+        slot_coordinates = torch.einsum(
+            "bks,bk...->bs...",
+            self.directions,
+            vector,
+        )
+        routed = torch.einsum(
+            "bst,bt...->bs...",
+            square_root_correction,
+            slot_coordinates,
+        )
+        correction = torch.einsum(
+            "bks,bs...->bk...",
+            self.directions,
+            routed,
+        )
+        scale_shape = (self.scale.shape[0],) + (1,) * (vector.ndim - 1)
+        return (vector + correction) / self.scale.sqrt().reshape(scale_shape)
+
     def materialize(self) -> Tensor:
         batch, dimension, _ = self.directions.shape
         identity = torch.eye(
@@ -889,6 +926,14 @@ class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
         effective_complement_trace = (
             complement_trace_bound / certificate_normalizer
         )
+        effective_trace = (
+            self.spectral_lmax_bound
+            + torch.einsum(
+                "bij,bij->b",
+                slot_correction,
+                projected_operator,
+            )
+        ) / certificate_normalizer
         preconditioner = LowRankSPDPreconditioner(
             scale=scale * certificate_normalizer,
             directions=directions,
@@ -924,6 +969,7 @@ class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
             "projected_operator": projected_operator,
             "projected_eigenvalues": projected_eigenvalues,
             "projected_effective_target": effective_target,
+            "effective_trace": effective_trace,
             "subspace_residual_fraction": residual_fraction,
             "cross_block_bound": cross_bound,
             "complement_trace_bound": complement_trace_bound,

@@ -20,6 +20,7 @@ try:
     from .first_principles_decoder_cells import (
         Preconditioner,
         apply_fixed_preconditioner,
+        block_krylov_energy_measure,
         chebyshev_coefficient_schedule,
         risk_optimal_solution_chebyshev_coefficients,
         run_heavy_ball_state_machine,
@@ -41,6 +42,7 @@ except ImportError:
     from first_principles_decoder_cells import (
         Preconditioner,
         apply_fixed_preconditioner,
+        block_krylov_energy_measure,
         chebyshev_coefficient_schedule,
         risk_optimal_solution_chebyshev_coefficients,
         run_heavy_ball_state_machine,
@@ -167,7 +169,8 @@ class ExactLoopTransformerDecoder(nn.Module):
     """One softmax geometry head and an exact tied recurrent solver cell.
 
     ``controller`` is one of ``richardson``, ``heavy_ball``, ``chebyshev``,
-    ``moment_chebyshev``, ``pcg`` or ``certified_hb_pcg``.  The last
+    ``moment_chebyshev``, ``ritz_moment_chebyshev``, ``pcg`` or
+    ``certified_hb_pcg``.  The last
     (historically named) choice
     runs Heavy-Ball by default and hard-routes prompts whose final
     preconditioned residual fails a prescribed test to PCG.  The test
@@ -188,6 +191,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         chebyshev_hidden_dimension: int = 16,
         spectral_measure_clusters: int = 8,
         spectral_measure_hidden_dimension: int = 32,
+        spectral_krylov_steps: int = 2,
         moment_gram_regularization: float = 1e-8,
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
@@ -205,6 +209,7 @@ class ExactLoopTransformerDecoder(nn.Module):
             "heavy_ball",
             "chebyshev",
             "moment_chebyshev",
+            "ritz_moment_chebyshev",
             "pcg",
             "certified_hb_pcg",
         }:
@@ -215,12 +220,22 @@ class ExactLoopTransformerDecoder(nn.Module):
             raise ValueError("spectral_lmax_bound must be positive")
         if moment_gram_regularization < 0:
             raise ValueError("moment_gram_regularization must be nonnegative")
+        if spectral_krylov_steps <= 0:
+            raise ValueError("spectral_krylov_steps must be positive")
         if (
-            controller == "moment_chebyshev"
+            controller == "ritz_moment_chebyshev"
+            and spectral_krylov_steps * slots > dimension
+        ):
+            raise ValueError(
+                "spectral_krylov_steps times slots cannot exceed dimension"
+            )
+        if (
+            controller in {"moment_chebyshev", "ritz_moment_chebyshev"}
             and preconditioner_head_type != "equivariant_matrix_free_nystrom"
         ):
             raise ValueError(
-                "moment_chebyshev currently requires the matrix-free Nystrom head"
+                "the selected moment Chebyshev controller requires the "
+                "matrix-free Nystrom head"
             )
         if chebyshev_interval_policy not in {"learned", "exact_head_spectrum"}:
             raise ValueError(
@@ -240,6 +255,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         self.spectral_lmax_bound = spectral_lmax_bound
         self.chebyshev_interval_policy = chebyshev_interval_policy
         self.moment_gram_regularization = float(moment_gram_regularization)
+        self.spectral_krylov_steps = int(spectral_krylov_steps)
         self.adaptive_heavy_ball = bool(adaptive_heavy_ball)
         self.interval_lower_calibration = float(interval_lower_calibration)
         self.interval_upper_calibration = float(interval_upper_calibration)
@@ -556,6 +572,59 @@ class ExactLoopTransformerDecoder(nn.Module):
                     "spectral_measure_weights": spectral_weights,
                     "spectral_upper": spectral_upper,
                     "moment_solution_coefficients": coefficients,
+                }
+            )
+        elif self.controller == "ritz_moment_chebyshev":
+            if not hasattr(preconditioner, "sqrt_apply"):
+                raise TypeError(
+                    "Ritz-moment Chebyshev requires a symmetric square-root action"
+                )
+
+            def effective_action(vector: Tensor) -> Tensor:
+                rooted = preconditioner.sqrt_apply(vector)
+                return preconditioner.sqrt_apply(hvp(rooted))
+
+            spectral_upper = info["certified_effective_lmax"]
+            (
+                spectral_nodes,
+                spectral_weights,
+                projected_krylov_operator,
+                krylov_basis,
+                complement_trace,
+            ) = block_krylov_energy_measure(
+                effective_action,
+                info["directions"],
+                self.spectral_krylov_steps,
+                info["effective_trace"],
+                spectral_upper,
+            )
+            coefficients = risk_optimal_solution_chebyshev_coefficients(
+                spectral_nodes,
+                spectral_weights,
+                self.depth,
+                spectral_upper,
+                self.moment_gram_regularization,
+            )
+            solution, _, _ = run_precomputed_moment_chebyshev_state_machine(
+                hvp,
+                rhs,
+                preconditioner,
+                coefficients,
+                spectral_upper,
+            )
+            info.update(
+                {
+                    "spectral_measure_nodes": spectral_nodes,
+                    "spectral_measure_weights": spectral_weights,
+                    "spectral_upper": spectral_upper,
+                    "moment_solution_coefficients": coefficients,
+                    "projected_krylov_operator": projected_krylov_operator,
+                    "krylov_basis": krylov_basis,
+                    "krylov_complement_trace": complement_trace,
+                    "spectral_krylov_steps": spectral_nodes.new_full(
+                        (spectral_nodes.shape[0],),
+                        self.spectral_krylov_steps,
+                    ),
                 }
             )
         else:

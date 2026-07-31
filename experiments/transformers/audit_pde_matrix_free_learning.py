@@ -91,10 +91,12 @@ def decoder(
         depth=args.depth,
         head_dimension=args.head_dimension,
         slots=args.slots,
-        controller="heavy_ball",
+        controller=args.training_controller,
         spectral_lmax_bound=args.spectral_lmax_bound,
         step_init=args.step_init,
         momentum_init=args.momentum_init,
+        spectral_krylov_steps=args.spectral_krylov_steps,
+        moment_gram_regularization=args.gram_regularization,
         preconditioner_head_type="equivariant_matrix_free_nystrom",
         prompt_subspace_refinement_steps=refinements,
     ).to(device=device, dtype=dtype)
@@ -129,6 +131,19 @@ def train(
 ):
     set_seed(seed)
     model = decoder(args, refinements, device)
+    if args.initial_head_checkpoint_dir is not None:
+        checkpoint = torch.load(
+            args.initial_head_checkpoint_dir
+            / f"model_r{refinements}_seed{seed}.pt",
+            map_location=device,
+            weights_only=True,
+        )
+        head_state = {
+            name.removeprefix("preconditioner_head."): value
+            for name, value in checkpoint["model"].items()
+            if name.startswith("preconditioner_head.")
+        }
+        model.preconditioner_head.load_state_dict(head_state)
     initial = copy.deepcopy(model.state_dict())
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -151,7 +166,6 @@ def train(
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.gradient_clip)
         optimizer.step()
         if step == 1 or step % args.log_every == 0 or step == args.training_steps:
-            alpha, beta = model.heavy_ball_coefficients()
             row = {
                 "seed": seed,
                 "refinements": refinements,
@@ -160,9 +174,15 @@ def train(
                 "energy": mean_energy.item(),
                 "cvar": cvar.item(),
                 "query": query.item(),
-                "hb_step": alpha.item(),
-                "hb_momentum": beta.item(),
             }
+            if args.training_controller == "heavy_ball":
+                alpha, beta = model.heavy_ball_coefficients()
+                row.update(
+                    {
+                        "hb_step": alpha.item(),
+                        "hb_momentum": beta.item(),
+                    }
+                )
             history.append(row)
             print(json.dumps(row, sort_keys=True), flush=True)
     return model, initial, history
@@ -319,16 +339,16 @@ def evaluate(
         # The final projected Ritz matrix needs one additional block HVP
         # beyond the refinement steps.  Charge every block column when
         # comparing with sequential scalar-HVP work.
-        equal_depth = args.depth + (refinements + 1) * args.slots
-        alpha, beta = trained.heavy_ball_coefficients()
-        alpha0, beta0 = initial.heavy_ball_coefficients()
+        extra_measure_rounds = (
+            args.spectral_krylov_steps
+            if args.training_controller == "ritz_moment_chebyshev"
+            else 0
+        )
+        equal_depth = (
+            args.depth
+            + (refinements + 1 + extra_measure_rounds) * args.slots
+        )
         methods = {
-            "trained_head_hb": run_heavy_ball_state_machine(
-                hvp, rhs, trained_pre, args.depth, alpha, beta
-            )[0],
-            "initial_head_hb": run_heavy_ball_state_machine(
-                hvp, rhs, initial_pre, args.depth, alpha0, beta0
-            )[0],
             "trained_head_pcg": run_pcg_state_machine(
                 hvp, rhs, trained_pre, args.depth
             )[0],
@@ -348,6 +368,34 @@ def evaluate(
                 hvp, rhs, oracle, args.depth
             )[0],
         }
+        if args.training_controller == "heavy_ball":
+            alpha, beta = trained.heavy_ball_coefficients()
+            alpha0, beta0 = initial.heavy_ball_coefficients()
+            methods.update(
+                {
+                    "trained_head_hb": run_heavy_ball_state_machine(
+                        hvp, rhs, trained_pre, args.depth, alpha, beta
+                    )[0],
+                    "initial_head_hb": run_heavy_ball_state_machine(
+                        hvp, rhs, initial_pre, args.depth, alpha0, beta0
+                    )[0],
+                }
+            )
+        else:
+            methods.update(
+                {
+                    "trained_head_ritz_moment_chebyshev": trained(
+                        equations,
+                        observations,
+                        ridge,
+                    )[0],
+                    "initial_head_ritz_moment_chebyshev": initial(
+                        equations,
+                        observations,
+                        ridge,
+                    )[0],
+                }
+            )
         (
             oracle_hb,
             oracle_chebyshev,
@@ -498,6 +546,8 @@ def plot(rows: list[dict], outdir: Path) -> None:
         return
     methods = [
         "trained_head_hb",
+        "trained_head_ritz_moment_chebyshev",
+        "initial_head_ritz_moment_chebyshev",
         "trained_head_oracle_chebyshev",
         "trained_head_pcg",
         "oracle_prompt_esd_polynomial",
@@ -560,6 +610,13 @@ def main() -> None:
     parser.add_argument("--spectral-lmax-bound", type=float, default=4.0)
     parser.add_argument("--step-init", type=float, default=0.4)
     parser.add_argument("--momentum-init", type=float, default=0.1)
+    parser.add_argument(
+        "--training-controller",
+        choices=["heavy_ball", "ritz_moment_chebyshev"],
+        default="heavy_ball",
+    )
+    parser.add_argument("--spectral-krylov-steps", type=int, default=2)
+    parser.add_argument("--gram-regularization", type=float, default=1e-5)
     parser.add_argument("--training-steps", type=int, default=800)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--evaluation-tasks", type=int, default=4096)
@@ -573,6 +630,11 @@ def main() -> None:
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--seeds", default="0,1,2")
     parser.add_argument("--evaluation-only", action="store_true")
+    parser.add_argument(
+        "--initial-head-checkpoint-dir",
+        type=Path,
+        default=None,
+    )
     args = parser.parse_args()
     if args.slots >= args.dimension:
         raise ValueError("slots must be smaller than dimension")
@@ -584,17 +646,26 @@ def main() -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     if not args.evaluation_only:
         with (outdir / "config.json").open("w") as handle:
-            json.dump(vars(args), handle, indent=2, sort_keys=True)
+            json.dump(
+                {
+                    key: str(value) if isinstance(value, Path) else value
+                    for key, value in vars(args).items()
+                },
+                handle,
+                indent=2,
+                sort_keys=True,
+            )
     rows, overlap_rows, history = [], [], []
     for refinements in parse_ints(args.refinement_grid):
         for seed in parse_ints(args.seeds):
             checkpoint_path = outdir / f"model_r{refinements}_seed{seed}.pt"
             if args.evaluation_only:
-                checkpoint = torch.load(
-                    checkpoint_path,
-                    map_location=device,
-                    weights_only=True,
-                )
+                with torch.serialization.safe_globals([type(Path())]):
+                    checkpoint = torch.load(
+                        checkpoint_path,
+                        map_location=device,
+                        weights_only=True,
+                    )
                 trained = decoder(args, refinements, device)
                 trained.load_state_dict(checkpoint["model"])
                 initial = checkpoint["initial"]

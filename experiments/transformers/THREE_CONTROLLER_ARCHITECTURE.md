@@ -22,6 +22,7 @@ donne l'interprétation tokenique équivalente.
 |---|---|---:|---:|---|
 | Heavy-Ball | deux scalaires stables, ou un intervalle prédit | deux vecteurs | non | architecture principale |
 | Chebyshev | spectre exact de la tête, ou \([\widehat\mu,\widehat L]\) via MLP | deux vecteurs + scalaires | récurrence fixe | meilleur polynôme non adaptatif |
+| Ritz--Chebyshev | rien : les sondes viennent de la tête | \(q\) blocs de setup, puis Clenshaw | petit Ritz + Gram exacts | meilleur polynôme Transformer mesuré |
 | PCG | rien | cinq vecteurs/scalaires | quotients exacts | plafond numérique par HVP |
 | HB avec garde → PCG | seuil résiduel fixe | état HB, PCG seulement en queue | quotients au fallback | décodeur robuste final |
 
@@ -255,11 +256,11 @@ réductions et quotients.
 
 | Régime | HB-32 global robuste | PCG-16 | ratio HB/PCG |
 |---|---:|---:|---:|
-| (z_{\rm scale}=0.5), 4096 tâches | (9.1713\cdot10^{-10}) | (9.1720\cdot10^{-10}) | 0.9999 |
-| (z_{\rm scale}=1), 8192 tâches | (1.6247\cdot10^{-9}) | (1.5599\cdot10^{-9}) | 1.0415 |
+| \(z_{\rm scale}=0.5\), 4096 tâches | \(9.1713\cdot10^{-10}\) | \(9.1720\cdot10^{-10}\) | 0.9999 |
+| \(z_{\rm scale}=1\), 8192 tâches | \(1.6247\cdot10^{-9}\) | \(1.5599\cdot10^{-9}\) | 1.0415 |
 
 Les IC 95 % OOD se recouvrent et aucune violation de Jury n'est observée ; la
-marge minimale vaut 0.815. Sur GPU float32, batch 2048, (K=8,M=512), les
+marge minimale vaut 0.815. Sur GPU float32, batch 2048, \(K=8,M=512\), les
 médianes des cellules sont 0.777 ms pour HB-32 et 0.766 ms pour PCG-16. Elles
 sont donc équivalentes en latence à ce niveau de mesure, tandis que HB conserve
 un état et une algèbre plus simples.
@@ -373,7 +374,7 @@ couverture, et non la simple MSE des extrémités spectrales.
 
 Le niveau fini de cette théorie a été implémenté sans entraînement réseau. Sur
 4096 tâches de calibration, on construit la mesure spectrale positive de
-l'erreur (H), puis on minimise exactement le risque polynomial moyen + CVaR
+l'erreur \(H\), puis on minimise exactement le risque polynomial moyen + CVaR
 en seulement deux variables. Sur 8192 tâches OOD disjointes par encodeur :
 
 | Seed | \(\alpha_{\rm pred}\) | \(\beta_{\rm pred}\) | HB prédit / PCG | HB Adam / PCG | réduction de l'erreur solveur |
@@ -384,7 +385,7 @@ en seulement deux variables. Sur 8192 tâches OOD disjointes par encodeur :
 
 Toutes les marges de Jury restent positives ; la plus faible vaut 0.187. Pour
 le seed 0, le momentum prédit coïncide avec le minimax spectral et le pas est
-simplement tronqué par le certificat global (L_{\max}=2.5). Pour les deux
+simplement tronqué par le certificat global \(L_{\max}=2.5\). Pour les deux
 autres seeds, l'optimum pondéré par la distribution s'écarte du minimax de
 support, comme le prévoit la théorie conjointe.
 
@@ -643,30 +644,59 @@ la même géométrie suivie de PCG explicite.
 
 Un audit apparié entraîne ensuite le contrôleur de mesure Chebyshev en gelant
 **exactement ces mêmes têtes**. La hiérarchie à profondeur huit est sans
-ambiguïté (risque (H), plus petit est meilleur) :
+ambiguïté (risque \(H\), plus petit est meilleur) :
 
 | consommateur de la tête partagée | risque moyen |
 |---|---:|
-| PCG-8 | **(1.811,10^{-8})** |
-| HB-8 | (7.339,10^{-5}) |
-| Chebyshev de mesure appris-8 | (1.509,10^{-4}) |
-| Chebyshev gardé par PCG | (3.404,10^{-7}) |
+| PCG-8 | **\(1.811\,10^{-8}\)** |
+| HB-8 | \(7.339\,10^{-5}\) |
+| Chebyshev de mesure appris-8 | \(1.509\,10^{-4}\) |
+| Chebyshev gardé par PCG | \(3.404\,10^{-7}\) |
 
-HB est donc (2.06	imes) meilleur que Chebyshev appris, tandis que PCG est
-environ (4.05,10^3	imes) meilleur que HB. L'oracle de mesure polynomial
-atteint néanmoins (1.73,10^{-8}) : la capacité polynomiale n'est pas le
+HB est donc \(2.06\times\) meilleur que Chebyshev appris, tandis que PCG est
+environ \(4.05\,10^3\times\) meilleur que HB. L'oracle de mesure polynomial
+atteint néanmoins \(1.73\,10^{-8}\) : la capacité polynomiale n'est pas le
 goulot, c'est l'estimation en contexte des masses spectrales. Le risque prédit
-par la théorie ((1.50896,10^{-4})) et le risque Clenshaw réalisé
-((1.50913,10^{-4})) coïncident. La garde bascule vers PCG sur plus de
-(92%) des prompts ; elle n'est pas retenue comme architecture autonome.
+par la théorie (\(1.50896\,10^{-4}\)) et le risque Clenshaw réalisé
+(\(1.50913\,10^{-4}\)) coïncident. La garde bascule vers PCG sur plus de
+\(92\%\) des prompts ; elle n'est pas retenue comme architecture autonome.
 
 ![Audit Chebyshev sur la tête PDE partagée](pde_moment_chebyshev_tight_shared_head/moment_chebyshev_pde_comparison.png)
 
-La sélection actuelle est donc : **HB** pour le Transformer bouclé pur,
-stationnaire et minimal ; **PCG explicite après la même tête** pour le meilleur
-solveur-décodeur pratique ; **Chebyshev de mesure** comme branche théorique à
-améliorer par des statistiques spectrales first-principles, pas par un MLP
-chargé d'imiter l'algèbre du solveur.
+### Contrôleur Ritz--Krylov sans MLP spectral
+
+La correction suivante retire précisément ce goulot. La tête softmax produit
+les sondes \(Q_0=U\), puis \(q\) HVP en bloc construisent un espace Krylov
+orthonormal \(Q\) et le petit opérateur
+\(T=Q^\top B_\theta^{1/2}HB_\theta^{1/2}Q\). Ses valeurs de Ritz donnent les
+nœuds ; la trace exacte donne la moyenne du complément ; le prior isotrope
+fixe les masses d'énergie. Le Gram solve et Clenshaw restent hardcodés.
+
+| méthode appariée | HVP scalaires équivalents | risque \(H\) |
+|---|---:|---:|
+| HB-8 | 20 | \(7.339\,10^{-5}\) |
+| mesure MLP + Chebyshev-8 | 20 | \(1.509\,10^{-4}\) |
+| Ritz--Chebyshev \(q=1\) | 24 | \(2.803\,10^{-3}\) |
+| Ritz--Chebyshev \(q=2\), tête gelée | 28 | **\(9.676\,10^{-6}\)** |
+| Ritz--Chebyshev \(q=3\), tête gelée | 32 | \(8.868\,10^{-6}\) |
+| Ritz--Chebyshev \(q=4\), tête gelée | 36 | \(8.862\,10^{-6}\) |
+| Ritz--Chebyshev \(q=2\), tête fine-tunée | 28 | \(9.945\,10^{-6}\) |
+| PCG-8 pur | 8 | \(2.192\,10^{-6}\) |
+| PCG-28 pur | 28 | \(4.739\,10^{-8}\) |
+| tête + PCG-8 | 20 | **\(1.811\,10^{-8}\)** |
+
+Le saut \(q=1\rightarrow2\) est déterminant. \(q=3\) ne réduit ensuite le
+risque que de \(8.35\%\) pour quatre HVP scalaires supplémentaires, et
+\(q=4\) est dans le bruit de \(q=3\). Le coude risque--travail est donc
+\(q=2\). Le fine-tuning n'apporte rien, ce qui confirme que
+l'apprentissage utile est le routage initial et non l'algèbre spectrale.
+
+![Sélection risque--travail](pde_ritz_moment_shared_head/ritz_moment_selection.png)
+
+La sélection actuelle est donc : **HB** pour la cellule bouclée stationnaire
+la plus simple ; **Ritz--Chebyshev \(q=2\)** pour le meilleur Transformer
+polynomial exact testé ; **PCG explicite après la même tête** pour le meilleur
+solveur-décodeur pratique.
 
 Les deux audits d'intervalle ci-dessous ont été produits avec l'ancienne
 normalisation par la trace. Ils restent informatifs sur les erreurs rares de

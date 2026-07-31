@@ -259,13 +259,17 @@ Controller & Additional learned class & Required stability event & Trace linear 
 HB & shared scalars or spectral-interval MLP & Jury margin or interval coverage & yes, if bounds ignore $b$\\
 Chebyshev & spectral-interval MLP & interval coverage with slack & yes, if bounds ignore $b$\\
 Moment Chebyshev & node--mass--upper MLP & positive Gram margin and upper coverage & yes, if head ignores $b$\\
+Ritz--moment Chebyshev & none beyond routed probes & block-Krylov rank and certified upper bound & yes\\
 PCG & none & positive denominators or converged mask & no\\
 \bottomrule
 \end{tabular}
 \end{center}
 
 For tied-scalar HB, compact stable parameters add only two coordinates to a
-covering argument.  Adaptive HB, Chebyshev, and moment Chebyshev instead add
+covering argument.  Routed Ritz--moment Chebyshev adds no learned hypothesis
+class beyond the common head; its \(q\) HVPs and small eigensolve affect
+computation and stability, not covering dimension.  Adaptive HB, Chebyshev,
+and moment Chebyshev instead add
 the controller MLP's actual norm-controlled parameter complexity.  The
 moment controller additionally requires the regularized Gram matrix to stay
 uniformly positive definite.  For adaptive HB the Lipschitz
@@ -864,6 +868,76 @@ symmetric effective operator
 \(B_\theta^{1/2}HB_\theta^{1/2}\) need not share eigenvectors with \(H\).
 \end{proof}
 
+\begin{proposition}[routed block--Krylov spectral controller]
+\label{prop:routed-krylov-measure}
+Let
+\[
+ A_\theta=B_\theta^{1/2}HB_\theta^{1/2}\succ0,\qquad
+ \tau_\theta=\operatorname{tr}A_\theta,
+\]
+where \(B_\theta\) is the matrix-free head in
+Proposition~\ref{prop:matrix-free-moment-interface}.  Take the routed block
+\(Q_0=U\) and suppose the block Krylov space
+\[
+ {\cal K}_q(A_\theta,Q_0)
+ =\operatorname{span}\{Q_0,A_\theta Q_0,\ldots,
+ A_\theta^{q-1}Q_0\}
+\]
+has dimension \(qS\leq K\).  Let \(Q\) be its fully reorthogonalized basis,
+\(T_q=Q^\top A_\theta Q\), and
+\(\vartheta_1,\ldots,\vartheta_{qS}\) the Ritz eigenvalues.  If \(qS<K\),
+define
+\[
+ \bar\vartheta_\perp
+ =\frac{\tau_\theta-\operatorname{tr}T_q}{K-qS}
+\]
+and the compressed energy measure
+\[
+ \widehat\nu_q
+ =\frac1{\tau_\theta}\left[
+   \sum_{i=1}^{qS}\vartheta_i\delta_{\vartheta_i}
+   +(K-qS)\bar\vartheta_\perp
+     \delta_{\bar\vartheta_\perp}\right].
+ \label{eq:routed-krylov-energy-measure}
+\]
+For \(qS=K\), omit the last atom.  Then
+\(\widehat\nu_q\) is a probability measure determined by prompt-only
+matrix-free algebra.  Substituting its nodes and masses into
+Theorem~\ref{thm:risk-optimal-moment-polynomial} gives the exact
+\(\widehat\nu_q\)-optimal degree-\(L-1\) solution polynomial.  If \(qS=K\),
+this is the exact expected \(H\)-energy-risk minimizer for an isotropic
+coefficient prior.  The construction is gauge equivariant, independent of
+the query right-hand side, and costs exactly \(q\) additional block HVP
+rounds before the tied Clenshaw loop.
+\end{proposition}
+\begin{proof}
+The trace is available without a dense operator:
+\[
+ \tau_\theta
+ =\zeta^{-1}\left[
+ \overline L+
+ \operatorname{tr}\{(c_\star C^{-1}-I)C\}\right].
+\]
+Poincaré separation makes every \(\vartheta_i\) positive and
+\(\operatorname{tr}T_q\leq\tau_\theta\), so the complement atom is
+nonnegative and the displayed masses sum to one.  Under an orthogonal gauge
+change, \(A_\theta,Q_0,Q\) transform covariantly and \(T_q\), its spectrum,
+and \(\tau_\theta\) remain invariant.  The Gram solve and Clenshaw evaluation
+are exact by Theorem~\ref{thm:risk-optimal-moment-polynomial}.  When \(qS=K\),
+\(Q\) is square orthogonal and \(T_q\) is similar to \(A_\theta\).  For an
+isotropic coefficient \(x\),
+\[
+ \frac{\mathbb E\|r(A_\theta)x\|_{A_\theta}^2}
+      {\mathbb E\|x\|_{A_\theta}^2}
+ =\frac{\operatorname{tr}\{A_\theta r(A_\theta)^2\}}
+        {\operatorname{tr}A_\theta}
+ =\int r(\lambda)^2\,\widehat\nu_q(d\lambda),
+\]
+which proves exactness in the full-space case.  Each new block is obtained by
+one action of \(A_\theta\), hence one prompt HVP surrounded by two exact
+low-rank square-root applications.
+\end{proof}
+
 \begin{corollary}[fixed-slot bulk boundary and low-rank benefit]
 \label{cor:fixed-slot-boundary}
 Let
@@ -1096,9 +1170,10 @@ precision (respectively \(9.0015\times10^{-4}\) versus
 \(7.4431\times10^{-7}\)).  Hence the learned object is a genuine in-context
 spectral statistic rather than an MLP emulation of solver arithmetic, but the
 experiment rejects superiority over PCG.  HB remains the simplest exact tied
-loop; learned-measure Chebyshev is the better fixed-polynomial option on a
-clustered law; PCG remains the accuracy baseline when adaptive Krylov state is
-allowed.
+loop; this audit initially made learned-measure Chebyshev the better
+fixed-polynomial option on a clustered law, before the routed Krylov measure
+below removed its MLP bottleneck.  PCG remains the accuracy baseline when
+adaptive Krylov state is allowed.
 
 The decisive paired rerun freezes instead the same tightly certified heads
 used by the preceding HB/PCG PDE audit and trains the measure controller for
@@ -1115,6 +1190,23 @@ gap: the prompt-ESD oracle polynomial reconstructed in float32 reaches
 controller without asking the MLP to emulate solver arithmetic.  A residual
 guard falls back to PCG on \(92.6\)--\(95.9\%\) of prompts and remains
 \(18.8\) times worse than direct same-head PCG; it is not selected.
+
+\paragraph{Routed block--Krylov measure audit.}
+The controller in Proposition~\ref{prop:routed-krylov-measure} removes the
+free spectral MLP.  On the same three frozen PDE heads, \(q=1\) gives mean
+relative \(H\)-risk \(2.803\times10^{-3}\), whereas \(q=2\) gives
+\(9.676\times10^{-6}\).  The latter is \(7.58\) times more accurate than
+trained HB--8 and \(15.6\) times more accurate than learned-measure
+Chebyshev--8.  Fine-tuning only the softmax head for 800 updates changes the
+risk to \(9.945\times10^{-6}\), so the gain is caused by the exact Krylov
+measure rather than additional learned routing.  Its total sequential work
+is 28 scalar-HVP equivalents.  Head-free PCG--8 already has
+\(2.192\times10^{-6}\), head-free PCG--28 has \(4.739\times10^{-8}\), and
+same-head PCG--8 has \(1.812\times10^{-8}\); the structured polynomial does
+not beat PCG.  \(q=3\) gives \(8.868\times10^{-6}\), only an \(8.35\%\)
+reduction for four
+additional scalar-HVP equivalents, and \(q=4\) is indistinguishable from
+\(q=3\).  Thus \(q=2\) is the measured risk--work knee.
 
 The exact-spectrum head admits a particularly simple commuting oracle limit.
 It is useful for identifying what perfect spectral routing would achieve, but

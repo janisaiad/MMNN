@@ -40,12 +40,12 @@ Les trois modèles :
 1. commencent avec exactement les mêmes poids de tête ;
 2. voient les mêmes minibatches dans le même ordre ;
 3. utilisent trois seeds, `1000` pas et la même perte relative dans la norme
-   postérieure (H) ;
+   postérieure \(H\) ;
 4. diffèrent uniquement par la cellule exacte Richardson, Heavy--Ball ou PCG ;
 5. sont ensuite croisés avec toutes les cellules d'évaluation.
 
 La tête est une seule tête softmax équivariante sur les équations. Elle route
-un bloc (Y_\theta\in\mathbb R^{K\times S}). QR, HVP, Ritz, application du
+un bloc \(Y_\theta\in\mathbb R^{K\times S}\). QR, HVP, Ritz, application du
 préconditionneur et transitions du solveur sont entièrement hardcodés. Aucun
 spectre exact n'est donné au réseau ; les eigendecompositions complètes ne sont
 utilisées qu'après inférence pour les diagnostics et les contrôles oracle.
@@ -65,15 +65,15 @@ Elle reste vraie après déflation, mais devient très lâche précisément quan
 tête a supprimé les outliers. Elle forçait donc le pas HB à être beaucoup trop
 petit.
 
-Posons (A=H/s_H), avec \(\operatorname{tr}A=\bar L\), et écrivons dans la
-base ([U,U_\perp])
+Posons \(A=H/s_H\), avec \(\operatorname{tr}A=\bar L\), et écrivons dans la
+base \([U,U_\perp]\)
 
 \[
  A=\begin{bmatrix}C&R^\top\\R&D\end{bmatrix}.
 \]
 
-La correction Ritz (M=c_\star C^{-1}) transforme exactement le bloc choisi
-en (c_\star I). Sans former (H), on connaît
+La correction Ritz \(M=c_\star C^{-1}\) transforme exactement le bloc choisi
+en \(c_\star I\). Sans former \(H\), on connaît
 
 \[
  d=\operatorname{tr}A-\operatorname{tr}C,
@@ -92,7 +92,7 @@ Par positivité, \(\lambda_{\max}(D)\le d\), donc
 \]
 
 Le rescaling final par \(\widehat L/\bar L\) sature une borne déterministe
-beaucoup plus serrée. Il ne demande que le Ritz (S\times S), le résidu déjà
+beaucoup plus serrée. Il ne demande que le Ritz \(S\times S\), le résidu déjà
 calculé et une trace. Les tests vérifient simultanément la formule, la
 covariance de jauge, l'absence de matrice normale dans le décodeur matrix-free
 et la borne finale.
@@ -233,18 +233,58 @@ et ne constitue donc pas un gain Chebyshev pratique.
 
 ![Chebyshev appris avec tête PDE partagée](pde_moment_chebyshev_tight_shared_head/moment_chebyshev_pde_comparison.png)
 
+## Mesure Ritz--Krylov : le MLP n'est plus le goulot
+
+La tête gelée fournit maintenant les sondes covariantes \(U\). Deux actions
+supplémentaires de l'opérateur symétrique
+\(A_\theta=B_\theta^{1/2}HB_\theta^{1/2}\), suivies d'un QR en bloc,
+construisent exactement
+
+\[
+ Q=[Q_0,Q_1],\qquad T=Q^\top A_\theta Q.
+\]
+
+Les huit valeurs de Ritz de \(T\) sont les nœuds résolus. La trace exacte de
+\(A_\theta\), déjà déterminée par les moments du préconditionneur, donne
+l'unique atome moyen du complément. Sous le prior isotrope, les poids d'énergie
+sont alors proportionnels à « multiplicité \(\times\) valeur propre ». Le
+Gram solve Chebyshev et Clenshaw restent identiques et exacts. Aucun spectre
+complet, label spectral ou MLP de poids n'est utilisé.
+
+| contrôleur | coût scalaire équivalent | risque \(H\) moyen |
+|---|---:|---:|
+| Ritz--Chebyshev, \(q=1\) | 24 HVP | \(2.803\times10^{-3}\) |
+| Ritz--Chebyshev, \(q=2\), tête HB gelée | 28 HVP | **\(9.676\times10^{-6}\)** |
+| Ritz--Chebyshev, \(q=3\), tête HB gelée | 32 HVP | \(8.868\times10^{-6}\) |
+| Ritz--Chebyshev, \(q=4\), tête HB gelée | 36 HVP | \(8.862\times10^{-6}\) |
+| Ritz--Chebyshev, \(q=2\), tête réentraînée | 28 HVP | \(9.945\times10^{-6}\) |
+| Heavy--Ball-8 | 20 HVP | \(7.339\times10^{-5}\) |
+| Chebyshev avec mesure MLP | 20 HVP | \(1.509\times10^{-4}\) |
+| PCG-8 pur | 8 HVP | \(2.192\times10^{-6}\) |
+| PCG-28 pur | 28 HVP | \(4.739\times10^{-8}\) |
+| tête + PCG-8 | 20 HVP | **\(1.811\times10^{-8}\)** |
+
+Le contrôleur structuré \(q=2\) améliore donc HB d'un facteur \(7.58\) et le
+MLP spectral d'un facteur \(15.6\). Passer à \(q=3\) ne gagne que \(8.35\%\)
+pour quatre HVP scalaires de plus, et \(q=4\) est indiscernable de \(q=3\).
+Réentraîner le softmax avec son propre
+risque ne l'améliore pas : les étapes block-power hardcodées avaient déjà
+extrait la géométrie utile. Le résultat rejette simultanément deux excès :
+un MLP libre n'est pas nécessaire pour construire les poids, mais Chebyshev
+ne bat toujours pas PCG à travail égal.
+
+![Frontière risque--travail](pde_ritz_moment_shared_head/ritz_moment_selection.png)
+
 ## Décision architecturale
 
 La sélection finale dépend du sens exact de « Transformer pur » :
 
 - **Cellule bouclée, stationnaire, algèbre minimale :** Heavy--Ball. Deux
   scalaires partagés, un token mémoire et aucune division adaptative.
-- **Meilleur polynôme à horizon fixé :** Chebyshev. Un petit contrôleur peut
-  prédire une mesure ou un intervalle, mais le calendrier et Clenshaw restent
-  exacts ; le MLP n'émule aucune multiplication du solveur. Sur la PDE
-  corrélée actuelle, l'estimation apprise de la mesure reste toutefois moins
-  bonne que les deux scalaires HB entraînés : c'est une branche de recherche,
-  pas le décodeur par défaut.
+- **Meilleur polynôme à horizon fixé :** Ritz--Chebyshev \(q=2\). Le softmax
+  apprend seulement les sondes ; la mesure comprimée, les coefficients et
+  Clenshaw sont exacts. Il bat HB sur cette PDE mais demande deux blocs de
+  setup supplémentaires.
 - **Meilleure précision shallow :** tête contextuelle + PCG explicite. C'est
   la seule variante qui bat ici PCG pur au comptage de latence en rounds.
 

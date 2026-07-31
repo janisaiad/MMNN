@@ -14,6 +14,7 @@ from exact_loop_transformer_decoder import (  # noqa: E402
 )
 from evaluate_trained_loop_controllers import solve_all  # noqa: E402
 from first_principles_decoder_cells import (  # noqa: E402
+    block_krylov_energy_measure,
     fixed_prompt_linear_attention_hvp,
     materialize_preconditioner,
     risk_optimal_solution_chebyshev_coefficients,
@@ -40,6 +41,7 @@ from predict_pde_law_hyperparameters import (  # noqa: E402
 from structured_one_head_heavyball import (  # noqa: E402
     EquivariantPromptNystromPreconditioner,
     EquivariantRitzSoftmaxPreconditioner,
+    LowRankSPDPreconditioner,
 )
 
 
@@ -227,6 +229,90 @@ def test_moment_chebyshev_clenshaw_vectorizes_multiple_rhs() -> None:
     torch.testing.assert_close(solution, target, rtol=2e-11, atol=2e-11)
 
 
+def test_low_rank_preconditioner_symmetric_sqrt_is_exact() -> None:
+    torch.manual_seed(45)
+    dtype = torch.float64
+    batch, dimension, slots = 2, 7, 3
+    directions = torch.linalg.qr(
+        torch.randn(batch, dimension, slots, dtype=dtype),
+        mode="reduced",
+    ).Q
+    multipliers = torch.tensor(
+        [[0.2, 0.5, 0.8], [0.3, 0.6, 0.9]],
+        dtype=dtype,
+    )
+    correction = torch.diag_embed(multipliers - 1.0)
+    preconditioner = LowRankSPDPreconditioner(
+        scale=torch.tensor([1.7, 2.3], dtype=dtype),
+        directions=directions,
+        slot_correction=correction,
+    )
+    identity = torch.eye(dimension, dtype=dtype).expand(batch, -1, -1)
+    square_root = preconditioner.sqrt_apply(identity)
+    torch.testing.assert_close(
+        square_root @ square_root,
+        preconditioner.materialize(),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+
+
+def test_block_krylov_measure_recovers_full_spectrum_and_energy_weights() -> None:
+    torch.manual_seed(46)
+    dtype = torch.float64
+    batch, dimension, slots = 2, 4, 2
+    factor = torch.randn(batch, dimension, dimension, dtype=dtype)
+    operator_matrix = (
+        factor.transpose(-1, -2) @ factor
+        + 0.4 * torch.eye(dimension, dtype=dtype)
+    )
+    probes = torch.randn(batch, dimension, slots, dtype=dtype)
+    exact_nodes = torch.linalg.eigvalsh(operator_matrix)
+    upper = 1.01 * exact_nodes[:, -1]
+    nodes, weights, projected, basis, complement_trace = (
+        block_krylov_energy_measure(
+            lambda vector: torch.einsum(
+                "bij,bjk->bik",
+                operator_matrix,
+                vector,
+            ),
+            probes,
+            steps=2,
+            operator_trace=torch.diagonal(
+                operator_matrix,
+                dim1=-2,
+                dim2=-1,
+            ).sum(dim=-1),
+            spectral_upper=upper,
+        )
+    )
+    torch.testing.assert_close(nodes, exact_nodes, rtol=2e-11, atol=2e-11)
+    torch.testing.assert_close(
+        weights,
+        exact_nodes / exact_nodes.sum(dim=-1, keepdim=True),
+        rtol=2e-11,
+        atol=2e-11,
+    )
+    torch.testing.assert_close(
+        basis.transpose(-1, -2) @ basis,
+        torch.eye(dimension, dtype=dtype).expand(batch, -1, -1),
+        rtol=2e-11,
+        atol=2e-11,
+    )
+    torch.testing.assert_close(
+        torch.linalg.eigvalsh(projected),
+        exact_nodes,
+        rtol=2e-11,
+        atol=2e-11,
+    )
+    torch.testing.assert_close(
+        complement_trace,
+        torch.zeros_like(complement_trace),
+        rtol=0.0,
+        atol=2e-11,
+    )
+
+
 def test_spectral_measure_mlp_learns_only_ordered_nodes_and_masses() -> None:
     torch.manual_seed(37)
     features = torch.randn(6, 7, dtype=torch.float64)
@@ -336,6 +422,60 @@ def test_moment_chebyshev_loop_is_matrix_free_and_differentiable(
         parameter.grad is not None
         for parameter in decoder.measure_head.parameters()
     )
+
+
+def test_ritz_moment_chebyshev_learns_only_probes_and_uses_exact_measure(
+    monkeypatch,
+) -> None:
+    import exact_loop_transformer_decoder as decoder_module
+
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=8,
+        slots=2,
+        controller="ritz_moment_chebyshev",
+        spectral_lmax_bound=2.5,
+        spectral_krylov_steps=2,
+        moment_gram_regularization=1e-8,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=1,
+    ).double()
+
+    def forbidden_normal_matrix(*args, **kwargs):
+        raise AssertionError("Ritz-moment Chebyshev materialized H")
+
+    monkeypatch.setattr(
+        decoder_module,
+        "normal_matrix_from_equations",
+        forbidden_normal_matrix,
+    )
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert torch.isfinite(solution).all()
+    assert decoder.measure_head is None
+    assert info["matrix_free"].all()
+    assert info["spectral_measure_nodes"].shape == (equations.shape[0], 4)
+    torch.testing.assert_close(
+        info["spectral_measure_weights"].sum(dim=-1),
+        torch.ones(equations.shape[0], dtype=equations.dtype),
+    )
+    torch.testing.assert_close(
+        info["krylov_basis"].transpose(-1, -2) @ info["krylov_basis"],
+        torch.eye(4, dtype=equations.dtype).expand(equations.shape[0], -1, -1),
+        rtol=2e-9,
+        atol=2e-9,
+    )
+
+    solution.square().mean().backward()
+    head_gradients = [
+        parameter.grad
+        for parameter in decoder.preconditioner_head.parameters()
+        if parameter.requires_grad
+    ]
+    assert head_gradients
+    assert all(gradient is not None for gradient in head_gradients)
+    assert all(torch.isfinite(gradient).all() for gradient in head_gradients)
 
 
 def test_moment_chebyshev_loop_reuses_prompt_geometry_for_multiple_rhs() -> None:
@@ -584,7 +724,7 @@ def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
         prompt_subspace_refinement_steps=3,
     ).double()
     head = decoder.preconditioner_head
-    preconditioner, _ = head(equations, ridge)
+    preconditioner, head_info = head(equations, ridge)
 
     row_norm_squared = equations.square().sum(dim=-1).clamp_min(1e-12)
     normalized_rows = equations / row_norm_squared.sqrt().unsqueeze(-1)
@@ -682,6 +822,12 @@ def test_matrix_free_nystrom_equals_block_moment_ritz_formula() -> None:
         rtol=2e-8,
         atol=2e-8,
     )
+    torch.testing.assert_close(
+        head_info["effective_trace"],
+        torch.einsum("bij,bji->b", formula, normal),
+        rtol=2e-8,
+        atol=2e-8,
+    )
 
 
 def test_matrix_free_nystrom_head_is_gauge_covariant() -> None:
@@ -722,6 +868,12 @@ def test_matrix_free_nystrom_head_is_gauge_covariant() -> None:
     torch.testing.assert_close(
         rotated_info["interval_features"],
         info["interval_features"],
+        rtol=2e-9,
+        atol=2e-9,
+    )
+    torch.testing.assert_close(
+        rotated_info["effective_trace"],
+        info["effective_trace"],
         rtol=2e-9,
         atol=2e-9,
     )

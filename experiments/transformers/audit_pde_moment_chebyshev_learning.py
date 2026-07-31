@@ -102,6 +102,7 @@ def make_config(args: argparse.Namespace, design: str) -> TaskConfig:
 def make_decoder(
     args: argparse.Namespace,
     device: torch.device,
+    controller: str = "moment_chebyshev",
 ) -> ExactLoopTransformerDecoder:
     dtype = torch.float64 if args.dtype == "float64" else torch.float32
     model = ExactLoopTransformerDecoder(
@@ -109,10 +110,11 @@ def make_decoder(
         depth=args.depth,
         head_dimension=args.head_dimension,
         slots=args.slots,
-        controller="moment_chebyshev",
+        controller=controller,
         spectral_lmax_bound=args.spectral_lmax_bound,
         spectral_measure_clusters=args.spectral_clusters,
         spectral_measure_hidden_dimension=args.spectral_hidden_dimension,
+        spectral_krylov_steps=args.spectral_krylov_steps,
         moment_gram_regularization=args.gram_regularization,
         preconditioner_head_type="equivariant_matrix_free_nystrom",
         prompt_subspace_refinement_steps=args.refinements,
@@ -383,10 +385,19 @@ def method_cost(
     depth: int,
     setup_rounds: int,
     slots: int,
+    spectral_krylov_steps: int,
 ) -> tuple[int, int, int]:
     if name.startswith("identity_"):
-        solver = depth + setup_rounds * slots if name.endswith("equal_work") else depth
+        if name == "identity_pcg_equal_work":
+            solver = depth + setup_rounds * slots
+        elif name == "identity_pcg_ritz_equal_work":
+            solver = depth + (setup_rounds + spectral_krylov_steps) * slots
+        else:
+            solver = depth
         return solver, 0, solver
+    if name == "ritz_moment_chebyshev":
+        total_setup_rounds = setup_rounds + spectral_krylov_steps
+        return depth, total_setup_rounds, depth + total_setup_rounds * slots
     return depth, setup_rounds, depth + setup_rounds * slots
 
 
@@ -402,12 +413,22 @@ def evaluate(
 ) -> tuple[list[dict], dict]:
     initial = make_decoder(args, device)
     initial.load_state_dict(initial_state)
+    ritz_model = make_decoder(
+        args,
+        device,
+        controller="ritz_moment_chebyshev",
+    )
+    ritz_model.preconditioner_head.load_state_dict(
+        model.preconditioner_head.state_dict()
+    )
     model.eval()
     initial.eval()
+    ritz_model.eval()
     totals = defaultdict(lambda: defaultdict(float))
     setup_rounds = args.refinements + 1
     remaining = args.evaluation_tasks
     theory_sum = 0.0
+    ritz_theory_sum = 0.0
     theory_count = 0
     covered = 0
     fallbacks = 0
@@ -420,6 +441,10 @@ def evaluate(
         geometry = model.build_prompt_geometry(equations, ridge)
         initial_geometry = initial.build_prompt_geometry(equations, ridge)
         learned, learned_info = model.solve_with_geometry(geometry, observations)
+        ritz_prediction, ritz_info = ritz_model.solve_with_geometry(
+            geometry,
+            observations,
+        )
         initialized, _ = initial.solve_with_geometry(initial_geometry, observations)
         rhs = learned_info["rhs"]
         preconditioner = geometry.preconditioner
@@ -462,8 +487,13 @@ def evaluate(
             dtype=rhs.dtype,
         ).expand(size, -1, -1)
         equal_depth = args.depth + setup_rounds * args.slots
+        ritz_equal_depth = (
+            args.depth
+            + (setup_rounds + args.spectral_krylov_steps) * args.slots
+        )
         methods = {
             "learned_moment_chebyshev": learned,
+            "ritz_moment_chebyshev": ritz_prediction,
             "initial_moment_chebyshev": initialized,
             "oracle_interval_richardson": run_heavy_ball_state_machine(
                 hvp,
@@ -502,6 +532,12 @@ def evaluate(
                 identity,
                 equal_depth,
             )[0],
+            "identity_pcg_ritz_equal_work": run_pcg_state_machine(
+                hvp,
+                rhs,
+                identity,
+                ritz_equal_depth,
+            )[0],
         }
         final_residual = rhs - hvp(learned)
         preconditioned_residual = apply_fixed_preconditioner(
@@ -538,6 +574,18 @@ def evaluate(
         )
         theory = (weights * polynomial_residual.square()).sum(dim=-1)
         theory_sum += theory.sum().item()
+        ritz_basis = shifted_chebyshev_basis(
+            eigenvalues,
+            args.depth,
+            ritz_info["spectral_upper"],
+        )
+        ritz_residual = 1.0 - eigenvalues * torch.einsum(
+            "bkd,bd->bk",
+            ritz_basis,
+            ritz_info["moment_solution_coefficients"],
+        )
+        ritz_theory = (weights * ritz_residual.square()).sum(dim=-1)
+        ritz_theory_sum += ritz_theory.sum().item()
         theory_count += size
         covered += (
             learned_info["spectral_upper"] >= upper
@@ -597,6 +645,9 @@ def evaluate(
             chebyshev_theory.sum().item()
         )
         totals["learned_moment_chebyshev"]["predicted"] += theory.sum().item()
+        totals["ritz_moment_chebyshev"]["predicted"] += (
+            ritz_theory.sum().item()
+        )
         remaining -= size
 
     rows = []
@@ -607,6 +658,7 @@ def evaluate(
             args.depth,
             setup_rounds,
             args.slots,
+            args.spectral_krylov_steps,
         )
         rows.append(
             {
@@ -632,6 +684,7 @@ def evaluate(
         "design": design,
         "seed": seed,
         "learned_theory_h_relative": theory_sum / theory_count,
+        "ritz_theory_h_relative": ritz_theory_sum / theory_count,
         "spectral_upper_coverage_rate": covered / theory_count,
         "guard_fallback_rate": fallbacks / theory_count,
         "pcg_dominance_violation_rate": pcg_dominance_violations / theory_count,
@@ -689,6 +742,7 @@ def plot(rows: list[dict], outdir: Path) -> None:
         return
     order = [
         "learned_moment_chebyshev",
+        "ritz_moment_chebyshev",
         "learned_moment_guarded_pcg",
         "oracle_interval_richardson",
         "oracle_interval_hb",
@@ -696,6 +750,7 @@ def plot(rows: list[dict], outdir: Path) -> None:
         "same_preconditioner_pcg",
         "identity_pcg",
         "identity_pcg_equal_work",
+        "identity_pcg_ritz_equal_work",
     ]
     designs = sorted({row["design"] for row in rows})
     figure, axes = plt.subplots(
@@ -751,6 +806,7 @@ def main() -> None:
     parser.add_argument("--spectral-lmax-bound", type=float, default=4.0)
     parser.add_argument("--spectral-clusters", type=int, default=32)
     parser.add_argument("--spectral-hidden-dimension", type=int, default=32)
+    parser.add_argument("--spectral-krylov-steps", type=int, default=2)
     parser.add_argument("--gram-regularization", type=float, default=1e-5)
     parser.add_argument("--training-steps", type=int, default=800)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -777,6 +833,15 @@ def main() -> None:
         help=(
             "optional directory containing model_r{refinements}_seed{seed}.pt "
             "from the paired matrix-free HB training audit"
+        ),
+    )
+    parser.add_argument(
+        "--measure-checkpoint-dir",
+        type=Path,
+        default=None,
+        help=(
+            "optional directory of trained model_{design}_seed{seed}.pt files; "
+            "when set, skip measure-head training and rerun evaluation only"
         ),
     )
     args = parser.parse_args()
@@ -807,13 +872,26 @@ def main() -> None:
     for design in designs:
         cfg = make_config(args, design)
         for seed in parse_ints(args.seeds):
-            model, initial, run_history = train_measure_head(
-                args,
-                cfg,
-                design,
-                seed,
-                device,
-            )
+            if args.measure_checkpoint_dir is None:
+                model, initial, run_history = train_measure_head(
+                    args,
+                    cfg,
+                    design,
+                    seed,
+                    device,
+                )
+            else:
+                with torch.serialization.safe_globals([type(Path())]):
+                    checkpoint = torch.load(
+                        args.measure_checkpoint_dir
+                        / f"model_{design}_seed{seed}.pt",
+                        map_location=device,
+                        weights_only=True,
+                    )
+                model = make_decoder(args, device)
+                model.load_state_dict(checkpoint["model"])
+                initial = checkpoint["initial"]
+                run_history = []
             run_rows, run_diagnostics = evaluate(
                 args,
                 cfg,
@@ -841,16 +919,20 @@ def main() -> None:
     write_csv(outdir / "per_seed.csv", rows)
     write_csv(outdir / "aggregate.csv", aggregate_rows)
     write_csv(outdir / "diagnostics.csv", diagnostics)
-    write_csv(outdir / "training.csv", history)
+    if history:
+        write_csv(outdir / "training.csv", history)
     plot(aggregate_rows, outdir)
     summary = {
         "architecture": (
-            "The MLP predicts only prompt spectral nodes, masses, and an upper "
-            "scale. Gram coefficient construction and Clenshaw are exact."
+            "The learned-measure branch predicts prompt nodes and masses. "
+            "The routed Ritz branch learns only the probes and constructs its "
+            "measure by exact block-Krylov and trace algebra. Gram coefficient "
+            "construction and Clenshaw are exact in both branches."
         ),
         "fairness": (
             "A rank-S block setup with r refinements uses r+1 block-HVP rounds "
-            "or (r+1)S sequential scalar-HVP equivalents."
+            "or (r+1)S sequential scalar-HVP equivalents; a q-step routed "
+            "Ritz measure adds q block rounds or qS scalar equivalents."
         ),
         "claim_boundary": (
             "PCG with the same preconditioner remains the instancewise Krylov "

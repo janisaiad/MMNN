@@ -493,6 +493,138 @@ def risk_optimal_solution_chebyshev_coefficients(
     return coefficients.to(output_dtype)
 
 
+def block_krylov_energy_measure(
+    operator: HVP,
+    probes: Tensor,
+    steps: int,
+    operator_trace: Tensor,
+    spectral_upper: Tensor,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    """Build a promptwise spectral measure by exact block-Krylov algebra.
+
+    The learned head supplies only the covariant starting probes. Repeated
+    operator actions, full reorthogonalization, the small Ritz eigensolve, and
+    the trace-complement closure are fixed operations. For an isotropic
+    coefficient prior, a mode's contribution to expected energy error is
+    proportional to its eigenvalue, which fixes the returned weights without
+    spectral labels or a learned arithmetic network.
+
+    The final atom represents the orthogonal complement by its exact mean
+    eigenvalue. This is a first-moment closure; increasing 'steps' enlarges
+    the resolved Krylov subspace while preserving a fixed block-HVP schedule.
+    """
+
+    if probes.ndim != 3:
+        raise ValueError("block-Krylov probes must have shape [batch, dimension, slots]")
+    if steps <= 0:
+        raise ValueError("block-Krylov steps must be positive")
+    batch, dimension, slots = probes.shape
+    resolved_dimension = steps * slots
+    if resolved_dimension > dimension:
+        raise ValueError("block-Krylov steps times slots cannot exceed dimension")
+    if operator_trace.shape != (batch,):
+        raise ValueError("operator trace must have shape [batch]")
+    if spectral_upper.shape != (batch,):
+        raise ValueError("spectral upper endpoint must have shape [batch]")
+    if torch.any(operator_trace <= 0) or torch.any(spectral_upper <= 0):
+        raise ValueError("operator trace and spectral upper endpoint must be positive")
+
+    block = torch.linalg.qr(probes, mode="reduced").Q
+    basis_blocks = []
+    action_blocks = []
+    for block_index in range(steps):
+        action = operator(block)
+        basis_blocks.append(block)
+        action_blocks.append(action)
+        if block_index + 1 == steps:
+            continue
+        candidate = action
+        # Two deterministic reorthogonalization passes keep the compressed
+        # operator symmetric and stable at the small depths used here.
+        for _ in range(2):
+            for previous in basis_blocks:
+                overlap = torch.einsum(
+                    "bks,bkt->bst",
+                    previous,
+                    candidate,
+                )
+                candidate = candidate - torch.einsum(
+                    "bks,bst->bkt",
+                    previous,
+                    overlap,
+                )
+        block = torch.linalg.qr(candidate, mode="reduced").Q
+        # QR of a very small post-deflation residual can lose orthogonality in
+        # float32 even when the block is mathematically full rank. Reproject
+        # the normalized block, then QR once more; this changes no exact
+        # arithmetic and avoids mistaking scale loss for a new Krylov mode.
+        for previous in basis_blocks:
+            overlap = torch.einsum(
+                "bks,bkt->bst",
+                previous,
+                block,
+            )
+            block = block - torch.einsum(
+                "bks,bst->bkt",
+                previous,
+                overlap,
+            )
+        block = torch.linalg.qr(block, mode="reduced").Q
+
+    basis = torch.cat(basis_blocks, dim=-1)
+    actions = torch.cat(action_blocks, dim=-1)
+    projected = torch.einsum("bki,bkj->bij", basis, actions)
+    projected = 0.5 * (projected + projected.transpose(-1, -2))
+    ritz_nodes = torch.linalg.eigvalsh(projected)
+
+    dtype_epsilon = torch.finfo(ritz_nodes.dtype).eps
+    tolerance = (
+        1024.0
+        * dtype_epsilon
+        * torch.maximum(
+            spectral_upper.abs(),
+            ritz_nodes[:, -1].abs(),
+        ).clamp_min(1.0)
+    )
+    if torch.any(ritz_nodes[:, -1] > spectral_upper + tolerance):
+        raise ValueError("certified upper endpoint does not cover the Ritz spectrum")
+    ritz_nodes = torch.minimum(
+        ritz_nodes.clamp_min(torch.finfo(ritz_nodes.dtype).tiny),
+        spectral_upper[:, None],
+    )
+
+    resolved_trace = ritz_nodes.sum(dim=-1)
+    trace_tolerance = (
+        1024.0
+        * dtype_epsilon
+        * torch.maximum(operator_trace.abs(), resolved_trace.abs()).clamp_min(1.0)
+    )
+    if torch.any(resolved_trace > operator_trace + trace_tolerance):
+        raise ValueError("operator trace does not cover the resolved Ritz trace")
+    complement_trace = (operator_trace - resolved_trace).clamp_min(0.0)
+    complement_dimension = dimension - resolved_dimension
+    multiplicities = torch.ones_like(ritz_nodes)
+    nodes = ritz_nodes
+    if complement_dimension:
+        complement_node = (
+            complement_trace / complement_dimension
+        ).clamp_min(torch.finfo(ritz_nodes.dtype).tiny)
+        nodes = torch.cat([ritz_nodes, complement_node[:, None]], dim=-1)
+        multiplicities = torch.cat(
+            [
+                multiplicities,
+                ritz_nodes.new_full((batch, 1), float(complement_dimension)),
+            ],
+            dim=-1,
+        )
+    energy_weights = multiplicities * nodes
+    energy_weights = energy_weights / energy_weights.sum(
+        dim=-1,
+        keepdim=True,
+    ).clamp_min(torch.finfo(energy_weights.dtype).tiny)
+    return nodes, energy_weights, projected, basis, complement_trace
+
+
 def run_precomputed_moment_chebyshev_state_machine(
     hvp: HVP,
     rhs: Tensor,
