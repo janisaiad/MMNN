@@ -20,13 +20,23 @@ import torch
 
 try:
     from .structured_one_head_heavyball import (
+        EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
     )
+    from .first_principles_decoder_cells import (
+        run_heavy_ball_state_machine,
+        run_pcg_state_machine,
+    )
 except ImportError:
     from structured_one_head_heavyball import (
+        EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
+    )
+    from first_principles_decoder_cells import (
+        run_heavy_ball_state_machine,
+        run_pcg_state_machine,
     )
 
 
@@ -106,6 +116,13 @@ def run(args) -> dict:
                 generator=generator,
                 device=device,
             )
+            observations = torch.randn(
+                batch_size,
+                equation_count,
+                generator=generator,
+                device=device,
+            )
+            token_rhs = torch.einsum("bmk,bm->bk", equations, observations)
             exact_head = EquivariantRitzSoftmaxPreconditioner(
                 dimension,
                 args.head_dimension,
@@ -124,6 +141,59 @@ def run(args) -> dict:
                 )
                 for refinement in parse_ints(args.refinement_steps)
             }
+            matrix_free_heads = {
+                f"matrix_free_nystrom_r{refinement}": (
+                    EquivariantMatrixFreeNystromPreconditioner(
+                        dimension,
+                        args.head_dimension,
+                        slots,
+                        args.spectral_lmax_bound,
+                        refinement,
+                    ).to(device)
+                )
+                for refinement in parse_ints(args.matrix_free_refinement_steps)
+            }
+
+            def token_hvp(vector):
+                scores = torch.einsum("bmk,bk->bm", equations, vector)
+                return (
+                    torch.einsum("bmk,bm->bk", equations, scores)
+                    + args.ridge * vector
+                )
+
+            def dense_token_cholesky_solve():
+                token_normal = (
+                    equations.transpose(-1, -2) @ equations
+                    + args.ridge * identity
+                )
+                right_side = torch.einsum(
+                    "bmk,bm->bk",
+                    equations,
+                    observations,
+                )
+                return torch.cholesky_solve(
+                    right_side.unsqueeze(-1),
+                    torch.linalg.cholesky(token_normal),
+                )
+
+            def matrix_free_hb(head):
+                preconditioner, _ = head(equations, args.ridge)
+                return run_heavy_ball_state_machine(
+                    token_hvp,
+                    token_rhs,
+                    preconditioner,
+                    args.solver_depth,
+                    args.hb_step,
+                    args.hb_momentum,
+                )[0]
+
+            def identity_pcg():
+                return run_pcg_state_machine(
+                    token_hvp,
+                    token_rhs,
+                    identity,
+                    args.solver_depth,
+                )[0]
 
             functions = {
                 "exact_spectrum_head": lambda: exact_head(equations, normal),
@@ -144,6 +214,18 @@ def run(args) -> dict:
                 **{
                     name: (lambda head=head: head(equations, normal))
                     for name, head in heads.items()
+                },
+                "dense_token_cholesky_solve": dense_token_cholesky_solve,
+                "matrix_free_identity_pcg": identity_pcg,
+                **{
+                    name: (lambda head=head: head(equations, args.ridge))
+                    for name, head in matrix_free_heads.items()
+                },
+                **{
+                    f"{name}_plus_hb{args.solver_depth}": (
+                        lambda head=head: matrix_free_hb(head)
+                    )
+                    for name, head in matrix_free_heads.items()
                 },
             }
             for method, function in functions.items():
@@ -186,6 +268,10 @@ def main() -> None:
     parser.add_argument("--head-dimension", type=int, default=32)
     parser.add_argument("--spectral-lmax-bound", type=float, default=2.5)
     parser.add_argument("--refinement-steps", default="2,8,12,24")
+    parser.add_argument("--matrix-free-refinement-steps", default="4,8")
+    parser.add_argument("--solver-depth", type=int, default=10)
+    parser.add_argument("--hb-step", type=float, default=0.5)
+    parser.add_argument("--hb-momentum", type=float, default=0.1)
     parser.add_argument("--ridge", type=float, default=1e-2)
     parser.add_argument("--repeats", type=int, default=50)
     parser.add_argument("--seed", type=int, default=91000)

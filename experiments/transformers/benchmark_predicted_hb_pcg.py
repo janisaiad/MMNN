@@ -116,7 +116,6 @@ def run(args) -> dict:
             device=device,
             dtype=model.A0.dtype,
         )
-    step, momentum = model.loop_decoder.heavy_ball_coefficients()
     rows = []
     for batch_size in parse_ints(args.batch_sizes):
         set_seed(args.seed + batch_size)
@@ -139,18 +138,49 @@ def run(args) -> dict:
             model.lam_z,
             ridge_metric,
         )
-        preconditioner, preconditioner_info = model.loop_decoder.preconditioner_head(
-            equations,
-            normal_matrix,
-        )
-        predicted_spectrum = preconditioner_info[
-            "effective_eigenvalues_predicted"
-        ]
+        def build_head():
+            if model.loop_decoder.matrix_free_preconditioner:
+                return model.loop_decoder.preconditioner_head(
+                    equations,
+                    model.lam_z,
+                    ridge_metric,
+                )
+            return model.loop_decoder.preconditioner_head(
+                equations,
+                normal_matrix,
+            )
+
+        preconditioner, preconditioner_info = build_head()
+        if model.loop_decoder.adaptive_heavy_ball:
+            features = preconditioner_info["interval_features"]
+            spectral_min, spectral_max = model.loop_decoder.interval_head(features)
+            spectral_min = (
+                spectral_min / model.loop_decoder.interval_lower_calibration
+            )
+            spectral_max = (
+                spectral_max * model.loop_decoder.interval_upper_calibration
+            )
+            sqrt_min, sqrt_max = torch.sqrt(spectral_min), torch.sqrt(spectral_max)
+            step = 4.0 / (sqrt_max + sqrt_min).square()
+            momentum = (
+                (sqrt_max - sqrt_min) / (sqrt_max + sqrt_min)
+            ).square()
+        else:
+            step, momentum = model.loop_decoder.heavy_ball_coefficients()
+            predicted_spectrum = preconditioner_info.get(
+                "effective_eigenvalues_predicted"
+            )
+            if predicted_spectrum is None:
+                raise ValueError(
+                    "Chebyshev timing requires an interval or exact spectrum"
+                )
+            spectral_min = predicted_spectrum.amin(dim=-1)
+            spectral_max = predicted_spectrum.amax(dim=-1)
         chebyshev_steps, chebyshev_momenta = chebyshev_coefficient_schedule(
             rhs,
             args.hb_depth,
-            predicted_spectrum.amin(dim=-1),
-            predicted_spectrum.amax(dim=-1),
+            spectral_min,
+            spectral_max,
         )
 
         def hvp(vector):
@@ -164,10 +194,27 @@ def run(args) -> dict:
             return moment + model.lam_z * ridge_action
 
         def head():
-            return model.loop_decoder.preconditioner_head(
+            candidate, candidate_info = build_head()
+            if model.loop_decoder.adaptive_heavy_ball:
+                return (
+                    candidate,
+                    model.loop_decoder.interval_head(
+                        candidate_info["interval_features"]
+                    ),
+                )
+            return candidate
+
+        def dense_token_solve():
+            candidate_normal, candidate_rhs = normal_equations(
                 equations,
-                normal_matrix,
-            )[0]
+                observations,
+                model.lam_z,
+                ridge_metric,
+            )
+            return torch.linalg.solve(
+                candidate_normal,
+                candidate_rhs.unsqueeze(-1),
+            )
 
         def heavy_ball():
             return run_heavy_ball_state_machine(
@@ -200,6 +247,11 @@ def run(args) -> dict:
         hb_timing = benchmark(heavy_ball, args.repeats, device)
         chebyshev_timing = benchmark(chebyshev, args.repeats, device)
         pcg_timing = benchmark(pcg, args.repeats, device)
+        dense_token_timing = benchmark(
+            dense_token_solve,
+            args.repeats,
+            device,
+        )
         rows.append(
             {
                 "batch_size": batch_size,
@@ -209,6 +261,7 @@ def run(args) -> dict:
                 "hb_median_ms": hb_timing["median_ms"],
                 "chebyshev_median_ms": chebyshev_timing["median_ms"],
                 "pcg_median_ms": pcg_timing["median_ms"],
+                "dense_token_solve_median_ms": dense_token_timing["median_ms"],
                 "hb_over_pcg": (
                     hb_timing["median_ms"] / pcg_timing["median_ms"]
                 ),

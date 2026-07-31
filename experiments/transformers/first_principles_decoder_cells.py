@@ -53,6 +53,16 @@ def apply_fixed_preconditioner(preconditioner: Preconditioner, vector: Tensor) -
     return torch.einsum("bkl,bl->bk", preconditioner, vector)
 
 
+def materialize_preconditioner(preconditioner: Preconditioner) -> Tensor:
+    """Materialize only for diagnostics or dense-baseline comparisons."""
+
+    if isinstance(preconditioner, Tensor):
+        return preconditioner
+    if hasattr(preconditioner, "materialize"):
+        return preconditioner.materialize()
+    raise TypeError("the preconditioner has no dense materialization")
+
+
 def batch_inner(left: Tensor, right: Tensor) -> Tensor:
     """Fixed batchwise scalar-reduction primitive."""
 

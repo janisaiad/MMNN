@@ -17,7 +17,7 @@ import json
 import math
 import random
 import time
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -589,6 +589,302 @@ class EquivariantPromptNystromPreconditioner(nn.Module):
                 self.spectral_lmax_bound,
             ),
             "uses_full_eigendecomposition": normal_matrix.new_zeros(
+                (batch,),
+                dtype=torch.bool,
+            ),
+        }
+        return preconditioner, info
+
+
+@dataclass(frozen=True)
+class LowRankSPDPreconditioner:
+    """Matrix-free ``scale^{-1}(I + U D U^T)`` representation."""
+
+    scale: Tensor
+    directions: Tensor
+    slot_correction: Tensor
+
+    def apply(self, vector: Tensor) -> Tensor:
+        slot_coordinates = torch.einsum(
+            "bks,bk->bs",
+            self.directions,
+            vector,
+        )
+        routed = torch.einsum(
+            "bst,bt->bs",
+            self.slot_correction,
+            slot_coordinates,
+        )
+        correction = torch.einsum(
+            "bks,bs->bk",
+            self.directions,
+            routed,
+        )
+        return (vector + correction) / self.scale[:, None]
+
+    def materialize(self) -> Tensor:
+        batch, dimension, _ = self.directions.shape
+        identity = torch.eye(
+            dimension,
+            device=self.directions.device,
+            dtype=self.directions.dtype,
+        ).expand(batch, -1, -1)
+        correction = torch.einsum(
+            "bks,bst,blt->bkl",
+            self.directions,
+            self.slot_correction,
+            self.directions,
+        )
+        return (identity + correction) / self.scale[:, None, None]
+
+
+class EquivariantMatrixFreeNystromPreconditioner(nn.Module):
+    """One softmax head with matrix-free high-mode Ritz deflation.
+
+    The head never forms ``H`` or ``B``.  Invariant softmax scores select
+    covariant combinations of weak rows, fixed block power steps recover a
+    high-eigenvalue subspace, and only its ``S x S`` Ritz matrix is
+    diagonalized.  Capping all inverse multipliers at one gives ``0 < B <=
+    scale^{-1} I`` and hence a deterministic lmax certificate from
+    ``lambda_max(H) <= trace(H)``.
+    """
+
+    def __init__(
+        self,
+        dimension: int,
+        head_dimension: int,
+        slots: int,
+        spectral_lmax_bound: float = 4.0,
+        refinement_steps: int = 4,
+    ) -> None:
+        super().__init__()
+        if slots <= 0 or slots >= dimension:
+            raise ValueError(
+                "matrix-free Nystrom slots must lie in [1, dimension)"
+            )
+        if head_dimension <= 0:
+            raise ValueError("head_dimension must be positive")
+        if spectral_lmax_bound <= 0:
+            raise ValueError("spectral_lmax_bound must be positive")
+        if refinement_steps < 0:
+            raise ValueError("refinement_steps must be nonnegative")
+        self.dimension = dimension
+        self.head_dimension = head_dimension
+        self.slots = slots
+        self.spectral_lmax_bound = spectral_lmax_bound
+        self.refinement_steps = refinement_steps
+        self.key = nn.Linear(4, head_dimension, bias=False)
+        self.slot_queries = nn.Parameter(torch.zeros(slots, head_dimension))
+        self._initialize_high_row_geometry()
+
+    def _initialize_high_row_geometry(self) -> None:
+        with torch.no_grad():
+            self.key.weight.zero_()
+            active = min(4, self.head_dimension)
+            self.key.weight[:active, :active] = torch.eye(
+                active,
+                dtype=self.key.weight.dtype,
+                device=self.key.weight.device,
+            )
+            positions = torch.linspace(
+                0.75,
+                2.5,
+                self.slots,
+                dtype=self.slot_queries.dtype,
+                device=self.slot_queries.device,
+            )
+            self.slot_queries[:, 0] = positions
+            if self.head_dimension >= 2:
+                self.slot_queries[:, 1] = 0.1 * torch.linspace(
+                    -1.0,
+                    1.0,
+                    self.slots,
+                    dtype=self.slot_queries.dtype,
+                    device=self.slot_queries.device,
+                )
+            if self.head_dimension >= 3:
+                self.slot_queries[:, 2] = 0.05 * torch.cos(
+                    torch.linspace(
+                        0.0,
+                        math.pi,
+                        self.slots,
+                        dtype=self.slot_queries.dtype,
+                        device=self.slot_queries.device,
+                    )
+                )
+
+    @staticmethod
+    def _standardize(values: Tensor) -> Tensor:
+        centered = values - values.mean(dim=-1, keepdim=True)
+        return centered / centered.square().mean(
+            dim=-1,
+            keepdim=True,
+        ).sqrt().clamp_min(1e-6)
+
+    def forward(
+        self,
+        equations: Tensor,
+        ridge: float,
+        ridge_metric: Tensor | None = None,
+    ) -> Tuple[LowRankSPDPreconditioner, Dict[str, Tensor]]:
+        batch, equation_count, dimension = equations.shape
+        if equation_count == 0:
+            raise ValueError(
+                "the matrix-free Nystrom head requires weak-equation tokens"
+            )
+        row_norm_squared = equations.square().sum(dim=-1).clamp_min(1e-12)
+        normalized_rows = equations / row_norm_squared.sqrt().unsqueeze(-1)
+        log_norm = 0.5 * torch.log(row_norm_squared)
+        standardized_norm = self._standardize(log_norm)
+        features = torch.stack(
+            [
+                standardized_norm,
+                self._standardize(standardized_norm.square()),
+                self._standardize(standardized_norm.pow(3)),
+                torch.ones_like(standardized_norm),
+            ],
+            dim=-1,
+        )
+        keys = self.key(features)
+        scores = torch.einsum("sd,bmd->bsm", self.slot_queries, keys)
+        attention = torch.softmax(
+            scores / math.sqrt(self.head_dimension),
+            dim=-1,
+        )
+        raw_directions = torch.einsum(
+            "bsm,bmk->bks",
+            attention,
+            normalized_rows,
+        )
+        directions = torch.linalg.qr(raw_directions, mode="reduced").Q
+
+        if ridge_metric is None:
+            ridge_trace = equations.new_full((batch,), float(dimension))
+        elif ridge_metric.ndim == 2:
+            ridge_trace = torch.trace(ridge_metric).expand(batch)
+        else:
+            ridge_trace = torch.diagonal(
+                ridge_metric,
+                dim1=-2,
+                dim2=-1,
+            ).sum(dim=-1)
+        normal_trace = row_norm_squared.sum(dim=-1) + ridge * ridge_trace
+        scale = (normal_trace / self.spectral_lmax_bound).clamp_min(1e-10)
+
+        def normalized_action(vectors: Tensor) -> Tensor:
+            token_scores = torch.einsum(
+                "bmk,bks->bms",
+                equations,
+                vectors,
+            )
+            moment = torch.einsum(
+                "bmk,bms->bks",
+                equations,
+                token_scores,
+            )
+            if ridge_metric is None:
+                ridge_action = vectors
+            elif ridge_metric.ndim == 2:
+                ridge_action = torch.einsum(
+                    "kl,bls->bks",
+                    ridge_metric,
+                    vectors,
+                )
+            else:
+                ridge_action = torch.einsum(
+                    "bkl,bls->bks",
+                    ridge_metric,
+                    vectors,
+                )
+            return (moment + ridge * ridge_action) / scale[:, None, None]
+
+        # Block power iteration targets high modes, which can be deflated by
+        # multipliers no larger than one while preserving the global lmax
+        # certificate.  Every operation is a prompt HVP or S-dimensional QR.
+        for _ in range(self.refinement_steps):
+            directions = torch.linalg.qr(
+                normalized_action(directions),
+                mode="reduced",
+            ).Q
+        operator_directions = normalized_action(directions)
+        projected_operator = torch.einsum(
+            "bks,bkt->bst",
+            directions,
+            operator_directions,
+        )
+        projected_operator = 0.5 * (
+            projected_operator + projected_operator.transpose(-1, -2)
+        )
+        projected_eigenvalues, projected_eigenvectors = torch.linalg.eigh(
+            projected_operator
+        )
+        projected_eigenvalues = projected_eigenvalues.clamp_min(1e-10)
+        target = projected_eigenvalues[:, :1]
+        multipliers = (target / projected_eigenvalues).clamp(max=1.0)
+        slot_correction = torch.einsum(
+            "bsi,bi,bti->bst",
+            projected_eigenvectors,
+            multipliers - 1.0,
+            projected_eigenvectors,
+        )
+        preconditioner = LowRankSPDPreconditioner(
+            scale=scale,
+            directions=directions,
+            slot_correction=slot_correction,
+        )
+        residual = operator_directions - torch.einsum(
+            "bks,bst->bkt",
+            directions,
+            projected_operator,
+        )
+        residual_fraction = torch.linalg.matrix_norm(
+            residual,
+            ord="fro",
+            dim=(-2, -1),
+        ) / torch.linalg.matrix_norm(
+            operator_directions,
+            ord="fro",
+            dim=(-2, -1),
+        ).clamp_min(1e-12)
+        norm_spread = log_norm.std(dim=-1, unbiased=False)
+        interval_features = torch.stack(
+            [
+                torch.log(projected_eigenvalues[:, 0]),
+                torch.log(projected_eigenvalues[:, -1]),
+                torch.log(target[:, 0]),
+                torch.log1p(residual_fraction),
+                torch.log1p(norm_spread),
+                equations.new_full(
+                    (batch,),
+                    math.log(self.spectral_lmax_bound),
+                ),
+                equations.new_full(
+                    (batch,),
+                    math.log1p(equation_count),
+                ),
+            ],
+            dim=-1,
+        )
+        info = {
+            "attention": attention,
+            "directions": directions,
+            "slot_correction": slot_correction,
+            "slot_multipliers": multipliers,
+            "normal_scale": scale,
+            "normal_trace": normal_trace,
+            "projected_operator": projected_operator,
+            "projected_eigenvalues": projected_eigenvalues,
+            "subspace_residual_fraction": residual_fraction,
+            "interval_features": interval_features,
+            "certified_effective_lmax": equations.new_full(
+                (batch,),
+                self.spectral_lmax_bound,
+            ),
+            "uses_full_eigendecomposition": equations.new_zeros(
+                (batch,),
+                dtype=torch.bool,
+            ),
+            "matrix_free": equations.new_ones(
                 (batch,),
                 dtype=torch.bool,
             ),

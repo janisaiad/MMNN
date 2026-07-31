@@ -25,6 +25,8 @@ try:
         symmetric_effective_operator,
     )
     from .first_principles_decoder_cells import (
+        apply_fixed_preconditioner,
+        materialize_preconditioner,
         run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
@@ -43,6 +45,8 @@ except ImportError:
         symmetric_effective_operator,
     )
     from first_principles_decoder_cells import (
+        apply_fixed_preconditioner,
+        materialize_preconditioner,
         run_chebyshev_state_machine,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
@@ -134,10 +138,22 @@ def solve_all(
     normal_matrix, rhs = normal_equations(
         equations, observations, model.lam_z, ridge_metric
     )
-    preconditioner, preconditioner_info = model.loop_decoder.preconditioner_head(
-        equations,
-        normal_matrix,
-    )
+    if model.loop_decoder.matrix_free_preconditioner:
+        preconditioner, preconditioner_info = (
+            model.loop_decoder.preconditioner_head(
+                equations,
+                model.lam_z,
+                ridge_metric,
+            )
+        )
+    else:
+        preconditioner, preconditioner_info = (
+            model.loop_decoder.preconditioner_head(
+                equations,
+                normal_matrix,
+            )
+        )
+    dense_preconditioner = materialize_preconditioner(preconditioner)
 
     def hvp(vector: Tensor) -> Tensor:
         scores = torch.einsum("bmk,bk->bm", equations, vector)
@@ -149,7 +165,7 @@ def solve_all(
         )
         return moment + model.lam_z * ridge_action
 
-    effective = symmetric_effective_operator(preconditioner, normal_matrix)
+    effective = symmetric_effective_operator(dense_preconditioner, normal_matrix)
     if model.loop_decoder.adaptive_heavy_ball:
         features = preconditioner_info.get("interval_features")
         if features is None:
@@ -205,10 +221,11 @@ def solve_all(
             predicted_spectrum.amax(dim=-1),
         )[0]
     hb_final_residual = rhs - hvp(solutions["learned_hb"])
-    preconditioned_final_residual = torch.einsum(
-        "bij,bj->bi", preconditioner, hb_final_residual
+    preconditioned_final_residual = apply_fixed_preconditioner(
+        preconditioner,
+        hb_final_residual,
     )
-    preconditioned_rhs = torch.einsum("bij,bj->bi", preconditioner, rhs)
+    preconditioned_rhs = apply_fixed_preconditioner(preconditioner, rhs)
     residual_ratio = torch.einsum(
         "bi,bi->b", hb_final_residual, preconditioned_final_residual
     ) / torch.einsum("bi,bi->b", rhs, preconditioned_rhs).clamp_min(1e-30)
@@ -230,8 +247,13 @@ def evaluate(args) -> Dict:
     device = torch.device(args.device if args.device == "cpu" or torch.cuda.is_available() else "cpu")
     checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=True)
     saved = checkpoint["args"]
-    if saved["solver"] != "primal_loop_heavy_ball":
-        raise ValueError("the current cross-evaluator expects a trained primal_loop_heavy_ball checkpoint")
+    if saved["solver"] not in {
+        "primal_loop_heavy_ball",
+        "primal_loop_certified_hb_pcg",
+    }:
+        raise ValueError(
+            "the cross-evaluator expects an HB or certified HB-PCG checkpoint"
+        )
     set_seed(saved["seed"])
     true_family = make_true_family(
         saved["d"],

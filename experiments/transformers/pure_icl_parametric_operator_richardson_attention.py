@@ -1227,6 +1227,7 @@ def build_parser() -> argparse.ArgumentParser:
             "coordinate_ritz",
             "equivariant_ritz_softmax",
             "equivariant_prompt_nystrom",
+            "equivariant_matrix_free_nystrom",
         ],
         default="coordinate_ritz",
     )

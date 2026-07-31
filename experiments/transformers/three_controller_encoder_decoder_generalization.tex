@@ -654,7 +654,75 @@ and Frobenius norm, projected endpoints, certified upper bound, subspace
 residual, and context length) may feed an interval MLP.  The MLP then predicts
 only $(\widehat\mu,\widehat L)$; the HB or Chebyshev coefficients remain exact
 analytic functions of these scalars.  Stability still requires calibrated
-coverage or the certified HB--PCG fallback.
+coverage or the residual-guarded HB--PCG fallback.
+
+\begin{proposition}[certified matrix-free high-mode deflation]
+\label{prop:matrix-free-prompt-head}
+Keep the assumptions of Proposition~\ref{prop:prompt-nystrom-head}, but never
+form $H$.  Compute $Hv=G^\top(Gv)+\lambda Mv$, set
+$s_H=\operatorname{tr}(H)/\overline L$, and obtain
+\[
+ U=\operatorname{orth}\!\left[
+ \left(\frac{H}{\operatorname{tr}H}\right)^rG^\top W_\theta^\top
+ \right],
+ \qquad
+ C=U^\top\frac{H}{s_H}U
+   =V_C\operatorname{diag}(c_i)V_C^\top.
+\]
+For $c_\star=\min_i c_i$, let
+\[
+ d_i=\min\{1,c_\star/c_i\},
+ \quad
+ D=V_C\operatorname{diag}(d_i-1)V_C^\top,
+ \quad
+ B_\theta v=\frac1{s_H}\left[v+UDU^\top v\right].
+\]
+Then $B_\theta$ is SPD, orthogonally covariant and permutation invariant in
+the weak tokens.  Moreover
+\[
+ 0\prec B_\theta\preceq s_H^{-1}I,
+ \qquad
+ \lambda_{\max}(B_\theta^{1/2}HB_\theta^{1/2})
+ \leq\overline L.
+\]
+Neither $H$ nor $B_\theta$ is materialized.  With dense weak tokens, head
+construction costs $O((r+1)MKS+MKd_h+KS^2+S^3)$ and stores
+$O(MK+KS+S^2)$; every subsequent application costs $O(KS)$ in addition to
+the matrix-free normal HVP.
+\end{proposition}
+\begin{proof}
+All attention features are scalar row invariants, whereas the routed values
+transform as $G^\top W^\top\mapsto Q^\top G^\top W^\top$.  HVPs, QR and the
+projected spectral function therefore give the covariance claim.  Since
+$c_i>0$ and $d_i\in(0,1]$, the low-rank operator in brackets has eigenvalues
+$d_i$ on $\operatorname{span}U$ and one on its complement.  Thus it lies in
+$(0,I]$.  Finally $H\preceq\operatorname{tr}(H)I=s_H\overline L I$ and
+$B_\theta\preceq s_H^{-1}I$ imply
+\[
+ \lambda_{\max}(B_\theta^{1/2}HB_\theta^{1/2})
+ =\lambda_{\max}(H^{1/2}B_\theta H^{1/2})
+ \leq s_H^{-1}\lambda_{\max}(H)\leq\overline L.
+\]
+\end{proof}
+
+This construction deliberately deflates high modes rather than trying to
+invert low modes: block power iteration finds the former without divisions,
+and multipliers below one preserve the certificate.  The price is that a
+global HB step based only on $\overline L$ can be conservative.  The interval
+MLP therefore receives only matrix-free invariants of $C$, its Ritz residual,
+row-norm dispersion and context length.  Exact endpoints may supervise this
+MLP during pretraining but are absent at inference.  A residual guard routes
+the rare interval miss to explicit PCG.  More precisely, if
+$\eta=r^\top B_\theta r/(b^\top B_\theta b)$ and the effective spectrum is
+contained in $[\mu,L_B]$, then
+\[
+ \frac{\lVert e\rVert_H^2}{\lVert x^\star\rVert_H^2}
+ \leq \frac{L_B}{\mu}\eta.
+\]
+Thus the observed residual alone is not an a priori energy-error certificate
+without a certified positive lower endpoint.  The deterministic guarantee of
+the matrix-free head is the upper endpoint; the fallback is a robust routing
+rule unless such a lower certificate is supplied.
 
 This finite statement already closes the exact risk in
 Theorem~\ref{thm:joint-polynomial-risk}.  A particularly simple scalable

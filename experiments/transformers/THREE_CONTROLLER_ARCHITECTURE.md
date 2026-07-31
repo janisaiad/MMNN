@@ -23,7 +23,7 @@ donne l'interprétation tokenique équivalente.
 | Heavy-Ball | deux scalaires stables, ou un intervalle prédit | deux vecteurs | non | architecture principale |
 | Chebyshev | spectre exact de la tête, ou \([\widehat\mu,\widehat L]\) via MLP | deux vecteurs + scalaires | récurrence fixe | meilleur polynôme non adaptatif |
 | PCG | rien | cinq vecteurs/scalaires | quotients exacts | plafond numérique par HVP |
-| HB certifié → PCG | seuil résiduel fixe | état HB, PCG seulement en queue | quotients au fallback | décodeur robuste final |
+| HB avec garde → PCG | seuil résiduel fixe | état HB, PCG seulement en queue | quotients au fallback | décodeur robuste final |
 
 La récurrence Chebyshev est hardcodée. Le MLP prédit seulement un log-centre
 et une log-largeur ; il n'effectue ni multiplication ni division. Une loss
@@ -67,7 +67,7 @@ mesuré séparément. Chebyshev ne remplace HB que s'il réduit l'écart de mani
 robuste avec une couverture spectrale fiable. Richardson reste la baseline
 \(\beta=0\).
 
-Cette règle est réalisée directement par le contrôleur
+Cette règle est réalisée directement par le contrôleur, historiquement nommé
 `certified_hb_pcg`. Après les \(L\) blocs HB, il calcule
 \[
 \eta_L=\frac{r_L^\top B_\theta r_L}{c^\top B_\theta c}.
@@ -76,6 +76,13 @@ Si \(\eta_L\leq10^{-8}\), la sortie HB est conservée. Sinon, le même PCG
 exact et le même préconditionneur sont exécutés uniquement sur les indices
 fautifs. Le routage est un masque déterministe : aucun réseau ne choisit le
 solveur.
+
+Le nom ne doit pas être surinterprété : \(\eta_L\) certifie un résidu
+préconditionné observable. Si \(\mu\leq\lambda_{\min}(B_\theta H)\) et
+\(\lambda_{\max}(B_\theta H)\leq L_B\), alors seulement on obtient la borne
+relative \(\lVert e_L\rVert_H^2/\lVert z^\star\rVert_H^2
+\leq (L_B/\mu)\eta_L\). Sans borne inférieure certifiée, le masque est une
+garde empirique robuste, pas un certificat a priori de l'erreur solution.
 
 ## Protocole sans explosion combinatoire
 
@@ -226,14 +233,14 @@ donc de la jauge de régularisation, pas du décodeur.
 Avec cet encodeur gelé, une tête softmax, six slots et 16 HVP, l'audit commun
 donne :
 
-| Régime | HB | HB certifié → PCG | PCG | taux fallback |
+| Régime | HB | HB avec garde → PCG | PCG | taux fallback |
 |---|---:|---:|---:|---:|
 | \(z_{\rm scale}=0.5\), 4096 tâches | \(9.2078\cdot10^{-10}\) | \(9.2078\cdot10^{-10}\) | \(9.2064\cdot10^{-10}\) | 0 % |
 | \(z_{\rm scale}=1\), 8192 tâches | \(2.2989\cdot10^{-9}\) | \(1.5906\cdot10^{-9}\) | \(1.5893\cdot10^{-9}\) | 0.171 % |
 
 Au nominal, HB pur satisfait directement le critère quasi-PCG. En OOD, les
 médianes et quantiles 99 % de HB restent au niveau de PCG, mais quelques
-opérateurs très sensibles rendent la moyenne HB pure non fiable. Le certificat
+opérateurs très sensibles rendent la moyenne HB pure non fiable. La garde
 élimine cette queue pour un écart moyen final de 0.079 % à PCG. Cependant, le
 fallback compacté naïvement avec `nonzero` impose une synchronisation GPU : la
 cellule hybride mesurée prend 2.85 ms au nominal et 3.59 ms en OOD, contre
@@ -496,67 +503,132 @@ globale, **pas** un avantage de complexité contre Cholesky. Un gain face au
 solveur direct exigera la version scalable qui approxime seulement le sous-
 espace lent sans eigendecomposition complète.
 
-## Audit de la tête scalable sans spectre complet
+## Audit des têtes scalables sans spectre complet
 
-La variante **equivariant_prompt_nystrom** réalise cette approximation avec
-une seule tête softmax sur les lignes faibles (g_i). Les scores ne voient que
-des invariants (norme et quotient de Rayleigh); les valeurs sont exactement
-(g_i/|g_i|). Si (Gmapsto GQ), les poids restent identiques et les
-directions routées vérifient (Ymapsto Q^	op Y). Le reste est hardcodé :
+La variante dense **equivariant_prompt_nystrom** réalise une première
+approximation avec une seule tête softmax sur les lignes faibles \(g_i\). Les
+scores ne voient que des invariants (norme et quotient de Rayleigh) ; les
+valeurs sont exactement \(g_i/\lVert g_i\rVert\). Si \(G\mapsto GQ\), les
+poids restent identiques et les directions routées vérifient
+\(Y\mapsto Q^\top Y\). Le reste est hardcodé :
 
 \[
 U=\operatorname{orth}\left[
 \left(I-\frac{H}{\operatorname{tr}H}\right)^rY
 \right],\qquad
-C=U^	op\frac{H}{s_H}U,
+C=U^\top\frac{H}{s_H}U,
 \]
 
 \[
-\widetilde B=I+U(C^{-1}-I)U^	op,qquad
+\widetilde B=I+U(C^{-1}-I)U^\top,\qquad
 B=\frac{\widetilde B}{s_H\tau}.
 \]
 
-Seul (C\in\mathbb R^{S\times S}) est diagonalisé. Le scalaire invariant
-(	au) est construit depuis la norme de Frobenius de l'opérateur effectif,
-ce qui certifie exactement (lambda_{max}(BH)leqar L). Les produits
-denses intermédiaires ont été développés en mises à jour low-rank; une fois
-(H) disponible, le coût est
-(O(MKd_h+rK^2S+KS^2+S^3)).
+Seul \(C\in\mathbb R^{S\times S}\) est diagonalisé. Le scalaire invariant
+\(\tau\) est construit depuis la norme de Frobenius de l'opérateur effectif,
+ce qui certifie \(\lambda_{\max}(BH)\leq\bar L\). Une fois \(H\) disponible,
+le coût est \(O(MKd_h+rK^2S+KS^2+S^3)\).
 
 Un MLP optionnel reçoit sept invariants de prompt et prédit seulement
-((\widehat\mu,\widehat L)). Les coefficients HB ou Chebyshev sont ensuite
-calculés par les formules exactes. Sur le seed 0, (K=8,S=6), avec HB-10 :
+\((\widehat\mu,\widehat L)\). Les coefficients HB ou Chebyshev sont ensuite
+calculés par les formules exactes. Sur le seed 0, \(K=8,S=6\), avec HB-10 :
 
-| raffinements (r) | (kappa(BH)) | HB oracle | Chebyshev oracle | PCG-4 |
+| raffinements \(r\) | \(\kappa(BH)\) | HB oracle | Chebyshev oracle | PCG-4 |
 |---:|---:|---:|---:|---:|
-| 2 | 14.14 | (1.56,10^{-3}) | (4.10,10^{-4}) | (1.59,10^{-3}) |
-| 8 | 8.69 | (2.83,10^{-4}) | (8.40,10^{-5}) | (2.66,10^{-4}) |
-| 12 | 5.44 | (4.16,10^{-5}) | (1.32,10^{-5}) | (3.86,10^{-6}) |
-| 24 | 2.61 | (2.53,10^{-6}) | (9.09,10^{-7}) | (5.59,10^{-12}) |
+| 2 | 14.14 | \(1.56\,10^{-3}\) | \(4.10\,10^{-4}\) | \(1.59\,10^{-3}\) |
+| 8 | 8.69 | \(2.83\,10^{-4}\) | \(8.40\,10^{-5}\) | \(2.66\,10^{-4}\) |
+| 12 | 5.44 | \(4.16\,10^{-5}\) | \(1.32\,10^{-5}\) | \(3.86\,10^{-6}\) |
+| 24 | 2.61 | \(2.53\,10^{-6}\) | \(9.09\,10^{-7}\) | \(5.59\,10^{-12}\) |
 
-Après entraînement conjoint de la tête (r=12) et du MLP d'intervalle sur
-750 pas, HB-10 atteint (5.02,10^{-5}) d'erreur relative (H), sans aucune
-violation de Jury sur 4 096 tâches. Le MLP est donc proche du HB oracle, mais
-la tête exacte reste beaucoup plus précise à cette petite dimension.
+Après entraînement conjoint de la tête \(r=12\) et du MLP d'intervalle sur
+750 pas, HB-10 atteint \(5.02\,10^{-5}\) d'erreur relative \(H\), sans
+violation de Jury sur 4 096 tâches. À cette petite dimension, la tête exacte
+reste cependant beaucoup plus précise.
 
-Le benchmark H100 de construction confirme le scaling mais invalide une
+Le benchmark H100 de construction confirme le scaling, mais invalide une
 revendication trop forte :
 
-| (K), batch 1 | tête spectre exact | Nyström (r=2) | Nyström (r=12) | Cholesky + solve |
+| \(K\), batch 1 | tête spectre exact | Nyström \(r=2\) | Nyström \(r=12\) | Cholesky + solve |
 |---:|---:|---:|---:|---:|
 | 256 | 5.718 ms | 2.028 ms | 3.047 ms | 0.216 ms |
 | 512 | 15.103 ms | 2.051 ms | 3.078 ms | 0.366 ms |
 | 1024 | 12.400 ms | 2.045 ms | 3.102 ms | 0.671 ms |
 | 2048 | 31.164 ms | 4.162 ms | 5.242 ms | 1.343 ms |
 
-Nyström bat donc nettement la tête à eigendecomposition complète, mais pas le
-solveur dense Cholesky hautement optimisé. Cette version est une preuve de
-scalabilité algébrique, pas encore le décodeur pratique retenu. Pour obtenir
-un avantage contre les solveurs purs, il faut l'étape suivante : ne plus
-matérialiser (H) ni (B), appliquer la correction sous forme low-rank et
-utiliser uniquement les HVP (G^	op(Gv)+\lambda Mv). C'est dans ce régime
-matrix-free/mémoire (O(MK+KS)), inaccessible au Cholesky dense, que le
-préconditionneur appris peut avoir un bénéfice de complexité.
+Nyström bat donc la tête à eigendecomposition complète, mais pas Cholesky.
+Cette variante dense prouve la scalabilité de l'approximation spectrale, pas
+encore celle du décodeur complet.
+
+### Déflation matrix-free effectivement implémentée
+
+La variante **equivariant_matrix_free_nystrom** ne matérialise ni \(H\) ni
+\(B\). La même tête produit \(S\) directions à partir du prompt, puis une
+itération de puissance en bloc utilise uniquement
+\(Hv=G^\top(Gv)+\lambda Mv\) pour identifier les modes hauts. Dans la base
+orthonormale \(U\), elle diagonalise seulement
+\(C=U^\top(H/s_H)U\in\mathbb R^{S\times S}\), puis applique
+
+\[
+Bv=\frac1{s_H}\left[v+UDU^\top v\right],
+\qquad
+D=V_C\operatorname{diag}\!\left(
+\min\{1,c_\star/c_i\}-1
+\right)V_C^\top.
+\]
+
+Les multiplicateurs appartiennent à \((0,1]\). Par conséquent
+\(0\prec B\preceq s_H^{-1}I\) et, avec
+\(s_H=\operatorname{tr}(H)/\bar L\),
+\(\lambda_{\max}(B^{1/2}HB^{1/2})\leq\bar L\) sans hypothèse de queue. Le
+coût de construction est
+\(O((r+1)MKS+MKd_h+KS^2+S^3)\), la mémoire
+\(O(MK+KS+S^2)\), et une application supplémentaire coûte \(O(KS)\) en plus
+du HVP.
+
+Sur 8 192 tâches du seed 0, avec \(K=8,S=6,r=4\), le conditionnement effectif
+moyen vaut \(1.647\). Le MLP d'intervalle ne reçoit que des invariants
+matrix-free ; les extrémités exactes servent de labels hors ligne, jamais
+d'entrées à l'inférence. Le résultat distingue clairement qualité typique et
+certification :
+
+| contrôleur | budget | erreur \(H\) moyenne | médiane | \(q_{95}\) | maximum |
+|---|---:|---:|---:|---:|---:|
+| HB appris | 10 HVP | \(3.83\,10^{-5}\) | \(1.05\,10^{-10}\) | \(2.37\,10^{-10}\) | \(2.41\,10^{-1}\) |
+| HB avec garde + fallback PCG | 10 HVP + fallback | \(1.61\,10^{-10}\) | \(1.04\,10^{-10}\) | \(2.30\,10^{-10}\) | \(9.90\,10^{-8}\) |
+| HB oracle | 10 HVP | \(1.76\,10^{-12}\) | \(9.46\,10^{-13}\) | \(4.08\,10^{-12}\) | \(1.32\,10^{-9}\) |
+| Chebyshev oracle | 10 HVP | \(1.61\,10^{-12}\) | \(9.40\,10^{-13}\) | \(3.97\,10^{-12}\) | \(6.86\,10^{-10}\) |
+| PCG | 4 HVP | \(6.33\,10^{-10}\) | \(2.13\,10^{-12}\) | \(5.08\,10^{-10}\) | \(1.07\,10^{-6}\) |
+
+Une seule tâche sur 8 192 viole Jury pour HB appris. Le test résiduel déclenche
+PCG sur \(0.806\%\) des tâches et supprime cette explosion. Le risque moyen du
+contrôleur avec garde est environ quatre fois inférieur à PCG-4, mais ce n'est
+pas une comparaison à budget HVP égal : HB utilise dix étapes et les rares
+fallbacks ajoutent du calcul.
+
+La latence donne la frontière pratique. Sur H100, batch 1 et \(M=4K\) :
+
+| \(K\) | solve dense depuis tokens | PCG-10 identité matrix-free | tête \(r=4\) | tête + HB-10 |
+|---:|---:|---:|---:|---:|
+| 256 | 0.292 ms | 2.256 ms | 1.655 ms | 3.416 ms |
+| 512 | 0.444 ms | 2.265 ms | 1.690 ms | 3.494 ms |
+| 1024 | 1.032 ms | 2.285 ms | 1.695 ms | 3.471 ms |
+| 2048 | 3.274 ms | 2.275 ms | 1.951 ms | 3.757 ms |
+
+À \(K=2048\), PCG matrix-free sans tête franchit déjà le solveur dense, mais
+tête + HB-10 ne le franchit pas encore. Sur le vrai problème PDE actuel
+\(K=8\), tête + HB-10 prend \(3.183\) ms contre \(0.173\) ms pour le solveur
+dense : le solveur direct reste la baseline pratique. Le préconditionnement
+appris devient pertinent lorsque la même géométrie est amortie sur plusieurs
+seconds membres, lorsque \(K\) ou la mémoire excluent la factorisation, ou
+après fusion du noyau tête--HVP. Il n'y a à ce stade aucune preuve que le
+décodeur appris batte tous les solveurs purs.
+
+Conceptuellement, la tête n'apprend donc pas simplement « une covariance ».
+Elle apprend, à partir du prompt, **où comprimer la géométrie inverse** dans
+un sous-espace de Ritz. Une covariance globale aide seulement si la loi garde
+des directions privilégiées ; dans l'expérience RRS elle est scalaire. Le
+bénéfice propre à l'ICL est l'adaptation prompt-par-prompt, tandis que HB,
+Chebyshev, PCG et le certificat restent des relations algébriques exactes.
 
 Trois entraînements certifiés de 750 pas, depuis trois encodeurs elliptiques
 gelés, restent au plancher encodeur (\(u\)-MSE de l'ordre de \(10^{-9}\)).

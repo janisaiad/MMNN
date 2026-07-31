@@ -17,6 +17,7 @@ import torch.nn as nn
 
 try:
     from .first_principles_decoder_cells import (
+        apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
@@ -24,12 +25,14 @@ try:
     )
     from .first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from .structured_one_head_heavyball import (
+        EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
         OneHeadSpectralPreconditioner,
     )
 except ImportError:
     from first_principles_decoder_cells import (
+        apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
@@ -37,6 +40,7 @@ except ImportError:
     )
     from first_principles_inverse_decoder import PromptSpectralIntervalMLP
     from structured_one_head_heavyball import (
+        EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
         EquivariantRitzSoftmaxPreconditioner,
         OneHeadSpectralPreconditioner,
@@ -124,9 +128,11 @@ class ExactLoopTransformerDecoder(nn.Module):
     """One softmax geometry head and an exact tied recurrent solver cell.
 
     ``controller`` is one of ``richardson``, ``heavy_ball``, ``chebyshev``,
-    ``pcg`` or ``certified_hb_pcg``.  The last choice runs Heavy-Ball by
-    default and hard-routes only prompts whose final preconditioned residual
-    fails a prescribed certificate to PCG.
+    ``pcg`` or ``certified_hb_pcg``.  The last (historically named) choice
+    runs Heavy-Ball by default and hard-routes prompts whose final
+    preconditioned residual fails a prescribed test to PCG.  The test
+    certifies the observed residual, not the energy error unless a positive
+    lower spectral bound is also available.
     """
 
     def __init__(
@@ -184,6 +190,9 @@ class ExactLoopTransformerDecoder(nn.Module):
         self.interval_lower_calibration = float(interval_lower_calibration)
         self.interval_upper_calibration = float(interval_upper_calibration)
         self.hybrid_residual_threshold = float(hybrid_residual_threshold)
+        self.matrix_free_preconditioner = (
+            preconditioner_head_type == "equivariant_matrix_free_nystrom"
+        )
         if self.hybrid_residual_threshold <= 0:
             raise ValueError("hybrid_residual_threshold must be positive")
         if self.interval_lower_calibration < 1.0 or self.interval_upper_calibration < 1.0:
@@ -219,6 +228,14 @@ class ExactLoopTransformerDecoder(nn.Module):
             )
         elif preconditioner_head_type == "equivariant_prompt_nystrom":
             self.preconditioner_head = EquivariantPromptNystromPreconditioner(
+                dimension=dimension,
+                head_dimension=head_dimension,
+                slots=slots,
+                spectral_lmax_bound=spectral_lmax_bound,
+                refinement_steps=prompt_subspace_refinement_steps,
+            )
+        elif preconditioner_head_type == "equivariant_matrix_free_nystrom":
+            self.preconditioner_head = EquivariantMatrixFreeNystromPreconditioner(
                 dimension=dimension,
                 head_dimension=head_dimension,
                 slots=slots,
@@ -282,11 +299,6 @@ class ExactLoopTransformerDecoder(nn.Module):
         ridge: float,
         ridge_metric: Tensor | None = None,
     ) -> Tuple[Tensor, Dict[str, Tensor]]:
-        normal_matrix, rhs = normal_equations(
-            equations, observations, ridge, ridge_metric
-        )
-        preconditioner, info = self.preconditioner_head(equations, normal_matrix)
-
         def hvp(vector: Tensor) -> Tensor:
             scores = torch.einsum("bmk,bk->bm", equations, vector)
             moment = torch.einsum("bmk,bm->bk", equations, scores)
@@ -298,12 +310,33 @@ class ExactLoopTransformerDecoder(nn.Module):
                 ridge_action = torch.einsum("bkl,bl->bk", ridge_metric, vector)
             return moment + ridge * ridge_action
 
+        rhs = torch.einsum("bmk,bm->bk", equations, observations)
+        if self.matrix_free_preconditioner:
+            normal_matrix = None
+            preconditioner, info = self.preconditioner_head(
+                equations,
+                ridge,
+                ridge_metric,
+            )
+        else:
+            normal_matrix, rhs = normal_equations(
+                equations,
+                observations,
+                ridge,
+                ridge_metric,
+            )
+            preconditioner, info = self.preconditioner_head(
+                equations,
+                normal_matrix,
+            )
+
         if self.controller in {"richardson", "heavy_ball", "certified_hb_pcg"}:
             if self.adaptive_heavy_ball:
                 assert self.interval_head is not None
                 if "interval_features" in info:
                     features = info["interval_features"]
                 else:
+                    assert normal_matrix is not None
                     operator = symmetric_effective_operator(
                         preconditioner,
                         normal_matrix,
@@ -339,11 +372,13 @@ class ExactLoopTransformerDecoder(nn.Module):
             info.update({"step": step, "momentum": momentum})
             if self.controller == "certified_hb_pcg":
                 final_residual = rhs - hvp(solution)
-                preconditioned_final_residual = torch.einsum(
-                    "bij,bj->bi", preconditioner, final_residual
+                preconditioned_final_residual = apply_fixed_preconditioner(
+                    preconditioner,
+                    final_residual,
                 )
-                preconditioned_rhs = torch.einsum(
-                    "bij,bj->bi", preconditioner, rhs
+                preconditioned_rhs = apply_fixed_preconditioner(
+                    preconditioner,
+                    rhs,
                 )
                 residual_ratio = torch.einsum(
                     "bi,bi->b", final_residual, preconditioned_final_residual
@@ -351,25 +386,17 @@ class ExactLoopTransformerDecoder(nn.Module):
                     "bi,bi->b", rhs, preconditioned_rhs
                 ).clamp_min(1e-30)
                 fallback_mask = residual_ratio > self.hybrid_residual_threshold
-                fallback_indices = fallback_mask.nonzero(as_tuple=False).flatten()
-                if fallback_indices.numel() > 0:
-                    fallback_normal = normal_matrix.index_select(0, fallback_indices)
-                    fallback_rhs = rhs.index_select(0, fallback_indices)
-                    fallback_preconditioner = preconditioner.index_select(
-                        0, fallback_indices
-                    )
-
-                    def fallback_hvp(vector: Tensor) -> Tensor:
-                        return torch.einsum("bij,bj->bi", fallback_normal, vector)
-
+                if fallback_mask.any():
                     fallback_solution, _, _ = run_pcg_state_machine(
-                        fallback_hvp,
-                        fallback_rhs,
-                        fallback_preconditioner,
+                        hvp,
+                        rhs,
+                        preconditioner,
                         self.depth,
                     )
-                    solution = solution.index_copy(
-                        0, fallback_indices, fallback_solution
+                    solution = torch.where(
+                        fallback_mask[:, None],
+                        fallback_solution,
+                        solution,
                     )
                 info.update(
                     {
@@ -396,6 +423,7 @@ class ExactLoopTransformerDecoder(nn.Module):
                 if "interval_features" in info:
                     features = info["interval_features"]
                 else:
+                    assert normal_matrix is not None
                     operator = symmetric_effective_operator(
                         preconditioner,
                         normal_matrix,
@@ -422,11 +450,12 @@ class ExactLoopTransformerDecoder(nn.Module):
                     "chebyshev_momentum_schedule": momentum_schedule,
                 }
             )
-        info.update(
-            {
-                "normal_matrix": normal_matrix,
-                "rhs": rhs,
-                "preconditioner": preconditioner,
-            }
+        info.update({"rhs": rhs, "preconditioner": preconditioner})
+        if normal_matrix is not None:
+            info["normal_matrix"] = normal_matrix
+        info["normal_matrix_materialized"] = rhs.new_full(
+            (rhs.shape[0],),
+            normal_matrix is not None,
+            dtype=torch.bool,
         )
         return solution, info

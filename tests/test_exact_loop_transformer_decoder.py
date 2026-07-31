@@ -7,22 +7,25 @@ import torch
 TRANSFORMER_DIR = Path(__file__).resolve().parents[1] / "experiments" / "transformers"
 sys.path.insert(0, str(TRANSFORMER_DIR))
 
-from exact_loop_transformer_decoder import (
+from exact_loop_transformer_decoder import (  # noqa: E402
     ExactLoopTransformerDecoder,
     normal_equations,
 )
-from pure_icl_parametric_operator_richardson_attention import (
+from first_principles_decoder_cells import (  # noqa: E402
+    materialize_preconditioner,
+    run_chebyshev_state_machine,
+)
+from pure_icl_parametric_operator_richardson_attention import (  # noqa: E402
     ParametricOperatorICL,
     make_true_family,
     sample_icl_batch,
     solve_z_exact,
 )
-from predict_pde_law_hyperparameters import (
+from predict_pde_law_hyperparameters import (  # noqa: E402
     chebyshev_task_risk,
     conditional_weak_moments,
     exact_prompt_normal_rhs,
 )
-from first_principles_decoder_cells import run_chebyshev_state_machine
 from structured_one_head_heavyball import (  # noqa: E402
     EquivariantPromptNystromPreconditioner,
     EquivariantRitzSoftmaxPreconditioner,
@@ -255,6 +258,133 @@ def test_prompt_nystrom_loop_decoder_is_finite_without_full_eigenspectrum() -> N
     assert torch.isfinite(solution).all()
     assert not info["uses_full_eigendecomposition"].any()
     assert (info["certified_effective_lmax"] == 2.5).all()
+
+
+def test_matrix_free_nystrom_decoder_never_materializes_normal_or_preconditioner(
+    monkeypatch,
+) -> None:
+    import exact_loop_transformer_decoder as decoder_module
+
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=8,
+        head_dimension=12,
+        slots=3,
+        controller="heavy_ball",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=3,
+    ).double()
+
+    def forbidden_normal_equations(*args, **kwargs):
+        raise AssertionError("matrix-free decoder materialized H")
+
+    monkeypatch.setattr(
+        decoder_module,
+        "normal_equations",
+        forbidden_normal_equations,
+    )
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert torch.isfinite(solution).all()
+    assert "normal_matrix" not in info
+    assert not info["normal_matrix_materialized"].any()
+    assert info["matrix_free"].all()
+    assert not info["uses_full_eigendecomposition"].any()
+
+    dense = materialize_preconditioner(info["preconditioner"])
+    probe = torch.randn_like(solution)
+    torch.testing.assert_close(
+        info["preconditioner"].apply(probe),
+        torch.einsum("bij,bj->bi", dense, probe),
+        rtol=2e-10,
+        atol=2e-10,
+    )
+    normal = equations.transpose(-1, -2) @ equations
+    normal = normal + 0.2 * torch.eye(normal.shape[-1], dtype=normal.dtype)
+    factor = torch.linalg.cholesky(dense)
+    effective = factor.transpose(-1, -2) @ normal @ factor
+    assert torch.linalg.eigvalsh(effective).amax() <= 2.5 + 1e-9
+
+
+def test_matrix_free_nystrom_head_is_gauge_covariant() -> None:
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=12,
+        slots=3,
+        controller="heavy_ball",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=3,
+    ).double()
+    preconditioner, info = decoder.preconditioner_head(
+        equations,
+        0.2,
+    )
+    generator = torch.Generator().manual_seed(49)
+    gauge = torch.linalg.qr(
+        torch.randn(4, 4, generator=generator, dtype=torch.float64)
+    ).Q
+    rotated, rotated_info = decoder.preconditioner_head(
+        equations @ gauge,
+        0.2,
+    )
+    dense = materialize_preconditioner(preconditioner)
+    rotated_dense = materialize_preconditioner(rotated)
+    expected = gauge.transpose(-1, -2) @ dense @ gauge
+    torch.testing.assert_close(
+        rotated_dense,
+        expected,
+        rtol=2e-9,
+        atol=2e-9,
+    )
+    torch.testing.assert_close(
+        rotated_info["interval_features"],
+        info["interval_features"],
+        rtol=2e-9,
+        atol=2e-9,
+    )
+
+
+def test_matrix_free_certified_hb_routes_to_pcg_without_dense_normal(
+    monkeypatch,
+) -> None:
+    import exact_loop_transformer_decoder as decoder_module
+
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=5,
+        head_dimension=12,
+        slots=3,
+        controller="certified_hb_pcg",
+        spectral_lmax_bound=2.5,
+        step_init=0.5,
+        momentum_init=0.08,
+        hybrid_residual_threshold=1e-30,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=2,
+    ).double()
+
+    def forbidden_normal_equations(*args, **kwargs):
+        raise AssertionError("certified matrix-free decoder materialized H")
+
+    monkeypatch.setattr(
+        decoder_module,
+        "normal_equations",
+        forbidden_normal_equations,
+    )
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert torch.isfinite(solution).all()
+    assert info["pcg_fallback_mask"].all()
+    assert info["pcg_fallback_rate"] == 1.0
+    assert "normal_matrix" not in info
 
 
 def test_exact_head_spectrum_chebyshev_reuses_ritz_eigenvalues() -> None:

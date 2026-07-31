@@ -26,7 +26,10 @@ try:
         normal_equations,
         symmetric_effective_operator,
     )
-    from .first_principles_decoder_cells import run_heavy_ball_state_machine
+    from .first_principles_decoder_cells import (
+        materialize_preconditioner,
+        run_heavy_ball_state_machine,
+    )
     from .first_principles_inverse_decoder import spectral_interval_coverage_loss
     from .pure_icl_parametric_operator_richardson_attention import (
         make_true_family,
@@ -40,7 +43,10 @@ except ImportError:
         normal_equations,
         symmetric_effective_operator,
     )
-    from first_principles_decoder_cells import run_heavy_ball_state_machine
+    from first_principles_decoder_cells import (
+        materialize_preconditioner,
+        run_heavy_ball_state_machine,
+    )
     from first_principles_inverse_decoder import spectral_interval_coverage_loss
     from pure_icl_parametric_operator_richardson_attention import (
         make_true_family,
@@ -84,9 +90,31 @@ def make_interval_batch(model, true_family, saved, args, device):
             model.lam_z,
             model.coefficient_ridge_metric(),
         )
-        preconditioner, _ = model.loop_decoder.preconditioner_head(equations, normal_matrix)
-        effective = symmetric_effective_operator(preconditioner, normal_matrix)
-        features = effective_spectrum_features(effective, equations.shape[1])
+        if model.loop_decoder.matrix_free_preconditioner:
+            preconditioner, preconditioner_info = (
+                model.loop_decoder.preconditioner_head(
+                    equations,
+                    model.lam_z,
+                    model.coefficient_ridge_metric(),
+                )
+            )
+            features = preconditioner_info["interval_features"]
+        else:
+            preconditioner, _ = model.loop_decoder.preconditioner_head(
+                equations,
+                normal_matrix,
+            )
+            features = None
+        dense_preconditioner = materialize_preconditioner(preconditioner)
+        effective = symmetric_effective_operator(
+            dense_preconditioner,
+            normal_matrix,
+        )
+        if features is None:
+            features = effective_spectrum_features(
+                effective,
+                equations.shape[1],
+            )
         eigenvalues = torch.linalg.eigvalsh(effective).clamp_min(1e-12)
         target = torch.linalg.solve(normal_matrix, rhs.unsqueeze(-1)).squeeze(-1)
     return (
@@ -121,6 +149,12 @@ def main() -> None:
     parser.add_argument("--calibration-batches", type=int, default=16)
     parser.add_argument("--calibration-batch-size", type=int, default=512)
     parser.add_argument("--calibration-quantile", type=float, default=0.99)
+    parser.add_argument(
+        "--certified-output",
+        type=int,
+        default=0,
+        help="save the same weights with the residual-guarded HB-to-PCG controller",
+    )
     args = parser.parse_args()
 
     device = torch.device(args.device if args.device == "cpu" or torch.cuda.is_available() else "cpu")
@@ -275,6 +309,8 @@ def main() -> None:
     adaptive_saved["adaptive_interval_training"] = vars(args)
     adaptive_saved["interval_lower_calibration"] = lower_factor
     adaptive_saved["interval_upper_calibration"] = upper_factor
+    if args.certified_output:
+        adaptive_saved["solver"] = "primal_loop_certified_hb_pcg"
     torch.save(
         {"model": model.state_dict(), "args": adaptive_saved},
         outdir / "model_final.pt",
