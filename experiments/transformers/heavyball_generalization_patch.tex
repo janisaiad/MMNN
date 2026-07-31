@@ -1,0 +1,105 @@
+% Replacement for the Richardson optimization paragraph in
+% `Generalization error (decoder).tex`.
+
+\subsection{HeavyBall optimization term in the decoder generalization bound}
+
+Let
+\[
+ H_m=G_m^\top G_m+\lambda I,
+ \qquad
+ z_\lambda^*=H_m^{-1}G_m^\top b_m,
+\]
+and consider the preconditioned HeavyBall decoder
+\begin{equation}
+ z_{-1}=z_0=0,
+ \qquad
+ z_{\ell+1}=z_\ell+B_\theta\alpha
+ \bigl(G_m^\top(b_m-G_mz_\ell)-\lambda z_\ell\bigr)
+ +\beta(z_\ell-z_{\ell-1}).
+ \label{eq:gen-hb}
+\end{equation}
+Assume $B_\theta\succ0$, $\kappa(B_\theta)\leq\bar\kappa_B$, and
+\[
+ \sigma(B_\theta^{1/2}H_mB_\theta^{1/2})\subseteq[\mu,M].
+\]
+With the optimal quadratic HeavyBall coefficients, define
+\[
+ q=\frac{\sqrt{M/\mu}-1}{\sqrt{M/\mu}+1},
+ \qquad
+ C_L(q)=1+L(1+q).
+\]
+The HeavyBall polynomial estimate gives
+\begin{equation}
+ \|z_L-z_\lambda^*\|_2
+ \leq
+ \sqrt{\bar\kappa_B}\,C_L(q)q^L
+ \|z_0-z_\lambda^*\|_2.
+ \label{eq:gen-hb-error}
+\end{equation}
+Consequently,
+\begin{equation}
+ \mathbb E\|z_L-z_\lambda^*\|_2^4
+ \leq
+ \bar\kappa_B^2 C_L(q)^4q^{4L}
+ \mathbb E\|z_0-z_\lambda^*\|_2^4.
+ \label{eq:gen-hb-fourth}
+\end{equation}
+Repeating the Galerkin/ridge/optimization decomposition yields
+\begin{equation}
+\boxed{
+\begin{aligned}
+ \mathbb E\|\widehat u-u^*\|_{\mathcal H}^4
+ \leq{}&C\|D_m\|^4
+ \bigl[
+ \bar\kappa_B^2 C_L(q)^4q^{4L}
+ \mathbb E\|z_0-z_\lambda^*\|_2^4
+ +\|z_\lambda^*-z_m^*\|_2^4
+ \bigr]\\
+ &+C\|u_m^*-u^*\|_{\mathcal H}^4.
+\end{aligned}}
+\label{eq:gen-hb-fourth-output}
+\end{equation}
+For $z_0=0$, the first expectation on the right is
+$\mathbb E\|z_\lambda^*\|_2^4$.
+
+Thus the Gaussian-tail truncation argument and the $N^{-1/2}$ empirical-process
+rate are unchanged.  Only the finite-depth optimization envelope changes from
+$q_{\rm Rich}^{4L}$ to
+$\bar\kappa_B^2C_L(q)^4q^{4L}$.  The exact HeavyBall polynomial should be used
+instead of this envelope when evaluating constants numerically.
+
+\paragraph{Fixed versus selected solver coefficients.}
+If $(\alpha,\beta)$ are fixed before the $N$ training tasks are sampled, the
+existing one-parameter uniform bound over $\lambda$ applies without a new
+parameter-complexity term.  If the same data are used to select
+$(\alpha,\beta)$, the empirical process must instead be uniform over a compact
+stable set
+\[
+ \Theta_{\rm HB}
+ =\{(\lambda,\alpha,\beta):
+ \lambda\in[\lambda_{\min},\lambda_{\max}],
+ \qquad 0\leq\beta\leq1-\varepsilon,
+ \alpha M\leq2(1+\beta)-\varepsilon\}.
+\]
+This adds only two scalar coordinates to the covering argument.  Under a
+uniform Lipschitz bound for the truncated loss on $\Theta_{\rm HB}$, its metric
+entropy is logarithmic in the covering resolution, so the leading
+$N^{-1/2}$ rate remains unchanged (up to a logarithmic factor and a
+depth-dependent Lipschitz constant).  This statement does not cover an
+unrestricted prompt-dependent neural preconditioner; that class requires its
+own norm or parameter-space complexity control.
+
+\paragraph{Replica/random-matrix substitution.}
+Whenever the Richardson calculation contains the spectral filter
+$(1-\eta\lambda)^{2L}$, the HeavyBall calculation replaces it by
+\begin{equation}
+ p_L(\lambda)^2,
+ \quad
+ p_{-1}=p_0=1,
+ \quad
+ p_{\ell+1}=(1+\beta-\alpha\lambda)p_\ell-\beta p_{\ell-1}.
+ \label{eq:gen-hb-replica-filter}
+\end{equation}
+No additional right-hand-side order parameter is needed because
+$(\alpha,\beta)$ are fixed across tasks and $p_L$ is independent of the query
+$f$.  This is precisely the simplification that fails for PCG.

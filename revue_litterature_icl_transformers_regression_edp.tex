@@ -1,0 +1,1278 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[provide=*,french]{babel}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage[expansion=false]{microtype}
+\usepackage{hyperref}
+\geometry{margin=2.25cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=green!40!black,
+  urlcolor=blue!65!black,
+  pdftitle={Transformers, régression in-context et problèmes inverses en EDP : revue critique},
+  pdfauthor={Janis Aiad -- note de travail}
+}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\cY}{\mathcal{Y}}
+\newcommand{\op}{\mathrm{op}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\cond}{\operatorname{cond}}
+\newcommand{\ICL}{\mathrm{ICL}}
+\newcommand{\HB}{\mathrm{HB}}
+\newcommand{\PCG}{\mathrm{PCG}}
+\newcommand{\FEM}{\mathrm{FEM}}
+\newcommand{\OOD}{\mathrm{OOD}}
+\newcommand{\TODO}{\textcolor{red!70!black}{\textbf{À vérifier}}}
+
+\title{Transformers pour la régression in-context, les systèmes linéaires et les problèmes inverses en EDP\\
+\large Revue critique, cartographie des lacunes et formulation de la question de recherche}
+\author{Note de travail pour Janis Aiad}
+\date{État de la littérature au 31 juillet 2026}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+Cette note cartographie la littérature reliant l'apprentissage en contexte
+(in-context learning, ICL), la régression linéaire, les Transformers vus comme
+algorithmes d'optimisation, l'apprentissage d'opérateurs et les problèmes
+directs ou inverses gouvernés par des équations aux dérivées partielles (EDP).
+Elle distingue quatre objets souvent confondus : (i) apprendre directement un
+surrogate de l'opérateur solution, (ii) identifier en contexte une loi ou un
+opérateur caché, (iii) dérouler dans les activations un solveur numérique, et
+(iv) apprendre un préconditionneur utilisé par un solveur externe. Le papier
+de Takanami, Takahashi et Kabashima sur les tâches de régression de faible rang
+est analysé en détail : son calcul de répliques prédit la loi du prédicteur et
+une transition de phase en grande dimension, mais ne constitue ni une analyse
+d'un solveur profond, ni un résultat d'EDP. La lacune centrale identifiée est
+l'absence d'un cadre qui combine identification en contexte d'un opérateur
+elliptique, décodeur itératif accéléré à poids partagés, préconditionnement
+conditionné par le prompt, décomposition complète des erreurs et théorie
+haute dimension du risque. Nous formulons en conséquence une question de
+recherche et un protocole expérimental falsifiable autour d'un décodeur
+HeavyBall/Chebyshev, avec PCG comme référence numérique et Richardson comme
+baseline mécanistique.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\section{Périmètre, méthode et vocabulaire}
+
+\subsection{Périmètre de la revue}
+
+La revue couvre les travaux primaires disponibles jusqu'au 31 juillet 2026
+dans les catégories suivantes :
+\begin{enumerate}[leftmargin=*]
+  \item ICL de fonctions linéaires, affines, parcimonieuses, de mélanges et de
+  noyaux ;
+  \item Transformers comme implémentations ou approximations d'algorithmes
+  d'optimisation et d'algèbre linéaire ;
+  \item profondeur, partage des poids, modèles bouclés et calcul au temps
+  d'inférence ;
+  \item théorie statistique non asymptotique, limites proportionnelles,
+  matrices aléatoires, répliques et changement de distribution ;
+  \item neural operators et Transformers pour EDP, y compris modèles de
+  fondation et in-context operator learning ;
+  \item problèmes inverses en EDP, préconditionneurs appris, multigrille appris
+  et couplage réseaux--Krylov.
+\end{enumerate}
+
+Une exhaustivité littérale de tous les articles contenant le mot
+« Transformer » serait peu informative. Le critère d'inclusion retenu est la
+présence d'au moins un lien conceptuel direct avec l'un des objets suivants :
+identification d'une tâche à partir d'exemples, résolution d'un système
+linéaire dépendant de la tâche, apprentissage d'un opérateur entre espaces de
+fonctions, inversion d'un paramètre d'EDP, ou accélération d'un solveur.
+
+\subsection{Quatre sens différents de « Transformer pour résoudre une EDP »}
+
+La première clarification est taxonomique. Les quatre paradigmes ci-dessous
+ne répondent pas à la même question.
+
+\begin{longtable}{p{0.18\textwidth}p{0.26\textwidth}p{0.24\textwidth}p{0.19\textwidth}}
+\toprule
+Paradigme & Entrée--sortie & Ce qui est appris & Garantie pertinente \\
+\midrule
+\endfirsthead
+\toprule
+Paradigme & Entrée--sortie & Ce qui est appris & Garantie pertinente \\
+\midrule
+\endhead
+Surrogate d'opérateur & coefficient/champ initial $\mapsto$ solution & une
+approximation globale de l'opérateur solution & approximation, généralisation,
+stabilité et invariance à la discrétisation \\
+ICL d'opérateur & prompt de paires fonctionnelles + requête $\mapsto$ réponse &
+adaptation à une loi cachée sans mise à jour des poids & erreur en contexte,
+diversité des tâches, transfert ID/OOD \\
+Transformer-solveur & matrice ou prompt + second membre $\mapsto$ itérés & un
+algorithme de résolution dans les activations & erreur par itération, stabilité
+spectrale, coût par produit matrice--vecteur \\
+Préconditionneur appris & opérateur/géométrie $\mapsto B_\theta$, puis solveur
+externe & une transformation spectrale utile & SPD ou flexibilité du solveur,
+conditionnement effectif, temps total \\
+\bottomrule
+\end{longtable}
+
+DeepONet et FNO appartiennent d'abord à la première classe
+\cite{lu2021deeponet,li2021fno,kovachki2023neuraloperator}. ICON appartient à la
+deuxième \cite{yang2023icon,yang2024icongeneralization}. Les constructions de
+gradient descent, Newton ou Richardson appartiennent à la troisième
+\cite{vonoswald2023,fu2024secondorder,yan2026richardson}. NeuralIF et FCG-NO
+appartiennent à la quatrième
+\cite{hausner2023neuralif,rudikov2024fcgno}. Une contribution doit annoncer
+explicitement sa classe, sinon une comparaison de performances ou de garanties
+devient trompeuse.
+
+\subsection{Deux inversions à ne pas confondre}
+
+Pour une famille elliptique
+\begin{equation}
+  \cL_{a,V}u=-\nabla\!\cdot(a\nabla u)+Vu=f,
+  \qquad u|_{\partial\Omega}=0,
+  \label{eq:pde}
+\end{equation}
+deux problèmes inverses distincts apparaissent :
+\begin{enumerate}[leftmargin=*]
+  \item \emph{identification de loi} : retrouver $a$, $V$, ou une matrice de
+  Galerkin $A$ à partir de paires $(f_i,u_i)$ ;
+  \item \emph{inversion numérique} : pour un opérateur estimé $\widehat A$ et
+  un nouveau second membre $f_\star$, calculer $\widehat A^{-1}f_\star$.
+\end{enumerate}
+Le premier est statistique et potentiellement mal posé ; le second est un
+problème de solveur linéaire. Le projet considéré ici comporte les deux. Une
+borne finale doit donc séparer l'erreur d'encodeur, l'erreur de discrétisation,
+le biais de régularisation et l'erreur de profondeur finie du décodeur.
+
+\section{ICL général : origine et grandes familles d'explications}
+
+Brown et al. ont popularisé le comportement few-shot des grands modèles de
+langage : une tâche est spécifiée par des exemples placés dans le prompt, sans
+mise à jour des poids à l'inférence \cite{brown2020}. L'ICL ne se réduit
+cependant pas à une seule cause. La littérature générale distingue au moins
+quatre explications compatibles plutôt que mutuellement exclusives.
+
+\paragraph{Inférence bayésienne implicite.}
+Xie et al. modélisent le pré-entraînement comme l'apprentissage d'un mélange de
+concepts latents ; conditionner sur un prompt revient alors à inférer le concept
+courant \cite{xie2022bayesian}. Cette lecture est naturelle pour une famille
+d'EDP : le prompt donne de l'information sur l'opérateur latent. Elle ne dit
+pas encore comment inverser efficacement l'opérateur une fois identifié.
+
+\paragraph{Mesa-optimisation.}
+Dai et al. et von Oswald et al. interprètent la passe avant comme une procédure
+d'optimisation interne \cite{dai2023meta,vonoswald2023}. Cette famille
+d'explications motive directement un décodeur itératif. Elle doit être testée
+contre des alternatives entrée--sortie équivalentes, car la proximité des
+prédictions ne suffit pas à identifier un circuit.
+
+\paragraph{Induction et structure de la distribution.}
+Olsson et al. relient l'émergence de l'ICL à des têtes d'induction capables de
+copier ou prolonger des motifs \cite{olsson2022}. Chan et al. montrent que des
+propriétés de la distribution de séquences, notamment répétition et burstiness,
+favorisent l'émergence de l'ICL \cite{chan2022distribution}. Un autre travail
+de Chan et al. distingue la généralisation issue des informations stockées
+dans les poids de celle issue du contexte \cite{chan2022weightscontext}. Pour
+les EDP, l'analogue est la distinction entre prior de famille appris dans les
+poids et opérateur particulier révélé par le prompt.
+
+\paragraph{Rôle sémantique des démonstrations et apprenabilité.}
+Min et al. montrent, sur des tâches de langage, que la distribution des entrées,
+le format et l'espace des labels peuvent compter davantage que la correction
+de chaque label individuel \cite{min2022demonstrations}. Wies et al. étudient
+formellement l'apprenabilité de règles ICL par pré-entraînement
+\cite{wies2023learnability}. Ces résultats invitent à ne pas supposer qu'un
+prompt de paires $(f_i,u_i)$ est informatif par sa seule longueur : excitation
+spectrale, diversité et format des tokens sont des variables de premier ordre.
+
+Cette littérature générale fournit le contexte conceptuel, mais la régression
+linéaire reste le laboratoire où mécanisme, entraînement et risque sont le plus
+précisément calculables.
+
+\section{ICL pour la régression linéaire : fondations empiriques et algorithmiques}
+
+\subsection{Le paradigme expérimental fondateur}
+
+Garg et al. ont établi le banc d'essai moderne : un Transformer est pré-entraîné
+sur des prompts $(x_i,y_i)$ engendrés par des fonctions nouvelles à chaque
+tâche, puis évalué sans mise à jour de paramètres sur une fonction non vue
+\cite{garg2022}. Pour la régression linéaire gaussienne, des Transformers
+standards atteignent empiriquement une performance proche des moindres carrés ;
+ils peuvent aussi traiter régression parcimonieuse, petits réseaux et arbres de
+décision. Ce travail établit une capacité, mais n'identifie pas de manière
+unique l'algorithme interne.
+
+Akyürek et al. ont ensuite donné trois niveaux de preuve
+\cite{akyurek2023}: constructions explicites de gradient descent et de ridge en
+forme fermée, correspondances empiriques entre prédictions et estimateurs
+classiques, et décodage d'états internes ressemblant à des poids ou à des
+moments. La leçon importante est que « le Transformer apprend la régression »
+n'implique pas nécessairement « chaque couche est un pas de gradient » : le
+même comportement entrée--sortie peut être réalisé par plusieurs circuits.
+
+\subsection{Attention linéaire comme pas de gradient préconditionné}
+
+Von Oswald et al. donnent une construction où une couche d'attention linéaire
+réalise la transformation induite par un pas de gradient sur une perte de
+régression \cite{vonoswald2023}. Ahn et al. montrent que les paramètres appris
+peuvent correspondre à un gradient préconditionné dépendant de la distribution
+des covariables \cite{ahn2023preconditioned}. Mahankali et al. prouvent que,
+pour une couche d'auto-attention linéaire et des covariables gaussiennes, le
+minimiseur populationnel implémente précisément un pas de gradient, ou un pas
+préconditionné en cas d'anisotropie \cite{mahankali2023}.
+
+Ces résultats sont centraux pour Richardson, car le pas
+\[
+  z_{\ell+1}=z_\ell+B(c-Hz_\ell)
+\]
+est exactement un pas de gradient préconditionné pour une quadratique. Ils ne
+prouvent cependant pas qu'un Transformer standard entraîné sur des EDP apprend
+spontanément le bon $B$, ni que plusieurs couches reproduisent un solveur
+stable hors distribution.
+
+\subsection{Ce que l'entraînement apprend réellement}
+
+Zhang, Frei et Bartlett analysent le gradient flow d'une couche linéaire et
+montrent convergence vers un minimum global et robustesse à certains shifts,
+mais fragilité aux shifts de covariance des covariables
+\cite{zhang2023trained}. Les travaux de Wu et al. quantifient le nombre de
+tâches de pré-entraînement requis pour la régression linéaire
+\cite{wu2024tasks}. Raventós et al. montrent empiriquement et théoriquement que
+la diversité des tâches gouverne une transition entre mémorisation de tâches et
+algorithme non bayésien généralisant à de nouvelles tâches
+\cite{raventos2023}. Li et al. étudient stabilité et généralisation de
+Transformers vus comme algorithmes \cite{li2023algorithms}.
+
+Les résultats de sélection d'algorithme de Bai et al. sont complémentaires :
+des Transformers suffisamment construits peuvent sélectionner en contexte un
+algorithme adapté parmi plusieurs classes statistiques
+\cite{bai2023statisticians}. Ils portent surtout sur expressivité et garanties
+de risque, pas sur l'identification mécanistique d'un modèle effectivement
+entraîné.
+
+\subsection{Au-delà du premier ordre}
+
+La conclusion « les Transformers font seulement gradient descent » est trop
+forte. Fu et al. observent des taux proches d'une itération de Newton et donnent
+une construction de plusieurs itérations de Newton en profondeur
+\cite{fu2024secondorder}. Vladymyrov et al. montrent la polyvalence de
+l'attention linéaire comme apprenant en contexte \cite{vladymyrov2024}. Pour
+les fonctions non linéaires, des constructions relient attention et gradient
+fonctionnel \cite{cheng2024functional}; pour la régression par noyau gaussien,
+Yan et al. donnent en 2026 une construction Transformer softmax réalisant une
+itération de Richardson préconditionnée \cite{yan2026richardson}.
+
+Le papier de Yan et al. est particulièrement proche du projet, mais sa portée
+doit être lue précisément. L'attention softmax produit un opérateur de noyau
+gaussien normalisé ; des MLP ReLU approximent des opérations scalaires locales
+(produits, inverse et normalisations). La construction utilise
+$O(\log(1/\varepsilon))$ blocs et une largeur MLP dépendant de la précision.
+L'alignement empirique couche--itéré est le plus fort pour Richardson. Cela
+justifie Richardson comme mécanisme réalisable, mais ne montre pas qu'il est le
+meilleur solveur à budget de calcul fixé.
+
+\section{Profondeur, boucles et conditionnement}
+
+\subsection{Pourquoi une couche n'est pas une itération universelle}
+
+Les constructions d'expressivité fixent généralement des paramètres à la main.
+Elles prouvent qu'un circuit existe, non qu'il est identifiable par
+l'entraînement. De plus, les couches peuvent effectuer des sous-opérations
+différentes : lecture du prompt, agrégation de moments, mise à jour d'état et
+readout. Compter « une couche = une itération » n'est honnête que si le bloc et
+l'état ont été définis pour rendre l'égalité exacte.
+
+Le conditionnement spectral rend cette nuance essentielle. Sur une quadratique
+SPD de condition $\kappa$, Richardson optimal demande typiquement
+$O(\kappa\log(1/\varepsilon))$ itérations, tandis que Chebyshev, HeavyBall
+optimal et CG présentent une dépendance en $O(\sqrt\kappa
+\log(1/\varepsilon))$ sous leurs hypothèses classiques
+\cite{polyak1964,saad2003}. Une architecture qui apprend seulement un pas de
+gradient peut donc être mécanistiquement correcte mais numériquement dominée.
+
+\subsection{Transformers bouclés et poids partagés}
+
+Gatmiry et al. analysent des Transformers linéaires bouclés : le minimum global
+de la perte populationnelle réalise un gradient préconditionné multi-pas, et le
+partage des poids impose un biais vers les itérations de point fixe
+\cite{gatmiry2024learn}. Leur étude complémentaire montre que profondeur et
+diversité des tâches interagissent avec le conditionnement, et que les modèles
+bouclés ont de meilleures propriétés de robustesse et de monotonie en
+profondeur que certains modèles non partagés \cite{gatmiry2024depth}.
+Chen et al. obtiennent également des gains d'efficacité théorique pour des
+Transformers bouclés réalisant plusieurs pas de gradient
+\cite{chen2024looped}. Huang et al. utilisent une chaîne de pensée explicite
+pour apprendre plusieurs pas de gradient \cite{huang2025cot}.
+
+Pour le projet, le partage des poids est plus qu'une économie de paramètres :
+il rend plausible une extrapolation en profondeur et permet d'énoncer une loi
+de récurrence indépendante de $L$. HeavyBall à coefficients constants s'insère
+naturellement dans ce cadre. Chebyshev nécessite des coefficients dépendant de
+l'itération, donc soit des couches non partagées, soit un état de profondeur ou
+un contrôleur de coefficients.
+
+\subsection{Régression structurée, parcimonieuse et mélanges}
+
+La régression linéaire isotrope n'épuise pas les structures utiles en EDP.
+Chen, Zhao et Zou montrent que plusieurs têtes peuvent servir à prétraiter une
+régression parcimonieuse avant des pas d'optimisation plus simples
+\cite{chen2024sparse}. Jin et al. analysent les mélanges de régressions, où le
+Transformer doit implicitement identifier une composante avant d'estimer ses
+coefficients \cite{jin2024mixture}. Ces modèles sont proches d'une famille
+d'opérateurs à plusieurs régimes. Les travaux sur les représentations et les
+sous-espaces faibles dimensions expliquent aussi comment un ICL peut exploiter
+des caractéristiques partagées plutôt qu'une covariance isotrope
+\cite{guo2023representations,kwon2025subspace}.
+
+\section{Théorie haute dimension : matrices aléatoires et répliques}
+
+\subsection{Limite proportionnelle de l'attention linéaire}
+
+Lu et al. développent une théorie asymptotique exactement soluble pour une
+couche d'attention linéaire en régression \cite{lu2025asymptotic}. Dimension
+des tokens, longueur de contexte et diversité des tâches croissent
+proportionnellement, tandis que le nombre d'exemples de pré-entraînement suit
+une autre échelle. La théorie prédit double descente et transition entre
+mémorisation et véritable ICL. Letey et al. étendent ce point de vue au
+décalage entre covariance de tâches de pré-entraînement et de test, et
+introduisent une mesure d'alignement qui prédit la généralisation
+\cite{letey2026alignment}.
+
+Ce régime complète les bornes non asymptotiques : celles-ci contrôlent le pire
+cas ou une probabilité haute, tandis que la limite proportionnelle vise une
+valeur précise du risque typique. Les deux niveaux ne sont pas interchangeables.
+
+\subsection{Le papier de faible rang 2510.04548}
+
+Takanami, Takahashi et Kabashima étudient une couche d'attention linéaire
+entraînée sur des tâches
+\[
+  w^\mu=\sqrt{D/r}\,A v^\mu,\qquad A\in\R^{D\times r},
+\]
+partageant un sous-espace latent de rang $r$ \cite{takanami2026}. Leur limite
+fait croître $D$, la longueur de contexte, le nombre de tâches de base, le rang
+et le nombre d'instances en gardant fixes plusieurs rapports :
+\[
+ \alpha=L/D,\qquad \rho=r/D,\qquad
+ \kappa=M_0/D,\qquad \gamma=M/(DM_0).
+\]
+Le calcul de répliques prédit une décomposition en loi
+\[
+ \widehat y\overset{d}{=}
+ \widehat y_{\mathrm{algo}}+
+ \widehat y_{\mathrm{mem}}+
+ \widehat y_{\mathrm{struct}}.
+\]
+Le terme algorithmique projette un estimateur de type matched filter sur le
+sous-espace appris $AA^\top$ ; les deux autres termes représentent un bruit lié
+aux tâches mémorisées et un bruit lié au défaut d'alignement avec la structure.
+Le papier prédit aussi :
+\begin{itemize}[leftmargin=*]
+  \item une transition lorsque la diversité de tâches devient suffisante par
+  rapport au rang latent ;
+  \item un compromis spécialisation--robustesse OOD ;
+  \item une régularisation implicite d'ordre $1/\alpha$ créée par les
+  fluctuations d'un contexte de pré-entraînement fini ;
+  \item un accord numérique des paramètres d'ordre et du risque avec les
+  expériences, plus une vérification qualitative sur attention softmax.
+\end{itemize}
+
+Il faut toutefois employer la terminologie des auteurs : il s'agit de
+\emph{Results} issus de la méthode des répliques, et non de théorèmes rigoureux,
+car l'argument utilise continuation analytique, échange de limites et ansatz de
+symétrie des répliques. Le résultat est extrêmement pertinent pour modéliser la
+phase d'encodeur ou l'apprentissage d'un sous-espace de préconditionnement. Il
+ne traite pas :
+\begin{enumerate}[leftmargin=*]
+  \item une attention profonde ou bouclée ;
+  \item une matrice de Galerkin ou un opérateur SPD dépendant de la tâche ;
+  \item une propagation d'erreur de $\widehat A$ vers $\widehat A^{-1}f$ ;
+  \item un polynôme de solveur Richardson, HeavyBall, Chebyshev ou CG ;
+  \item le coût ou la stabilité d'un préconditionneur appris.
+\end{enumerate}
+
+La bonne utilisation dans le projet est donc de reprendre sa machinerie pour
+la loi de l'encodeur ou du préconditionneur, puis de composer cette loi avec un
+calcul spectral exact du décodeur. Le risque du décodeur fixe peut souvent
+s'écrire comme une intégrale spectrale pondérée ; c'est ce chaînon qui manque
+au papier de faible rang.
+
+\subsection{Rigueur possible au-delà des répliques}
+
+La méthode des répliques est un calcul heuristique puissant, mais certaines de
+ses prédictions peuvent être rendues rigoureuses par interpolation adaptative
+dans des modèles bayésiens ou par état d'évolution AMP
+\cite{barbier2019adaptive,bayati2011amp}. Pour un projet de solveur, trois
+niveaux de résultat peuvent coexister proprement :
+\begin{enumerate}[leftmargin=*]
+  \item un théorème déterministe conditionnel en fonction du spectre de
+  $B_\theta\widehat A$ ;
+  \item une borne probabiliste non asymptotique pour l'encodeur ;
+  \item une prédiction replica/RMT précise du risque typique en limite
+  proportionnelle, explicitement annoncée comme telle.
+\end{enumerate}
+Cette séparation évite de transformer une formule de répliques en garantie
+uniforme injustifiée.
+
+\section{Des systèmes linéaires aux opérateurs et aux EDP}
+
+\subsection{ICL de systèmes linéaires}
+
+Cole, Lu, Xu et Zhang étudient directement l'ICL de systèmes linéaires avec
+une couche de Transformer linéaire \cite{cole2025systems}. Ils donnent des lois
+d'échelle en fonction du nombre de tâches de pré-entraînement $N$, de la
+longueur d'entraînement $n$ et de la longueur de prompt test $m$, ainsi qu'une
+condition de diversité nécessaire et suffisante dans leur cadre pour certains
+shifts de tâches. Leur théorème abstrait transfère le résultat fini-dimensionnel
+à l'apprentissage d'opérateurs et donne une application aux EDP elliptiques
+linéaires après projection de Galerkin.
+
+Ce travail est la référence théorique la plus proche, mais le modèle est un
+prédicteur linéaire à une couche, pas un solveur récurrent explicitement
+analysé. Sa borne regroupe l'effet statistique et l'approximation de
+discrétisation ; elle ne compare pas les complexités en profondeur de
+Richardson, HeavyBall, Chebyshev et PCG, et n'apprend pas explicitement un
+préconditionneur SPD conditionné par le prompt.
+
+Le prolongement aux systèmes dynamiques montre par ailleurs une séparation de
+profondeur : des Transformers multi-couches atteignent l'échelle d'un
+estimateur moindres carrés alors qu'une classe à une couche conserve une erreur
+non nulle sur données non-i.i.d. \cite{cole2025dynamics}. Des travaux voisins
+interprètent les Transformers comme estimateurs d'état implicites ou étudient
+la représentation du filtre de Kalman
+\cite{goel2024kalman,akram2024state}. Ils confirment qu'un contexte corrélé
+change qualitativement le problème par rapport à la régression i.i.d.
+
+\subsection{Operator learning classique}
+
+DeepONet sépare un réseau \emph{branch}, qui encode la fonction d'entrée
+échantillonnée, et un réseau \emph{trunk}, qui encode le point de sortie
+\cite{lu2021deeponet}. FNO paramètre l'opérateur intégral dans l'espace de
+Fourier et vise une certaine invariance à la résolution
+\cite{li2021fno}. Le cadre neural operator général formalise des couches entre
+espaces de fonctions et leurs propriétés d'approximation
+\cite{kovachki2023neuraloperator}. Des estimations d'erreur pour DeepONet
+séparent encodage, approximation et reconstruction
+\cite{lanthaler2022error}; des bornes de complexité de Rademacher ont aussi été
+développées pour FNO \cite{kim2022rademacher}.
+
+Ces travaux apprennent habituellement une loi amortie sur une distribution
+d'opérateurs ou de paramètres. Ils ne réalisent pas nécessairement une
+adaptation ICL à un opérateur entièrement nouveau à partir de quelques paires
+$(f_i,u_i)$.
+
+\subsection{Transformers comme neural operators}
+
+Le Galerkin Transformer montre que l'attention linéarisée sans softmax peut être
+interprétée comme une projection de type Petrov--Galerkin et l'applique à des
+problèmes directs et à une identification de coefficient d'interface
+\cite{cao2021galerkin}. OFormer développe une architecture Transformer pour les
+opérateurs spatio-temporels \cite{li2022oformer}. GNOT traite entrées
+hétérogènes, maillages irréguliers et décomposition géométrique souple
+\cite{hao2023gnot}. Transolver construit des tokens physiques et une attention
+efficace pour géométries générales \cite{wu2024transolver}.
+
+Ces architectures sont des surrogates puissants ; leur attention n'implique pas
+à elle seule une itération de Galerkin ou de Krylov. La ressemblance entre
+attention et projection variationnelle est structurelle, pas une preuve de
+convergence vers la solution d'un système donné.
+
+\subsection{Pré-entraînement multi-EDP et modèles de fondation}
+
+DPOT combine Transformer d'opérateur, attention de Fourier et pré-entraînement
+auto-régressif débruitant sur de nombreuses trajectoires
+\cite{hao2024dpot}. Poseidon utilise un Transformer d'opérateur multi-échelle
+et la propriété de semi-groupe pour pré-entraînement et transfert sur plusieurs
+EDP \cite{herde2024poseidon}. PDEformer représente symboliquement l'EDP comme
+un graphe, traité par Transformer, puis décode une représentation implicite de
+la solution ; il fournit aussi des expériences d'identification de coefficients
+\cite{ye2024pdeformer}. UPS et Unisolver visent également l'adaptation
+multi-physique et les changements de modalité
+\cite{shen2024ups,lu2024unisolver}.
+
+Leurs résultats portent surtout sur accuracy, sample efficiency, zero-shot ou
+fine-tuning. Ils ne donnent généralement pas une décomposition complète
+\[
+  \text{discrétisation} + \text{identification de loi}
+  + \text{solveur fini} + \text{méta-généralisation}.
+\]
+Ils constituent en revanche des baselines empiriques nécessaires si la
+contribution revendique un avantage pratique général en EDP.
+
+\subsection{In-context operator learning}
+
+ICON reçoit des démonstrations fonctionnelles comme prompt et peut réaliser
+différentes prédictions directes ou inverses sans fine-tuning
+\cite{yang2023icon}. Une étude sur les lois de conservation 1D montre une
+généralisation à certaines formes d'EDP non vues, mais aussi la dépendance au
+design du prompt et au domaine de tâches \cite{yang2024icongeneralization}.
+Cole et al. fournissent la première justification mathématique directe de ce
+paradigme pour des opérateurs linéaires \cite{cole2025systems}. Mishra, Patel et
+Tewari montrent enfin que des Continuum Transformers peuvent réaliser un
+gradient d'opérateur en contexte \cite{mishra2025continuum}.
+
+Cette branche est la plus proche du projet au niveau de la sémantique du
+prompt. La lacune demeure le décodeur numérique : ICON apprend une règle de
+prédiction, alors que le projet cherche à exposer et accélérer la résolution du
+système conditionné par le prompt.
+
+\section{Problèmes inverses en EDP et architectures Transformer}
+
+\subsection{Surrogates inverses et opérateurs inverses}
+
+Les problèmes inverses en EDP sont mal posés : stabilité conditionnelle,
+régularisation et bruit d'observation ne peuvent être ignorés
+\cite{engl1996inverse,stuart2010bayesian}. Un réseau qui prédit un coefficient
+à partir d'une solution n'est donc pas seulement un solveur de système
+linéaire ; il apprend un inverse régularisé dépendant du prior et du modèle de
+bruit.
+
+ViTO utilise une architecture Vision Transformer--Operator pour des problèmes
+inverses paramétriques \cite{ovadia2023vito}. Les Neural Inverse Operators
+apprennent directement une application données--paramètre pour des inversions
+d'EDP \cite{molinaro2023nio}. BiLO imbrique un opérateur local dans une
+optimisation bi-niveau pour l'identification de paramètres
+\cite{cao2024bilo}. LNO réalise des calculs directs et inverses dans un espace
+latent via cross-attention physique \cite{wang2024lno}. PDEformer inclut aussi
+la récupération de coefficients \cite{ye2024pdeformer}.
+
+Ces méthodes doivent être comparées sur l'identification de $a$ ou $V$, mais
+elles ne répondent pas automatiquement à la question du meilleur décodeur de
+$\widehat A u=f$. Inverse statistique et solveur numérique doivent rester deux
+étages auditables.
+
+\subsection{Formulation faible et identification de faible dimension}
+
+Si
+\[
+  a_z(x)=a_0(x)+\sum_{k=1}^K z_k\psi_k(x),
+\]
+les paires de prompt $(f_i,u_i)$ et des fonctions test $v_r$ donnent
+\[
+  \sum_{k=1}^K z_k
+  \int_\Omega \psi_k\nabla u_i\!\cdot\nabla v_r
+  =
+  \int_\Omega f_i v_r-
+  \int_\Omega a_0\nabla u_i\!\cdot\nabla v_r.
+\]
+Après empilement, $G_mz\simeq b_m$. Cette réduction relie le problème inverse
+elliptique à une régression linéaire structurée, mais les lignes de $G_m$ ne
+sont ni isotropes ni indépendantes de la tâche. Leur covariance dépend de la
+PDE, du choix de tests, de l'excitation des modes par les sources et du bruit
+sur $u_i$. Les théories ICL gaussiennes ne s'appliquent donc pas par simple
+substitution ; il faut contrôler ou modéliser ce design structuré.
+
+\section{Préconditionnement appris et solveurs hybrides}
+
+\subsection{Pourquoi cette littérature est une baseline obligatoire}
+
+La littérature « learned solver » adopte souvent une stratégie plus sûre que
+l'imitation complète d'un algorithme : le réseau produit un warm start, une
+correction de grille grossière, une factorisation approchée ou un
+préconditionneur ; un solveur classique impose ensuite la précision finale.
+Cette séparation offre des résidus vérifiables et permet de conserver des
+garanties numériques.
+
+Sappl et al. apprennent des préconditionneurs pour CG
+\cite{sappl2019preconditioners}. Li et al. apprennent un préconditionneur de
+CG pour des systèmes issus d'EDP \cite{li2023preconditioner}. NeuralIF produit
+par GNN une factorisation incomplète parcimonieuse et l'entraîne via un proxy
+Frobenius efficace \cite{hausner2023neuralif}. FCG-NO utilise un neural
+operator potentiellement non linéaire comme préconditionneur d'un flexible CG,
+avec transfert entre résolutions \cite{rudikov2024fcgno}. UGrid apprend un
+schéma multigrille avec contrôle de convergence \cite{han2024ugrid}. Les
+travaux de multigrille appris remontent au moins à l'apprentissage de
+prolongations et de coarse operators par Greenfeld et al.
+\cite{greenfeld2019multigrid}.
+
+Ces méthodes sont les vraies baselines d'une revendication « meilleur solveur
+decoder ». FNO, DeepONet ou ICON seuls ne suffisent pas comme comparateurs : il
+faut aussi mesurer contre Jacobi/ILU/AMG, CG/PCG, Chebyshev, warm start neural
+et préconditionneur neural + Krylov.
+
+\subsection{Trois architectures possibles pour le projet}
+
+\paragraph{A. Transformer pur à polynôme fixe.}
+Le bloc partagé conserve $(z_\ell,z_{\ell-1})$ et applique
+\begin{equation}
+z_{\ell+1}=z_\ell+\alpha B_\theta(\cC)
+(c-Hz_\ell)+\beta(z_\ell-z_{\ell-1}).
+\label{eq:hb}
+\end{equation}
+L'attention calcule le produit prompt--vecteur ou l'agrégation faible ; le
+mélange linéaire des canaux réalise les coefficients scalaires. Aucune division
+adaptative n'est requise. Avec $\beta=0$, on retrouve Richardson. Avec
+$\beta>0$, on obtient HeavyBall. Des coefficients dépendant de $\ell$ donnent
+une semi-itération de Chebyshev.
+
+\paragraph{B. Transformer-conditioned PCG.}
+Le Transformer produit un préconditionneur SPD, par exemple
+\[
+ B_\theta(\cC)=D^{-1/2}
+ (I+U_\theta(\cC)U_\theta(\cC)^\top)D^{-1/2},
+\]
+puis une cellule PCG externe effectue exactement les produits scalaires,
+quotients et conjugaisons. C'est probablement la meilleure architecture
+pratique, mais elle doit être nommée \emph{Transformer-conditioned PCG} et non
+« vanilla Transformer implements PCG ».
+
+\paragraph{C. Transformer pur imitant PCG.}
+Il faut stocker résidu, résidu préconditionné, direction, plusieurs produits
+scalaires et des quotients dépendant du prompt et de l'itération. Une
+construction par approximation MLP est possible sur un domaine dont les
+dénominateurs sont séparés de zéro, mais elle ajoute une erreur arithmétique et
+plusieurs sous-blocs par itération. Cette voie est théoriquement originale,
+mais moins naturelle pour le premier démonstrateur.
+
+\subsection{HeavyBall, Chebyshev et PCG : comparaison honnête}
+
+Pour $S=B^{1/2}HB^{1/2}$ avec spectre dans $[\mu,L_s]$, HeavyBall constant
+obéit mode par mode à
+\[
+ e_{\ell+1}(\lambda)=
+ (1+\beta-\alpha\lambda)e_\ell(\lambda)
+ -\beta e_{\ell-1}(\lambda).
+\]
+Les paramètres quadratiques classiques sont
+\[
+ \alpha_\star=\frac{4}{(\sqrt{L_s}+\sqrt\mu)^2},\qquad
+ \beta_\star=
+ \left(\frac{\sqrt{L_s}-\sqrt\mu}
+ {\sqrt{L_s}+\sqrt\mu}\right)^2.
+\]
+Le taux asymptotique modal est
+$q=(\sqrt\kappa-1)/(\sqrt\kappa+1)$, mais une borne finie doit conserver le
+facteur transitoire lié aux racines doubles aux extrémités. Chebyshev minimise
+un polynôme sur un intervalle spectral connu et constitue la meilleure
+baseline polynomiale non adaptative. PCG choisit ses coefficients en fonction
+du second membre et du sous-espace de Krylov ; il reste la baseline supérieure
+pour SPD, mais sa non-linéarité en $f$ complique une théorie replica du décodeur.
+
+Le meilleur compromis scientifique est donc : HeavyBall partagé comme
+contribution « Transformer pur », Chebyshev comme contrôle polynomial, PCG
+comme oracle numérique, et Transformer-conditioned PCG comme architecture
+hybride orientée performance.
+
+\section{Décomposition des erreurs : ce qu'une théorie complète doit prouver}
+
+Soit $A$ l'opérateur discret vrai, $\widehat A$ l'opérateur encodé, et
+$\widehat u_L$ la sortie après $L$ boucles. Une décomposition minimale est
+\begin{align}
+\E\|\widehat u_L-u\|_{\cH}^2
+\lesssim{}&
+\underbrace{\varepsilon_{\mathrm{disc}}(d)}_{\text{Galerkin/maillage}}
++\underbrace{\varepsilon_{\mathrm{inv}}(m,\sigma,K)}_{\text{identification de loi}}
+\nonumber\\
+&+\underbrace{\varepsilon_{\mathrm{meta}}(N,n)}_{\text{pré-entraînement}}
++\underbrace{\varepsilon_{\mathrm{solver}}(L,B_\theta\widehat A)}_{\text{profondeur finie}}
++\underbrace{\varepsilon_{\mathrm{arch}}}_{\text{réalisation par attention}}.
+\label{eq:riskdecomp}
+\end{align}
+
+Pour un décodeur polynomial fixe, conditionnellement à $\widehat A$ et
+$B_\theta$, la sortie est linéaire en $f$. Si $p_L$ est son polynôme résiduel,
+\[
+ \widehat u_L=widehat A^{-1}
+ [I-p_L(B_\theta\widehat A)]f.
+\]
+Pour $f\sim\mathcal N(0,\Sigma_f)$, le risque conditionnel du solveur admet une
+trace exacte
+\[
+ \E_f\|\widehat u_L-\widehat A^{-1}f\|_2^2
+ =\tr(\Sigma_f E_L^\top E_L),
+ \quad E_L=\widehat A^{-1}p_L(B_\theta\widehat A).
+\]
+Cette formule rend HeavyBall/Chebyshev compatibles avec une intégration RMT ou
+replica de la loi spectrale de l'encodeur. PCG, dont les coefficients dépendent
+de $f$, demande des paramètres d'ordre supplémentaires sur le processus de
+Krylov.
+
+La propagation opérateur--solution suit l'identité de résolvante
+\[
+ \widehat A^{-1}-A^{-1}
+ =\widehat A^{-1}(A-\widehat A)A^{-1}.
+\]
+Sous coercivité uniforme $A,\widehat A\succeq a_0I$, une borne d'opérateur pour
+$\widehat A-A$ devient une borne de solution avec un facteur $a_0^{-2}$. Ce
+pont est indispensable : une bonne perte Frobenius sur l'opérateur n'est pas
+automatiquement une bonne erreur de solution si les erreurs sont alignées avec
+des modes spectraux fragiles.
+
+\section{Tableau critique de la littérature la plus proche}
+
+\begin{longtable}{p{0.19\textwidth}p{0.18\textwidth}p{0.22\textwidth}p{0.26\textwidth}}
+\toprule
+Référence & Objet & Résultat central & Ce qui manque pour notre question \\
+\midrule
+\endfirsthead
+\toprule
+Référence & Objet & Résultat central & Ce qui manque pour notre question \\
+\midrule
+\endhead
+Garg et al. \cite{garg2022} & ICL régression & Transformer entraîné proche de
+moindres carrés & mécanisme unique, EDP, solveur spectral \\
+Akyürek et al. \cite{akyurek2023} & algorithmes ICL & constructions GD, ridge,
+OLS & apprentissage d'un opérateur PDE et stabilité OOD \\
+Ahn et al. \cite{ahn2023preconditioned} & régression anisotrope & gradient
+préconditionné & profondeur accélérée et contrainte SPD \\
+Fu et al. \cite{fu2024secondorder} & second ordre & construction et alignement
+Newton & arithmétique, EDP et erreur encodeur--décodeur \\
+Gatmiry et al. \cite{gatmiry2024learn} & Transformer bouclé & multi-pas GD
+appris & acceleration HB/Chebyshev et problème inverse \\
+Lu et al. \cite{lu2025asymptotic} & théorie haute dimension & risque exact,
+double descente, diversité & opérateur SPD, profondeur et solveur \\
+Takanami et al. \cite{takanami2026} & tâches de faible rang & décomposition
+replica et transition de phase & décodeur profond et inversion $A^{-1}$ \\
+Cole et al. \cite{cole2025systems} & systèmes linéaires/EDP & bornes ID/OOD et
+transfert opérateur & solveur récurrent accéléré et préconditionneur appris \\
+Yan et al. \cite{yan2026richardson} & KRR softmax & Richardson constructif avec
+garantie & meilleur solveur, EDP et apprentissage SPD \\
+ICON \cite{yang2023icon} & ICL d'opérateur & adaptation sans fine-tuning &
+garantie de solveur et coût spectral \\
+Poseidon/DPOT \cite{herde2024poseidon,hao2024dpot} & fondation EDP & transfert
+empirique multi-physique & mécanisme de résolution et théorie de risque \\
+NeuralIF \cite{hausner2023neuralif} & préconditionneur CG & factorisation
+apprise efficace & ICL par prompt et théorie meta/OOD \\
+FCG-NO \cite{rudikov2024fcgno} & neural operator + FCG & préconditionneur non
+linéaire multi-résolution & Transformer pur et décomposition replica \\
+\bottomrule
+\end{longtable}
+
+\section{La lacune précise et la question que nous améliorons}
+
+\subsection{Lacune}
+
+Aucune des branches examinées ne réunit simultanément les cinq propriétés
+suivantes :
+\begin{enumerate}[leftmargin=*]
+  \item une tâche est un opérateur elliptique caché, identifié uniquement par
+  un prompt de paires source--solution ;
+  \item le modèle se généralise à un nouvel opérateur sans mise à jour de ses
+  poids ;
+  \item le décodeur est un solveur accéléré explicite, bouclé et à poids
+  partagés, plutôt qu'un surrogate opaque ;
+  \item le préconditionnement est appris à partir du prompt avec une propriété
+  SPD ou une stabilité spectrale vérifiable ;
+  \item la théorie sépare erreur de Galerkin, erreur d'encodeur, erreur de
+  profondeur, réalisation architecturale et généralisation ID/OOD, avec en
+  plus une prédiction haute dimension du risque typique.
+\end{enumerate}
+
+\subsection{Question principale proposée}
+
+\begin{quote}
+\textbf{Peut-on pré-entraîner un Transformer bouclé qui, à partir d'un prompt
+de paires source--solution générées par un opérateur elliptique inconnu,
+identifie les directions spectrales utiles et applique à un nouveau second
+membre un décodeur préconditionné accéléré à poids partagés, de sorte que (i)
+sa trajectoire interne réalise exactement ou uniformément HeavyBall/Chebyshev,
+(ii) son erreur totale admet une décomposition non asymptotique
+encodeur--solveur, (iii) son risque typique en grande dimension est prédit par
+RMT/répliques, et (iv) il surpasse Richardson et les neural operators directs à
+budget égal tout en approchant PCG ?}
+\end{quote}
+
+Cette formulation améliore la question de Cole et al. en remplaçant la seule
+prédiction d'un système linéaire par une architecture encodeur--solveur
+explicite et accélérée. Elle améliore la ligne von Oswald--Ahn--Gatmiry en
+passant d'une régression synthétique à un design faible issu d'EDP et en
+distinguant apprentissage du préconditionneur et itération. Elle améliore la
+ligne Takanami--Lu en ajoutant une dynamique de décodeur profonde dont le
+polynôme spectral est observable. Enfin, elle se distingue de FCG-NO en
+imposant adaptation ICL à une loi cachée et en visant un circuit Transformer
+pur avant l'hybride PCG.
+
+\subsection{Sous-questions falsifiables}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Réalisation.} Un bloc partagé sans MLP arithmétique peut-il
+  réaliser l'agrégation $G_m^\top(b_m-G_mz_\ell)$ et la mémoire HeavyBall avec
+  une erreur uniforme contrôlée ?
+  \item \textbf{Apprentissage spectral.} Le préconditionneur appris réduit-il
+  réellement $\cond(B_\theta^{1/2}H B_\theta^{1/2})$, ou seulement la perte sur
+  la distribution de seconds membres vue ?
+  \item \textbf{Structure de faible rang.} Le modèle retrouve-t-il un sous-espace
+  de correction analogue au $AA^\top$ de Takanami et al., et existe-t-il une
+  transition en fonction du rang latent, de la diversité et du nombre de
+  prompts ?
+  \item \textbf{Robustesse.} Les coefficients partagés restent-ils stables sous
+  shift de maillage, covariance des sources, coefficients d'EDP et condition
+  number ?
+  \item \textbf{Performance.} À nombre égal de produits $Hv$, HeavyBall appris
+  bat-il Richardson ; Chebyshev oracle borne-t-il le meilleur polynôme fixe ;
+  combien reste-t-il d'écart à PCG, AMG et neural-preconditioned CG ?
+  \item \textbf{Théorie.} La loi replica de l'encodeur, composée avec le
+  polynôme du décodeur, prédit-elle le risque couche par couche et ses pics
+  transitoires ?
+\end{enumerate}
+
+\section{Contributions réalistes et ordre de travail}
+
+Une hiérarchie crédible de contributions est la suivante.
+
+\paragraph{Contribution 1 : mécanisme exact.}
+Construire un état de tokens contenant $(z_\ell,z_{\ell-1})$, des tokens de
+prompt faibles et éventuellement des tokens spectraux. Prouver qu'un bloc
+partagé implémente un pas de HeavyBall préconditionné, modulo l'erreur déjà
+nécessaire pour le produit prompt--vecteur. Cette construction ne requiert ni
+inverse scalaire adaptatif ni approximation de quotient.
+
+\paragraph{Contribution 2 : transfert encodeur--décodeur.}
+Établir un théorème conditionnel qui compose : coercivité et Galerkin,
+concentration de $\widehat A$, stabilité de $B_\theta$, polynôme résiduel
+$p_L$, puis risque de solution. Comparer la borne et la trace exacte à
+Richardson.
+
+\paragraph{Contribution 3 : théorie haute dimension.}
+Adapter le modèle de faible rang aux lignes de design faible $G_m$, obtenir la
+loi du sous-espace ou du préconditionneur appris, puis intégrer
+$p_L(\lambda)^2$ contre la mesure spectrale limite. Cette partie peut être
+annoncée comme prédiction replica, avec une validation numérique systématique.
+
+\paragraph{Contribution 4 : benchmark solveur.}
+Comparer, à même nombre de produits matrice--vecteur et même budget mémoire :
+Richardson scalaire, Jacobi--Richardson, HeavyBall appris/oracle, Chebyshev,
+CG/PCG, AMG/ILU, NeuralIF ou préconditionneur neuronal, FCG-NO, ainsi que des
+surrogates directs FNO/GNOT/Poseidon lorsque le jeu de données le permet.
+
+\paragraph{Contribution 5 : hybride performance.}
+Une fois le mécanisme pur établi, entraîner un Transformer qui produit un
+préconditionneur SPD pour un PCG externe. Cette version peut viser la meilleure
+performance pratique sans diluer la contribution théorique du décodeur pur.
+
+\section{Protocole expérimental minimal pour soutenir les revendications}
+
+\subsection{Axes de données}
+
+Les expériences doivent varier séparément : dimension de Galerkin $d$, rang
+latent $K$, longueur du prompt $m$, nombre de tâches $N$, bruit, condition
+number, covariance des sources, diversité des opérateurs, géométrie et
+résolution. Les shifts ID/OOD doivent inclure :
+\begin{itemize}[leftmargin=*]
+  \item nouvelles réalisations du même prior de coefficients ;
+  \item rang ou longueur de corrélation hors entraînement ;
+  \item contraste elliptique plus élevé ;
+  \item maillage ou base différents ;
+  \item nouvelles covariances de seconds membres ;
+  \item combinaisons de directions spectrales rares.
+\end{itemize}
+
+\subsection{Métriques}
+
+La seule MSE de sortie est insuffisante. Il faut rapporter :
+\begin{enumerate}[leftmargin=*]
+  \item erreur coefficient/opérateur en Frobenius et norme opérateur ;
+  \item erreur solution $L^2$ et énergie $H^1$ ;
+  \item résidu relatif et erreur par produit $Hv$ ;
+  \item spectre de $B_\theta^{1/2}HB_\theta^{1/2}$ et conditionnement effectif ;
+  \item stabilité couche par couche, facteur transitoire et extrapolation en
+  nombre de boucles ;
+  \item coût total, mémoire, paramètres, temps de préconditionnement et temps
+  jusqu'à une tolérance ;
+  \item calibration d'incertitude si l'inverse statistique est revendiqué.
+\end{enumerate}
+
+\subsection{Tests mécanistiques}
+
+La trajectoire cachée doit être projetée vers les itérés Richardson, HeavyBall,
+Chebyshev, CG et Newton sur exactement les mêmes prompts. Une corrélation
+linéaire seule ne suffit pas : comparer aussi les résidus, les polynômes
+spectraux par mode, les mises à jour et les contrefactuels obtenus en modifiant
+le spectre sans changer les vecteurs propres. Des ablations doivent retirer la
+mémoire $z_{\ell-1}$, partager ou non les poids, figer ou apprendre
+$B_\theta$, et changer la distribution des seconds membres.
+
+\section{Conclusion}
+
+La littérature soutient trois constats robustes. Premièrement, les Transformers
+peuvent apprendre ou représenter des algorithmes de régression en contexte, du
+gradient préconditionné à des méthodes plus rapides. Deuxièmement, les
+Transformers et neural operators sont devenus des surrogates puissants pour les
+EDP et peuvent parfois s'adapter sans fine-tuning. Troisièmement, les approches
+hybrides réseau--Krylov sont aujourd'hui les concurrentes naturelles lorsque la
+précision numérique finale compte.
+
+La contribution non couverte n'est donc pas « utiliser un Transformer pour une
+EDP » ni « montrer qu'il peut faire Richardson ». Elle est de construire et
+analyser un \emph{solveur-décodeur en contexte accéléré} : l'opérateur caché et
+son préconditionnement sont appris à partir du prompt, la dynamique de
+résolution est explicite et bouclée, les erreurs statistiques et numériques
+sont séparées, et la théorie haute dimension prédit comment la structure de
+faible rang apprise se transforme en convergence du solveur. HeavyBall fournit
+le premier mécanisme pur le plus simple ; Chebyshev est le contrôle polynomial
+nécessaire ; PCG reste la baseline numérique et le débouché hybride.
+
+\clearpage
+\begin{thebibliography}{99}
+\small
+
+\bibitem{brown2020}
+T. B. Brown, B. Mann, N. Ryder, et al.
+\newblock Language Models Are Few-Shot Learners.
+\newblock \emph{NeurIPS}, 2020. \href{https://arxiv.org/abs/2005.14165}{arXiv:2005.14165}.
+
+\bibitem{xie2022bayesian}
+S. M. Xie, A. Raghunathan, P. Liang, and T. Ma.
+\newblock An Explanation of In-Context Learning as Implicit Bayesian Inference.
+\newblock \emph{ICLR}, 2022. \href{https://arxiv.org/abs/2111.02080}{arXiv:2111.02080}.
+
+\bibitem{dai2023meta}
+D. Dai, Y. Sun, L. Dong, et al.
+\newblock Why Can GPT Learn In-Context? Language Models Implicitly Perform Gradient Descent as Meta-Optimizers.
+\newblock 2023. \href{https://arxiv.org/abs/2212.10559}{arXiv:2212.10559}.
+
+\bibitem{olsson2022}
+C. Olsson, N. Elhage, N. Nanda, et al.
+\newblock In-Context Learning and Induction Heads.
+\newblock 2022. \href{https://arxiv.org/abs/2209.11895}{arXiv:2209.11895}.
+
+\bibitem{chan2022distribution}
+S. C. Y. Chan, A. Santoro, A. K. Lampinen, et al.
+\newblock Data Distributional Properties Drive Emergent In-Context Learning in Transformers.
+\newblock \emph{NeurIPS}, 2022. \href{https://arxiv.org/abs/2205.05055}{arXiv:2205.05055}.
+
+\bibitem{chan2022weightscontext}
+S. C. Y. Chan, I. Dasgupta, J. Kim, et al.
+\newblock Transformers Generalize Differently from Information Stored in Context vs in Weights.
+\newblock 2022. \href{https://arxiv.org/abs/2210.05675}{arXiv:2210.05675}.
+
+\bibitem{min2022demonstrations}
+S. Min, X. Lyu, A. Holtzman, et al.
+\newblock Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?
+\newblock \emph{EMNLP}, 2022. \href{https://arxiv.org/abs/2202.12837}{arXiv:2202.12837}.
+
+\bibitem{wies2023learnability}
+N. Wies, Y. Levine, and A. Shashua.
+\newblock The Learnability of In-Context Learning.
+\newblock \emph{NeurIPS}, 2023. \href{https://arxiv.org/abs/2303.07895}{arXiv:2303.07895}.
+
+\bibitem{garg2022}
+S. Garg, D. Tsipras, P. Liang, and G. Valiant.
+\newblock What Can Transformers Learn In-Context? A Case Study of Simple Function Classes.
+\newblock \emph{NeurIPS}, 2022. \href{https://arxiv.org/abs/2208.01066}{arXiv:2208.01066}.
+
+\bibitem{akyurek2023}
+E. Akyürek, D. Schuurmans, J. Andreas, T. Ma, and D. Zhou.
+\newblock What Learning Algorithm Is In-Context Learning? Investigations with Linear Models.
+\newblock \emph{ICLR}, 2023. \href{https://arxiv.org/abs/2211.15661}{arXiv:2211.15661}.
+
+\bibitem{vonoswald2023}
+J. von Oswald, E. Niklasson, E. Randazzo, et al.
+\newblock Transformers Learn In-Context by Gradient Descent.
+\newblock \emph{ICML}, 2023. \href{https://arxiv.org/abs/2212.07677}{arXiv:2212.07677}.
+
+\bibitem{ahn2023preconditioned}
+K. Ahn, X. Cheng, H. Daneshmand, and S. Sra.
+\newblock Transformers Learn to Implement Preconditioned Gradient Descent for In-Context Learning.
+\newblock \emph{NeurIPS}, 2023. \href{https://arxiv.org/abs/2306.00297}{arXiv:2306.00297}.
+
+\bibitem{mahankali2023}
+A. Mahankali, T. B. Hashimoto, and T. Ma.
+\newblock One Step of Gradient Descent Is Provably the Optimal In-Context Learner with One Layer of Linear Self-Attention.
+\newblock 2023. \href{https://arxiv.org/abs/2307.03576}{arXiv:2307.03576}.
+
+\bibitem{zhang2023trained}
+R. Zhang, S. Frei, and P. L. Bartlett.
+\newblock Trained Transformers Learn Linear Models In-Context.
+\newblock 2023. \href{https://arxiv.org/abs/2306.09927}{arXiv:2306.09927}.
+
+\bibitem{wu2024tasks}
+J. Wu, D. Zou, Z. Chen, V. Braverman, Q. Gu, and P. L. Bartlett.
+\newblock How Many Pretraining Tasks Are Needed for In-Context Learning of Linear Regression?
+\newblock 2024. \href{https://arxiv.org/abs/2310.08391}{arXiv:2310.08391}.
+
+\bibitem{raventos2023}
+A. Raventós, M. Paul, F. Chen, and S. Ganguli.
+\newblock Pretraining Task Diversity and the Emergence of Non-Bayesian In-Context Learning for Regression.
+\newblock \emph{NeurIPS}, 2023. \href{https://arxiv.org/abs/2306.15063}{arXiv:2306.15063}.
+
+\bibitem{li2023algorithms}
+Y. Li, M. E. Ildiz, D. Papailiopoulos, and S. Oymak.
+\newblock Transformers as Algorithms: Generalization and Stability in In-Context Learning.
+\newblock \emph{ICML}, 2023. \href{https://arxiv.org/abs/2301.07067}{arXiv:2301.07067}.
+
+\bibitem{bai2023statisticians}
+Y. Bai, F. Chen, H. Wang, C. Xiong, and S. Mei.
+\newblock Transformers as Statisticians: Provable In-Context Learning with In-Context Algorithm Selection.
+\newblock \emph{NeurIPS}, 2023. \href{https://arxiv.org/abs/2306.04637}{arXiv:2306.04637}.
+
+\bibitem{fu2024secondorder}
+D. Fu, T.-Q. Chen, R. Jia, and V. Sharan.
+\newblock Transformers Learn to Achieve Second-Order Convergence Rates for In-Context Linear Regression.
+\newblock 2024. \href{https://arxiv.org/abs/2310.17086}{arXiv:2310.17086}.
+
+\bibitem{vladymyrov2024}
+M. Vladymyrov, J. von Oswald, M. Sandler, and R. Ge.
+\newblock Linear Transformers Are Versatile In-Context Learners.
+\newblock 2024. \href{https://arxiv.org/abs/2402.14180}{arXiv:2402.14180}.
+
+\bibitem{cheng2024functional}
+X. Cheng, Y. Chen, and S. Sra.
+\newblock Transformers Implement Functional Gradient Descent to Learn Non-Linear Functions In Context.
+\newblock 2024. \href{https://arxiv.org/abs/2312.06528}{arXiv:2312.06528}.
+
+\bibitem{gatmiry2024learn}
+K. Gatmiry, N. Saunshi, S. J. Reddi, S. Jegelka, and S. Kumar.
+\newblock Can Looped Transformers Learn to Implement Multi-step Gradient Descent for In-context Learning?
+\newblock 2024. \href{https://arxiv.org/abs/2410.08292}{arXiv:2410.08292}.
+
+\bibitem{gatmiry2024depth}
+K. Gatmiry, N. Saunshi, S. J. Reddi, S. Jegelka, and S. Kumar.
+\newblock On the Role of Depth and Looping for In-Context Learning with Task Diversity.
+\newblock 2024. \href{https://arxiv.org/abs/2410.21698}{arXiv:2410.21698}.
+
+\bibitem{chen2024looped}
+B. Chen, X. Li, Y. Liang, and Z. Shi.
+\newblock Bypassing the Exponential Dependency: Looped Transformers Efficiently Learn In-Context by Multi-step Gradient Descent.
+\newblock 2024. \href{https://arxiv.org/abs/2410.11268}{arXiv:2410.11268}.
+
+\bibitem{huang2025cot}
+J. Huang, Z. Wang, and J. D. Lee.
+\newblock Transformers Learn to Implement Multi-step Gradient Descent with Chain of Thought.
+\newblock 2025. \href{https://arxiv.org/abs/2502.21212}{arXiv:2502.21212}.
+
+\bibitem{chen2024sparse}
+X. Chen, L. Zhao, and D. Zou.
+\newblock How Transformers Utilize Multi-Head Attention in In-Context Learning? A Case Study on Sparse Linear Regression.
+\newblock 2024. \href{https://arxiv.org/abs/2408.04532}{arXiv:2408.04532}.
+
+\bibitem{jin2024mixture}
+Y. Jin, K. Balasubramanian, and L. Lai.
+\newblock In-context Learning for Mixture of Linear Regressions: Existence, Generalization and Training Dynamics.
+\newblock 2024. \href{https://arxiv.org/abs/2410.14183}{arXiv:2410.14183}.
+
+\bibitem{guo2023representations}
+T. Guo, W. Hu, S. Mei, et al.
+\newblock How Do Transformers Learn In-Context Beyond Simple Functions? A Case Study on Learning with Representations.
+\newblock 2023. \href{https://arxiv.org/abs/2310.10616}{arXiv:2310.10616}.
+
+\bibitem{kwon2025subspace}
+S. M. Kwon, A. S. Xu, C. Yaras, et al.
+\newblock Out-of-Distribution Generalization of In-Context Learning: A Low-Dimensional Subspace Perspective.
+\newblock 2025. \href{https://arxiv.org/abs/2505.14808}{arXiv:2505.14808}.
+
+\bibitem{lu2025asymptotic}
+Y. M. Lu, M. I. Letey, J. A. Zavatone-Veth, A. Maiti, and C. Pehlevan.
+\newblock Asymptotic Theory of In-Context Learning by Linear Attention.
+\newblock \emph{PNAS}, 2025. \href{https://arxiv.org/abs/2405.11751}{arXiv:2405.11751}.
+
+\bibitem{letey2026alignment}
+M. I. Letey, J. A. Zavatone-Veth, Y. M. Lu, and C. Pehlevan.
+\newblock Pretrain-Test Task Alignment Governs Generalization in In-Context Learning.
+\newblock 2025/2026. \href{https://arxiv.org/abs/2509.26551}{arXiv:2509.26551}.
+
+\bibitem{takanami2026}
+K. Takanami, T. Takahashi, and Y. Kabashima.
+\newblock Learning Linear Regression with Low-Rank Tasks In-Context.
+\newblock \emph{AISTATS}, 2026. \href{https://arxiv.org/abs/2510.04548}{arXiv:2510.04548}.
+
+\bibitem{yan2026richardson}
+M. Yan, D. Li, C. Kulick, and S. Tang.
+\newblock Transformers Can Implement Preconditioned Richardson Iteration for In-Context Gaussian Kernel Regression.
+\newblock 2026. \href{https://arxiv.org/abs/2605.08475}{arXiv:2605.08475}.
+
+\bibitem{cole2025systems}
+F. Cole, Y. Lu, W. Xu, and T. Zhang.
+\newblock In-Context Learning of Linear Systems: Generalization Theory and Applications to Operator Learning.
+\newblock 2024/2025. \href{https://arxiv.org/abs/2409.12293}{arXiv:2409.12293}.
+
+\bibitem{cole2025dynamics}
+F. Cole, Y. Zhao, Y. Lu, and T. Zhang.
+\newblock In-Context Learning of Linear Dynamical Systems with Transformers: Approximation Bounds and Depth-Separation.
+\newblock 2025. \href{https://arxiv.org/abs/2502.08136}{arXiv:2502.08136}.
+
+\bibitem{goel2024kalman}
+G. Goel and P. Bartlett.
+\newblock Can a Transformer Represent a Kalman Filter?
+\newblock \emph{L4DC}, 2024. \href{https://proceedings.mlr.press/v242/goel24a.html}{PMLR 242}.
+
+\bibitem{akram2024state}
+U. Akram and H. Vikalo.
+\newblock Transformers as Implicit State Estimators: In-Context Learning in Dynamical Systems.
+\newblock 2024. \href{https://arxiv.org/abs/2410.16546}{arXiv:2410.16546}.
+
+\bibitem{lu2021deeponet}
+L. Lu, P. Jin, G. Pang, Z. Zhang, and G. E. Karniadakis.
+\newblock Learning Nonlinear Operators via DeepONet Based on the Universal Approximation Theorem of Operators.
+\newblock \emph{Nature Machine Intelligence}, 2021. \href{https://arxiv.org/abs/1910.03193}{arXiv:1910.03193}.
+
+\bibitem{li2021fno}
+Z. Li, N. Kovachki, K. Azizzadenesheli, et al.
+\newblock Fourier Neural Operator for Parametric Partial Differential Equations.
+\newblock \emph{ICLR}, 2021. \href{https://arxiv.org/abs/2010.08895}{arXiv:2010.08895}.
+
+\bibitem{kovachki2023neuraloperator}
+N. Kovachki, Z. Li, B. Liu, et al.
+\newblock Neural Operator: Learning Maps Between Function Spaces with Applications to PDEs.
+\newblock \emph{JMLR}, 2023. \href{https://arxiv.org/abs/2108.08481}{arXiv:2108.08481}.
+
+\bibitem{lanthaler2022error}
+S. Lanthaler, S. Mishra, and G. E. Karniadakis.
+\newblock Error Estimates for DeepONets: A Deep Learning Framework in Infinite Dimensions.
+\newblock \emph{Transactions of Mathematics and Its Applications}, 2022. \href{https://arxiv.org/abs/2102.09618}{arXiv:2102.09618}.
+
+\bibitem{kim2022rademacher}
+T. Kim and M. Kang.
+\newblock Bounding the Rademacher Complexity of Fourier Neural Operators.
+\newblock 2022. \href{https://arxiv.org/abs/2209.05150}{arXiv:2209.05150}.
+
+\bibitem{cao2021galerkin}
+S. Cao.
+\newblock Choose a Transformer: Fourier or Galerkin.
+\newblock \emph{NeurIPS}, 2021. \href{https://arxiv.org/abs/2105.14995}{arXiv:2105.14995}.
+
+\bibitem{li2022oformer}
+Z. Li, K. Meidani, and A. B. Farimani.
+\newblock Transformer for Partial Differential Equations' Operator Learning.
+\newblock 2022. \href{https://arxiv.org/abs/2205.13671}{arXiv:2205.13671}.
+
+\bibitem{hao2023gnot}
+Z. Hao, Z. Wang, H. Su, et al.
+\newblock GNOT: A General Neural Operator Transformer for Operator Learning.
+\newblock \emph{ICML}, 2023. \href{https://arxiv.org/abs/2302.14376}{arXiv:2302.14376}.
+
+\bibitem{wu2024transolver}
+H. Wu, H. Luo, H. Wang, et al.
+\newblock Transolver: A Fast Transformer Solver for PDEs on General Geometries.
+\newblock \emph{ICML}, 2024. \href{https://arxiv.org/abs/2402.02366}{arXiv:2402.02366}.
+
+\bibitem{hao2024dpot}
+Z. Hao, C. Su, S. Liu, et al.
+\newblock DPOT: Auto-Regressive Denoising Operator Transformer for Large-Scale PDE Pre-Training.
+\newblock 2024. \href{https://arxiv.org/abs/2403.03542}{arXiv:2403.03542}.
+
+\bibitem{herde2024poseidon}
+M. Herde, B. Raonić, T. Rohner, et al.
+\newblock Poseidon: Efficient Foundation Models for PDEs.
+\newblock 2024. \href{https://arxiv.org/abs/2405.19101}{arXiv:2405.19101}.
+
+\bibitem{ye2024pdeformer}
+Z. Ye, X. Huang, L. Chen, et al.
+\newblock PDEformer: Towards a Foundation Model for One-Dimensional Partial Differential Equations.
+\newblock 2024. \href{https://arxiv.org/abs/2402.12652}{arXiv:2402.12652}.
+
+\bibitem{shen2024ups}
+J. Shen, T. Marwah, and A. Talwalkar.
+\newblock UPS: Efficiently Building Foundation Models for PDE Solving via Cross-Modal Adaptation.
+\newblock 2024. \href{https://arxiv.org/abs/2403.07187}{arXiv:2403.07187}.
+
+\bibitem{lu2024unisolver}
+H. Zhou, Y. Ma, H. Wu, H. Wang, and M. Long.
+\newblock Unisolver: PDE-Conditional Transformers Towards Universal Neural PDE Solvers.
+\newblock 2024. \href{https://arxiv.org/abs/2405.17527}{arXiv:2405.17527}.
+
+\bibitem{yang2023icon}
+L. Yang, S. Liu, T. Meng, and S. J. Osher.
+\newblock In-Context Operator Learning with Data Prompts for Differential Equation Problems.
+\newblock \emph{PNAS}, 2023/2024. \href{https://arxiv.org/abs/2304.07993}{arXiv:2304.07993}.
+
+\bibitem{yang2024icongeneralization}
+L. Yang and S. J. Osher.
+\newblock PDE Generalization of In-Context Operator Networks: A Study on 1D Scalar Nonlinear Conservation Laws.
+\newblock 2024. \href{https://arxiv.org/abs/2401.07364}{arXiv:2401.07364}.
+
+\bibitem{mishra2025continuum}
+A. Mishra, Y. Patel, and A. Tewari.
+\newblock Continuum Transformers Perform In-Context Learning by Operator Gradient Descent.
+\newblock 2025. \href{https://arxiv.org/abs/2505.17838}{arXiv:2505.17838}.
+
+\bibitem{ovadia2023vito}
+O. Ovadia, A. Kahana, P. Stinis, E. Turkel, and G. E. Karniadakis.
+\newblock ViTO: Vision Transformer-Operator.
+\newblock 2023. \href{https://arxiv.org/abs/2303.08891}{arXiv:2303.08891}.
+
+\bibitem{molinaro2023nio}
+R. Molinaro, Y. Yang, B. Engquist, and S. Mishra.
+\newblock Neural Inverse Operators for Solving PDE Inverse Problems.
+\newblock 2023. \href{https://arxiv.org/abs/2301.11167}{arXiv:2301.11167}.
+
+\bibitem{cao2024bilo}
+R. Z. Zhang, C. E. Miles, X. Xie, and J. S. Lowengrub.
+\newblock BiLO: Bilevel Local Operator Learning for PDE Inverse Problems.
+\newblock 2024. \href{https://arxiv.org/abs/2404.17789}{arXiv:2404.17789}.
+
+\bibitem{wang2024lno}
+T. Wang and C. Wang.
+\newblock Latent Neural Operator for Solving Forward and Inverse PDE Problems.
+\newblock 2024. \href{https://arxiv.org/abs/2406.03923}{arXiv:2406.03923}.
+
+\bibitem{sappl2019preconditioners}
+J. Sappl, L. Seiler, M. Harders, and W. Rauch.
+\newblock Deep Learning of Preconditioners for Conjugate Gradient Solvers in Urban Water Related Problems.
+\newblock 2019. \href{https://arxiv.org/abs/1906.06925}{arXiv:1906.06925}.
+
+\bibitem{li2023preconditioner}
+Y. Li, P. Y. Chen, T. Du, and W. Matusik.
+\newblock Learning Preconditioner for Conjugate Gradient PDE Solvers.
+\newblock 2023. \href{https://arxiv.org/abs/2305.16432}{arXiv:2305.16432}.
+
+\bibitem{hausner2023neuralif}
+P. Häusner, O. Öktem, and J. Sjölund.
+\newblock Neural Incomplete Factorization: Learning Preconditioners for the Conjugate Gradient Method.
+\newblock 2023. \href{https://arxiv.org/abs/2305.16368}{arXiv:2305.16368}.
+
+\bibitem{rudikov2024fcgno}
+A. Rudikov, V. Fanaskov, E. Muravleva, Y. Laevsky, and I. Oseledets.
+\newblock Neural Operators Meet Conjugate Gradients: The FCG-NO Method for Efficient PDE Solving.
+\newblock 2024. \href{https://arxiv.org/abs/2402.05598}{arXiv:2402.05598}.
+
+\bibitem{han2024ugrid}
+X. Han, F. Hou, and H. Qin.
+\newblock UGrid: An Efficient-and-Rigorous Neural Multigrid Solver for Linear PDEs.
+\newblock 2024. \href{https://arxiv.org/abs/2408.04846}{arXiv:2408.04846}.
+
+\bibitem{greenfeld2019multigrid}
+D. Greenfeld, M. Galun, R. Basri, I. Yavneh, and R. Kimmel.
+\newblock Learning to Optimize Multigrid PDE Solvers.
+\newblock \emph{ICML}, 2019. \href{https://proceedings.mlr.press/v97/greenfeld19a.html}{PMLR 97}.
+
+\bibitem{engl1996inverse}
+H. W. Engl, M. Hanke, and A. Neubauer.
+\newblock \emph{Regularization of Inverse Problems}.
+\newblock Kluwer, 1996.
+
+\bibitem{stuart2010bayesian}
+A. M. Stuart.
+\newblock Inverse Problems: A Bayesian Perspective.
+\newblock \emph{Acta Numerica}, 2010.
+
+\bibitem{polyak1964}
+B. T. Polyak.
+\newblock Some Methods of Speeding Up the Convergence of Iteration Methods.
+\newblock \emph{USSR Computational Mathematics and Mathematical Physics}, 1964.
+
+\bibitem{saad2003}
+Y. Saad.
+\newblock \emph{Iterative Methods for Sparse Linear Systems}, second edition.
+\newblock SIAM, 2003.
+
+\bibitem{barbier2019adaptive}
+J. Barbier and N. Macris.
+\newblock The Adaptive Interpolation Method: A Simple Scheme to Prove Replica Formulas in Bayesian Inference.
+\newblock \emph{Probability Theory and Related Fields}, 2019.
+
+\bibitem{bayati2011amp}
+M. Bayati and A. Montanari.
+\newblock The Dynamics of Message Passing on Dense Graphs, with Applications to Compressed Sensing.
+\newblock \emph{IEEE Transactions on Information Theory}, 2011.
+
+\end{thebibliography}
+
+\end{document}

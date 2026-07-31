@@ -1,0 +1,323 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,booktabs}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+\newcommand{\R}{\mathbb R}
+\newcommand{\E}{\mathbb E}
+\newcommand{\op}{\mathrm{op}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\cond}{\operatorname{cond}}
+\title{Encoder--Decoder Generalization with Heavy--Ball, Chebyshev, and PCG}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Setup and the correct error decomposition}
+
+One raw PDE prompt is encoded into weak equations $(\widehat G,\widehat b)$.
+The ideal weak system is $(G,b)$.  Put
+\[
+ H=\tau G^\top G+\lambda I,
+ \quad c=\tau G^\top b,
+ \quad z^\star=H^{-1}c,
+\]
+and define $\widehat H,\widehat c,\widehat z^\star$ analogously.  Here
+$\tau,\lambda>0$.  A depth-$L$ controller returns $z_L$ for the encoded
+system.  The first-principles decomposition is
+\begin{equation}
+ z_L-z^\star
+ =\underbrace{z_L-\widehat z^\star}_{\text{finite-depth solver}}
+ +\underbrace{\widehat z^\star-z^\star}_{\text{encoder/system perturbation}}.
+ \label{eq:decomposition}
+\end{equation}
+The physical reconstruction error from the learned operator dictionary is a
+third, downstream term.  It must not be conflated with either term in
+\eqref{eq:decomposition}.
+
+\begin{lemma}[Exact weak-system perturbation bound]
+\label{lem:ridge-perturbation}
+Let $\Delta G=\widehat G-G$ and $\Delta b=\widehat b-b$.  Then
+\begin{align}
+ \|\widehat H-H\|_{\op}
+ &\leq \tau(\|G\|_{\op}+\|\widehat G\|_{\op})
+ \|\Delta G\|_{\op},\label{eq:delta-H}\\
+ \|\widehat c-c\|_2
+ &\leq\tau\bigl(
+ \|\widehat G\|_{\op}\|\Delta b\|_2
+ +\|\Delta G\|_{\op}\|b\|_2\bigr),\label{eq:delta-c}
+\end{align}
+and
+\begin{equation}
+ \|\widehat z^\star-z^\star\|_2
+ \leq \lambda^{-1}\|\widehat c-c\|_2
+ +\lambda^{-2}\|\widehat H-H\|_{\op}\|c\|_2.
+ \label{eq:ridge-transfer}
+\end{equation}
+\end{lemma}
+\begin{proof}
+Expand
+$\widehat G^\top\widehat G-G^\top G
+=\widehat G^\top\Delta G+\Delta G^\top G$ and
+$\widehat G^\top\widehat b-G^\top b
+=\widehat G^\top\Delta b+\Delta G^\top b$.
+For the last display use
+\[
+ \widehat H^{-1}\widehat c-H^{-1}c
+ =\widehat H^{-1}(\widehat c-c)
+ -\widehat H^{-1}(\widehat H-H)H^{-1}c
+\]
+and $H,\widehat H\succeq\lambda I$.
+\end{proof}
+
+This lemma is the missing bridge from encoder generalization to any of the
+three controllers.  It uses the actual weak-feature errors rather than an
+unjustified independence approximation between $G$ and the encoder residual.
+
+\section{One learned geometry, three optimization terms}
+
+Let $B_\theta(\mathcal C)\succ0$ be computed once from the encoded prompt and
+kept fixed through depth.  Suppose
+\[
+ \sigma(B_\theta^{1/2}\widehat H B_\theta^{1/2})
+ \subseteq[\mu,M],
+ \qquad \kappa=M/\mu.
+\]
+All bounds below are conditional on the encoded prompt and can subsequently be
+averaged over tasks.
+
+\subsection{Heavy--Ball}
+
+For the optimal constant coefficients, define
+\[
+ q=\frac{\sqrt\kappa-1}{\sqrt\kappa+1},
+ \qquad C_L(q)=1+L(1+q).
+\]
+With $z_{-1}=z_0=0$, the exact error polynomial obeys
+\[
+ p_{-1}^{\rm HB}=p_0^{\rm HB}=1,
+ \quad
+ p_{\ell+1}^{\rm HB}(x)
+ =(1+\beta-\alpha x)p_\ell^{\rm HB}(x)
+ -\beta p_{\ell-1}^{\rm HB}(x),
+\]
+and
+\begin{equation}
+ \|z_L^{\rm HB}-\widehat z^\star\|_{B_\theta^{-1}}
+ \leq C_L(q)q^L
+ \|\widehat z^\star\|_{B_\theta^{-1}}.
+ \label{eq:hb-envelope}
+\end{equation}
+The polynomial is independent of the right-hand side.  Conditional Gaussian
+trace formulas therefore remain exact.
+
+For prompt-adaptive HB, let
+$[\widehat\mu,\widehat M]$ be predicted from $\widehat H$ and the recovered
+subspace but not from $\widehat b$, and substitute it into the analytic
+minimax formulas for $(\alpha,\beta)$.  Define the actual stability event
+\[
+ \mathcal E_{\rm Jury}^{\rm HB}
+ =\{0\leq\beta<1,\ \alpha M<2(1+\beta)\}.
+\]
+On this event the scalar recurrence is stable on the true spectrum.  Full
+coverage $[\mu,M]\subseteq[\widehat\mu,\widehat M]$ is a stronger sufficient
+condition giving equation~\eqref{eq:hb-envelope} with the predicted interval,
+but it is not necessary for stability.  The resulting polynomial remains
+independent of $\widehat b$, so the conditional trace calculation is
+unchanged.  Across tasks, the spectral MLP and an additive failure term
+proportional to $\Pr((\mathcal E_{\rm Jury}^{\rm HB})^c)$ enter the population
+bound.
+
+\subsection{Chebyshev}
+
+Let $[\widehat\mu,\widehat M]$ be produced from $\widehat H$ and the recovered
+subspace, but not from $\widehat b$.  On the coverage event
+\[
+ \mathcal E_{\rm cov}
+ =\{[\mu,M]\subseteq[\widehat\mu,\widehat M]\},
+\]
+the fixed scalar recurrence generates a polynomial
+$p_L^{\rm Ch}(x)$ independent of the right-hand side and gives
+\begin{equation}
+ \|z_L^{\rm Ch}-\widehat z^\star\|_{B_\theta^{-1}}
+ \leq 2q_{\rm Ch}^{L}
+ \|\widehat z^\star\|_{B_\theta^{-1}},
+ \quad
+ q_{\rm Ch}
+ =\frac{\sqrt{\widehat M/\widehat\mu}-1}
+ {\sqrt{\widehat M/\widehat\mu}+1}.
+ \label{eq:cheb-envelope}
+\end{equation}
+Outside $\mathcal E_{\rm cov}$ there is no convergence guarantee.  A valid
+population-risk statement must therefore include either a deterministic
+certificate or an additive failure term proportional to
+$\Pr(\mathcal E_{\rm cov}^{c})$.  Reporting only the interval-regression MSE is
+insufficient.
+
+\subsection{PCG}
+
+Fixed-preconditioner PCG satisfies
+\begin{equation}
+ \|z_L^{\rm PCG}-\widehat z^\star\|_{\widehat H}
+ \leq 2q^L\|\widehat z^\star\|_{\widehat H}.
+ \label{eq:pcg-envelope}
+\end{equation}
+It also minimizes the energy error over the depth-$L$ preconditioned Krylov
+space.  Unlike the other two controllers, its realized polynomial depends on
+$\widehat b$ through the adaptive inner products.  Thus the uniform envelope
+transfers, but a fixed-polynomial Gaussian trace identity does not.
+
+\begin{theorem}[Common encoder--decoder transfer]
+\label{thm:common-transfer}
+Let $\varepsilon_L(\mathcal C)$ denote the appropriate conditional solver
+envelope from \eqref{eq:hb-envelope}, \eqref{eq:cheb-envelope}, or
+\eqref{eq:pcg-envelope}, converted to Euclidean norm.  Then
+\begin{align}
+ \E\|z_L-z^\star\|_2^2
+ \leq{}&2\E\bigl[\varepsilon_L(\mathcal C)^2
+ \|\widehat z^\star\|_2^2\bigr]\notag\\
+ &+4\lambda^{-2}\E\|\widehat c-c\|_2^2
+ +4\lambda^{-4}\E\bigl[
+ \|\widehat H-H\|_{\op}^2\|c\|_2^2\bigr].
+ \label{eq:common-transfer}
+\end{align}
+For Chebyshev the first expectation is restricted to
+$\mathcal E_{\rm cov}$, plus a separately bounded coverage-failure term.
+\end{theorem}
+\begin{proof}
+Apply $(a+b)^2\leq2a^2+2b^2$ to
+\eqref{eq:decomposition}, insert Lemma~\ref{lem:ridge-perturbation}, and apply
+the corresponding conditional solver bound.
+\end{proof}
+
+The same proof composes with a Lipschitz physical map
+$z\mapsto A(z)\mapsto u_\star$ and with the operator-subspace projector error.
+That last composition must be performed in a fixed orthonormal gauge or with a
+covariant coefficient metric.
+
+\section{Across-task generalization complexity}
+
+Let $N$ be the number of independent training tasks.  The learned hypothesis
+class contains the encoder and the common subspace/preconditioner head.
+Controller-dependent additions are as follows.
+
+\begin{center}
+\begin{tabular}{p{0.13\linewidth}p{0.24\linewidth}p{0.28\linewidth}p{0.22\linewidth}}
+\toprule
+Controller & Additional learned class & Required stability event & Trace linear in $b$\\
+\midrule
+HB & shared scalars or spectral-interval MLP & Jury margin or interval coverage & yes, if bounds ignore $b$\\
+Chebyshev & spectral-interval MLP & interval coverage with slack & yes, if bounds ignore $b$\\
+PCG & none & positive denominators or converged mask & no\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For tied-scalar HB, compact stable parameters add only two coordinates to a
+covering argument.  Adaptive HB and Chebyshev instead add the interval MLP's
+actual norm-controlled parameter complexity.  For adaptive HB the Lipschitz
+constant grows as the Jury margin shrinks; for Chebyshev it grows as the
+coverage slack shrinks.  For PCG, the solver adds no trainable parameter, but a pathwise
+Lipschitz proof requires denominators bounded away from zero until the fixed
+convergence mask activates.  The numerical mask is therefore part of the
+mathematical architecture, not an implementation footnote.
+
+Under bounded prompts, bounded network norms, a uniform stability margin, and
+a Lipschitz truncated loss, standard parameter-covering or Rademacher arguments
+retain an $N^{-1/2}$ leading rate.  The constants and entropy terms differ and
+must not be hidden inside the old one-parameter Richardson bound.
+
+\section{Replica and random-matrix substitutions}
+
+Let $\nu_\theta$ be the limiting joint spectral law of the encoded normal
+operator and the fixed learned preconditioner.  The preconditioner replica
+order parameters must include at least the physical-space overlap and the
+observable-space overlap
+\[
+ m_T=\frac1r\tr(P_{\widehat T}P_T),
+ \qquad
+ m_S=\frac1s\tr(P_{Q_\theta}P_{S(G)}),
+\]
+together with the projected Ritz spectral law.  A full learned matrix
+$W_{\rm dec}$ and a recovered projector $Q_\theta Q_\theta^\top$ are not the
+same order parameter.
+
+For a commuting model with isotropic query covariance, Richardson's filter is
+replaced by
+\begin{align*}
+ \mathcal R_{\rm solve,L}^{\rm HB}
+ &\longrightarrow
+ \int \frac{p_L^{\rm HB}(p\widehat a)^2}{\widehat a^2}
+ \,d\nu_\theta(\widehat a,p),\\
+ \mathcal R_{\rm solve,L}^{\rm Ch}
+ &\longrightarrow
+ \int \frac{p_L^{\rm Ch}(p\widehat a)^2}{\widehat a^2}
+ \,d\nu_\theta(\widehat a,p),
+\end{align*}
+up to the query-variance scale.  These substitutions are valid because the
+coefficients are conditionally independent of the right-hand side.
+
+For adaptive HB, let $\xi(\widehat H,B_\theta)$ denote the finite vector of
+fixed spectral summaries supplied to the interval MLP.  If $\xi$ self-averages
+under the replica saddle, then $(\alpha,\beta)$ converges to a deterministic
+function of the existing spectral order parameters and the first integral
+above is used with that limiting pair.  Without self-averaging, the joint law
+must be enlarged to $\nu_\theta(\widehat a,p,\xi)$ and the HB filter is averaged
+conditionally on $\xi$.  No layer-indexed Krylov order parameters are needed:
+once $\xi$ is fixed, HB is still a fixed polynomial independent of the
+right-hand side.
+
+There is no analogous fixed-filter substitution for PCG.  A PCG replica or
+state evolution needs layer-indexed overlaps, for example residual norm,
+preconditioned residual norm, direction norm, and their correlations with the
+teacher, together with the scalar ratios $\alpha_\ell,\beta_\ell$.  Treating
+PCG as Richardson with a better deterministic polynomial is incorrect.
+
+\section{Optimizer boundary: AdamW versus Muon}
+
+The collapsed gradient-flow ODEs previously derived for a factorized linear
+attention encoder describe Euclidean gradient flow (and, approximately, small
+step SGD/Adam regimes).  Muon replaces a matrix momentum update by an
+approximately orthogonalized Newton--Schulz update.  Hence it changes the
+training trajectory and implicit bias; the old ODE and its plateau times
+cannot be reused.
+
+The hypothesis class and a uniform generalization bound are optimizer-agnostic
+once a parameter set is fixed, but the replica-selected saddle and dynamical
+order parameters can depend on the optimizer.  Consequently Muon remains an
+empirical ablation on large hidden encoder matrices.  It is not included in
+the present replica claim, and AdamW/gradient flow remains the theoretical
+reference.
+
+\section{Audit of the Richardson-era claims}
+
+\begin{center}
+\begin{tabular}{p{0.34\linewidth}p{0.18\linewidth}p{0.40\linewidth}}
+\toprule
+Old ingredient & Status & Required replacement\\
+\midrule
+Encoder weak-feature replica law & retained & Feed its $\Delta G,\Delta b$ risk into
+Lemma~\ref{lem:ridge-perturbation}.\\
+One-step linear map $W_{\rm dec}s$ & insufficient & Separate recovered subspace,
+factorized $B_\theta$, and recurrent controller.\\
+Richardson spectral filter & retained structurally & Substitute the exact HB or
+Chebyshev polynomial only.\\
+Same substitution for PCG & invalid & Introduce adaptive Krylov trajectory order
+parameters.\\
+Linear-attention gradient-flow ODE under Muon & invalid & New optimizer-specific
+dynamics or empirical-only claim.\\
+Coefficient error without gauge fixing & invalid & Orthonormal operator dictionary
+or covariant metric.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This audit leaves the encoder replica calculation useful, but it prevents it
+from being cited as a completed theory of the three recurrent decoders.
+
+\end{document}

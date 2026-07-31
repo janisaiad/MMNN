@@ -1,0 +1,261 @@
+% HeavyBall replacement for the Richardson decoder sections.
+% This fragment assumes theorem, proposition, proof, equation, and align are available.
+
+\section{A one-head HeavyBall transformer decoder}
+\label{sec:heavyball-decoder}
+
+Let the encoder return an SPD matrix $\widehat A\succeq a_0 I$ and let
+$P\succ0$ be an inverse preconditioner fixed during one recurrent forward
+pass.  We initialize $z_{-1}=z_0=0$ and use the tied recurrence
+\begin{equation}
+ z_{\ell+1}
+ =z_\ell+\alpha P(f-\widehat A z_\ell)
+ +\beta(z_\ell-z_{\ell-1}),
+ \qquad 0\leq \ell<L.
+ \label{eq:hb-decoder}
+\end{equation}
+The two learned solver parameters $(\alpha,\beta)$ are shared over depth.
+
+\begin{proposition}[HeavyBall from one Richardson attention block]
+\label{prop:one-head-hb}
+Suppose a tied attention block implements the Richardson map
+\[
+ \mathcal R_{\mathcal C}(z)
+ =z+P_{\mathcal C}(f_{\mathcal C}-\widehat A_{\mathcal C}z)
+\]
+on one state channel.  After augmenting every state token by a delayed channel
+$z_{\ell-1}$, one application of the same attention block followed by the
+fixed linear channel map
+\[
+ (\mathcal R_{\mathcal C}(z_\ell),z_\ell,z_{\ell-1})
+ \longmapsto
+ \alpha\mathcal R_{\mathcal C}(z_\ell)
+ +(1-\alpha+\beta)z_\ell-\beta z_{\ell-1}
+\]
+implements one step of \eqref{eq:hb-decoder}.  Thus HeavyBall adds no adaptive
+inner product, reciprocal, or nonlinear arithmetic beyond what is already
+required by the Richardson attention primitive.
+
+For a strictly positive kernel, one normalized attention head is sufficient:
+the same row-stochastic kernel matrix acts simultaneously on any number of
+value channels, including the posterior-mean and posterior-variance
+recursions.  Multiple heads are unnecessary unless distinct kernel operators
+or mixture components must be advanced in parallel.
+\end{proposition}
+
+\begin{proof}
+The identity
+\[
+ z_\ell+\alpha P(f-\widehat A z_\ell)
+ +\beta(z_\ell-z_{\ell-1})
+ =\alpha\mathcal R_{\mathcal C}(z_\ell)
+ +(1-\alpha+\beta)z_\ell-\beta z_{\ell-1}
+\]
+gives the first claim.  Attention weights are shared across value coordinates,
+so appending value channels changes neither the attention matrix nor the
+number of heads.
+\end{proof}
+
+The last statement is specific to a positive normalized kernel.  Ordinary
+softmax attention is row stochastic and therefore does not, in general,
+represent the signed unnormalized weak-form moment $G^\top r$.  For the primal
+weak-form system, Proposition~\ref{prop:one-head-hb} is invoked relative to an
+exact linear/bilinear attention implementation of the Richardson map, or after
+a positive-kernel reformulation.  We do not identify a softmax score
+correlation with an exact matrix--vector product.
+
+\section{Exact polynomial and finite-depth stability}
+\label{sec:hb-polynomial}
+
+Set
+\[
+ S=P^{1/2}\widehat A P^{1/2},
+ \qquad \sigma(S)\subseteq[m,M],
+ \qquad \kappa=M/m.
+\]
+If $e_\ell=z_\ell-\widehat A^{-1}f$ and
+$\widetilde e_\ell=P^{-1/2}e_\ell$, then
+\begin{equation}
+ \widetilde e_{\ell+1}
+ =\bigl((1+\beta)I-\alpha S\bigr)\widetilde e_\ell
+ -\beta\widetilde e_{\ell-1}.
+ \label{eq:hb-error-state}
+\end{equation}
+Define $p_{-1}(\lambda)=p_0(\lambda)=1$ and
+\begin{equation}
+ p_{\ell+1}(\lambda)
+ =(1+\beta-\alpha\lambda)p_\ell(\lambda)
+ -\beta p_{\ell-1}(\lambda).
+ \label{eq:hb-polynomial}
+\end{equation}
+Then
+\begin{equation}
+ e_L=P^{1/2}p_L(S)P^{-1/2}e_0,
+ \qquad
+ z_L=\bigl[I-p_L(P\widehat A)\bigr]\widehat A^{-1}f.
+ \label{eq:hb-linear-decoder}
+\end{equation}
+In particular, the finite-depth decoder remains linear in $f$.  This is the
+essential difference from PCG: the PCG polynomial depends on the right-hand
+side through adaptive Krylov coefficients.
+
+\begin{theorem}[Optimal quadratic HeavyBall bound]
+\label{thm:hb-finite-depth}
+Choose
+\begin{equation}
+ \alpha_\star=\frac{4}{(\sqrt M+\sqrt m)^2},
+ \qquad
+ \beta_\star=
+ \left(\frac{\sqrt M-\sqrt m}{\sqrt M+\sqrt m}\right)^2,
+ \qquad
+ q=\sqrt{\beta_\star}
+ =\frac{\sqrt\kappa-1}{\sqrt\kappa+1}.
+ \label{eq:hb-optimal-coefficients}
+\end{equation}
+For $z_{-1}=z_0=0$ and every $L\geq0$,
+\begin{equation}
+ \|e_L\|_{P^{-1}}
+ \leq C_L(q)q^L\|e_0\|_{P^{-1}},
+ \qquad
+ C_L(q)=1+L(1+q).
+ \label{eq:hb-transient-bound}
+\end{equation}
+More generally, constant coefficients are strictly stable on $[m,M]$ when
+\begin{equation}
+ 0\leq\beta<1,
+ \qquad
+ 0<\alpha M<2(1+\beta).
+ \label{eq:hb-stability-region}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+For \eqref{eq:hb-optimal-coefficients}, write
+$1+\beta_\star-\alpha_\star\lambda=2qt$ with $t\in[-1,1]$.
+After setting $s_\ell=p_\ell/q^\ell$, recurrence
+\eqref{eq:hb-polynomial} becomes
+$s_{\ell+1}=2t s_\ell-s_{\ell-1}$.  Hence
+\[
+ p_L(\lambda)=q^L\bigl(U_L(t)-qU_{L-1}(t)\bigr),
+\]
+where $U_L$ is the Chebyshev polynomial of the second kind.  Since
+$|U_L(t)|\leq L+1$ on $[-1,1]$,
+\[
+ \max_{\lambda\in[m,M]}|p_L(\lambda)|
+ \leq q^L\{L+1+qL\}=C_L(q)q^L.
+\]
+Functional calculus in \eqref{eq:hb-error-state} proves
+\eqref{eq:hb-transient-bound}.  The strict stability region follows from the
+Jury conditions for
+$r^2-(1+\beta-\alpha\lambda)r+\beta$ uniformly over
+$\lambda\in[m,M]$.
+\end{proof}
+
+The factor $C_L(q)$ is necessary in a uniform finite-depth statement because
+the characteristic roots coalesce at the endpoints $m$ and $M$.  A bare
+$q^L$ bound with constant one is false.  Numerical plots should use the exact
+polynomial \eqref{eq:hb-polynomial}; \eqref{eq:hb-transient-bound} is a safe
+closed-form envelope.
+
+\section{Operator-supervised encoder--decoder transfer}
+\label{sec:hb-transfer}
+
+\begin{theorem}[HeavyBall encoder--decoder transfer]
+\label{thm:hb-transfer}
+Let $A,\widehat A\succeq a_0I$, let $f\sim\mathcal N(0,\Sigma)$ be conditionally
+independent of the encoder sample, and suppose
+$\kappa(P)\leq\overline\kappa_P$.  Let $z_L$ be defined by
+\eqref{eq:hb-decoder} with the optimal coefficients for a uniform spectral
+interval $[m,M]$ containing
+$\sigma(P^{1/2}\widehat A P^{1/2})$.  Define
+\[
+ \mathcal R_A=\frac1D\mathbb E\|\widehat A-A\|_F^2,
+ \qquad
+ \mathcal R_{u,L}^{\rm HB}=\mathbb E\|z_L-A^{-1}f\|_2^2.
+\]
+Then
+\begin{equation}
+ \boxed{
+ \mathcal R_{u,L}^{\rm HB}
+ \leq
+ \frac{2\overline\kappa_P\,\operatorname{tr}(\Sigma)}{a_0^2}
+ C_L(q)^2q^{2L}
+ +\frac{2D\operatorname{tr}(\Sigma)}{a_0^4}\mathcal R_A.}
+ \label{eq:hb-transfer}
+\end{equation}
+Conditionally on $(A,\widehat A,P)$, the exact identity is
+\begin{equation}
+ \mathbb E_f\|z_L-A^{-1}f\|_2^2
+ =\operatorname{tr}\!\left(\Sigma T_L^\top T_L\right),
+ \quad
+ T_L=\bigl[I-p_L(P\widehat A)\bigr]\widehat A^{-1}-A^{-1}.
+ \label{eq:hb-exact-trace}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Equation \eqref{eq:hb-linear-decoder} gives
+\[
+ \|z_L-\widehat A^{-1}f\|_2
+ \leq
+ \sqrt{\kappa(P)}\,C_L(q)q^L
+ \|\widehat A^{-1}f\|_2
+ \leq
+ \frac{\sqrt{\overline\kappa_P}C_L(q)q^L}{a_0}\|f\|_2.
+\]
+The resolvent identity gives
+\[
+ \|\widehat A^{-1}f-A^{-1}f\|_2
+ \leq a_0^{-2}\|\widehat A-A\|_{\rm op}\|f\|_2.
+\]
+Use $(a+b)^2\leq2a^2+2b^2$,
+$\mathbb E\|f\|_2^2=\operatorname{tr}(\Sigma)$,
+$\|\widehat A-A\|_{\rm op}^2\leq\|\widehat A-A\|_F^2$,
+and conditional independence.  The trace identity follows because $T_L$ is
+linear in $f$.
+\end{proof}
+
+Compared with the Richardson transfer theorem, the encoder term is unchanged.
+Only the decoder polynomial changes.  Compared with PCG, HeavyBall preserves
+the exact conditional Gaussian trace formula because its coefficients are
+fixed independently of $f$.
+
+\section{Spectral and replica-ready form}
+\label{sec:hb-replica}
+
+The second-order recurrence is first order on the augmented state:
+\begin{equation}
+ \begin{bmatrix}e_{\ell+1}\\e_\ell\end{bmatrix}
+ =
+ \underbrace{\begin{bmatrix}
+ (1+\beta)I-\alpha P\widehat A&-\beta I\\
+ I&0
+ \end{bmatrix}}_{\mathbb T_{\rm HB}}
+ \begin{bmatrix}e_\ell\\e_{\ell-1}\end{bmatrix}.
+ \label{eq:hb-augmented-state}
+\end{equation}
+Thus the decoder order parameter is the spectral filter
+$p_L(\lambda)^2$, not a new adaptive Krylov overlap at every layer.  In a
+commuting model with isotropic query covariance
+$\Sigma=\sigma_f^2I$ and joint eigenvalues
+$(\widehat a_i,p_i)$, the solver part of the exact risk is
+\begin{equation}
+ \mathcal R_{\rm solve,L}^{\rm HB}
+ =\sigma_f^2\sum_{i=1}^D
+ \frac{p_L(p_i\widehat a_i)^2}{\widehat a_i^2}.
+ \label{eq:hb-spectral-risk}
+\end{equation}
+If the empirical joint spectral measure converges to $\nu$, then the
+normalized risk converges formally to
+\begin{equation}
+ \frac1D\mathcal R_{\rm solve,L}^{\rm HB}
+ \longrightarrow
+ \sigma_f^2\int \frac{p_L(p\widehat a)^2}{\widehat a^2}
+ \,d\nu(\widehat a,p).
+ \label{eq:hb-rmt-integral}
+\end{equation}
+This is the direct replacement of the Richardson filter
+$(1-p\widehat a)^{2L}$ in the random-matrix and replica calculations.  A
+replica calculation is still required for the learned encoder and learned
+preconditioner order parameters; no replica machinery is needed merely to
+describe the fixed HeavyBall decoder polynomial.

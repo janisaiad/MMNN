@@ -73,6 +73,13 @@ Train KRR Transformer and probe layers:
     python richardson_transformer_weak_krr_lab.py --mode train_krr_probe \
       --n-context 64 --x-dim 1 --d-model 128 --n-layers 8 --n-heads 4 \
       --steps 30000 --batch-size 128 --device cuda --outdir runs/krr_probe
+
+Train a tied no-MLP kernel-attention HeavyBall decoder:
+    python richardson_transformer_weak_krr_lab.py --mode train_krr_looped \
+      --loop-solver heavy_ball --n-context 64 --x-dim 1 --depth 8 \
+      --kernel-init-lengthscale 0.4 --learn-kernel 1 \
+      --steps 10000 --batch-size 128 --device cuda \
+      --outdir runs/krr_looped_heavy_ball
 """
 
 from __future__ import annotations
@@ -827,6 +834,254 @@ def krr_richardson_iterates(
     return torch.stack(preds, dim=1), torch.stack(alphas, dim=1)
 
 
+def _scalar_logit(value: float) -> float:
+    value = min(max(value, 1e-6), 1.0 - 1e-6)
+    return math.log(value / (1.0 - value))
+
+
+class NoMLPKernelAttentionLoop(nn.Module):
+    """Tied softmax-kernel attention with Richardson or HeavyBall state.
+
+    The RBF logits are a standard one-head attention score after quadratic
+    feature augmentation.  The context attention output is exactly
+    ``D^{-1} K (y-u)``.  Mean and variance may occupy separate value channels;
+    they do not require separate heads.  The normalizer exposes ``D`` for the
+    ridge skip channel; no feed-forward network approximates a reciprocal or
+    product.
+    """
+
+    def __init__(
+        self,
+        depth: int,
+        lam: float,
+        iteration: str,
+        init_lengthscale: float,
+        learn_kernel: bool,
+        step_init: float = 0.8,
+        momentum_init: float = 0.05,
+    ) -> None:
+        super().__init__()
+        self.depth = depth
+        self.lam = lam
+        self.iteration = iteration
+        self.log_lengthscale = nn.Parameter(
+            torch.tensor(math.log(init_lengthscale)),
+            requires_grad=learn_kernel,
+        )
+        if iteration == "heavy_ball":
+            beta_fraction = min(max(momentum_init / 0.999, 1e-6), 1.0 - 1e-6)
+            self.raw_momentum = nn.Parameter(torch.tensor(_scalar_logit(beta_fraction)))
+        elif iteration == "richardson":
+            self.register_buffer("raw_momentum", torch.tensor(float("-inf")))
+        else:
+            raise ValueError(f"unknown iteration {iteration}")
+        momentum = momentum_init if iteration == "heavy_ball" else 0.0
+        step_cap = 2.0 * (1.0 + momentum) / (1.0 + lam)
+        step_fraction = step_init / (0.999 * step_cap)
+        self.raw_step = nn.Parameter(torch.tensor(_scalar_logit(step_fraction)))
+
+    def coefficients(self) -> Tuple[Tensor, Tensor]:
+        if self.iteration == "heavy_ball":
+            momentum = 0.999 * torch.sigmoid(self.raw_momentum)
+        else:
+            momentum = self.raw_step.new_zeros(())
+        # Since K_ii=1, D_i >= 1 and lambda_max(D^{-1}(K+lambda I))
+        # is bounded by 1+lambda for the exact row-normalized RBF operator.
+        stable_step_cap = 2.0 * (1.0 + momentum) / (1.0 + self.lam)
+        step = 0.999 * stable_step_cap * torch.sigmoid(self.raw_step)
+        return step, momentum
+
+    def kernel_attention(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        lengthscale = self.log_lengthscale.exp().clamp_min(1e-4)
+        scaled = x / lengthscale
+        dist2 = (scaled[:, :, None, :] - scaled[:, None, :, :]).pow(2).sum(dim=-1)
+        logits = -0.5 * dist2
+        attention = torch.softmax(logits, dim=-1)
+        degree = torch.exp(logits).sum(dim=-1)
+        return attention, degree, lengthscale
+
+    def forward(
+        self,
+        x_ctx: Tensor,
+        y_ctx: Tensor,
+        x_q: Tensor,
+        return_layers: bool = False,
+    ) -> Tuple[Tensor, Tensor, Dict[str, Tensor]]:
+        attention, degree, lengthscale = self.kernel_attention(x_ctx)
+        degree_inv = degree.reciprocal()
+        ridge_diag = self.lam * degree_inv
+        step, momentum = self.coefficients()
+        query_scaled = x_q[:, None, :] / lengthscale
+        context_scaled = x_ctx / lengthscale
+        query_logits = -0.5 * (query_scaled - context_scaled).pow(2).sum(dim=-1)
+        query_kernel = torch.exp(query_logits)
+        values = torch.stack([y_ctx, query_kernel], dim=-1)
+        state_prev = torch.zeros_like(values)
+        state = torch.zeros_like(values)
+        query_prev = torch.zeros_like(values[:, 0])
+        query_state = torch.zeros_like(query_prev)
+        state_layers = []
+        pred_layers = []
+
+        query_attention = torch.softmax(query_logits, dim=-1)
+        query_degree = torch.exp(query_logits).sum(dim=-1)
+        query_ridge = self.lam / query_degree
+
+        for _ in range(self.depth):
+            value_residual = values - state
+            context_correction = torch.einsum("bij,bjc->bic", attention, value_residual)
+            query_correction = torch.einsum("bi,bic->bc", query_attention, value_residual)
+            state_next = (
+                state
+                + step * (context_correction - ridge_diag.unsqueeze(-1) * state)
+                + momentum * (state - state_prev)
+            )
+            query_next = (
+                query_state
+                + step * (query_correction - query_ridge.unsqueeze(-1) * query_state)
+                + momentum * (query_state - query_prev)
+            )
+            state_prev, state = state, state_next
+            query_prev, query_state = query_state, query_next
+            if return_layers:
+                state_layers.append(state)
+                pred_layers.append(query_state[:, 0])
+
+        prediction = query_state[:, 0]
+        info = {
+            "attention": attention,
+            "degree": degree,
+            "lengthscale": lengthscale,
+            "step": step,
+            "momentum": momentum,
+            "state_channels": state,
+            "variance_reduction": query_state[:, 1],
+        }
+        if return_layers:
+            info["state_layers"] = torch.stack(state_layers, dim=1)
+            info["pred_layers"] = torch.stack(pred_layers, dim=1)
+        return prediction, state[:, :, 0], info
+
+
+def train_krr_looped(args, device) -> None:
+    """Train the kernel metric and stable shared solver coefficients end to end."""
+    outdir = ensure_dir(args.outdir)
+    csv_path = outdir / "train_krr_looped.csv"
+    model = NoMLPKernelAttentionLoop(
+        depth=args.depth,
+        lam=args.krr_lam,
+        iteration=args.loop_solver,
+        init_lengthscale=args.kernel_init_lengthscale,
+        learn_kernel=bool(args.learn_kernel),
+        step_init=args.loop_step_init,
+        momentum_init=args.loop_momentum_init,
+    ).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
+    for training_step in range(1, args.steps + 1):
+        batch = sample_gp_krr_batch(
+            args.batch_size,
+            args.n_context,
+            args.x_dim,
+            args.lengthscale,
+            args.noise_var,
+            args.krr_lam,
+            device,
+        )
+        prediction, state, train_info = model(batch.x_ctx, batch.y_ctx, batch.x_q)
+        system = batch.K + args.krr_lam * torch.eye(
+            args.n_context, device=device, dtype=batch.K.dtype
+        )
+        variance_alpha = stable_solve(system, batch.kq)
+        target_state = torch.stack(
+            [
+                torch.einsum("bij,bj->bi", batch.K, batch.alpha_exact),
+                torch.einsum("bij,bj->bi", batch.K, variance_alpha),
+            ],
+            dim=-1,
+        )
+        error = train_info["state_channels"] - target_state
+        energy_error = torch.einsum("bic,bij,bjc->bc", error, system, error)
+        energy_target = torch.einsum(
+            "bic,bij,bjc->bc", target_state, system, target_state
+        ).clamp_min(1e-10)
+        solver_loss = (energy_error / energy_target).mean()
+        prediction_loss = F.mse_loss(prediction, batch.mean_exact)
+        variance_exact = torch.einsum("bi,bi->b", batch.kq, variance_alpha)
+        variance_loss = F.mse_loss(train_info["variance_reduction"], variance_exact)
+        loss = (
+            solver_loss
+            + args.loop_prediction_weight * prediction_loss
+            + args.loop_variance_weight * variance_loss
+        )
+
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        optimizer.step()
+
+        if training_step == 1 or training_step % args.log_every == 0:
+            with torch.no_grad():
+                evaluation = sample_gp_krr_batch(
+                    args.eval_batch_size,
+                    args.n_context,
+                    args.x_dim,
+                    args.lengthscale,
+                    args.noise_var,
+                    args.krr_lam,
+                    device,
+                )
+                eval_prediction, eval_state, info = model(
+                    evaluation.x_ctx,
+                    evaluation.y_ctx,
+                    evaluation.x_q,
+                    return_layers=True,
+                )
+                eval_system = evaluation.K + args.krr_lam * torch.eye(
+                    args.n_context, device=device, dtype=evaluation.K.dtype
+                )
+                eval_variance_alpha = stable_solve(eval_system, evaluation.kq)
+                eval_variance_exact = torch.einsum(
+                    "bi,bi->b", evaluation.kq, eval_variance_alpha
+                )
+                richardson_predictions, _ = krr_richardson_iterates(
+                    evaluation.K,
+                    evaluation.y_ctx,
+                    evaluation.kq,
+                    args.krr_lam,
+                    args.depth,
+                    eta=args.row_eta,
+                    mode="rowcond",
+                )
+                row = {
+                    "step": training_step,
+                    "solver": args.loop_solver,
+                    "loss": loss.item(),
+                    "solver_loss": solver_loss.item(),
+                    "prediction_loss": prediction_loss.item(),
+                    "variance_loss": variance_loss.item(),
+                    "eval_state_mse": mse(
+                        eval_state,
+                        torch.einsum("bij,bj->bi", evaluation.K, evaluation.alpha_exact),
+                    ),
+                    "eval_mean_mse": mse(eval_prediction, evaluation.mean_exact),
+                    "eval_variance_reduction_mse": mse(
+                        info["variance_reduction"], eval_variance_exact
+                    ),
+                    "richardson_mean_mse": mse(
+                        richardson_predictions[:, -1], evaluation.mean_exact
+                    ),
+                    "learned_lengthscale": info["lengthscale"].item(),
+                    "true_lengthscale": args.lengthscale,
+                    "step_size": info["step"].item(),
+                    "momentum": info["momentum"].item(),
+                }
+                append_csv(csv_path, row)
+                print(json.dumps(row, sort_keys=True))
+
+    torch.save({"model": model.state_dict(), "args": vars(args)}, outdir / "krr_looped_final.pt")
+
+
 def run_krr_sweep(args, device) -> None:
     outdir = ensure_dir(args.outdir)
     csv_path = outdir / "krr_sweep.csv"
@@ -1054,8 +1309,20 @@ def run_parametric_A_sweep(args, device) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
-    p.add_argument("--mode", type=str, default="smoke",
-                   choices=["smoke", "weak_sweep", "train_weak", "krr_sweep", "train_krr_probe", "parametric_A_sweep"])
+    p.add_argument(
+        "--mode",
+        type=str,
+        default="smoke",
+        choices=[
+            "smoke",
+            "weak_sweep",
+            "train_weak",
+            "krr_sweep",
+            "train_krr_probe",
+            "train_krr_looped",
+            "parametric_A_sweep",
+        ],
+    )
     p.add_argument("--device", type=str, default="cuda")
     p.add_argument("--outdir", type=str, default=str(resolve_outdir("runs_richardson_transformer_lab")))
     p.add_argument("--seed", type=int, default=0)
@@ -1117,6 +1384,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--d-ff", type=int, default=256)
     p.add_argument("--dropout", type=float, default=0.0)
     p.add_argument("--probe-batches", type=int, default=16)
+    p.add_argument("--loop-solver", choices=["richardson", "heavy_ball"], default="heavy_ball")
+    p.add_argument("--kernel-init-lengthscale", type=float, default=0.4)
+    p.add_argument("--learn-kernel", type=int, default=1)
+    p.add_argument("--loop-step-init", type=float, default=0.8)
+    p.add_argument("--loop-momentum-init", type=float, default=0.05)
+    p.add_argument("--loop-prediction-weight", type=float, default=1.0)
+    p.add_argument("--loop-variance-weight", type=float, default=1.0)
     return p
 
 
@@ -1152,6 +1426,8 @@ def main() -> None:
         run_krr_sweep(args, device)
     elif args.mode == "train_krr_probe":
         train_krr_probe(args, device)
+    elif args.mode == "train_krr_looped":
+        train_krr_looped(args, device)
     elif args.mode == "parametric_A_sweep":
         run_parametric_A_sweep(args, device)
     else:

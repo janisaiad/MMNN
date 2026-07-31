@@ -1,0 +1,392 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.6cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newcommand{\R}{\mathbb R}
+\newcommand{\op}{\mathrm{op}}
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\cond}{\operatorname{cond}}
+\title{First-Principles Attention Decoders for Low-Rank Inverse Problems}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Prompt-induced inverse problem}
+
+Let one task be an affine operator
+\[
+ A(z)=A_0+\sum_{k=1}^K z_k A_k,
+ \qquad T=\operatorname{span}(A_1,\ldots,A_K).
+\]
+A weak-form prompt gives $G\in\R^{n\times K}$ and $b\in\R^n$.  After an
+orthonormal gauge has been fixed for the learned operator dictionary, the
+decoder target is
+\begin{equation}
+ z_\star=\arg\min_z
+ \frac{\tau}{2}\|Gz-b\|_2^2+\frac{\lambda}{2}\|z\|_2^2,
+ \qquad
+ H z_\star=c,
+ \label{eq:ridge}
+\end{equation}
+where $H=\tau G^\top G+\lambda I$, $c=\tau G^\top b$, and
+$\tau,\lambda>0$.  The observable coefficient subspace is
+\[
+ S=\range(G^\top),\qquad r=\rank(G).
+\]
+This is distinct from the physical operator subspace $T$.  The encoder is
+judged by recovery of $T$; the prompt-conditioned decoder head is judged by
+recovery of $S$.
+
+\begin{remark}[Gauge and regularization]
+For a general change of dictionary $A\mapsto AQ$, the coordinates transform as
+$z\mapsto Q^{-1}z$.  Euclidean ridge is not invariant under $GL_K$.  One must
+either orthonormalize the operator dictionary, leaving only an orthogonal
+ambiguity, or replace $\|z\|^2$ by $z^\top Mz$ with the covariant operator Gram
+matrix $M$.  All statements below use the orthonormal gauge; the general case
+follows by whitening with $M^{1/2}$.
+\end{remark}
+
+\begin{proposition}[Covariance under a dictionary change of basis]
+Let the row-wise vectorized physical dictionary be $D\in\R^{K\times p}$,
+$M=DD^\top$, and let $S\in GL_K$.  Under
+\[
+ D'=SD,\qquad G'=GS^\top,\qquad M'=SMS^\top,
+\]
+the covariantly regularized estimates
+\[
+ z_\star=\arg\min_z\|Gz-b\|^2+\lambda z^\top Mz,
+ \qquad
+ z'_\star=\arg\min_{z'}\|G'z'-b\|^2+\lambda {z'}^\top M'z'
+\]
+represent the same physical operator: ${z'_\star}^\top D'=z_\star^\top D$.
+\end{proposition}
+\begin{proof}
+The substitution $z=S^\top z'$ makes both the data term and the quadratic
+regularizer identical.  Since $S$ is invertible, it is a bijection between
+the two optimization problems, and the represented physical operators agree.
+\end{proof}
+
+\section{Subspace-derived factorized preconditioner}
+
+For an orthonormal $Q\in\R^{K\times s}$ returned by one attention head, define
+\begin{equation}
+ B_Q=\lambda^{-1}(I-QQ^\top)
+ +Q(Q^\top H Q)^{-1}Q^\top .
+ \label{eq:ritz-preconditioner}
+\end{equation}
+Only $Q$ is learned.  Orthonormalization, the projected matrix, and its small
+Cholesky solve are fixed algebraic operations.
+
+\begin{proposition}[Positivity and factorized cost]
+$B_Q$ is SPD.  After an $O(Ks^2+s^3)$ construction, its application costs
+$O(Ks+s^2)$ and does not require a dense $K\times K$ matrix.
+\end{proposition}
+\begin{proof}
+Every $x$ decomposes uniquely as $x=Qa+x_\perp$.  Equation
+\eqref{eq:ritz-preconditioner} gives
+\[
+ x^\top B_Qx=\lambda^{-1}\|x_\perp\|^2
+ +a^\top(Q^\top H Q)^{-1}a>0
+\]
+for $x\ne0$.  The stated cost follows by applying the two thin factors and
+solving the fixed $s\times s$ Cholesky system.
+\end{proof}
+
+\begin{theorem}[Exact recovery gives the exact inverse]
+If $s=r$ and $\range(Q)=S$, then $B_Q=H^{-1}$.
+\label{thm:exact-subspace}
+\end{theorem}
+\begin{proof}
+Both $S$ and $S^\perp=\ker G$ are invariant under $H$.  On $S$, the first term
+of \eqref{eq:ritz-preconditioner} vanishes and the second is the inverse of the
+restriction of $H$.  On $S^\perp$, $H=\lambda I$ and $B_Q=\lambda^{-1}I$.
+\end{proof}
+
+The theorem is also the Woodbury identity in geometric form.  If
+$\sqrt\tau G=U\Sigma V^\top$ is a thin SVD, then
+\[
+ H^{-1}=\lambda^{-1}I-
+ V\operatorname{diag}\!\left(
+ \frac{\sigma_j^2}{\lambda(\lambda+\sigma_j^2)}
+ \right)V^\top .
+\]
+The inverse differs from the ridge baseline by a negative rank-$r$ correction
+on $S$; this sign is dictated by the inverse problem, not chosen by an
+architecture search.
+
+\begin{remark}[When decoder-side subspace learning is nontrivial]
+If the exact matrix $G$ and its full rank $r$ are already given to the decoder,
+then a fixed thin QR or SVD recovers $S=\range(G^\top)$; no statistical learning
+is needed.  A learned decoder head is meaningful only when $s<r$, when $G$ is
+noisy or encoder-generated, or when a full factorization is excluded by the
+computational model.  The physical operator space $T$ remains a genuinely
+learned encoder object.  Neither Heavy--Ball nor PCG identifies $T$ on its own;
+the solver merely propagates the end-to-end solution loss to the encoder.
+\end{remark}
+
+\begin{proposition}[Subspace error controls the effective spectrum]
+Let $V$ be an orthonormal basis of $S$, let $Q$ have $r$ columns, and set
+$\varepsilon=\|QQ^\top-VV^\top\|_{\op}$.  If
+$\lambda I\preceq H\preceq L_HI$, then
+\[
+ \|B_Q-H^{-1}\|_{\op}
+ \leq C_{\lambda,L_H}\varepsilon,
+ \quad
+ C_{\lambda,L_H}
+ =\frac{1+2\sqrt2}{\lambda}
+  +\frac{2\sqrt2L_H}{\lambda^2}.
+\]
+Consequently, with
+$\delta=L_HC_{\lambda,L_H}\varepsilon<1$, every eigenvalue of
+$B_Q^{1/2}HB_Q^{1/2}$ lies in $[1-\delta,1+\delta]$ and
+\[
+ \cond(B_Q^{1/2}HB_Q^{1/2})
+ \leq\frac{1+\delta}{1-\delta}.
+ \label{eq:kappa-transfer}
+\]
+\end{proposition}
+\begin{proof}
+After a right orthogonal alignment, the standard principal-angle relation
+gives $\|Q-V\|_{\op}\leq\sqrt2\varepsilon$.  Add and subtract the aligned
+Ritz terms.  Since both projected operators are bounded below by $\lambda I$,
+the resolvent identity bounds the difference of their inverses by
+$2L_H\|Q-V\|_{\op}/\lambda^2$.  The two outer-factor perturbations contribute
+$2\|Q-V\|_{\op}/\lambda$, while the complementary projector contributes
+$\varepsilon/\lambda$.  This proves the first display.  Finally,
+\[
+ \|H^{1/2}(B_Q-H^{-1})H^{1/2}\|_{\op}
+ \leq L_H\|B_Q-H^{-1}\|_{\op},
+\]
+and the eigenvalue and condition-number claims follow from Weyl's inequality.
+\end{proof}
+
+\section{Three exact tied decoder cells}
+
+The prompt HVP is the fixed linear-attention contraction
+\[
+ v\longmapsto Hv
+ =\tau\sum_{i=1}^n g_i(g_i^\top v)+\lambda v.
+\]
+
+\paragraph{Heavy--Ball.}
+With persistent state $[Z_\ell,Z_{\ell-1}]$,
+\[
+ r_\ell=c-HZ_\ell,
+ \qquad
+ Z_{\ell+1}=Z_\ell+\alpha B_Qr_\ell
+ +\beta(Z_\ell-Z_{\ell-1}).
+\]
+There is one HVP and one factorized preconditioner application per tied
+macro-block, and no division.
+The coefficients may either be two shared learned scalars, constrained to a
+uniform Jury-stable region, or may be constructed from a prompt-predicted
+interval by the fixed formulas
+\[
+ \alpha(\widehat\mu,\widehat L)
+ =\frac{4}{(\sqrt{\widehat L}+\sqrt{\widehat\mu})^2},\qquad
+ \beta(\widehat\mu,\widehat L)
+ =\left(\frac{\sqrt{\widehat L}-\sqrt{\widehat\mu}}
+ {\sqrt{\widehat L}+\sqrt{\widehat\mu}}\right)^2.
+\]
+In the latter variant a small MLP predicts only two spectral scalars from
+fixed invariant prompt reductions.  It neither represents the HVP nor
+approximates vector arithmetic.  Stability only requires the actual Jury
+condition
+\[
+ 0\leq\beta<1,\qquad
+ \alpha\lambda_{\max}(B_Q^{1/2}HB_Q^{1/2})<2(1+\beta).
+\]
+Full spectral coverage is sufficient for the classical minimax rate, but is
+not necessary for stability.
+
+\paragraph{PCG.}
+With persistent state $[Z,R,S,P,\rho]$ and transient token $W=HP$,
+\[
+ S=B_QR,\quad \rho=R^\top S,\quad
+ \alpha=\rho/(P^\top W),
+\]
+\[
+ Z^+=Z+\alpha P,\quad R^+=R-\alpha W,\quad
+ S^+=B_QR^+,\quad
+ \beta=(R^+)^\top S^+/\rho,\quad P^+=S^++\beta P.
+\]
+Scalar contractions, guarded quotients, and routing are fixed primitives.
+The preconditioner is computed once from the prompt and remains fixed; if it
+depends on the current residual, this is flexible CG rather than PCG.
+
+\paragraph{Certified Heavy--Ball with PCG fallback.}
+Run $L$ Heavy--Ball blocks and compute the fixed residual certificate
+\[
+ \eta_L=\frac{r_L^\top B_Qr_L}{c^\top B_Qc}.
+\]
+For a prescribed threshold $\varepsilon$, retain the division-free HB output
+when $\eta_L\leq\varepsilon$ and otherwise route that task to the exact PCG
+cell with the same fixed $B_Q$.  This comparison and routing are hard-coded;
+there is no learned solver selector.  If
+$\mu I\preceq B_Q^{1/2}HB_Q^{1/2}$, then every accepted HB output obeys
+\[
+ \|Z_L-z_\star\|_H^2
+ =r_L^\top H^{-1}r_L
+ \leq \mu^{-1}r_L^\top B_Qr_L
+ \leq \frac{\varepsilon}{\mu}c^\top B_Qc.
+\]
+Thus the certificate turns ``retain HB while it is quasi-PCG'' into a
+per-prompt first-principles rule; PCG is paid only on the rejected tail.
+
+\paragraph{Chebyshev.}
+Given a certified interval $[\mu,L]$ containing the spectrum of
+$B_Q^{1/2}HB_Q^{1/2}$, store two additional scalar tokens.  With
+\[
+ d=\frac{L+\mu}{2},\qquad h=\frac{L-\mu}{2},\qquad
+ \alpha_0=d^{-1},\qquad \beta_0=0,
+\]
+the tied block generates its next coefficients exactly:
+\[
+ \alpha_{\ell+1}
+ =\left(d-\frac{h^2}{4}\alpha_\ell\right)^{-1},
+ \qquad
+ \beta_{\ell+1}=\frac{h^2}{4}\alpha_\ell\alpha_{\ell+1}.
+\]
+The vector update is the same routed second-order update as Heavy--Ball.  Thus
+the block weights remain tied although its scalar state is nonstationary.  A
+small MLP may estimate only $(\mu,L)$ from invariant prompt summaries; all
+recurrence arithmetic remains fixed.  A log-center/log-width output enforces
+$0<\widehat\mu<\widehat L$.  Its guarantee is conditional on the coverage
+event $[\mu_{\rm true},L_{\rm true}]\subseteq
+[\widehat\mu,\widehat L]$.
+
+\begin{theorem}[Exact realization and convergence]
+Assume $H$ and $B_Q$ are SPD.  The three macro-blocks reproduce the
+preconditioned HB, PCG, and Chebyshev recurrences exactly.  In particular,
+none of their arithmetic is learned.  Let
+\(\kappa=\cond(B_Q^{1/2}HB_Q^{1/2})\) and
+\(q=(\sqrt\kappa-1)/(\sqrt\kappa+1)\).  Then PCG satisfies
+\[
+ \|Z_\ell-z_\star\|_H
+ \leq 2q^\ell\|Z_0-z_\star\|_H.
+\]
+With the classical optimal tied Heavy--Ball coefficients, every scalar
+spectral recurrence has asymptotic factor at most $q$ (with the usual linear
+prefactor at repeated endpoint roots).  Under exact subspace recovery,
+$B_Q=H^{-1}$ and either controller with its unit correction solves in one
+macro-block.
+\end{theorem}
+\begin{proof}
+Expanding each routed state update gives the named numerical method exactly.
+The PCG estimate is the standard Chebyshev polynomial bound on the
+preconditioned spectrum.  Diagonalizing
+$B_Q^{1/2}HB_Q^{1/2}$ reduces Heavy--Ball to independent second-order scalar
+recurrences; the optimal parameters place all characteristic roots in the
+disk of radius $q$.  The final statement follows from
+Theorem~\ref{thm:exact-subspace}.
+\end{proof}
+
+\begin{proposition}[Controller hierarchy for a common preconditioner]
+Fix $B_Q$, the initialization, and an HVP budget $\ell$.  In exact arithmetic,
+the PCG iterate minimizes the $H$-norm error over the corresponding
+preconditioned Krylov affine space.  Every Heavy--Ball or Chebyshev iterate at
+the same depth belongs to this space.  Consequently,
+\[
+ \|e_\ell^{\rm PCG}\|_H
+ \leq \|e_\ell^{\rm Cheb}\|_H,
+ \qquad
+ \|e_\ell^{\rm PCG}\|_H
+ \leq \|e_\ell^{\rm HB}\|_H.
+\]
+For a certified interval, Chebyshev is the minimax predetermined polynomial
+method on that interval.  Heavy--Ball instead has constant tied coefficients
+and the smallest division-free state; Richardson is its special case
+$\beta=0$.
+\end{proposition}
+\begin{proof}
+Both second-order iterations produce a polynomial in the preconditioned
+operator applied to the initial residual and hence lie in the same Krylov
+affine space.  The inequalities follow from the Galerkin optimality of PCG.
+The remaining claim is the minimax property of shifted and scaled Chebyshev
+polynomials.
+\end{proof}
+
+Heavy--Ball therefore cannot dominate exact PCG in error per HVP when both use
+the same learned preconditioner.  It is selected as the main architecture when
+its error is practically equivalent while its macro-block is cheaper.  Our
+pre-registered rule is to retain Heavy--Ball when its \emph{end-to-end} risk is
+at most $10\%$ above PCG (or their confidence intervals overlap) and its
+implemented solve time is lower.  A ratio of decoder-only errors is not used
+when PCG reaches numerical zero.  In that regime, the admissible HB solver
+error must instead be negligible relative to a separately measured
+encoder/statistical error floor.  Learned preconditioners are crossed between
+controllers to prevent a solver-specific head from invalidating this
+comparison.
+
+The certified hybrid strengthens this population-level selection rule.  It
+keeps HB on prompts whose measured final residual is below tolerance and
+inherits the PCG output on every rejected prompt.  Its cost is one final HVP
+for certification plus the empirical fallback rate times the PCG cost; this
+rate, rather than a claim that HB dominates PCG per HVP, must be reported.
+On parallel hardware this arithmetic count is not a latency guarantee:
+mask compaction, synchronization, and a small irregular PCG launch must also
+be measured.  An alternative comparison may therefore fix wall-clock latency
+rather than HVP count, while reporting both depths explicitly.
+
+A division-free global-HB variant learns only $(\alpha,\beta)$ with the
+encoder and spectral preconditioner frozen.  A tail-aware objective such as
+mean error plus CVaR, together with a uniform Jury constraint, changes no
+solver algebra and requires no spectral MLP at inference.  Its admissibility
+is still decided by the same end-to-end non-inferiority rule on independent
+prompts, not by the training objective itself.
+
+Combining this theorem with \eqref{eq:kappa-transfer} gives the desired causal
+chain
+\begin{align*}
+ \text{prompt subspace error}
+ &\longrightarrow \text{preconditioner error}
+ \longrightarrow \text{effective condition number}\\
+ &\longrightarrow \text{finite-depth decoder error}.
+\end{align*}
+
+\section{Primal--dual equivalence}
+
+The exact identity
+\[
+ (\tau G^\top G+\lambda I)^{-1}\tau G^\top
+ =G^\top(\tau GG^\top+\lambda I)^{-1}\tau
+\]
+shows that the primal and dual decoders produce the same ridge estimator.  If
+$n<K$, the dual state is smaller and lives on prompt tokens; if $K\leq n$, the
+primal state is smaller.  The architecture therefore chooses the smaller
+active side rather than imposing the primal formulation.  On the dual side,
+the learned directions are constrained to $\range(G)$; on the primal side,
+they are constrained to $\range(G^\top)$.
+
+In the PDE regime of interest, $n=mR>K$.  The primal is therefore the cheaper
+state space.  A dual interpretation can nevertheless be retained without an
+$n$-dimensional state: take a thin QR factorization $G=UR$ and solve
+\[
+ (\tau RR^\top+\lambda I)\gamma=\tau U^\top b,
+ \qquad z=R^\top\gamma.
+\]
+This compressed dual has dimension $\min(n,K)=K$ here and is exactly equivalent
+to the primal.  It is useful as a token-space interpretation; the primal
+implementation avoids the additional QR when wall-clock cost is primary.
+
+\section{Claim boundary}
+
+This is a recurrent attention machine with one learned routing head and fixed
+linear-attention contractions.  The base variant has no MLP; the adaptive
+variant permits a small head that predicts only two spectral endpoints and
+never emulates solver arithmetic.  The PCG quotients and the certified
+fallback mask are exact fixed primitives; they are not claimed to arise from
+a vanilla softmax Transformer.
+The method cannot improve upon an unlimited exact solver that receives the
+true $G$.  Its legitimate target is lower error at fixed depth/HVP budget by
+amortizing subspace recovery across tasks while remaining in-context on each
+new prompt.
+
+\end{document}
