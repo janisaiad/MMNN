@@ -265,6 +265,28 @@ def test_spectral_measure_mlp_learns_only_ordered_nodes_and_masses() -> None:
     assert all(parameter.grad is not None for parameter in head.parameters())
 
 
+def test_spectral_measure_mlp_tolerates_one_ulp_certificate_roundoff() -> None:
+    features = torch.zeros(2, 7, dtype=torch.float32)
+    certified_upper = torch.full((2,), 4.0, dtype=torch.float32)
+    reference_upper = certified_upper.clone()
+    reference_upper[0] = torch.nextafter(
+        reference_upper[0],
+        torch.tensor(float("inf"), dtype=torch.float32),
+    )
+    head = PromptSpectralMeasureMLP(
+        hidden_dimension=8,
+        clusters=4,
+    )
+    nodes, weights, basis_upper = head(
+        features,
+        reference_upper,
+        certified_upper,
+    )
+    assert torch.isfinite(nodes).all()
+    assert torch.isfinite(weights).all()
+    assert (basis_upper <= certified_upper).all()
+
+
 def test_moment_chebyshev_loop_is_matrix_free_and_differentiable(
     monkeypatch,
 ) -> None:

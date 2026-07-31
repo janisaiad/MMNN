@@ -183,8 +183,20 @@ class PromptSpectralMeasureMLP(nn.Module):
             raise ValueError("reference upper endpoint must have shape [batch]")
         if certified_upper.shape != (features.shape[0],):
             raise ValueError("certified upper endpoint must have shape [batch]")
-        if torch.any(certified_upper < reference_upper):
+        tolerance = (
+            10.0
+            * torch.finfo(features.dtype).eps
+            * torch.maximum(
+                certified_upper.abs(),
+                reference_upper.abs(),
+            ).clamp_min(1.0)
+        )
+        if torch.any(certified_upper + tolerance < reference_upper):
             raise ValueError("certified upper endpoint must cover the Ritz reference")
+        # A proven bound and its algebraically equal Ritz target can differ by
+        # one float32 ulp.  Clip only that certified numerical roundoff before
+        # constructing the learned expansion.
+        reference_upper = torch.minimum(reference_upper, certified_upper)
         raw = self.network(features)
         raw_fractions = raw[:, : self.clusters]
         mass_logits = raw[:, self.clusters : 2 * self.clusters]

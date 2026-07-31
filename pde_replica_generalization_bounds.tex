@@ -1179,7 +1179,8 @@ The finite-dimensional audit
 \texttt{audit\_pde\_moment\_chebyshev\_learning.py} tests the corollary with
 only the spectral-measure MLP trainable.  At $K=32,M=128,S=4,L=8,r=2$,
 three seeds and 4096 fresh tasks per seed, the correlated elliptic law gives
-mean relative $H$-risk $9.00\times10^{-4}$.  This improves on
+mean relative $H$-risk $9.00\times10^{-4}$ with the original trace-scaled
+frozen head.  This improves on
 oracle-interval Richardson ($3.78\times10^{-1}$), HB
 ($8.65\times10^{-1}$), and Chebyshev ($7.79\times10^{-2}$), showing that
 the learned multiplicities are genuine useful statistics.  It does not
@@ -1190,6 +1191,18 @@ methods are already at the float32 floor.  In both laws the spectral formula
 and realized Clenshaw risk agree to plotting precision.  Therefore the
 replica moment law is predictive for the implemented controller, but it does
 not imply dominance over adaptive Krylov methods.
+
+A paired rerun freezes the tightly certified preconditioner heads used by the
+HB/PCG audit and trains the measure controller for 1600 updates.  Same-head
+PCG--8, trained HB--8, and learned-measure Chebyshev--8 respectively attain
+$1.8113\times10^{-8}$, $7.3392\times10^{-5}$, and
+$1.5091\times10^{-4}$ relative $H$-risk.  The corresponding spectral
+prediction is $1.50896\times10^{-4}$, agreeing with the realized Clenshaw
+risk, while the prompt-ESD oracle polynomial reaches $1.73\times10^{-8}$ in
+float32.  Hence the remaining Chebyshev gap is the estimation of promptwise
+spectral masses, not approximation of the hard-coded recurrence.  A residual
+guard falls back to PCG on $92.6$--$95.9\%$ of prompts and is not a competitive
+standalone controller.
 
 \begin{remark}[exact input to the deformed PDE law]
 For the GP-forced PDE prompt law, one must not simply count the $M=mR$ weak

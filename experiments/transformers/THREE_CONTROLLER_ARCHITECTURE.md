@@ -641,6 +641,33 @@ la même géométrie suivie de PCG explicite.
 
 ![Audit PDE avec certification serrée](pde_matrix_free_learning_tight_certificate/pde_matrix_free_solver_comparison.png)
 
+Un audit apparié entraîne ensuite le contrôleur de mesure Chebyshev en gelant
+**exactement ces mêmes têtes**. La hiérarchie à profondeur huit est sans
+ambiguïté (risque (H), plus petit est meilleur) :
+
+| consommateur de la tête partagée | risque moyen |
+|---|---:|
+| PCG-8 | **(1.811,10^{-8})** |
+| HB-8 | (7.339,10^{-5}) |
+| Chebyshev de mesure appris-8 | (1.509,10^{-4}) |
+| Chebyshev gardé par PCG | (3.404,10^{-7}) |
+
+HB est donc (2.06	imes) meilleur que Chebyshev appris, tandis que PCG est
+environ (4.05,10^3	imes) meilleur que HB. L'oracle de mesure polynomial
+atteint néanmoins (1.73,10^{-8}) : la capacité polynomiale n'est pas le
+goulot, c'est l'estimation en contexte des masses spectrales. Le risque prédit
+par la théorie ((1.50896,10^{-4})) et le risque Clenshaw réalisé
+((1.50913,10^{-4})) coïncident. La garde bascule vers PCG sur plus de
+(92%) des prompts ; elle n'est pas retenue comme architecture autonome.
+
+![Audit Chebyshev sur la tête PDE partagée](pde_moment_chebyshev_tight_shared_head/moment_chebyshev_pde_comparison.png)
+
+La sélection actuelle est donc : **HB** pour le Transformer bouclé pur,
+stationnaire et minimal ; **PCG explicite après la même tête** pour le meilleur
+solveur-décodeur pratique ; **Chebyshev de mesure** comme branche théorique à
+améliorer par des statistiques spectrales first-principles, pas par un MLP
+chargé d'imiter l'algèbre du solveur.
+
 Les deux audits d'intervalle ci-dessous ont été produits avec l'ancienne
 normalisation par la trace. Ils restent informatifs sur les erreurs rares de
 couverture et le fallback, mais leurs risques HB/Chebyshev absolus ne sont pas

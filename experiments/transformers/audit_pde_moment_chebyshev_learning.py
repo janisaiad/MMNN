@@ -167,7 +167,10 @@ def predicted_spectral_risk(
     assert model.measure_head is not None
     nodes, masses, upper = model.measure_head(
         info["interval_features"],
-        info["projected_eigenvalues"][:, 0],
+        info.get(
+            "projected_effective_target",
+            info["projected_eigenvalues"][:, 0],
+        ),
         info["certified_effective_lmax"],
     )
     coefficients = risk_optimal_solution_chebyshev_coefficients(
@@ -196,6 +199,22 @@ def train_measure_head(
 ) -> tuple[ExactLoopTransformerDecoder, dict[str, Tensor], list[dict]]:
     set_seed(seed)
     model = make_decoder(args, device)
+    if args.preconditioner_checkpoint_dir is not None:
+        checkpoint_path = (
+            args.preconditioner_checkpoint_dir
+            / f"model_r{args.refinements}_seed{seed}.pt"
+        )
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=device,
+            weights_only=True,
+        )
+        head_state = {
+            name.removeprefix("preconditioner_head."): value
+            for name, value in checkpoint["model"].items()
+            if name.startswith("preconditioner_head.")
+        }
+        model.preconditioner_head.load_state_dict(head_state)
     initial = copy.deepcopy(model.state_dict())
     assert model.measure_head is not None
     optimizer = torch.optim.AdamW(
@@ -223,6 +242,7 @@ def train_measure_head(
         for key in [
             "interval_features",
             "projected_eigenvalues",
+            "projected_effective_target",
             "certified_effective_lmax",
         ]
     }
@@ -750,6 +770,15 @@ def main() -> None:
     parser.add_argument("--guard-residual-ratio", type=float, default=1e-6)
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--seeds", default="0,1,2")
+    parser.add_argument(
+        "--preconditioner-checkpoint-dir",
+        type=Path,
+        default=None,
+        help=(
+            "optional directory containing model_r{refinements}_seed{seed}.pt "
+            "from the paired matrix-free HB training audit"
+        ),
+    )
     args = parser.parse_args()
 
     designs = parse_values(args.designs)
@@ -764,7 +793,15 @@ def main() -> None:
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     with (outdir / "config.json").open("w") as handle:
-        json.dump(vars(args), handle, indent=2, sort_keys=True)
+        json.dump(
+            {
+                key: str(value) if isinstance(value, Path) else value
+                for key, value in vars(args).items()
+            },
+            handle,
+            indent=2,
+            sort_keys=True,
+        )
 
     rows, diagnostics, history = [], [], []
     for design in designs:

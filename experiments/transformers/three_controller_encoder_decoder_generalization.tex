@@ -1075,7 +1075,8 @@ the degree-eight iterate from exact Clenshaw.  The audit uses three seeds,
 seed on both the correlated and well-conditioned elliptic laws.
 
 On the correlated law the learned polynomial has mean relative \(H\)-risk
-\(9.00\times10^{-4}\), compared with \(3.78\times10^{-1}\) for oracle-interval
+\(9.00\times10^{-4}\) under the original trace-scaled frozen head, compared
+with \(3.78\times10^{-1}\) for oracle-interval
 Richardson, \(8.65\times10^{-1}\) for oracle-interval HB, and
 \(7.79\times10^{-2}\) for oracle-interval Chebyshev.  Thus learning the
 spectral masses, rather than only the support, gives an 86-fold improvement
@@ -1098,6 +1099,22 @@ experiment rejects superiority over PCG.  HB remains the simplest exact tied
 loop; learned-measure Chebyshev is the better fixed-polynomial option on a
 clustered law; PCG remains the accuracy baseline when adaptive Krylov state is
 allowed.
+
+The decisive paired rerun freezes instead the same tightly certified heads
+used by the preceding HB/PCG PDE audit and trains the measure controller for
+1600 updates.  At identical setup and depth, same-head PCG--8 has mean
+relative \(H\)-risk \(1.8113\times10^{-8}\), trained HB--8 has
+\(7.3392\times10^{-5}\), and learned-measure Chebyshev--8 has
+\(1.5091\times10^{-4}\).  Thus HB is \(2.06\) times more accurate than the
+currently learned fixed polynomial, whereas PCG is \(4.05\times10^3\) times
+more accurate than HB.  This is an estimation gap, not a polynomial-capacity
+gap: the prompt-ESD oracle polynomial reconstructed in float32 reaches
+\(1.73\times10^{-8}\).  Moreover the spectral prediction
+\(1.50896\times10^{-4}\) agrees with the realized Clenshaw risk
+\(1.50913\times10^{-4}\), so the joint theory predicts the implemented
+controller without asking the MLP to emulate solver arithmetic.  A residual
+guard falls back to PCG on \(92.6\)--\(95.9\%\) of prompts and remains
+\(18.8\) times worse than direct same-head PCG; it is not selected.
 
 The exact-spectrum head admits a particularly simple commuting oracle limit.
 It is useful for identifying what perfect spectral routing would achieve, but
@@ -1288,5 +1305,11 @@ theory for Heavy--Ball and Chebyshev.  The remaining noncommuting PDE task is
 to derive those order parameters from the encoder saddle; PCG additionally
 requires the layer-indexed state evolution above.  It must therefore not be
 cited as a completed unconditional theory of all three recurrent decoders.
+
+The empirical architecture selected by the controlled comparisons is
+therefore HB for the simplest exact tied Transformer loop, external PCG on
+the same learned geometry for the strongest practical decoder, and
+learned-measure Chebyshev only as a research branch whose unresolved object
+is promptwise spectral-statistic estimation.
 
 \end{document}

@@ -207,6 +207,32 @@ et au comptage scalaire égal.
 
 ![Audit PDE avec certificat post-déflation](pde_matrix_free_learning_tight_certificate/pde_matrix_free_solver_comparison.png)
 
+## Chebyshev appris avec exactement la même géométrie
+
+Pour ne pas attribuer au solveur une différence de préconditionneur, l'audit
+spectral a ensuite gelé les trois têtes entraînées ci-dessus et n'a appris que
+la mesure spectrale conditionnelle utilisée par le polynôme de degré huit. Le
+budget total est identique : trois rounds HVP en bloc pour la tête, soit douze
+HVP scalaires, puis huit HVP de solveur.
+
+| consommateur de la même tête | risque (H) moyen | ratio vs PCG même tête |
+|---|---:|---:|
+| PCG-8 exact | **1.811e-8** | 1 |
+| Heavy--Ball-8 exact | 7.339e-5 | 4.05e3 |
+| Chebyshev de mesure appris-8 | 1.509e-4 | 8.33e3 |
+| Chebyshev gardé par PCG | 3.404e-7 | 18.8 |
+
+HB est donc `2.06` fois meilleur que le contrôleur Chebyshev appris dans ce
+test apparié. Ce n'est pas une limitation de la classe polynomiale : le
+polynôme oracle construit avec la mesure spectrale exacte atteint
+`1.727e-8`, près du plancher PCG. Le goulot est la prédiction en contexte des
+noeuds et masses par le MLP. La formule spectrale reste néanmoins prédictive :
+son risque moyen `1.50896e-4` coïncide avec le risque Clenshaw réalisé
+`1.50913e-4`. La garde résiduelle déclenche PCG sur `92.6--95.9 %` des prompts
+et ne constitue donc pas un gain Chebyshev pratique.
+
+![Chebyshev appris avec tête PDE partagée](pde_moment_chebyshev_tight_shared_head/moment_chebyshev_pde_comparison.png)
+
 ## Décision architecturale
 
 La sélection finale dépend du sens exact de « Transformer pur » :
@@ -215,7 +241,10 @@ La sélection finale dépend du sens exact de « Transformer pur » :
   scalaires partagés, un token mémoire et aucune division adaptative.
 - **Meilleur polynôme à horizon fixé :** Chebyshev. Un petit contrôleur peut
   prédire une mesure ou un intervalle, mais le calendrier et Clenshaw restent
-  exacts ; le MLP n'émule aucune multiplication du solveur.
+  exacts ; le MLP n'émule aucune multiplication du solveur. Sur la PDE
+  corrélée actuelle, l'estimation apprise de la mesure reste toutefois moins
+  bonne que les deux scalaires HB entraînés : c'est une branche de recherche,
+  pas le décodeur par défaut.
 - **Meilleure précision shallow :** tête contextuelle + PCG explicite. C'est
   la seule variante qui bat ici PCG pur au comptage de latence en rounds.
 
