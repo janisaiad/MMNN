@@ -21,11 +21,16 @@ try:
         Preconditioner,
         apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
+        risk_optimal_solution_chebyshev_coefficients,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
         run_precomputed_chebyshev_state_machine,
+        run_precomputed_moment_chebyshev_state_machine,
     )
-    from .first_principles_inverse_decoder import PromptSpectralIntervalMLP
+    from .first_principles_inverse_decoder import (
+        PromptSpectralIntervalMLP,
+        PromptSpectralMeasureMLP,
+    )
     from .structured_one_head_heavyball import (
         EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
@@ -37,11 +42,16 @@ except ImportError:
         Preconditioner,
         apply_fixed_preconditioner,
         chebyshev_coefficient_schedule,
+        risk_optimal_solution_chebyshev_coefficients,
         run_heavy_ball_state_machine,
         run_pcg_state_machine,
         run_precomputed_chebyshev_state_machine,
+        run_precomputed_moment_chebyshev_state_machine,
     )
-    from first_principles_inverse_decoder import PromptSpectralIntervalMLP
+    from first_principles_inverse_decoder import (
+        PromptSpectralIntervalMLP,
+        PromptSpectralMeasureMLP,
+    )
     from structured_one_head_heavyball import (
         EquivariantMatrixFreeNystromPreconditioner,
         EquivariantPromptNystromPreconditioner,
@@ -157,7 +167,8 @@ class ExactLoopTransformerDecoder(nn.Module):
     """One softmax geometry head and an exact tied recurrent solver cell.
 
     ``controller`` is one of ``richardson``, ``heavy_ball``, ``chebyshev``,
-    ``pcg`` or ``certified_hb_pcg``.  The last (historically named) choice
+    ``moment_chebyshev``, ``pcg`` or ``certified_hb_pcg``.  The last
+    (historically named) choice
     runs Heavy-Ball by default and hard-routes prompts whose final
     preconditioned residual fails a prescribed test to PCG.  The test
     certifies the observed residual, not the energy error unless a positive
@@ -175,6 +186,9 @@ class ExactLoopTransformerDecoder(nn.Module):
         step_init: float = 0.5,
         momentum_init: float = 0.05,
         chebyshev_hidden_dimension: int = 16,
+        spectral_measure_clusters: int = 8,
+        spectral_measure_hidden_dimension: int = 32,
+        moment_gram_regularization: float = 1e-8,
         base_preconditioner: str = "jacobi",
         correction_mode: str = "ritz",
         preconditioner_head_type: str = "coordinate_ritz",
@@ -190,6 +204,7 @@ class ExactLoopTransformerDecoder(nn.Module):
             "richardson",
             "heavy_ball",
             "chebyshev",
+            "moment_chebyshev",
             "pcg",
             "certified_hb_pcg",
         }:
@@ -198,6 +213,15 @@ class ExactLoopTransformerDecoder(nn.Module):
             raise ValueError("slots cannot exceed the coefficient dimension")
         if spectral_lmax_bound <= 0:
             raise ValueError("spectral_lmax_bound must be positive")
+        if moment_gram_regularization < 0:
+            raise ValueError("moment_gram_regularization must be nonnegative")
+        if (
+            controller == "moment_chebyshev"
+            and preconditioner_head_type != "equivariant_matrix_free_nystrom"
+        ):
+            raise ValueError(
+                "moment_chebyshev currently requires the matrix-free Nystrom head"
+            )
         if chebyshev_interval_policy not in {"learned", "exact_head_spectrum"}:
             raise ValueError(
                 f"unknown Chebyshev interval policy {chebyshev_interval_policy}"
@@ -215,6 +239,7 @@ class ExactLoopTransformerDecoder(nn.Module):
         self.controller = controller
         self.spectral_lmax_bound = spectral_lmax_bound
         self.chebyshev_interval_policy = chebyshev_interval_policy
+        self.moment_gram_regularization = float(moment_gram_regularization)
         self.adaptive_heavy_ball = bool(adaptive_heavy_ball)
         self.interval_lower_calibration = float(interval_lower_calibration)
         self.interval_upper_calibration = float(interval_upper_calibration)
@@ -303,6 +328,14 @@ class ExactLoopTransformerDecoder(nn.Module):
                 )
                 or self.adaptive_heavy_ball
             )
+            else None
+        )
+        self.measure_head = (
+            PromptSpectralMeasureMLP(
+                hidden_dimension=spectral_measure_hidden_dimension,
+                clusters=spectral_measure_clusters,
+            )
+            if controller == "moment_chebyshev"
             else None
         )
 
@@ -485,6 +518,42 @@ class ExactLoopTransformerDecoder(nn.Module):
                 rhs,
                 preconditioner,
                 self.depth,
+            )
+        elif self.controller == "moment_chebyshev":
+            assert self.measure_head is not None
+            features = info["interval_features"]
+            # The matrix-free Ritz correction maps every selected high mode
+            # to the smallest selected Ritz value.  The MLP predicts only a
+            # compressed measure below that prompt-dependent reference; all
+            # coefficient construction and vector arithmetic remain exact.
+            reference_upper = info["projected_eigenvalues"][:, 0]
+            spectral_nodes, spectral_weights, spectral_upper = self.measure_head(
+                features,
+                reference_upper,
+                info["certified_effective_lmax"],
+            )
+            coefficients = risk_optimal_solution_chebyshev_coefficients(
+                spectral_nodes,
+                spectral_weights,
+                self.depth,
+                spectral_upper,
+                self.moment_gram_regularization,
+            )
+            solution, _, _ = run_precomputed_moment_chebyshev_state_machine(
+                hvp,
+                rhs,
+                preconditioner,
+                coefficients,
+                spectral_upper,
+            )
+            info.update(
+                {
+                    "spectral_features": features,
+                    "spectral_measure_nodes": spectral_nodes,
+                    "spectral_measure_weights": spectral_weights,
+                    "spectral_upper": spectral_upper,
+                    "moment_solution_coefficients": coefficients,
+                }
             )
         else:
             if self.chebyshev_interval_policy == "exact_head_spectrum":

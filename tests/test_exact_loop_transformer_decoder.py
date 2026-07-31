@@ -16,9 +16,15 @@ from evaluate_trained_loop_controllers import solve_all  # noqa: E402
 from first_principles_decoder_cells import (  # noqa: E402
     fixed_prompt_linear_attention_hvp,
     materialize_preconditioner,
+    risk_optimal_solution_chebyshev_coefficients,
     run_chebyshev_state_machine,
     run_heavy_ball_state_machine,
     run_pcg_state_machine,
+    run_precomputed_moment_chebyshev_state_machine,
+    shifted_chebyshev_basis,
+)
+from first_principles_inverse_decoder import (  # noqa: E402
+    PromptSpectralMeasureMLP,
 )
 from pure_icl_parametric_operator_richardson_attention import (  # noqa: E402
     ParametricOperatorICL,
@@ -137,6 +143,220 @@ def test_chebyshev_spectral_risk_matches_exact_state_machine() -> None:
     error = solution - target
     actual = (eigenvalues * error.square()).sum(dim=-1) / energy.sum(dim=-1)
     torch.testing.assert_close(predicted, actual, rtol=1e-12, atol=1e-12)
+
+
+def test_moment_chebyshev_gram_solve_and_clenshaw_are_exact() -> None:
+    eigenvalues = torch.tensor(
+        [[0.25, 0.8, 1.7], [0.35, 1.1, 1.9]],
+        dtype=torch.float64,
+    )
+    target = torch.tensor(
+        [[0.4, -0.7, 0.2], [0.3, 0.5, -0.6]],
+        dtype=torch.float64,
+    )
+    rhs = eigenvalues * target
+    weights = torch.full_like(eigenvalues, 1.0 / eigenvalues.shape[-1])
+    upper = eigenvalues[:, -1]
+    coefficients = risk_optimal_solution_chebyshev_coefficients(
+        eigenvalues,
+        weights,
+        degree=3,
+        spectral_upper=upper,
+        gram_regularization=0.0,
+    )
+    matrix = torch.diag_embed(eigenvalues)
+    identity = torch.eye(3, dtype=torch.float64).expand(2, -1, -1)
+    solution = run_precomputed_moment_chebyshev_state_machine(
+        lambda vector: torch.einsum("bij,bj->bi", matrix, vector),
+        rhs,
+        identity,
+        coefficients,
+        upper,
+    )[0]
+    torch.testing.assert_close(solution, target, rtol=2e-11, atol=2e-11)
+
+    basis = shifted_chebyshev_basis(
+        eigenvalues,
+        degree=3,
+        spectral_upper=upper,
+    )
+    residual = 1.0 - eigenvalues * torch.einsum(
+        "bkl,bl->bk",
+        basis,
+        coefficients,
+    )
+    torch.testing.assert_close(
+        residual,
+        torch.zeros_like(residual),
+        rtol=0.0,
+        atol=2e-11,
+    )
+
+
+def test_moment_chebyshev_clenshaw_vectorizes_multiple_rhs() -> None:
+    eigenvalues = torch.tensor(
+        [[0.3, 0.9, 1.6], [0.4, 1.0, 1.8]],
+        dtype=torch.float64,
+    )
+    upper = eigenvalues[:, -1]
+    weights = torch.full_like(eigenvalues, 1.0 / 3.0)
+    coefficients = risk_optimal_solution_chebyshev_coefficients(
+        eigenvalues,
+        weights,
+        degree=3,
+        spectral_upper=upper,
+        gram_regularization=0.0,
+    )
+    target = torch.tensor(
+        [
+            [[0.4, -0.2], [-0.7, 0.3], [0.2, 0.5]],
+            [[0.3, 0.6], [0.5, -0.1], [-0.6, 0.2]],
+        ],
+        dtype=torch.float64,
+    )
+    rhs = eigenvalues.unsqueeze(-1) * target
+    matrix = torch.diag_embed(eigenvalues)
+    identity = torch.eye(3, dtype=torch.float64).expand(2, -1, -1)
+    solution = run_precomputed_moment_chebyshev_state_machine(
+        lambda vector: torch.einsum("bij,bjq->biq", matrix, vector),
+        rhs,
+        identity,
+        coefficients,
+        upper,
+    )[0]
+    torch.testing.assert_close(solution, target, rtol=2e-11, atol=2e-11)
+
+
+def test_spectral_measure_mlp_learns_only_ordered_nodes_and_masses() -> None:
+    torch.manual_seed(37)
+    features = torch.randn(6, 7, dtype=torch.float64)
+    reference_upper = torch.rand(6, dtype=torch.float64) + 0.5
+    certified_upper = 3.0 * reference_upper
+    head = PromptSpectralMeasureMLP(
+        hidden_dimension=12,
+        clusters=5,
+    ).double()
+    nodes, weights, basis_upper = head(
+        features,
+        reference_upper,
+        certified_upper,
+    )
+    assert nodes.shape == weights.shape == (6, 5)
+    assert torch.all(nodes > 0)
+    assert torch.all(nodes[:, 1:] >= nodes[:, :-1])
+    assert torch.all(nodes[:, -1] < basis_upper)
+    torch.testing.assert_close(
+        weights.sum(dim=-1),
+        torch.ones(6, dtype=torch.float64),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert torch.all(weights > 0)
+    assert torch.all(basis_upper > nodes[:, -1])
+    assert torch.all(basis_upper <= certified_upper)
+
+    coefficients = risk_optimal_solution_chebyshev_coefficients(
+        nodes,
+        weights,
+        degree=4,
+        spectral_upper=basis_upper,
+    )
+    coefficients.square().mean().backward()
+    assert all(parameter.grad is not None for parameter in head.parameters())
+
+
+def test_moment_chebyshev_loop_is_matrix_free_and_differentiable(
+    monkeypatch,
+) -> None:
+    import exact_loop_transformer_decoder as decoder_module
+
+    equations, observations = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=12,
+        slots=3,
+        controller="moment_chebyshev",
+        spectral_lmax_bound=2.5,
+        spectral_measure_clusters=6,
+        spectral_measure_hidden_dimension=10,
+        moment_gram_regularization=1e-7,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=2,
+    ).double()
+
+    def forbidden_normal_matrix(*args, **kwargs):
+        raise AssertionError("moment Chebyshev materialized H")
+
+    monkeypatch.setattr(
+        decoder_module,
+        "normal_matrix_from_equations",
+        forbidden_normal_matrix,
+    )
+    solution, info = decoder(equations, observations, ridge=0.2)
+    assert torch.isfinite(solution).all()
+    assert "normal_matrix" not in info
+    assert not info["normal_matrix_materialized"].any()
+    assert info["matrix_free"].all()
+    assert info["spectral_measure_nodes"].shape == (equations.shape[0], 6)
+    torch.testing.assert_close(
+        info["spectral_measure_weights"].sum(dim=-1),
+        torch.ones(equations.shape[0], dtype=equations.dtype),
+    )
+    assert info["moment_solution_coefficients"].shape == (
+        equations.shape[0],
+        decoder.depth,
+    )
+
+    solution.square().mean().backward()
+    assert decoder.measure_head is not None
+    assert all(
+        parameter.grad is not None
+        for parameter in decoder.measure_head.parameters()
+    )
+
+
+def test_moment_chebyshev_loop_reuses_prompt_geometry_for_multiple_rhs() -> None:
+    equations, _ = _problem()
+    decoder = ExactLoopTransformerDecoder(
+        dimension=equations.shape[-1],
+        depth=4,
+        head_dimension=12,
+        slots=3,
+        controller="moment_chebyshev",
+        spectral_lmax_bound=2.5,
+        spectral_measure_clusters=6,
+        preconditioner_head_type="equivariant_matrix_free_nystrom",
+        prompt_subspace_refinement_steps=2,
+    ).double()
+    observations = torch.randn(
+        equations.shape[0],
+        equations.shape[1],
+        3,
+        dtype=equations.dtype,
+    )
+    geometry = decoder.build_prompt_geometry(equations, ridge=0.2)
+    multi, _ = decoder.solve_with_geometry(geometry, observations)
+    separate = torch.stack(
+        [
+            decoder.solve_with_geometry(geometry, observations[..., index])[0]
+            for index in range(observations.shape[-1])
+        ],
+        dim=-1,
+    )
+    torch.testing.assert_close(multi, separate, rtol=2e-10, atol=2e-10)
+
+
+def test_moment_chebyshev_rejects_non_matrix_free_head() -> None:
+    with pytest.raises(ValueError, match="requires the matrix-free Nystrom head"):
+        ExactLoopTransformerDecoder(
+            dimension=4,
+            depth=4,
+            head_dimension=8,
+            slots=2,
+            controller="moment_chebyshev",
+            preconditioner_head_type="coordinate_ritz",
+        )
 
 
 def test_equivariant_ritz_softmax_head_is_gauge_covariant_and_spectral() -> None:

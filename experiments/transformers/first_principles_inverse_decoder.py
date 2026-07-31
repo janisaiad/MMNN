@@ -111,6 +111,101 @@ class PromptSpectralIntervalMLP(nn.Module):
         return spectral_min, spectral_max
 
 
+class PromptSpectralMeasureMLP(nn.Module):
+    """Predict only cluster nodes and masses for an exact polynomial solve."""
+
+    def __init__(
+        self,
+        input_dimension: int = 7,
+        hidden_dimension: int = 32,
+        clusters: int = 8,
+        minimum_node_fraction: float = 1e-4,
+        upper_safety_margin: float = 0.05,
+        initial_upper_multiplier: float = 1.5,
+    ) -> None:
+        super().__init__()
+        if clusters < 2:
+            raise ValueError("at least two spectral clusters are required")
+        if not 0.0 < minimum_node_fraction < 1.0:
+            raise ValueError("minimum node fraction must lie in (0,1)")
+        if upper_safety_margin < 0:
+            raise ValueError("upper safety margin must be nonnegative")
+        if initial_upper_multiplier <= 1.0:
+            raise ValueError("initial upper multiplier must exceed one")
+        self.clusters = clusters
+        self.minimum_node_fraction = minimum_node_fraction
+        self.upper_safety_margin = upper_safety_margin
+        self.network = nn.Sequential(
+            nn.Linear(input_dimension, hidden_dimension),
+            nn.SiLU(),
+            nn.Linear(hidden_dimension, 2 * clusters + 1),
+        )
+        fractions = torch.logspace(
+            math.log10(0.02),
+            math.log10(0.75),
+            clusters,
+        )
+        fractions = fractions.clamp(
+            minimum_node_fraction + 1e-6,
+            1.0 - 1e-6,
+        )
+        normalized = (
+            fractions - minimum_node_fraction
+        ) / (1.0 - minimum_node_fraction)
+        node_bias = torch.log(normalized / (1.0 - normalized))
+        initial_mass = torch.full((clusters,), 0.25 / (clusters - 1))
+        initial_mass[0] = 0.75
+        with torch.no_grad():
+            self.network[-1].weight.zero_()
+            self.network[-1].bias[:clusters].copy_(node_bias)
+            self.network[-1].bias[clusters:].copy_(
+                torch.cat(
+                    [
+                        torch.log(initial_mass),
+                        torch.tensor(
+                            [
+                                math.log(
+                                    math.expm1(initial_upper_multiplier - 1.0)
+                                )
+                            ]
+                        ),
+                    ]
+                )
+            )
+
+    def forward(
+        self,
+        features: Tensor,
+        reference_upper: Tensor,
+        certified_upper: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
+        if reference_upper.shape != (features.shape[0],):
+            raise ValueError("reference upper endpoint must have shape [batch]")
+        if certified_upper.shape != (features.shape[0],):
+            raise ValueError("certified upper endpoint must have shape [batch]")
+        if torch.any(certified_upper < reference_upper):
+            raise ValueError("certified upper endpoint must cover the Ritz reference")
+        raw = self.network(features)
+        raw_fractions = raw[:, : self.clusters]
+        mass_logits = raw[:, self.clusters : 2 * self.clusters]
+        raw_upper_expansion = raw[:, -1]
+        support_upper = torch.minimum(
+            reference_upper * (1.0 + torch.nn.functional.softplus(raw_upper_expansion)),
+            certified_upper,
+        )
+        fractions = self.minimum_node_fraction + (
+            1.0 - self.minimum_node_fraction
+        ) * torch.sigmoid(raw_fractions)
+        fractions, order = fractions.sort(dim=-1)
+        weights = torch.softmax(mass_logits, dim=-1).gather(-1, order)
+        nodes = support_upper[:, None] * fractions
+        basis_upper = torch.minimum(
+            support_upper * (1.0 + self.upper_safety_margin),
+            certified_upper,
+        )
+        return nodes, weights, basis_upper
+
+
 def spectral_interval_coverage_loss(
     predicted_min: Tensor,
     predicted_max: Tensor,

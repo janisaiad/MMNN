@@ -394,6 +394,156 @@ def run_precomputed_chebyshev_state_machine(
     return x, mse_history, residual_history
 
 
+def shifted_chebyshev_basis(
+    spectral_nodes: Tensor,
+    degree: int,
+    spectral_upper: Tensor,
+) -> Tensor:
+    """Evaluate the first shifted Chebyshev polynomials on the interval."""
+
+    if degree <= 0:
+        raise ValueError("polynomial degree must be positive")
+    if spectral_nodes.ndim != 2:
+        raise ValueError("spectral nodes must have shape [batch, clusters]")
+    if spectral_upper.shape != (spectral_nodes.shape[0],):
+        raise ValueError("spectral upper endpoint must have shape [batch]")
+    if torch.any(spectral_upper <= 0):
+        raise ValueError("spectral upper endpoint must be positive")
+    normalized = 2.0 * spectral_nodes / spectral_upper[:, None] - 1.0
+    basis = [torch.ones_like(normalized)]
+    if degree > 1:
+        basis.append(normalized)
+    for _ in range(2, degree):
+        basis.append(2.0 * normalized * basis[-1] - basis[-2])
+    return torch.stack(basis, dim=-1)
+
+
+def risk_optimal_solution_chebyshev_coefficients(
+    spectral_nodes: Tensor,
+    spectral_weights: Tensor,
+    degree: int,
+    spectral_upper: Tensor,
+    gram_regularization: float = 1e-10,
+) -> Tensor:
+    """Construct the exact weighted-risk solution polynomial.
+
+    The neural component may predict nodes and masses, but the small weighted
+    Gram solve here is deterministic algebra.  A relative diagonal
+    regularizer defines finite-precision behavior when the predicted measure
+    has fewer effective clusters than coefficients.
+    """
+
+    if spectral_weights.shape != spectral_nodes.shape:
+        raise ValueError("spectral nodes and weights must have the same shape")
+    if torch.any(spectral_nodes <= 0):
+        raise ValueError("spectral nodes must be positive")
+    if torch.any(spectral_weights < 0):
+        raise ValueError("spectral weights must be nonnegative")
+    if gram_regularization < 0:
+        raise ValueError("gram regularization must be nonnegative")
+    output_dtype = spectral_nodes.dtype
+    solve_dtype = (
+        torch.float64
+        if output_dtype in {torch.float16, torch.bfloat16, torch.float32}
+        else output_dtype
+    )
+    nodes = spectral_nodes.to(solve_dtype)
+    weights = spectral_weights.to(solve_dtype)
+    upper = spectral_upper.to(solve_dtype)
+    weights = weights / weights.sum(
+        dim=-1,
+        keepdim=True,
+    ).clamp_min(torch.finfo(solve_dtype).tiny)
+    basis = shifted_chebyshev_basis(
+        nodes,
+        degree,
+        upper,
+    )
+    design = nodes.unsqueeze(-1) * basis
+    gram = torch.einsum(
+        "bjl,bj,bjm->blm",
+        design,
+        weights,
+        design,
+    )
+    right_hand_side = torch.einsum(
+        "bjl,bj->bl",
+        design,
+        weights,
+    )
+    if gram_regularization:
+        scale = torch.diagonal(
+            gram,
+            dim1=-2,
+            dim2=-1,
+        ).mean(dim=-1).clamp_min(torch.finfo(gram.dtype).tiny)
+        identity = torch.eye(
+            degree,
+            device=gram.device,
+            dtype=gram.dtype,
+        ).expand(gram.shape[0], -1, -1)
+        gram = (
+            gram
+            + gram_regularization * scale[:, None, None] * identity
+        )
+    coefficients = torch.linalg.solve(
+        gram,
+        right_hand_side.unsqueeze(-1),
+    ).squeeze(-1)
+    return coefficients.to(output_dtype)
+
+
+def run_precomputed_moment_chebyshev_state_machine(
+    hvp: HVP,
+    rhs: Tensor,
+    preconditioner: Preconditioner,
+    solution_coefficients: Tensor,
+    spectral_upper: Tensor,
+) -> Tuple[Tensor, List[float], List[float]]:
+    """Apply a prompt-conditioned solution polynomial by exact Clenshaw.
+
+    Coefficients are fixed before the vector loop.  Every large-vector
+    operation is an exact normal HVP, a fixed preconditioner application, or
+    a routed linear combination.  No MLP emulates solver arithmetic.
+    """
+
+    if solution_coefficients.ndim != 2:
+        raise ValueError("solution coefficients must have shape [batch, depth]")
+    if solution_coefficients.shape[0] != rhs.shape[0]:
+        raise ValueError("coefficient batch dimension must match the right-hand side")
+    if solution_coefficients.shape[1] <= 0:
+        raise ValueError("at least one polynomial coefficient is required")
+    upper = _batch_scalar(spectral_upper, rhs)
+    if torch.any(upper <= 0):
+        raise ValueError("spectral upper endpoint must be positive")
+    base = apply_fixed_preconditioner(preconditioner, rhs)
+
+    def normalized_operator(vector: Tensor) -> Tensor:
+        applied = apply_fixed_preconditioner(preconditioner, hvp(vector))
+        return 2.0 * applied / upper.unsqueeze(1) - vector
+
+    next_term = torch.zeros_like(rhs)
+    following_term = torch.zeros_like(rhs)
+    for index in range(solution_coefficients.shape[1] - 1, 0, -1):
+        coefficient = _batch_scalar(
+            solution_coefficients[:, index],
+            rhs,
+        )
+        current = (
+            2.0 * normalized_operator(next_term)
+            - following_term
+            + coefficient.unsqueeze(1) * base
+        )
+        following_term, next_term = next_term, current
+    leading = _batch_scalar(solution_coefficients[:, 0], rhs)
+    solution = (
+        normalized_operator(next_term)
+        - following_term
+        + leading.unsqueeze(1) * base
+    )
+    return solution, [], []
+
+
 @dataclass(frozen=True)
 class PCGState:
     """Persistent tokens of the tied PCG macro-block: [X,R,S,P,RHO]."""

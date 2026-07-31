@@ -258,14 +258,17 @@ Controller & Additional learned class & Required stability event & Trace linear 
 \midrule
 HB & shared scalars or spectral-interval MLP & Jury margin or interval coverage & yes, if bounds ignore $b$\\
 Chebyshev & spectral-interval MLP & interval coverage with slack & yes, if bounds ignore $b$\\
+Moment Chebyshev & node--mass--upper MLP & positive Gram margin and upper coverage & yes, if head ignores $b$\\
 PCG & none & positive denominators or converged mask & no\\
 \bottomrule
 \end{tabular}
 \end{center}
 
 For tied-scalar HB, compact stable parameters add only two coordinates to a
-covering argument.  Adaptive HB and Chebyshev instead add the interval MLP's
-actual norm-controlled parameter complexity.  For adaptive HB the Lipschitz
+covering argument.  Adaptive HB, Chebyshev, and moment Chebyshev instead add
+the controller MLP's actual norm-controlled parameter complexity.  The
+moment controller additionally requires the regularized Gram matrix to stay
+uniformly positive definite.  For adaptive HB the Lipschitz
 constant grows as the Jury margin shrinks; for Chebyshev it grows as the
 coverage slack shrinks.  For PCG, the solver adds no trainable parameter, but a pathwise
 Lipschitz proof requires denominators bounded away from zero until the fixed
@@ -431,10 +434,32 @@ are hard-coded exact algebra.  An endpoint-only Chebyshev MLP is the
 support-only special case and necessarily discards cluster multiplicities.
 For numerical stability the implementation should solve the equivalent Gram
 system in a shifted Chebyshev basis rather than form high monomial powers.
+The spectral nodes need not include the stability endpoint: the learned
+positive measure and the interval on which Clenshaw is evaluated are distinct
+objects.  In the implementation the MLP therefore predicts ordered positive
+nodes, positive normalized masses, and a positive expansion of a Ritz scale;
+the expansion is capped by the matrix-free global upper certificate.  The
+small Gram solve is performed in float64 and only its coefficients are cast
+back to the vector-loop precision.
 The same construction applies to the affine physical risk in
 \eqref{eq:exact-joint-risk}, where the averaged bivariate measure supplies a
 general positive-semidefinite Gram matrix instead of the scalar Hankel
 matrix.
+
+There is an unavoidable stability boundary.  If the Clenshaw interval is
+([0,\widehat L]), its shifted coordinate is
+(x(\lambda)=2\lambda/\widehat L-1).  For a missed eigenvalue
+(\lambda>\widehat L),
+\[
+ T_j(x(\lambda))
+ =\cosh\!\left(j\operatorname{arcosh}x(\lambda)\right),
+\]
+so a rare upper-endpoint miss can grow exponentially with degree and dominate
+an arithmetic-mean risk.  Consequently, high average validation coverage is
+not a certificate: either (\widehat L) must be a genuine upper bound, or an
+explicit residual guard must handle misses.  This conclusion uses only the
+exact Chebyshev identity and does not depend on a neural approximation
+argument.
 
 For HB, $\eta=(\alpha,\beta)$ and the feasible set is
 \[
@@ -930,9 +955,14 @@ an exact uniformly elliptic one-dimensional weak-form law with
 training seeds, \(800\) training steps, and \(4096\) held-out tasks per seed.
 With two block-power refinements, trained-head PCG--8 has mean relative
 \(H\)-risk \(1.8113\times10^{-8}\).  A favorable head-free PCG--16 baseline,
-which receives \(rS=8\) extra iterations but is not charged for attention or
-QR, has risk \(4.7393\times10^{-8}\).  Thus the prompt-specific block
-geometry improves arithmetic work by a factor \(2.62\) on this law.
+which was originally charged only \(rS=8\) extra iterations, has risk
+\(4.7393\times10^{-8}\).  The exact setup count is instead \(r+1=3\)
+block-HVP rounds, or \((r+1)S=12\) sequential scalar-HVP equivalents, because
+forming the projected operator requires one final block action.  Head plus
+PCG--8 therefore uses eleven batched HVP rounds or twenty scalar equivalents;
+head-free PCG--20 still has risk \(4.7393\times10^{-8}\) at the float32 floor.
+The factor \(2.62\) is an error ratio, not a work-reduction factor; the
+round-count reduction is \(20/11\simeq1.82\) when the block action is parallel.
 
 This is \emph{not} evidence for learned softmax routing.  The initialized
 head with the same two refinements has risk \(1.81125\times10^{-8}\), and its
@@ -958,6 +988,43 @@ its reconstructed float32 iterate reaches \(1.73\times10^{-8}\), the same
 numerical floor as PCG.  A single law-level polynomial reaches only about
 \(10^{-5}\).  The next learned object must therefore predict promptwise
 cluster statistics, not only global HB scalars or two support endpoints.
+
+\paragraph{Learned spectral-measure Chebyshev audit.}
+The follow-up script
+\texttt{audit\_pde\_moment\_chebyshev\_learning.py} implements that object.
+Only a 32-cluster spectral-measure MLP is trained; the matrix-free
+preconditioner is frozen.  Seven prompt invariants determine ordered positive
+nodes, normalized positive masses, and a conservative upper expansion.
+Exact spectra supervise pretraining and validation only and are absent at
+inference.  Coefficients come from the exact shifted-Chebyshev Gram solve and
+the degree-eight iterate from exact Clenshaw.  The audit uses three seeds,
+800 updates, 4096 validation prompts and 4096 fresh evaluation prompts per
+seed on both the correlated and well-conditioned elliptic laws.
+
+On the correlated law the learned polynomial has mean relative \(H\)-risk
+\(9.00\times10^{-4}\), compared with \(3.78\times10^{-1}\) for oracle-interval
+Richardson, \(8.65\times10^{-1}\) for oracle-interval HB, and
+\(7.79\times10^{-2}\) for oracle-interval Chebyshev.  Thus learning the
+spectral masses, rather than only the support, gives an 86-fold improvement
+over minimax Chebyshev at the same degree.  Nevertheless, same-head PCG--8
+has \(1.81\times10^{-8}\), head-free PCG--8 has \(2.19\times10^{-6}\), and
+head-free PCG--20 has \(4.74\times10^{-8}\).  A residual-guarded variant has
+\(3.09\times10^{-7}\) but falls back on \(95.7\%\) of prompts, so it is not a
+useful Chebyshev victory over PCG.
+
+On the well-conditioned elliptic law the learned measure gives
+\(7.44\times10^{-7}\), while all three exact-interval stationary methods are
+already at the float32 floor near \(8\times10^{-14}\); there is no reason to
+learn a more complicated controller there.  Across both laws the exact
+spectral prediction and the realized Clenshaw risk agree to plotting
+precision (respectively \(9.0015\times10^{-4}\) versus
+\(9.0010\times10^{-4}\), and \(7.4433\times10^{-7}\) versus
+\(7.4431\times10^{-7}\)).  Hence the learned object is a genuine in-context
+spectral statistic rather than an MLP emulation of solver arithmetic, but the
+experiment rejects superiority over PCG.  HB remains the simplest exact tied
+loop; learned-measure Chebyshev is the better fixed-polynomial option on a
+clustered law; PCG remains the accuracy baseline when adaptive Krylov state is
+allowed.
 
 The exact-spectrum head admits a particularly simple commuting oracle limit.
 It is useful for identifying what perfect spectral routing would achieve, but
