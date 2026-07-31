@@ -144,6 +144,7 @@ def run_heavy_ball_state_machine(
     step_size: float | Tensor,
     momentum: float | Tensor,
     target: Tensor | None = None,
+    record_history: bool = False,
 ) -> Tuple[Tensor, List[float], List[float]]:
     state = initialize_heavy_ball(rhs)
     mse_history: List[float] = []
@@ -158,7 +159,10 @@ def run_heavy_ball_state_machine(
             momentum,
         )
         state = step.state
-        residual_history.append(torch.norm(step.residual, dim=-1).mean().item())
+        if record_history:
+            residual_history.append(
+                torch.norm(step.residual, dim=-1).mean().item()
+            )
         if target is not None:
             mse_history.append(((state.x - target) ** 2).mean().item())
     return state.x, mse_history, residual_history
@@ -255,6 +259,7 @@ def run_chebyshev_state_machine(
     spectral_min: float | Tensor,
     spectral_max: float | Tensor,
     target: Tensor | None = None,
+    record_history: bool = False,
 ) -> Tuple[Tensor, List[float], List[float]]:
     state = initialize_chebyshev(rhs, spectral_min, spectral_max)
     mse_history: List[float] = []
@@ -262,7 +267,10 @@ def run_chebyshev_state_machine(
     for _ in range(depth):
         step = chebyshev_macro_block(state, rhs, hvp, preconditioner)
         state = step.state
-        residual_history.append(torch.norm(step.residual, dim=-1).mean().item())
+        if record_history:
+            residual_history.append(
+                torch.norm(step.residual, dim=-1).mean().item()
+            )
         if target is not None:
             mse_history.append(((state.x - target) ** 2).mean().item())
     return state.x, mse_history, residual_history
@@ -328,6 +336,7 @@ def run_precomputed_chebyshev_state_machine(
     step_schedule: Tensor,
     momentum_schedule: Tensor,
     target: Tensor | None = None,
+    record_history: bool = False,
 ) -> Tuple[Tensor, List[float], List[float]]:
     """Run exact Chebyshev vector blocks from a precomputed scalar schedule."""
 
@@ -350,7 +359,10 @@ def run_precomputed_chebyshev_state_machine(
             + momentum_schedule[:, layer, None] * (x - x_previous)
         )
         x_previous, x = x, x_next
-        residual_history.append(torch.norm(residual, dim=-1).mean().item())
+        if record_history:
+            residual_history.append(
+                torch.norm(residual, dim=-1).mean().item()
+            )
         if target is not None:
             mse_history.append(((x - target) ** 2).mean().item())
     return x, mse_history, residual_history
@@ -434,12 +446,16 @@ def run_pcg_state_machine(
     preconditioner: Preconditioner,
     depth: int,
     target: Tensor | None = None,
+    record_history: bool = False,
 ) -> Tuple[Tensor, List[float], List[float]]:
     state = initialize_pcg(rhs, preconditioner)
     mse_history: List[float] = []
     residual_history: List[float] = []
     for _ in range(depth):
-        residual_history.append(torch.norm(state.residual, dim=-1).mean().item())
+        if record_history:
+            residual_history.append(
+                torch.norm(state.residual, dim=-1).mean().item()
+            )
         step = pcg_macro_block(state, hvp, preconditioner)
         state = step.state
         if target is not None:

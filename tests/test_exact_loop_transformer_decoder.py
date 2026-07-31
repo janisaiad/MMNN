@@ -16,6 +16,12 @@ from pure_icl_parametric_operator_richardson_attention import (
     sample_icl_batch,
     solve_z_exact,
 )
+from predict_pde_law_hyperparameters import (
+    chebyshev_task_risk,
+    conditional_weak_moments,
+    exact_prompt_normal_rhs,
+)
+from first_principles_decoder_cells import run_chebyshev_state_machine
 from structured_one_head_heavyball import EquivariantRitzSoftmaxPreconditioner
 
 
@@ -34,6 +40,91 @@ def test_normal_equations_are_the_exact_prompt_moments():
     assert torch.allclose(normal, equations.transpose(-1, -2) @ equations + ridge * eye)
     expected_rhs = (equations.transpose(-1, -2) @ observations.unsqueeze(-1)).squeeze(-1)
     assert torch.allclose(rhs, expected_rhs)
+
+
+def test_pde_conditional_moments_retain_shared_forcing_dependence() -> None:
+    torch.manual_seed(31)
+    dtype = torch.float64
+    dimension, coefficient_dimension, probes_count = 4, 2, 3
+    factor = torch.randn(dimension, dimension, dtype=dtype)
+    true_operator = (
+        factor.transpose(-1, -2) @ factor
+        + torch.eye(dimension, dtype=dtype)
+    ).unsqueeze(0)
+    learned_A0 = 0.7 * torch.eye(dimension, dtype=dtype)
+    learned_basis = torch.randn(
+        coefficient_dimension,
+        dimension,
+        dimension,
+        dtype=dtype,
+    )
+    probes = torch.randn(probes_count, dimension, dtype=dtype)
+    forcing_std = 0.8
+    expected_normal, expected_rhs = conditional_weak_moments(
+        true_operator,
+        learned_A0,
+        learned_basis,
+        probes,
+        forcing_std**2,
+    )
+    samples = 120_000
+    normal, rhs = exact_prompt_normal_rhs(
+        true_operator,
+        learned_A0,
+        learned_basis,
+        probes,
+        samples,
+        forcing_std,
+        torch.Generator().manual_seed(32),
+    )
+    torch.testing.assert_close(
+        normal / samples,
+        expected_normal,
+        rtol=1.5e-2,
+        atol=2e-3,
+    )
+    torch.testing.assert_close(
+        rhs / samples,
+        expected_rhs,
+        rtol=6e-2,
+        atol=4e-3,
+    )
+
+
+def test_chebyshev_spectral_risk_matches_exact_state_machine() -> None:
+    eigenvalues = torch.tensor(
+        [[0.7, 1.1, 1.8], [0.8, 1.4, 2.0]],
+        dtype=torch.float64,
+    )
+    target = torch.tensor(
+        [[0.4, -0.7, 0.2], [0.3, 0.5, -0.6]],
+        dtype=torch.float64,
+    )
+    rhs = eigenvalues * target
+    lower = eigenvalues[:, 0]
+    upper = eigenvalues[:, -1]
+    energy = eigenvalues * target.square()
+    weights = energy / energy.sum(dim=-1, keepdim=True)
+    predicted = chebyshev_task_risk(
+        eigenvalues,
+        weights,
+        depth=5,
+        lower=lower,
+        upper=upper,
+    )
+    matrix = torch.diag_embed(eigenvalues)
+    identity = torch.eye(3, dtype=torch.float64).expand(2, -1, -1)
+    solution = run_chebyshev_state_machine(
+        lambda vector: torch.einsum("bij,bj->bi", matrix, vector),
+        rhs,
+        identity,
+        depth=5,
+        spectral_min=lower,
+        spectral_max=upper,
+    )[0]
+    error = solution - target
+    actual = (eigenvalues * error.square()).sum(dim=-1) / energy.sum(dim=-1)
+    torch.testing.assert_close(predicted, actual, rtol=1e-12, atol=1e-12)
 
 
 def test_equivariant_ritz_softmax_head_is_gauge_covariant_and_spectral() -> None:

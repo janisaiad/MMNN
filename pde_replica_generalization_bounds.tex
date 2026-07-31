@@ -1168,6 +1168,69 @@ finite-dimensional spectral-risk predictor itself requires only an SPD
 normal matrix and finite moments.
 \end{remark}
 
+\begin{proposition}[prompt-free finite-$K$ hyperparameter prediction]
+\label{prop:prompt-free-pde-predictor}
+Fix $K,R$ and condition on a task $z$.  Let
+\[
+    \overline H_m(z)
+    :=m\,\E[Y\mid z]+\lambda M,
+    \qquad
+    \overline c_m(z)
+    :=m\,\E[G_i^\top b_i\mid z],
+\]
+where both expectations are the exact Gaussian contractions above and $M$ is
+the covariant ridge metric.  Let $(H_m,c_m)$ be the normal matrix and
+right-hand side from an actual length-$m$ prompt.  Then
+\[
+    m^{-1}(H_m-\overline H_m(z))\longrightarrow0,
+    \qquad
+    m^{-1}(c_m-\overline c_m(z))\longrightarrow0
+\]
+almost surely.  If the population normal matrices remain uniformly SPD and
+the invariant one-head score is Lipschitz on the resulting compact spectral
+set, the effective spectral law, every fixed-depth HB or Chebyshev risk, and
+the corresponding physical linearized risk computed from
+$(\overline H_m,\overline c_m)$ converge to their prompt-law counterparts.
+Their conditional fluctuations are $O_{\mathbb P}(m^{-1/2})$.
+
+If, additionally, the latency-regularized population objective has a unique
+interior minimizer with nonsingular Hessian, its prediction
+\[
+ (\theta^\star,\alpha^\star,\beta^\star,L^\star)
+ \in\arg\min_{\theta,\alpha,\beta,L}
+ \left\{
+ \E_z\mathcal R_L^{\rm HB}
+   (\overline H_m(z),\overline c_m(z);
+    \theta,\alpha,\beta)
+ +\tau_{\rm hw}T_{\rm HB}(L,\theta)
+ \right\}
+\]
+is consistent for the finite-prompt optimum.  The analogous statement holds
+for the two Chebyshev endpoints and their exact recurrence.
+\end{proposition}
+
+\begin{proof}
+The prompt is a sum over $m$ independent forcings, not over $mR$ independent
+rows.  The strong law applied to the finite-dimensional matrix-valued
+quadratic form $Y$ and its cross moment proves the two almost-sure limits.
+Gaussian quadratic forms have finite moments of every order, so their
+conditional central-limit fluctuations are $O_{\mathbb P}(m^{-1/2})$.
+Uniform SPD, continuity of eigenvalues, and the Lipschitz spectral head pass
+this convergence through the exact spectral pushforward and every
+fixed-degree residual polynomial.  The physical statement follows by the
+same argument for the bounded decoder Jacobian.  Standard argmin stability
+under the stated local identifiability condition gives consistency of the
+joint minimizer.
+\end{proof}
+
+This proposition separates two meanings of the phrase few assumptions.  At
+finite $K$, the conditional-population predictor needs no MP, isotropy,
+eigenvector delocalization, or replica ansatz.  Eliminating the expectation
+over the task prior $z$ as well---so that only dimension ratios
+remain---does require the stronger deformed random-matrix closure.  No method
+can identify a distribution-optimal controller from dimension ratios alone
+when two task laws with the same ratios have different spectral weights.
+
 \begin{corollary}[early and late time laws]
 \label{cor:earlylate}
 At small time,

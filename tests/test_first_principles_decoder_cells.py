@@ -126,6 +126,30 @@ def test_each_macro_block_uses_exactly_one_hvp() -> None:
     assert calls["count"] == 5
 
 
+def test_runtime_path_does_not_materialize_histories_unless_requested() -> None:
+    matrix, rhs, preconditioner = random_spd_problem()
+    hvp = lambda vector: torch.einsum("bkl,bl->bk", matrix, vector)
+    _, _, default_history = CELLS.run_heavy_ball_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        depth=4,
+        step_size=0.01,
+        momentum=0.1,
+    )
+    _, _, recorded_history = CELLS.run_heavy_ball_state_machine(
+        hvp,
+        rhs,
+        preconditioner,
+        depth=4,
+        step_size=0.01,
+        momentum=0.1,
+        record_history=True,
+    )
+    assert default_history == []
+    assert len(recorded_history) == 4
+
+
 def test_pcg_work_tokens_are_exact_contractions_and_quotients() -> None:
     matrix, rhs, preconditioner = random_spd_problem()
     hvp = lambda vector: torch.einsum("bkl,bl->bk", matrix, vector)

@@ -468,6 +468,72 @@ physique. La version « peu d'hypothèses » est donc le niveau 1 ; la version
 « zéro calibration » est nécessairement le niveau 3 et doit annoncer ses
 hypothèses.
 
+## Prédiction depuis la loi PDE, sans prompts de calibration
+
+Pour l'opérateur elliptique et le forcing gaussien connus, le niveau
+intermédiaire peut être rendu entièrement prédictif sans loi MP. Pour un
+\(z\) donné, on calcule exactement
+
+\[
+\overline H_m(z)
+=m\,\mathbb E[G_i^\top G_i\mid z]+\lambda M,
+\qquad
+\overline c_m(z)
+=m\,\mathbb E[G_i^\top b_i\mid z].
+\]
+
+L'espérance conserve la dépendance des \(R\) tests faibles produits par le
+même forcing. Le prompt contient \(m\) formes quadratiques matricielles
+indépendantes, et non \(mR\) lignes indépendantes. La loi forte et le CLT
+donnent alors une erreur conditionnelle \(O_{\mathbb P}(m^{-1/2})\). Sous SPD
+uniforme et continuité Lipschitz de la tête spectrale, cette convergence se
+transmet aux risques HB/Chebyshev et à leur minimiseur conjoint.
+
+Le script **predict_pde_law_hyperparameters.py** implémente deux métriques :
+énergie \(H\) exacte et risque physique linéarisé par le Jacobien du solveur
+forward ridge. Il n'utilise aucun prompt observé. Une simulation directe de
+la loi générative sert uniquement d'audit de la fermeture conditionnelle.
+
+À profondeur 8, sur trois encodeurs indépendants, les coefficients prédits
+depuis \((\overline H_m,\overline c_m)\) restent proches de ceux de la loi
+exacte des prompts. Les distances de Wasserstein spectrales valent
+\(0.0116\), \(0.0320\) et \(0.0402\). La prédiction réduit l'erreur \(H\) des
+coefficients entraînés d'un facteur compris entre \(3.5\) et \(17.7\), mais
+PCG-8 demeure meilleur : ce point n'est donc pas retenu.
+
+Le même calcul clarifie le rôle légitime du MLP Chebyshev. Les intervalles
+conditionnels population couvrent strictement le spectre fini du prompt dans
+seulement \(10.5\%\) à \(29.0\%\) des tâches, même si leurs extrémités sont
+proches en moyenne. À profondeur 10, leur risque moyen vaut \(1.7\times\) à
+\(10.1\times\) celui de l'intervalle oracle, et leur CVaR
+\(3.1\times\) à \(12.9\times\) l'oracle. Le MLP n'a donc pas à « fabriquer »
+les poids de la récurrence : sa quantité apprenable en ICL est précisément la
+correction finie-prompt des deux extrémités autour du prior
+\((\overline H_m,\overline c_m)\). Les poids couche par couche restent ensuite
+la récurrence analytique exacte. C'est une cible statistique réelle, absente
+du seul intervalle population, et non un artefact d'approximation universelle.
+
+La sélection conjointe profondeur--coefficients prédit plutôt **HB-10** face à
+PCG-8. Sur \(3\times2\times8192=49\,152\) tâches nominales ou avec
+\(z_{\rm scale}=1\) :
+
+- HB-10 bat PCG-8 sur l'erreur \(H\) dans les six cas, avec un rapport moyen
+  \(0.204\) ;
+- HB-10 bat aussi PCG-8 sur la MSE physique solveur dans les six cas, avec un
+  rapport moyen \(0.735\) ;
+- aucune violation de Jury et aucun fallback PCG ne sont observés ;
+- HB-10 est tantôt meilleur, tantôt comparable à Chebyshev-10 oracle : il
+  n'exploite donc pas un intervalle appris défaillant pour obtenir ce résultat.
+
+Après suppression des synchronisations GPU dues aux historiques de diagnostic,
+un benchmark séquentiel sur H100 donne, pour batch \(1,64,1024\), des rapports
+de latence cellule HB-10 / PCG-8 de \(0.566\), \(0.606\) et \(0.610\).
+En incluant la tête spectrale commune, HB reste respectivement \(33.3\%\),
+\(31.1\%\) et \(30.7\%\) plus rapide. C'est le premier point mesuré où HB est
+simultanément plus précis et plus rapide que la baseline PCG choisie. La
+revendication reste locale à cette famille, ces dimensions et ce matériel ;
+elle ne signifie pas que HB domine tout PCG sur tout problème.
+
 Conclusion soutenable : **HB est le meilleur compromis de boucle exacte dans
 la famille testée, mais il ne domine pas PCG en erreur pure par HVP.** PCG et
 Chebyshev oracle atteignent le plancher numérique. La revendication défendable
