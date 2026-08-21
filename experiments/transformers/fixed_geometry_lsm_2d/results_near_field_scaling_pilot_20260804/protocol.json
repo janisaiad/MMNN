@@ -1,0 +1,131 @@
+{
+  "experiment": "original near-field Bayesian LSM multi-axis scaling",
+  "physics": {
+    "n_sensors": 24,
+    "grid_size": 28,
+    "domain_half_width": 0.8,
+    "receiver_radius": 2.2,
+    "source_radius": 2.4,
+    "wavenumber": 8.0,
+    "boundary_points_per_component": 16,
+    "kernel_gamma": 1.0,
+    "kernel_mix": 0.2,
+    "receiver_noise_correlation": 0.18
+  },
+  "seeds": [
+    17
+  ],
+  "network_widths": [
+    128
+  ],
+  "evaluation_context_sizes": [
+    8,
+    12,
+    16,
+    24,
+    32,
+    48
+  ],
+  "training_context_sizes": [
+    12,
+    16,
+    24,
+    32
+  ],
+  "dataset_sizes": [
+    128,
+    256
+  ],
+  "learned_methods": [
+    "population-PCG"
+  ],
+  "baselines": [
+    "identity-CG",
+    "exact"
+  ],
+  "batch_size": 8,
+  "eval_tasks_per_scenario": 4,
+  "train_depth": 16,
+  "eval_depth": 32,
+  "moment_degree": 6,
+  "sketch_size": 4,
+  "learning_rate": 0.0003,
+  "scenarios": [
+    {
+      "name": "ID one obstacle",
+      "regime": "ID",
+      "count": 1,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.1,
+      "aperture": 360.0,
+      "jitter": 0.05
+    },
+    {
+      "name": "ID four obstacles",
+      "regime": "ID",
+      "count": 4,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05
+    },
+    {
+      "name": "OOD six obstacles",
+      "regime": "OOD count",
+      "count": 6,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05
+    },
+    {
+      "name": "OOD stars",
+      "regime": "OOD shape",
+      "count": 3,
+      "mode": "star",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05
+    },
+    {
+      "name": "OOD 30 percent noise",
+      "regime": "OOD noise",
+      "count": 4,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.3,
+      "aperture": 360.0,
+      "jitter": 0.05
+    },
+    {
+      "name": "OOD half aperture",
+      "regime": "OOD aperture",
+      "count": 3,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 180.0,
+      "jitter": 0.2
+    },
+    {
+      "name": "OOD wavenumber 12",
+      "regime": "OOD frequency",
+      "count": 3,
+      "mode": "mixed",
+      "wavenumber": 12.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05
+    }
+  ],
+  "context_definition": "number of source tokens = number of receiver tokens; measurements are context_size squared",
+  "dataset_definition": "number of independently generated physical inverse-problem examples presented once in the online stream",
+  "matched_budget": "CG, PCG, and looped methods use eval_depth operator applications for both posterior right-hand-side blocks",
+  "deadline_utc": null,
+  "finished_requested_grid": true,
+  "elapsed_seconds_this_invocation": 26.611272006994113
+}

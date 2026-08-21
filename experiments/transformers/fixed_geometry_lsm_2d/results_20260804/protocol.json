@@ -1,0 +1,49 @@
+{
+  "description": "2D active deterministic multistatic LSM; no random-source correlation",
+  "device": "cuda",
+  "gpu": "NVIDIA H100 PCIe",
+  "physics": {
+    "n_angles": 32,
+    "grid_size": 32,
+    "domain_half_width": 0.8,
+    "wavenumber": 8.0,
+    "noise_rel": 0.08,
+    "ridge_rel": 0.01,
+    "kernel_gamma": 1.0,
+    "kernel_mix": 0.2
+  },
+  "loop": {
+    "depth": 4,
+    "controller_width": 32,
+    "steps": 1500,
+    "batch_size": 16,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "log_every": 50,
+    "eval_tasks": 192,
+    "eval_batch_size": 24,
+    "rank_pairs": 48
+  },
+  "run": {
+    "seeds": [
+      17,
+      29,
+      43
+    ],
+    "design_budget": 6,
+    "design_steps": 900,
+    "design_batch_size": 20,
+    "design_lr": 0.02,
+    "design_repulsion": 0.001,
+    "train_noise_min": 0.03,
+    "train_noise_max": 0.12,
+    "evaluation_noise": [
+      0.08,
+      0.15
+    ]
+  },
+  "training_target": "obstacle ranking plus sampling-equation residual; no direct-solve imitation",
+  "learned_parameters": "tied Krylov damping controller, followed by six acquisition angles",
+  "fixed_objects": "Helmholtz/Born operator, angular softmax kernel, ridge model, probe grid",
+  "elapsed_seconds": 160.58972818602342
+}

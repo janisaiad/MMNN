@@ -1,0 +1,232 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.76in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,booktabs,graphicx,microtype}
+\usepackage{hyperref,xcolor}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\DeclareMathOperator{\softmax}{softmax}
+\title{Scaling Laws for In-Context Bayesian Near-Field Linear Sampling}
+\author{Technical results note}
+\date{5 August 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study how an in-context posterior-moment solver for the original two-
+dimensional near-field linear sampling method scales with the number $n$ of
+training inverse problems, network size $P$, context length $m$, recurrent
+depth, and wall-clock time.  The input is a complex multistatic response from
+deterministic point sources around one to six sound-soft obstacles.  A fixed
+von Mises/softmax covariance selects the Gaussian-process feature space; its
+nonlinearity is a modelling choice and is not learned.  Richardson, heavy-ball
+(HB), Chebyshev and PCG share the same context encoder and Bayesian decoder and
+solve posterior mean and covariance right-hand sides in parallel.  Identity-
+preconditioned CG is the matched-matrix-vector-product control.  The sweep
+contains 2 trained checkpoints and 336 learned-
+model/task evaluations.  We report task-level uncertainty, inference time,
+empirical scaling exponents and a simultaneous distribution-free held-out
+risk bound.  The main question is not whether a large controller can imitate
+CG, but when learned conditioning improves CG under severe, task-dependent
+ill-conditioning.
+\end{abstract}
+
+\section{Problem and posterior moments}
+Let $N_D\in\mathbb C^{m\times m}$ be the whitened near-field matrix for a
+sound-soft obstacle $D$, $\Phi=[\phi_z]_z$ the Green-function probes on a
+two-dimensional sampling grid, and $K_\Gamma\succ0$ a prescribed angular GP
+covariance.  The nonlinear feature choice is
+\[
+ W_{ij}=\exp\{\gamma\cos(\theta_i-\theta_j)\},\qquad
+ K_\Gamma=(1-\eta)I+\eta D_W^{-1/2}WD_W^{-1/2},
+\]
+with fixed $\gamma=1$ and $\eta=0.2$.  Define
+\[
+ H_D=N_DK_\Gamma N_D^*+I,\qquad
+ H_DQ_\mu=\Phi,\qquad H_DQ_\Sigma=N_DK_\Gamma.
+\]
+One tied recurrence acts on $[\Phi,N_DK_\Gamma]$ and yields
+\[
+ M_D=K_\Gamma N_D^*Q_\mu,\qquad
+ \Sigma_D=K_\Gamma-K_\Gamma N_D^*Q_\Sigma.
+\]
+Thus a small mean residual is insufficient for Bayesian correctness: the
+covariance residual must converge as well.
+
+\section{Variable-context architecture and matched solvers}
+The covariance block uses a deterministic orthonormal harmonic sketch with a
+fixed number of columns and $m$ rows.  Its feature dimension is therefore
+independent of context length, while the physical operator is never padded or
+replaced by a learned surrogate.  Training contexts are
+[12, 16, 24, 32]; evaluation contexts are
+[8, 12, 16, 24, 32, 48], so the endpoints include context-length
+extrapolation.  Controller widths are [128] and sample
+sizes are [128, 256].
+
+At test depth $T=32$, all recurrent methods use exactly
+$T$ applications of the transformed operator for both posterior blocks.
+Identity-CG sets the population factor to $I$.  Population-PCG learns a positive
+geometry/population factor and retains exact task-wise Krylov coefficients.
+Looped HB, Chebyshev and Richardson additionally infer finite-horizon spectral
+endpoints from RHS-weighted Krylov statistics.  Consequently, PCG versus CG
+isolates learned conditioning; a looped method versus PCG measures whether a
+stationary learned recurrence is worth replacing Krylov adaptation.
+
+\section{Axes and scaling model}
+The dataset size $n$ is the number of unique physical inverse problems
+presented once in an online stream; the eight examples in an optimizer batch
+share one sampled acquisition configuration.  The context length $m$ is both
+the number of point sources and receivers, giving $m^2$ complex measurements.
+Network size $P$ counts trainable parameters.  Each held-out configuration
+contains fixed, never-trained MFS tasks spanning ID obstacles and OOD obstacle
+count, shape, noise, aperture and frequency.
+
+For localization risk $R_{\rm loc}=1-\mathrm{AP}$ and bounded numerical
+risk $R_{\rm solve}=r/(1+r)$, we separately fit the descriptive law
+\begin{equation}
+ R(n,m,P)=R_\infty+A(n/n_0)^{-\alpha}+B(m/m_0)^{-\beta}
+ +C(P/P_0)^{-\gamma}+D\sqrt{(P/P_0)/(n/n_0)}.
+ \label{eq:scaling}
+\end{equation}
+The last term allows a finite-data width penalty.  Equation~\eqref{eq:scaling}
+is an empirical scaling model, not a theorem.
+
+\begin{table}[t]
+\centering\small
+\caption{Empirical exponents in Eq.~\eqref{eq:scaling} for both risks;
+larger positive values indicate faster improvement along that axis.}
+\begin{tabular}{llcccc}
+\toprule Method & risk & data $\alpha$ & context $\beta$ & width $\gamma$ & $R^2$\\
+\midrule
+population-PCG & localization & 0.010 & 3.000 & 2.194 & 0.984 \\
+population-PCG & solver & 0.010 & 0.034 & 0.213 & -0.096 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{A simultaneous held-out generalization bound}
+Let $L_c\in[0,1]$ be localization risk for a pre-specified trained
+configuration $c=(n,m,P,$ method$)$, and let $\widehat R_c$ average $T_c$
+independent held-out tasks.  A union bound and one-sided Hoeffding inequality
+give the following non-asymptotic certificate.
+\begin{theorem}[Simultaneous task-distribution bound]
+For $K$ evaluated configurations, with probability at least $1-\delta$,
+simultaneously for every $c$,
+\[
+ R_c\leq \widehat R_c+
+ \sqrt{\frac{\log(K/\delta)}{2T_c}}.
+\]
+\end{theorem}
+We use $\delta=0.05$ and report the clipped upper bound in
+Figure~\ref{fig:bounds}.  Training samples determine the learned hypothesis
+and hence $\widehat R_c$; held-out sample size controls certification slack.
+The same theorem is applied to the bounded numerical risk
+$L_c^{\rm solve}=r_c/(1+r_c)$, where $r_c$ is the posterior-mean relative
+residual.  This second risk remains sensitive after localization AP saturates.
+This distinction matters.  Replacing $T_c$ by training size $n$ after fitting
+would be invalid, while a generic parameter-count uniform bound for this
+nonconvex complex network is vacuous at the present $P/n$ ratios.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{scaling_generalization_bounds.png}
+\caption{Empirical localization and numerical solver risks with simultaneous
+95\% held-out upper bounds across dataset and context sizes.}
+\label{fig:bounds}
+\end{figure}
+
+\section{Results}
+\begin{table}[t]
+\centering\small
+\caption{Final comparison at context $m=24$, width
+128 and $n=256$.  Baselines do
+not train.  Runtime is milliseconds per held-out batch.}
+\begin{tabular}{lccccc}
+\toprule Method & AP & mean res. & covariance res. & score error & ms\\
+\midrule
+population-PCG & 0.768 & 0.213 & 6.25e-03 & 3.97e-03 & 21.291 \\
+identity-CG & 0.769 & 0.213 & 6.50e-03 & 4.11e-03 & 15.106 \\
+exact & 0.768 & 5.98e-05 & 1.65e-06 & 0 & 10.968 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{scaling_dataset.png}
+\caption{Learning curves in dataset size at fixed network width and context.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{scaling_context.png}
+\caption{Context-length scaling.  Context $m=8$ and $m=48$ are outside the
+training context set.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{scaling_network.png}
+\caption{Network-size scaling at the largest completed dataset size.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\linewidth]{scaling_time.png}
+\caption{Wall-clock learning curves.  Time includes physical task generation,
+forward/backward propagation and optimization, but excludes held-out audits.}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{scaling_runtime.png}
+\caption{Inference scaling with $m^2$ complex measurements and the residual--
+time Pareto comparison at $m=24$.}
+\end{figure}
+
+The equal-budget residual ratios at the final central configuration are
+1.004$\times$ for
+the posterior mean and
+1.039$\times$
+for posterior covariance.  Ratios above one isolate a benefit from the learned
+population factor beyond ordinary CG.  Localization can nevertheless saturate
+before residual convergence; in that regime additional solver accuracy does
+not overcome the physical point-spread limit.
+
+\section{Interpretation and limitations}
+Three claims are deliberately separated.  First, CG is a strong task-adaptive
+baseline because its coefficients already depend on the current Krylov space.
+Second, population-PCG tests whether geometry-distribution conditioning adds
+value when no obstacle-specific preconditioner is known.  Third, looped HB
+tests amortized fixed-depth iteration, not a universally superior replacement
+for CG.  A true task-specific ICL preconditioner would additionally map current
+moment or Ritz information into an SPD operator
+$C_D(A_D)\approx A_D^{-1/2}$; the present population factor does not rotate
+all obstacle-dependent eigendirections.
+
+The held-out bound certifies the stated simulator distribution only.  The
+forward data are generated by MFS, not laboratory measurements, and context
+extrapolation does not imply robustness to arbitrary receiver geometries.
+Physical resolution remains controlled by aperture, frequency and sensor
+count.  These qualifications prevent a small numerical loss from being
+misreported as solved inverse scattering.
+
+\section{Reproducibility}
+All task-level records, cumulative training times, checkpoints, runtime
+measurements, scenario definitions, fitted parameters and bound values are
+stored beside this PDF.  The experiment uses three fixed seeds and preserves
+the exact same held-out tasks across methods, widths and dataset checkpoints.
+
+\begin{thebibliography}{9}
+\bibitem{kang2026} G. Kang, C. J. Lee, and X. Cheng.
+Transformers can learn posterior predictive distributions in-context.
+\emph{arXiv:2605.26713}, 2026.
+\bibitem{garnier2022} J. Garnier, H. Haddar, and H. Montanelli.
+The linear sampling method for random sources. \emph{arXiv:2210.15560}, 2022.
+\bibitem{garnier2024} J. Garnier, H. Haddar, and H. Montanelli.
+The linear sampling method for data generated by small random scatterers.
+\emph{arXiv:2403.19482}, 2024.
+\bibitem{polyak1964} B. T. Polyak. Some methods of speeding up the convergence
+of iteration methods. \emph{USSR Computational Mathematics and Mathematical
+Physics}, 1964.
+\end{thebibliography}
+\end{document}

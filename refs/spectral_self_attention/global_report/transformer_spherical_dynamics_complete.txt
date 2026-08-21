@@ -1,0 +1,2937 @@
+Dynamiques sphériques de
+Transformers
+
+Dossier théorique et numérique complet
+
+Équilibres, polygones, cycles, MLP, chaos, multi-têtes, grande dimension, champ moyen,
+entraînement et poids variables
+
+Version du 16 août 2026
+
+Volume I — Attention sans MLP, pages 2 à 17. Condition nécessaire et suffisante
+de tous les équilibres, couche finie et temps continu, réduction spectrale–Gram dans le cas
+QTK = V = V T, formes polygonales, comparaison précise avec Altafini et cycle interne stable
+produit par l’attention seule lorsque score et valeur sont déliés.
+
+Volume II — Bloc sériel attention puis MLP, pages 18 à 37. Équations exactes de
+tous les points fixes et cycles, taxonomie des quatre familles, audit jusqu’à des couches 4 096
+fois plus faibles, cycles continus, chaos et hyperchaos, cartes multi-têtes, limite à beaucoup de
+tokens, autres noyaux, observables, entraînement du MLP, première étape de Muon et poids
+OU lents.
+
+Échelle de validation. Le dossier s’appuie sur 214 528 modèles tirés indépendamment, 2
+844 160 trajectoires initiales, plus de 1011 mises à jour token–couche dans l’audit de petite
+couche, des intégrations continues indépendantes, des spectres complets de perturbations et
+des contrôles frais allant jusqu’à 16 tokens.
+
+Règle de lecture. Les équations encadrées sont des identités ou conditions exactes. Les
+tableaux numériques sont des observations reproductibles sur les protocoles indiqués. Les
+idées MaxCut, répliques, résolution universelle de problèmes difficiles et conception arbitraire
+d’équilibres sont conservées comme pistes et ne sont pas présentées comme des théorèmes.
+
+Soumission anonyme — sources, scripts et agrégats machine inclus dans le dossier de travail.
+
+
+Attention sphérique sans MLP :
+équilibres exacts, multistabilité et cycle interne stable
+
+Rapport théorique et numérique reproductible
+
+Soumission anonyme
+
+Version du 16 août 2026
+
+Résumé
+
+Nous étudions une pile de couches réduite à son mécanisme d’attention : aucun réseau MLP
+n’est présent. Chaque jeton est un point de norme un et chaque couche le déplace, puis le
+renormalise. Le premier résultat est une condition nécessaire et suffisante, valable pour tout
+nombre de jetons, toute dimension et toutes matrices de score et de valeur : à l’équilibre, la
+moyenne transportée vue par chaque jeton doit être exactement parallèle à ce jeton. Nous
+donnons sa version pour une couche finie, sa réduction par groupes, sa linéarisation exacte et,
+dans le cas lié QTK = V = V T, une description complète par matrices de produits scalaires.
+Cette description contient les consensus, les séparations en deux signes, les formes à plusieurs
+sommets, les familles continues et les mélanges de directions propres.
+Le second résultat sépare trois objets souvent confondus : un cycle de trois ou quatre
+couches, un cycle continu dont le nombre de couches par tour croît comme l’inverse de la force
+d’une couche, et une simple rotation rigide. Dans le cas lié symétrique, une quantité scalaire
+augmente strictement et interdit tout cycle continu non constant. En revanche, lorsque les
+matrices de score et de valeur sont indépendantes et que le transport par V n’est pas réciproque,
+l’attention seule produit un cycle interne stable à trois jetons. Son temps de retour est 9,12
+dans l’unité de profondeur de l’audit ; ses deux taux de contraction transverses sont proches
+de −0,457 et −0,459 ; 128 perturbations reviennent vers la même boucle. Pour sept forces de
+couche, dyadiques et non dyadiques, le nombre de couches par tour suit une pente 1,012 en
+échelle logarithmique. Nous n’avons, à ce stade, certifié ni chaos produit par l’attention seule ni
+inventaire exhaustif des cycles dans le cas non réciproque.
+
+Lecture concrète. Le message en une phrase est le suivant : sans MLP, l’attention symétrique
+peut avoir beaucoup de destinations stables mais elle finit par s’arrêter ; l’attention générale peut,
+à elle seule, maintenir une boucle stable où les distances entre jetons changent indéfiniment.
+
+1
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+Table des matières
+
+1
+Question étudiée et réponse courte
+3
+
+2
+Le modèle, depuis une couche jusqu’au temps continu
+3
+
+3
+La condition finale de tous les équilibres
+4
+
+4
+Cas lié symétrique : une description complète
+5
+
+5
+Quand un équilibre attire-t-il les trajectoires ?
+7
+
+6
+Cycles : trois objets qu’il faut séparer
+8
+
+7
+Pourquoi la symétrie interdit les cycles continus
+9
+
+8
+Expérience centrale : un cycle stable produit par l’attention seule
+10
+
+9
+Comparaison exacte avec Altafini et Kuehn–Yoon
+12
+
+10 Ce qui est nouveau, dit simplement
+14
+
+11 Conclusion
+14
+
+A Preuves complémentaires
+14
+
+B Jacobienne exacte sur le cercle
+15
+
+C Partage bipolaire déséquilibré
+15
+
+D Reproductibilité et traçabilité des affirmations
+16
+
+2
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+1
+Question étudiée et réponse courte
+
+Une couche Transformer usuelle contient au moins une attention, une connexion résiduelle, une
+normalisation et un MLP [5]. Nous retirons ici complètement le MLP. Il reste une question très
+précise : que peuvent faire les jetons lorsqu’on répète uniquement l’attention et la normalisation ?
+
+Les travaux de Geshkovski et collaborateurs ont montré que cette lecture en profondeur comme
+une dynamique de particules explique la formation de groupes [2, 3]. Altafini a classé quatre formes
+d’équilibre et mis en évidence leur coexistence [1]. Kuehn et Yoon ont ensuite isolé un cas plus
+contraint, QTK = V = V T, dans lequel les directions propres de V organisent la destination [4].
+Notre rapport réunit ces points de vue, ferme l’équation générale des équilibres et ajoute l’étude
+expérimentale des cycles sans MLP.
+
+Les réponses sont :
+
+1. une configuration est arrêtée si et seulement si chaque jeton reçoit une somme qui pointe
+exactement dans sa direction ou dans la direction opposée ; la normalisation enlève alors la
+partie radiale et aucun angle ne change ;
+
+2. une forme visuellement polygonale n’est pas nécessairement un « équilibre polygonal » au sens
+d’Altafini : ce nom y désigne seulement le cas plus étroit où la somme reçue est nulle ;
+
+3. si score et valeur sont la même matrice symétrique, aucun cycle continu stable ne peut exister ;
+4. si l’on défait cette égalité, l’attention seule peut soutenir un cycle interne stable ; nous en
+donnons un exemple explicite et reproductible ;
+
+5. un cycle de période trois couches observé à grande force n’est pas la même chose qu’un cycle
+continu. Le second demande de plus en plus de couches lorsque chaque couche devient plus
+faible.
+
+2
+Le modèle, depuis une couche jusqu’au temps continu
+
+2.1
+Ce que représentent les symboles
+
+Il y a n jetons. Le jeton i est un vecteur xi ∈ Rd de norme un. Il vit donc sur la sphère Sd−1. Deux
+matrices suffisent :
+
+• S = QTK décide qui regarde qui ;
+• V décide quel vecteur est effectivement transporté.
+
+Le nombre β ≥ 0 règle la netteté du choix. Pour β = 0, tous les jetons sont pondérés de la même
+façon. Lorsque β augmente, les différences de scores comptent davantage. Pour une configuration
+X = (x1, . . . , xn), posons
+
+sij(X) = xT
+i Sxj,
+(1)
+
+aij(X) =
+exp(βsij(X))
+�n
+k=1 exp(βsik(X)),
+(2)
+
+yi(X) =
+
+n
+�
+
+j=1
+aij(X)V xj.
+(3)
+
+aij est le poids donné par i à j, et yi est la somme reçue par i après le transport par V .
+
+3
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+2.2
+Une couche finie
+
+Sans MLP, la couche résiduelle normalisée est exactement
+
+x+
+i =
+xi + hyi(X)
+∥xi + hyi(X)∥,
+i = 1, . . . , n,
+(4)
+
+où h > 0 est la force d’une couche. Cette normalisation sur la sphère est une version idéalisée de
+RMSNorm [6].
+
+2.3
+Beaucoup de couches faibles
+
+Écrivons
+Px = I − xxT.
+
+Pxz garde seulement la partie de z qui change la direction de x ; la partie parallèle à x changerait
+seulement sa longueur et sera supprimée par la normalisation. Le développement de (4) donne
+
+x+
+i = xi + hPxiyi(X) + O(h2).
+
+Si le nombre de couches croît pendant que h décroît, la limite est
+
+˙xi = Pxiyi(X) = yi(X) −
+�xT
+i yi(X)
+�xi.
+(5)
+
+La norme reste égale à un car xT
+i ˙xi = 0.
+
+Sur le cercle, on écrit xi = (cos θi, sin θi) et ti = (− sin θi, cos θi). L’équation devient un seul nombre
+par jeton :
+
+˙θi =
+
+n
+�
+
+j=1
+aij(θ) tT
+i V xj.
+(6)
+
+Toutes les expériences de cycle de ce rapport utilisent cette équation à trois jetons.
+
+3
+La condition finale de tous les équilibres
+
+Théorème 3.1 (Condition nécessaire et suffisante, matrices générales). Une configuration X ∈
+(Sd−1)n est un équilibre de (5) si et seulement si, pour chaque jeton i,
+
+yi(X) = λixi,
+λi = xT
+i yi(X).
+(7)
+
+De façon équivalente, sans dénominateur softmax,
+
+n
+�
+
+j=1
+eβxT
+i Sxj
+�
+V xj −
+�xT
+i V xj
+�xi
+�
+= 0,
+i = 1, . . . , n.
+(8)
+
+Démonstration. Le champ est Pxiyi. Il est nul exactement lorsque yi appartient à la droite portée
+par xi. Le coefficient de cette colinéarité est son produit scalaire avec xi. Enfin, le dénominateur
+du softmax est strictement positif ; le multiplier ou le supprimer ne change donc pas l’égalité à
+zéro.
+
+Lecture concrète. Il n’est pas nécessaire que la somme reçue soit nulle. Elle peut être grande.
+Il suffit qu’elle pousse exactement vers le centre ou vers l’extérieur le long du rayon du jeton.
+La renormalisation efface cette poussée radiale. C’est la raison simple pour laquelle des formes à
+plusieurs sommets peuvent être stables.
+
+4
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+3.1
+La condition exacte pour une couche finie
+
+Proposition 3.2 (Point fixe de la couche). Supposons xi + hyi ̸= 0. La couche (4) laisse xi
+inchangé si et seulement si
+
+Pxiyi = 0
+et
+1 + hλi > 0,
+λi = xT
+i yi.
+(9)
+
+La première condition est la même que pour le temps continu. La seconde est propre à une couche
+finie : si 1 + hλi < 0, la normalisation retourne le point antipodal −xi ; si 1 + hλi = 0, elle tente
+de normaliser le vecteur nul.
+
+3.2
+Réduction exacte lorsque plusieurs jetons coïncident
+
+Supposons que la configuration contienne seulement q positions distinctes w1, . . . , wq, répétées
+respectivement r1, . . . , rq fois. Alors (8) devient le système fini
+
+q
+�
+
+b=1
+rbeβwT
+aSwb
+�
+V wb −
+�wT
+a V wb
+�wa
+�
+= 0,
+a = 1, . . . , q.
+(10)
+
+Ce n’est pas une approximation. On a seulement regroupé des termes identiques. Pour une instance
+fixée, (10) donne une procédure exhaustive : énumérer les partitions r1 + · · · + rq = n, résoudre les
+équations, puis retirer les copies obtenues par permutation.
+
+3.3
+Pourquoi le mot « polygone » a créé une confusion
+
+Altafini [1] emploie quatre noms. La distinction utile est résumée dans le table 1.
+
+Table 1: Les quatre noms d’Altafini, exprimés avec la somme yi de (3). Les deux dernières lignes
+couvrent toutes les formes non colinéaires.
+
+Nom
+Configuration
+Condition reçue
+
+Consensus
+tous les xi sont égaux à une direction propre
+de V
+yi ∥ xi
+
+Consensus bipolaire
+chaque xi vaut u ou −u, avec u propre
+yi ∥ xi
+Polygonal
+plusieurs directions, et aucune sortie
+yi = 0 pour tout i
+Clustering
+tout autre équilibre, avec ou sans jetons
+coïncidents
+yi = λixi, au moins un λi ̸= 0
+
+Ainsi, « les points dessinent un triangle » est une description visuelle. « Polygonal » au sens du
+théorème d’Altafini est une condition algébrique beaucoup plus étroite. Un triangle dont les trois
+sorties sont non nulles et radiales appartient à sa quatrième classe. L’instabilité des sorties nulles
+ne dit rien contre la stabilité de ce triangle.
+
+4
+Cas lié symétrique : une description complète
+
+Nous imposons maintenant
+S = V = V T.
+(11)
+
+C’est exactement l’hypothèse de Kuehn–Yoon [4]. Elle est plus forte que celle d’Altafini : Altafini
+suppose V symétrique avec une valeur propre positive dominante simple, mais ne demande pas
+que QTK soit symétrique ni égal à V .
+
+5
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+Écrivons les jetons comme les lignes d’une matrice X ∈ Rn×d et posons
+
+H = XV XT,
+R = exp◦(βH),
+
+où l’exponentielle est appliquée entrée par entrée. Définissons
+
+M = Diag
+�diag(RH)
+�.
+
+Théorème 4.1 (Équation vectorielle complète). Sous (11),
+
+X est un équilibre ⇐⇒ RXV = MX, qquad diag(XXT) = 1.
+(12)
+
+Cette formule est déjà nécessaire et suffisante. La suivante retire les rotations qui ne changent pas
+le problème.
+
+Théorème 4.2 (Description spectrale par produits scalaires). Soient λ⋆
+1, . . . , λ⋆
+s les valeurs propres
+distinctes de V , de multiplicités m1, . . . , ms. Écrivons la partie de X dans chaque espace propre
+sous la forme Cα ∈ Rn×mα et posons Gα = CαCT
+α. Modulo les rotations internes aux espaces
+propres, les équilibres sont exactement les familles (Gα) satisfaisant
+
+Gα ⪰ 0, qquad rang Gα ≤ mα,
+
+s
+�
+
+α=1
+diag Gα = 1,
+
+H =
+
+s
+�
+
+α=1
+λ⋆
+αGα,
+R = exp◦(βH),
+
+M = Diag
+�diag(RH)
+�,
+
+(λ⋆
+αR − M)Gα = 0,
+α = 1, . . . , s.
+
+(13)
+
+La preuve, donnée en appendix A, consiste seulement à projeter (12) sur chaque espace propre
+puis à factoriser les matrices Gα. Le système (13) est une caractérisation complète, pas une liste
+de formes choisies à l’avance.
+
+4.1
+Toutes les familles universelles contenues dans la condition
+
+Le table 2 donne les branches qui existent sans résoudre numériquement un cas particulier.
+
+Table 2: Familles exactes sans MLP sous l’hypothèse liée symétrique.
+
+Situation
+Tous les équilibres ou familles immédiatement garantis
+
+V = 0
+toute configuration de (Sd−1)n
+
+Un jeton
+toutes les sphères unités contenues dans les espaces propres de V
+Consensus
+x1 = · · · = xn = u pour toute direction propre unitaire u
+Une droite propre
+tout motif xi ∈ {u, −u}
+Noyau de V
+toute configuration contenue dans ker V ; des ajouts mixtes sont
+possibles si la sortie active s’annule
+Un espace propre multiple
+simplexes réguliers, polygones réguliers, hypercubes et autres orbites
+symétriques, avec multiplicités compatibles
+Plusieurs espaces propres
+branches mixtes, symétriques ou asymétriques, résolues par (13) ou
+(10)
+
+Il n’existe donc pas de liste finie valable pour tout n, d, V : si V = 0, chaque point est un équilibre
+; si une valeur propre est multiple, des familles continues apparaissent. La bonne notion de « tous
+les équilibres » est la condition constructive (13).
+
+6
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+4.2
+Classification entièrement explicite lorsque β = 0
+
+À β = 0, les poids valent tous 1/n. Posons
+
+z = V
+
+n
+�
+
+j=1
+xj.
+
+Théorème 4.3 (Tous les équilibres à attention uniforme). Pour une matrice V quelconque, une
+configuration est un équilibre si et seulement si l’une des deux situations suivantes se produit :
+
+1. z = 0 ; toute configuration telle que V �
+j xj = 0 convient ;
+
+2. z ̸= 0 ; tous les jetons valent u ou −u, leur somme signée est non nulle, et u est un vecteur
+propre réel de V associé à une valeur propre non nulle.
+
+Cette classification montre à la fois la richesse et la fragilité du cas uniforme. Avec une matrice
+symétrique, il s’agit d’une dynamique d’énergie. Avec une matrice non symétrique, une rotation
+peut subsister même si les poids ne changent jamais.
+
+4.3
+Une famille mixte exacte à trois groupes
+
+Soient V u = au, V v = bv, avec u ⊥ v. Prenons m copies de u, k copies de qu +
+�
+
+1 − q2v et k
+copies de qu −
+�
+
+1 − q2v. Cette forme est un équilibre exactement lorsque
+
+q
+�
+(a − b)eβ[b+(a−b)q2] + (a + b)eβ[−b+(a+b)q2]�
++ am
+
+k eβaq = 0.
+(14)
+
+Cette seule équation produit des branches qui utilisent simultanément deux directions propres. Elle
+explique pourquoi « choisir une seule valeur propre » ne suffit pas à décrire toutes les destinations.
+
+5
+Quand un équilibre attire-t-il les trajectoires ?
+
+La condition (8) dit où la dynamique peut s’arrêter. La stabilité dit ce qui se passe après une
+petite erreur de position.
+
+Soit δxi une petite variation perpendiculaire à xi. Définissons
+
+δsij = δxT
+i Sxj + xT
+i Sδxj,
+(15)
+
+δaij = βaij
+
+�
+
+δsij −
+�
+
+k
+aikδsik
+
+�
+
+,
+(16)
+
+δyi =
+�
+
+j
+aijV δxj +
+�
+
+j
+δaijV xj.
+(17)
+
+À un équilibre yi = λixi, la variation tangentielle du champ est
+
+δ ˙xi = Pxiδyi − λiδxi.
+(18)
+
+Ces lignes donnent la matrice de stabilité exacte pour toutes matrices S, V . L’équilibre attire
+localement si toutes ses valeurs propres tangentielles ont une partie réelle strictement négative.
+Une valeur nulle peut simplement correspondre à une famille continue obtenue par rotation ; elle
+doit alors être retirée avant de conclure.
+
+7
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+5.1
+Directions propres pures dans le cas lié symétrique
+
+Pour un consensus xi = u sur une valeur propre λp, la condition locale est particulièrement simple :
+
+λp > 0, qquadλk < λp
+(k ̸= p).
+(19)
+
+Le consensus stable utilise donc la plus grande valeur propre positive simple.
+
+Pour un partage équilibré entre u et −u, les seuils sont :
+
+λp > 0 :
+λk < λp tanh(βλp)
+pour tout k ̸= p,
+(20)
+
+λp < 0 :
+λp < λk < λp tanh(βλp)
+pour tout k ̸= p.
+(21)
+
+Le second cas sélectionne nécessairement la valeur propre la plus négative. Les formules pour un
+partage déséquilibré sont données en appendix C.
+
+5.2
+Un triangle stable qui n’est pas « polygonal » au sens d’Altafini
+
+Pour V = S = Diag(2, −3), β = 1,5 et trois jetons, la recherche de racines trouve la configuration
+d’angles, arrondie ici,
+(0, 1,546889, 4,736296).
+
+Son taux linéaire le moins contractant vaut −0,9144 et le résidu calculé avant arrondi est 1,3×10−15.
+Surtout, les longueurs des trois sorties non normalisées valent environ 40,27, 269,79 et 269,79 :
+elles ne sont pas nulles. Elles pointent radialement. Ce triangle est donc stable et appartient à la
+classe « clustering » d’Altafini, pas à sa classe « polygonal ».
+
+La recherche multi-départ de petits systèmes donne le figure 1. Deux graines indépendantes
+retrouvent exactement les mêmes ensembles après retrait des permutations et du changement de
+signe global.
+
+indéfini
+
+2
+
+indéfini
+
+3
+
+négatif
+
+2
+
+négatif
+
+3
+
+positif
+
+2
+
+positif
+
+3
+
+type des deux valeurs propres, puis nombre de jetons
+
+0.0
+
+2.5
+
+5.0
+
+7.5
+
+10.0
+
+12.5
+
+15.0
+
+nombre trouvé
+
+Même sans MLP, plusieurs destinations stables peuvent coexister
+
+équilibres distincts
+stables
+
+Figure 1: Catalogue sans MLP pour V = S symétrique en dimension deux. Les spectres sont
+(2, −3) avec β = 1,5, (−0,4, −4) avec β = 0,03, et (3, 2) avec β = 1,5. Les nombres au second
+niveau des étiquettes sont les nombres de jetons. La recherche numérique découvre les branches ;
+la complétude théorique vient de (13), pas du nombre de départs.
+
+6
+Cycles : trois objets qu’il faut séparer
+
+6.1
+Cycle court d’une couche finie
+
+Un cycle de période p de la couche est une suite de p configurations distinctes qui revient exactement
+au départ après p applications de (4). Cet objet dépend de la force h.
+
+8
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+Lemme 6.1 (Un nombre fixe de couches ne survit pas tel quel). Si la couche satisfait Fh(X) =
+X + hf(X) + O(h2) et si p reste fixe lorsque h → 0, alors toute limite d’un cycle de période p
+vérifie f(X) = 0.
+
+En effet, F p
+h(X) = X + phf(X) + O(h2). Un cycle de trois couches peut donc se contracter vers un
+équilibre quand on rend les couches faibles. Il ne prouve pas l’existence d’une boucle en temps
+continu.
+
+6.2
+Cycle continu
+
+Un cycle continu est une boucle parcourue en un temps T > 0. Une couche de force h n’en parcourt
+qu’une fraction. Le nombre de couches par tour doit donc croître comme T/h. C’est la signature
+mesurée dans le figure 4.
+
+6.3
+Rotation rigide et cycle interne
+
+Si tous les produits scalaires xT
+i xj restent constants pendant que l’ensemble tourne, la forme
+n’évolue pas : c’est une rotation rigide. Dans un cycle interne, au moins une distance entre jetons
+change puis revient. Cette seconde situation est plus forte.
+
+Un exemple analytique montre déjà que l’attention sans MLP peut tourner. Prenons un seul jeton
+sur le cercle, S = 0 et
+
+V = ω
+
+�
+0
+−1
+1
+0
+
+�
+
+.
+
+Alors ˙x = V x et le jeton tourne avec période 2π/|ω|. Cette rotation est neutre : elle ne prouve pas
+qu’une boucle attire les perturbations. L’expérience de la section 8 établit précisément ce point
+plus difficile.
+
+7
+Pourquoi la symétrie interdit les cycles continus
+
+Sous S = V = V T et pour β > 0, définissons
+
+Eβ(X) = 1
+
+2β
+
+n
+�
+
+i,j=1
+exp
+�
+βxT
+i V xj
+�
+.
+(22)
+
+Si Zi = �
+j exp(βxT
+i V xj), un calcul direct donne
+
+dEβ
+dt
+=
+
+n
+�
+
+i=1
+Zi ∥ ˙xi∥2 ≥ 0.
+(23)
+
+La quantité augmente strictement dès qu’un jeton bouge. Une trajectoire fermée devrait revenir à
+sa valeur initiale de Eβ, ce qui est impossible sauf si elle est déjà arrêtée. Ce mécanisme est la
+structure de gradient pondéré utilisée par Kuehn–Yoon [4].
+
+À β = 0, la même conclusion vaut avec
+
+Φ(X) = 1
+
+2n
+
+��
+
+i
+xi
+
+�T
+V
+
+
+
+�
+
+j
+xj
+
+
+
+ .
+
+Lecture concrète. La symétrie importante n’est pas seulement « V est symétrique ». Il faut, pour
+cette preuve, que la matrice qui calcule les scores soit la même que celle qui transporte les valeurs :
+S = V = V T. Si S et V sont indépendantes, l’argument disparaît.
+
+9
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+Sur le cercle à β = 0, l’écart à la réciprocité se voit exactement dans
+
+∂ ˙θi
+∂θj
+− ∂ ˙θj
+
+∂θi
+= 1
+
+ntT
+i (V − V T)tj.
+(24)
+
+La partie antisymétrique de V fournit donc une circulation. À β > 0, la normalisation ligne par
+ligne des poids ajoute des termes supplémentaires. Même lorsque les dérivées croisées ordinaires ne
+coïncident pas, le cas S = V = V T reste sans cycle grâce à la métrique pondérée de (23). Ce détail
+évite de confondre « gradient euclidien » et « quantité monotone ».
+
+8
+Expérience centrale : un cycle stable produit par l’attention
+seule
+
+8.1
+Paramètres explicites
+
+Le modèle utilise trois jetons sur le cercle, aucun MLP, et
+
+S =
+
+�
+1,112495
+1,768642
+−2,540753
+3,294286
+
+�
+
+,
+V =
+
+�
+−1,809502
+1,419182
+−1,827949
+−3,611608
+
+�
+
+,
+(25)
+
+avec β = 1,110063. L’audit mesure la profondeur avec une échelle ρ = 0,551488 : son équation est
+˙θi = ρ �
+j aijtT
+i V xj. Absorber ρ dans le temps ramène exactement à (6).
+
+Ce modèle a été isolé par ablation d’un candidat provenant d’un écran plus large avec MLP. Après
+suppression de tous les paramètres MLP, le cycle reste présent. Le MLP seul, avec l’attention
+supprimée, converge au contraire vers un point fixe. Cette sélection du modèle doit être gardée en
+tête : elle démontre l’existence d’un cycle d’attention, pas sa fréquence dans une loi aléatoire de
+matrices.
+
+8.2
+La forme change pendant le tour
+
+La réintégration indépendante par Runge–Kutta d’ordre quatre, avec pas 0,005, donne un temps
+de retour T = 9,12 en profondeur normalisée, soit 5,030 dans le temps de (6) après absorption de
+ρ. Le résidu de retour au quantile 90% est 1,56 × 10−3 radian.
+
+Les trois produits scalaires entre paires varient chacun de −0,8002 à −0,0551. La forme change
+donc fortement. Les poids envoyés par le jeton 1 vers les jetons 1, 2 et 3 parcourent respectivement
+les intervalles
+[0,298, 0,982],
+[0,015, 0,701],
+[0,00018, 0,0341].
+
+8.3
+Pourquoi nous l’appelons stable
+
+Sur une boucle autonome, une variation qui avance simplement la phase n’est ni contractée ni
+amplifiée : son taux théorique est zéro. Le spectre mesuré sur 2000 unités est
+
+(−0,00273, −0,45676, −0,45937).
+(26)
+
+Le premier nombre est l’approximation finie du zéro de phase. Les deux autres sont nettement
+négatifs : les écarts perpendiculaires à la boucle se contractent.
+
+Nous avons également ajouté 128 perturbations gaussiennes d’écart-type 0,08 autour d’un point
+du cycle. La médiane de la distance à toute la boucle passe de 0,0525 à 0,00194 ; son quantile
+90% passe de 0,0938 à 0,00320. Le plateau final est du même ordre que l’espacement utilisé pour
+stocker la boucle de référence.
+
+10
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+1.6
+1.8
+2.0
+2.2
+2.4
+2.6
+
+angle du jeton 2 moins angle du jeton 1
+
+2.6
+
+2.4
+
+2.2
+
+2.0
+
+1.8
+
+1.6
+
+angle du jeton 3 moins angle du jeton 1
+
+La forme interne décrit une boucle fermée
+Positions des trois jetons pendant un tour
+
+jeton 1
+jeton 2
+jeton 3
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+avancement dans un tour
+
+Figure 2: Cycle interne de l’attention seule. À gauche, les deux angles relatifs décrivent une boucle
+fermée ; une rotation rigide serait un point. À droite, sept phases d’un tour montrent les trois
+jetons sur le cercle. Les angles sont toujours pris modulo 2π.
+
+8.4
+Le tour demande bien un nombre de couches proportionnel à 1/h
+
+Nous avons rejoué la couche exacte (4) pour sept ratios, dont trois non dyadiques. Le table 3 donne
+le meilleur retour complet.
+
+Table 3: Retour du cycle de l’attention seule lorsque chaque couche est affaiblie. Le temps d’un
+tour est le nombre de couches multiplié par le ratio.
+
+Ratio
+Couches par tour
+Temps du tour
+Erreur angulaire maximale
+
+1/16
+138
+8,625
+2,38 × 10−2
+
+1/31
+275
+8,871
+9,46 × 10−3
+
+1/64
+576
+9,000
+5,38 × 10−3
+
+1/127
+1151
+9,063
+5,43 × 10−5
+
+1/256
+2328
+9,094
+1,13 × 10−3
+
+1/509
+4635
+9,106
+7,42 × 10−4
+
+1/1024
+9333
+9,114
+1,09 × 10−5
+
+La pente de log(couches par tour) en fonction de log(1/ratio) vaut 1,012. Le temps du tour tend
+vers celui de l’équation continue, tandis que le nombre de couches diverge.
+
+8.5
+Ce que les autres ablations ont donné
+
+Le table 4 empêche une conclusion trop large. Les trois candidats chaotiques les plus étudiés ne
+restent pas chaotiques lorsque le MLP est supprimé ; ils convergent à un équilibre dans l’ablation
+attention seule.
+
+Limite de la conclusion. Nous avons certifié l’existence d’un cycle interne stable produit
+par l’attention seule. Nous n’avons pas encore effectué un recensement aléatoire exhaustif dédié
+uniquement à l’attention générale. Nous ne concluons donc ni que ce cycle est unique, ni qu’il est
+fréquent. Aucune des ablations ciblées ne fournit à ce jour un attracteur chaotique d’attention seule.
+
+11
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+0.8
+
+0.6
+
+0.4
+
+0.2
+
+proximité (1 = mêmes directions)
+
+Les distances entre jetons changent réellement
+
+jetons 1 2
+jetons 1 3
+jetons 2 3
+
+0
+2
+4
+6
+8
+
+profondeur normalisée
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+poids d attention
+
+Les choix d attention oscillent avec la géométrie
+
+poids du jeton 1 vers 1
+poids du jeton 1 vers 2
+poids du jeton 1 vers 3
+
+Figure 3: Un tour du cycle. En haut, les produits scalaires entre jetons oscillent ; en bas, les poids
+de la première ligne d’attention oscillent eux aussi. La deuxième période visible dans les distances
+provient d’une permutation de rôle entre jetons au cours du retour complet des angles étiquetés.
+
+Table 4: Résultat des ablations attention seule sur les représentants étudiés en détail.
+
+Origine du représentant
+Structure de l’attention
+Résultat sans MLP
+
+Cycle à trois jetons, indice 1323
+S général, V général, β > 0
+cycle interne stable
+Chaos fort à trois jetons, indice 2612
+S symétrique, V général, β > 0
+consensus fixe
+Chaos faible à trois jetons, indice 1051
+S = V = V T, β > 0
+consensus fixe
+Intermittence à quatre jetons, indice 3118
+S symétrique, V général, β = 0
+équilibre fixe
+
+9
+Comparaison exacte avec Altafini et Kuehn–Yoon
+
+9.1
+Ce qu’Altafini suppose réellement
+
+Le modèle d’Altafini contient bien les matrices Q et K. Son analyse principale suppose :
+
+V = V T,
+λ1 > 0 simple et strictement dominante.
+(27)
+
+Elle ne suppose pas QTK symétrique. Sous ces conditions, Altafini prouve que les équilibres à
+sortie nulle qu’il appelle polygonaux sont instables. Il montre aussi que des consensus bipolaires et
+des équilibres de regroupement peuvent être stables et coexister.
+
+9.2
+Pourquoi nos résultats ne contredisent pas ce théorème
+
+Il y a trois raisons indépendantes :
+
+1. le triangle stable de la section 5 a des sorties non nulles. Il est dans la classe « clustering »
+d’Altafini, que son théorème n’annonce pas instable ;
+
+12
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+0
+10
+20
+30
+
+profondeur normalisée
+
+10
+3
+
+10
+2
+
+10
+1
+
+distance à la boucle
+
+128 perturbations reviennent vers le cycle
+
+102
+103
+
+affaiblissement d une couche (1 / ratio)
+
+103
+
+104
+
+nombre de couches par tour
+
+Un tour demande proportionnellement plus de couches
+
+mesure
+pente 1.012
+
+Figure 4: À gauche, contraction de 128 perturbations vers la boucle. La ligne est la médiane et la
+zone contient 80% des essais. À droite, nombre de couches par tour ; la pente proche de un est la
+signature d’un cycle continu, et non d’un artefact à trois ou quatre couches.
+
+2. les branches négatives définies de Kuehn–Yoon n’ont aucune valeur propre positive et sortent
+donc de (27) ;
+
+3. le cycle de (25) utilise un V non symétrique et n’est pas un équilibre. Il sort à la fois de
+l’hypothèse sur V et de la question « stabilité d’un équilibre polygonal ».
+
+9.3
+Ce que l’hypothèse de Kuehn–Yoon ajoute
+
+Kuehn–Yoon imposent la relation plus forte
+
+QTK = V = V T.
+
+Elle fournit la quantité monotone (22). Leur article établit des résultats globaux de sélection dans
+un cône lorsque la valeur propre positive dominante dépasse en module les autres, et pour deux
+jetons lorsque V est négative définie [4]. Notre caractérisation (13) complète la question différente
+« quels sont tous les points d’arrêt possibles ? », y compris les branches mixtes et les multiplicités,
+sans prétendre que chacun est atteint depuis une initialisation générique.
+
+Table 5: Portée des trois analyses.
+
+Altafini
+Kuehn–Yoon
+Présent rapport
+
+MLP
+absent
+absent
+absent
+Score S = QTK
+général
+égal à V
+général, puis cas égal à
+V
+Valeur V
+symétrique, sommet
+positif simple
+symétrique, spectres
+ciblés
+générale ; classification
+complète si liée
+symétrique
+Équilibres
+quatre classes, seuils sur
+branches pures
+sélection spectrale et
+stabilité pure
+condition nécessaire et
+suffisante, réduction par
+groupes, système
+spectral–Gram
+Cycles
+cycle possible signalé si
+V perd la symétrie
+interdits par l’énergie
+cycle interne stable
+explicite sans MLP
+
+13
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+10
+Ce qui est nouveau, dit simplement
+
+1. Une seule équation couvre toutes les destinations. Les consensus, les deux groupes
+opposés, les triangles, les formes asymétriques et les familles continues sont tous les cas de (8).
+La somme n’a pas besoin de s’annuler ; elle doit seulement être radiale.
+
+2. Le mot polygone ne décide pas de la stabilité. Un dessin à plusieurs sommets peut être
+stable lorsque les sorties sont non nulles. L’affirmation « polygonal instable » d’Altafini concerne
+uniquement les sorties exactement nulles.
+
+3. Sans MLP ne veut pas dire sans mouvement durable. L’égalité QTK = V = V T force
+l’arrêt, mais une tête générale peut entretenir seule un cycle où les distances et les poids
+d’attention oscillent.
+
+4. Nous savons distinguer une boucle réelle d’un tour de passe-passe de discrétisation.
+Dans notre cycle, affaiblir une couche multiplie le nombre de couches nécessaires par le facteur
+inverse, tout en gardant le temps d’un tour proche de 9,12.
+
+5. Le résultat est une existence, pas encore une statistique universelle. Un cycle stable
+est certifié ; aucun chaos sans MLP ne l’est. La fréquence de ces cycles pour des matrices
+aléatoires reste une expérience fondamentale à faire.
+
+11
+Conclusion
+
+Le système sans MLP est déjà assez riche pour avoir plusieurs destinations stables et, si la réciprocité
+est brisée, une oscillation interne stable. La frontière théorique est simple. Lorsque la même matrice
+symétrique calcule les scores et transporte les valeurs, une quantité augmente à chaque mouvement
+: les jetons doivent finir par s’arrêter. Quand les deux rôles sont séparés, cette barrière disparaît ;
+les sommes reçues peuvent se relancer mutuellement autour d’une boucle.
+
+La condition finale à retenir est (8). Elle est exacte dans toute dimension. Elle dit ce qu’il faut
+résoudre pour énumérer les équilibres, ce qu’il faut différencier pour tester leur stabilité, et pourquoi
+une forme à plusieurs sommets peut être stable sans contredire Altafini. Le cycle explicite montre
+ensuite que les équilibres ne sont pas toute l’histoire dès que S et V ne sont plus liés par la symétrie
+forte de Kuehn–Yoon.
+
+A
+Preuves complémentaires
+
+A.1
+Preuve du théorème spectral–Gram
+
+Dans une base propre de V , écrivons X = C1 ⊕ · · · ⊕ Cs. L’équation RXV = MX projetée sur
+l’espace de valeur propre λ⋆
+α devient
+
+(λ⋆
+αR − M)Cα = 0.
+
+En multipliant à droite par CT
+α , on obtient (λ⋆
+αR − M)Gα = 0. Les identités sur H et les diagonales
+suivent de la décomposition orthogonale.
+
+Réciproquement, factorisons toute solution positive Gα = CαCT
+α avec au plus mα colonnes. L’image
+de Gα est la même que celle de Cα ; l’équation sur Gα implique donc l’équation sur Cα. En
+plaçant ces facteurs dans des espaces propres orthogonaux, on reconstruit X et RXV = MX.
+Deux factorisations du même Gα diffèrent par une rotation interne à l’espace propre, ce qui prouve
+l’énoncé modulo ces rotations.
+
+14
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+A.2
+Preuve de la classification à β = 0
+
+À attention uniforme, tous les champs ont la forme Pxiz/n avec z = V �
+j xj. Si z = 0, la
+configuration est arrêtée. Sinon, chaque xi doit être parallèle à z, donc xi ∈ {u, −u} avec u = z/ ∥z∥.
+La somme vaut cu. Puis z = cV u est parallèle à u, donc u est propre. Comme z ̸= 0, c et la valeur
+propre associée sont non nuls. La réciproque est immédiate.
+
+A.3
+Absence de sorties nulles lorsque V est positive définie
+
+Sous S = V ≻ 0, regroupons les q positions distinctes wa. La matrice
+
+Rab = exp
+�
+β
+�
+V 1/2wa, V 1/2wb
+��
+
+est strictement positive définie pour des points distincts. Elle est donc inversible. La condition de
+sortie nulle s’écrit R Diag(r1, . . . , rq)WV = 0. Puisque R, Diag(r1, . . . , rq) et V sont inversibles,
+cette égalité imposerait W = 0, ce qui contredit la norme un de ses lignes. Les équilibres à plusieurs
+sommets qui restent possibles ont donc nécessairement une sortie radiale non nulle.
+
+B
+Jacobienne exacte sur le cercle
+
+Cette annexe donne une formule directement programmable. Posons
+
+gij = tT
+i V xj, qquadsij = xT
+i Sxj, qquadfi =
+�
+
+j
+aijgij.
+
+Pour l’angle θk,
+
+Dksij = 1i=k tT
+i Sxj + 1j=k xT
+i Stj,
+(28)
+
+Dkgij = −1i=k xT
+i V xj + 1j=k tT
+i V tj.
+(29)
+
+La dérivée du softmax donne alors
+
+Jik =
+�
+
+j
+aij
+
+�
+
+Dkgij + βgij
+
+�
+
+Dksij −
+�
+
+ℓ
+aiℓDksiℓ
+
+��
+
+.
+(30)
+
+À un équilibre, les parties réelles des valeurs propres de J décident de la stabilité. Pour la couche
+finie, on calcule directement la Jacobienne de Fh ; ses valeurs propres doivent avoir un module
+inférieur à un. Pour h petit, un taux continu λ donne un multiplicateur de couche 1 + hλ + O(h2).
+
+C
+Partage bipolaire déséquilibré
+
+Soit n+ le nombre de +u, n− le nombre de −u et r = n+/n−. Pour une valeur propre λp, définissons
+
+c = e2βλp,
+σ(c, r) = (c − r)(cr − 1)
+
+r(c2 − 1)
+.
+
+Si λp > 0, le partage est localement stable exactement lorsque
+
+λp > | log r|
+
+2β
+,
+λk < λpσ(c, r)
+(k ̸= p).
+
+Si λp < 0, la condition est
+
+λp < −| log r|
+
+2β
+,
+λp < λk < λpσ(c, r)
+(k ̸= p).
+
+Pour r = 1, σ = tanh(βλp) et l’on retrouve (20)–(21).
+
+15
+
+
+Attention sphérique sans MLP
+Équilibres et cycles
+
+D
+Reproductibilité et traçabilité des affirmations
+
+Les fichiers principaux sont :
+
+• experiments/spectral_self_attention/non_mlp_report_experiments.py pour la réintégration, les
+perturbations, le test en profondeur et les figures ;
+
+• data/spectral_self_attention/non_mlp_report_results.json pour tous les nombres affichés dans
+la section du cycle ;
+
+• data/spectral_self_attention/continuous_ode_f4_p3_cycle_attention_only.json pour
+l’ablation initiale ;
+
+• data/spectral_self_attention/continuous_lyapunov_spectrum_f4_p3_cycle_attention_only_
+relaxed2.json pour le spectre long ;
+
+• data/spectral_self_attention/equilibria/planar_small_systems.csv et
+search_saturation.csv pour le catalogue de petits systèmes ;
+
+• experiments/spectral_self_attention/equilibrium_catalogue.py et
+run_equilibrium_catalogue.py pour les racines d’équilibre.
+
+Depuis la racine du dépôt, la commande
+
+.venv/bin/python \
+experiments/spectral_self_attention/non_mlp_report_experiments.py
+
+recrée les quatre figures et le résumé JSON. Les matrices de (25), les graines aléatoires, les pas, les
+durées et les seuils sont stockés dans ces fichiers.
+
+Table 6: Statut exact des principales affirmations.
+
+Affirmation
+Statut
+
+Condition (8)
+théorème algébrique, nécessaire et suffisant
+Système (13)
+théorème, complet modulo rotations des espaces propres
+Pas de cycle si S = V = V T
+conséquence exacte de (23)
+Triangle stable affiché
+racine numérique, résidu < 1,3 × 10−15, Jacobienne contractante
+Cycle général sans MLP
+certificat numérique : retour, spectre, perturbations et loi en
+profondeur
+Absence de chaos sans MLP
+non établie ; seulement constatée sur les ablations ciblées
+Fréquence des cycles aléatoires
+non mesurée dans un recensement dédié
+
+Références
+
+[1] Claudio Altafini.
+Multistability of self-attention dynamics in transformers.
+arXiv preprint
+arXiv:2511.11553, 2025.
+
+[2] Borjan Geshkovski, Clément Letrouit, Yury Polyanskiy, and Philippe Rigollet. The emergence of clusters
+in self-attention dynamics. In Advances in Neural Information Processing Systems, volume 36, pages
+57026–57037, 2023.
+
+[3] Borjan Geshkovski, Clément Letrouit, Yury Polyanskiy, and Philippe Rigollet. A mathematical perspec-
+tive on transformers. Bulletin of the American Mathematical Society, 62(3):427–479, 2025.
+
+[4] Christian Kuehn and Jaeyoung Yoon. Spectral selection in symmetric self-attention dynamics. arXiv
+preprint arXiv:2604.26085, 2026.
+
+[5] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz
+Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in Neural Information Processing
+Systems, volume 30, 2017.
+
+[6] Biao Zhang and Rico Sennrich. Root mean square layer normalization. In Advances in Neural Information
+Processing Systems, volume 32, 2019.
+
+16
+
+
+Dynamiques sphériques de Transformers
+
+Volume II : MLP, cycles continus, chaos, multi-têtes
+et limite à beaucoup de tokens
+
+Théorie et audit numérique reproductible, depuis une couche élémentaire
+
+Soumission anonyme
+
+Version du 16 août 2026
+
+Résumé
+
+Ce rapport part d’une couche Transformer réduite à quatre opérations : l’attention, une
+connexion résiduelle, une normalisation sur la sphère, puis un MLP quadratique suivi d’une
+seconde normalisation. Nous écrivons exactement tous ses points fixes et tous ses cycles, puis
+nous séparons les boucles qui n’existent qu’avec des couches fortes de celles qui survivent
+lorsque chaque couche devient infinitésimale. Un recensement initial de 28 672 modèles et
+2 752 512 trajectoires trouve des cycles stables de trois et quatre couches dans les quatre
+familles structurelles. L’audit de la limite faible porte finalement sur 214 528 modèles tirés
+indépendamment et 2 844 160 trajectoires initiales. Parmi 1 908 attracteurs complexes rejoués
+dans l’équation continue, 1 699 s’arrêtent et 209 restent mobiles sur la fenêtre principale. Le
+type entièrement réciproque avec MLP potentiel s’arrête dans 286 cas sur 286 ; les trois autres
+types gardent des rotations, des cycles qui changent la forme des groupes, deux attracteurs
+chaotiques à trois tokens et un attracteur hyperchaotique à huit tokens. Les tests de pas,
+d’intégrateur, de perturbation, de divergence et de bassins sont indépendants.
+Nous étudions ensuite ce que plusieurs têtes changent : elles ne superposent pas simplement
+leurs cartes de destinations, car leurs poussées s’additionnent avant que la destination soit choisie.
+En grande dimension, les tokens et les forces des têtes deviennent presque perpendiculaires, mais
+l’attention ne s’éteint pas : à température fixe, elle devient souvent plus uniforme. Quand le
+nombre de tokens tend vers l’infini, la somme devient une intégrale et les polygones deviennent
+des masses concentrées en plusieurs positions. Enfin, nous montrons comment un MLP entraîné
+peut maintenir un équilibre pendant presque toute la profondeur puis le quitter près de la
+sortie, comment une première étape de Muon diffère d’une étape de gradient, et comment des
+poids d’attention évoluant lentement selon un processus d’Ornstein–Uhlenbeck créent un régime
+de suivi retardé. Toutes les affirmations sont classées en résultats analytiques, observations
+numériques et pistes ouvertes.
+
+Lecture concrète. L’attention choisit les partenaires et transporte leurs directions. Le MLP
+pousse chaque token en fonction de sa propre position. Si toutes ces poussées peuvent être résumées
+par une seule hauteur à gravir, les tokens finissent par s’arrêter. Si une partie de la poussée fait
+réellement tourner le système, on peut obtenir une horloge, une boucle stable ou un mouvement
+imprévisible. Le rapport mesure exactement où cette circulation apparaît et si elle survit à des
+couches arbitrairement faibles.
+
+1
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Table des matières
+
+1
+Réponse courte et statut des conclusions
+3
+
+2
+Le bloc étudié, sans rien supposer au départ
+3
+
+3
+Toutes les destinations et toutes les boucles
+4
+
+4
+Quatre familles et inventaire à pas fini
+5
+
+5
+Pourquoi les petits cycles ne suffisent pas
+6
+
+6
+Les mouvements continus effectivement trouvés
+8
+
+7
+Pourquoi une énergie existe parfois et parfois non
+10
+
+8
+Plusieurs têtes : pas une superposition de dessins
+10
+
+9
+Grande dimension : orthogonalité sans découplage
+11
+
+10 Quand les tokens deviennent une distribution
+12
+
+11 Changer l’exponentielle ou la normalisation
+12
+
+12 Le bon espace observable
+13
+
+13 Entraîner le MLP pour choisir la sortie
+14
+
+14 Poids variables avec la profondeur : premier audit OU lent
+15
+
+15 Lecture de physique statistique, précisément
+16
+
+16 Ce qui est nouveau par rapport à Altafini et au cas symétrique
+16
+
+17 Ce que la dynamique peut réellement résoudre
+17
+
+18 Limites, contrôles manquants et expériences prioritaires
+17
+
+19 Conclusion sans jargon
+18
+
+A Carte de reproductibilité
+18
+
+B Table de lecture des signatures locales
+19
+
+2
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+1
+Réponse courte et statut des conclusions
+
+Le volume I du dossier traite l’attention sans MLP. Il donne la condition exacte de tous les
+équilibres, la réduction spectrale lorsque QTK = V = V T, les formes polygonales et un cycle stable
+produit par l’attention seule lorsque score et valeur sont déliés. Le présent volume ajoute le MLP,
+plusieurs têtes, beaucoup de tokens et des poids variables avec la profondeur.
+
+Les conclusions qui résistent à tous nos contrôles sont les suivantes.
+
+1. Un MLP placé après l’attention change fortement une couche finie. En revanche, quand chaque
+couche devient faible, le bloc en série et un bloc où les deux poussées seraient additionnées ont
+la même équation au premier ordre ; leur différence commence à l’ordre h2.
+
+2. Les quatre familles testées possèdent beaucoup de points fixes et des cycles stables de trois ou
+quatre couches. Cela ne signifie pas que ces petits cycles survivent à la limite continue.
+
+3. Dans la famille entièrement réciproque, tous les attracteurs complexes sélectionnés deviennent
+des points fixes quand on affaiblit les couches. Dès qu’un MLP général ou un transport de valeur
+non réciproque est autorisé, des mouvements continus peuvent survivre.
+
+4. Plusieurs têtes choisissent une destination par leur somme. Elles peuvent créer une destination
+absente de chaque tête prise séparément, ou couper un bassin en plusieurs morceaux.
+
+5. L’orthogonalité en grande dimension ne découple pas automatiquement les tokens. Avec les
+normalisations de notre audit, les scores deviennent proches et l’attention tend vers la moyenne
+globale.
+
+6. Dans la limite de beaucoup de tokens, les mêmes équations deviennent une équation de transport
+pour une distribution. Les polygones ne disparaissent pas : leurs nombres de tokens par sommet
+deviennent des proportions de masse.
+
+7. L’entraînement du MLP peut sélectionner quand quitter un attracteur. Notre expérience
+reproduit un long plateau suivi d’une action terminale, mais ne démontre pas qu’un Transformer
+résout arbitrairement un problème difficile.
+
+Ce que cela ne prouve pas. Le recensement est massif mais fini. Il ne constitue pas une preuve
+couvrant toutes les matrices réelles. Nous n’affirmons ni qu’un problème NP-complet devient facile,
+ni qu’une analyse par répliques est déjà établie pour ce bloc exact, ni qu’un MLP quadratique permet
+d’imposer n’importe quelle configuration sans contrainte. Ces trois idées restent des programmes de
+recherche.
+
+2
+Le bloc étudié, sans rien supposer au départ
+
+2.1
+Les tokens et l’attention
+
+Il y a n tokens. Chaque token est un vecteur xi ∈ Rd de norme un. Les deux matrices effectivement
+visibles par une tête d’attention sont
+
+S = QTK,
+V.
+
+S décide qui regarde qui ; V décide ce qui est transporté. La dynamique gelée ne voit jamais Q et
+K séparément : deux factorisations donnant le même produit S produisent exactement les mêmes
+trajectoires.
+
+Pour une netteté β ≥ 0, posons
+
+aij(X) =
+exp(βxT
+i Sxj)
+�n
+k=1 exp(βxT
+i Sxk),
+(1)
+
+Ai(X) =
+
+n
+�
+
+j=1
+aij(X)V xj.
+(2)
+
+3
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Même lorsque β = 0, l’attention n’est pas retirée : chaque poids vaut 1/n et la matrice V transporte
+encore la moyenne des tokens.
+
+2.2
+Le MLP quadratique
+
+Le plus petit MLP qui produit déjà plusieurs puits et de la circulation est
+
+M(x) = b + Lx +
+
+m
+�
+
+r=1
+or (uT
+r x + cr)2.
+(3)
+
+Sa largeur est m. Le vecteur ur décide ce que le neurone caché mesure et or décide dans quelle
+direction sa réponse pousse.
+
+Nous appelons ce MLP potentiel lorsque
+
+L = LT,
+or = γrur.
+(4)
+
+Dans ce cas il existe une fonction scalaire
+
+ϕ(x) = bTx + 1
+
+2xTLx +
+�
+
+r
+
+γr
+3 (uT
+r x + cr)3
+telle que
+M = ∇ϕ.
+(5)
+
+Cette contrainte ne signifie pas que le MLP est faible : il peut créer plusieurs puits. Elle interdit
+seulement une poussée qui tourne sans être le versant d’une même surface.
+
+2.3
+La vraie couche en série
+
+Notons N(z) = z/ ∥z∥. Une couche de force h > 0 est
+
+yi = N(xi + hAi(X)) ,
+Fi(X) = N(yi + hM(yi)) .
+(6)
+
+Le MLP est donc bien après l’attention, comme dans le bloc sériel demandé. Le modèle de contrôle
+d’Isobe, Inoue et Imaizumi additionne au contraire un champ FFN au champ d’attention dans
+une équation continue [3]. Cette différence architecturale est importante à pas fini ; la prochaine
+section précise ce qu’elle devient lorsque h tend vers zéro.
+
+3
+Toutes les destinations et toutes les boucles
+
+3.1
+Équation exacte d’un point fixe
+
+Proposition 3.1 (Condition nécessaire et suffisante pour une couche finie). Une configuration
+X est un point fixe de la couche (6) si et seulement s’il existe, pour chaque token, un point
+intermédiaire unitaire yi et deux nombres strictement positifs ri, si tels que
+
+xi + hAi(X) = riyi,
+yi + hM(yi) = sixi.
+(7)
+
+Démonstration. La première égalité dit exactement que la première normalisation produit yi ; la
+seconde dit que la deuxième normalisation ramène vers xi. La positivité de ri et si conserve la
+direction au lieu de la renverser. Réciproquement, normaliser les deux égalités redonne (6) puis
+Fi(X) = xi.
+
+Cette écriture garde l’exponentielle du softmax dans Ai mais supprime les divisions de normalisation.
+Elle est donc directement utilisable par un solveur d’équations.
+
+4
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+3.2
+Équation exacte d’un cycle de longueur quelconque
+
+Pour une période p, on introduit X0, . . . , Xp−1 et Y 0, . . . , Y p−1. On écrit (7) à chaque étape en
+remplaçant le dernier X par l’état suivant, puis on ferme la boucle :
+
+xk
+i + hAi(Xk) = rk
+i yk
+i ,
+(8)
+
+yk
+i + hM(yk
+i ) = sk
+i xk+1
+i
+,
+(9)
+
+Xp = X0.
+(10)
+
+Pour demander une période primitive, on exclut les retours avant p. Ces équations couvrent donc
+tous les cycles, pas uniquement les triangles ou quadrilatères visibles.
+
+3.3
+Équation continue et condition finale
+
+Pour un vecteur unitaire x et une poussée z,
+
+N(x + hz) = x + h(I − xxT)z + O(h2).
+
+Appliquée deux fois à (6), cette identité donne
+
+˙xi = (I − xixT
+i ){Ai(X) + M(xi)}.
+(11)
+
+Le caractère sériel apparaît seulement dans le terme d’ordre h2. Tous les équilibres continus sont
+donc exactement les solutions de
+
+(I − xixT
+i ){Ai(X) + M(xi)} = 0,
+i = 1, . . . , n.
+(12)
+
+Lecture concrète. À l’arrêt, la poussée totale peut être non nulle. Elle doit seulement être parallèle
+au token. La normalisation efface alors cette partie radiale. Avec le MLP, l’attention et le MLP
+peuvent aussi se neutraliser le long de la sphère : aucun des deux n’a besoin d’être séparément à
+l’équilibre.
+
+3.4
+Stabilité
+
+La stabilité d’un point fixe se décide en perturbant tous les tokens dans les directions tangentes à
+leur sphère. Pour une couche finie, on calcule la matrice des dérivées de F restreinte à ces directions.
+Le point attire si toutes ses valeurs propres ont un module inférieur à un. Dans le flot continu, on
+dérive le membre droit de (11). Le point attire si toutes les parties réelles sont négatives. Ce test
+inclut les perturbations qui séparent deux tokens momentanément égaux ; il évite de confondre
+une égalité maintenue par l’arrondi numérique avec un vrai groupe stable.
+
+4
+Quatre familles et inventaire à pas fini
+
+Les quatre familles croisent deux choix pour l’attention et deux choix pour le MLP.
+
+Type
+Attention
+MLP
+
+1
+S = V = V T
+potentiel
+2
+S = V = V T
+quadratique général
+3
+S et V déliés
+potentiel
+4
+S et V déliés
+quadratique général
+
+5
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Pour les types 3 et 4, nous avons séparé quatre sous-cas : S et V symétriques, S symétrique et V
+générale, S générale et V symétrique, puis les deux générales. Les largeurs MLP sont 1, 2, 4 et 8 ;
+le nombre de tokens va de 1 à 4 dans l’inventaire principal.
+
+Le premier balayage large contient 28 672 modèles, 96 départs par modèle et donc 2 752 512
+trajectoires. Il teste cinq régimes de pas, de netteté et de rapport entre la force de l’attention et
+celle du MLP. Le type 3 est sur-échantillonné. Il s’agit d’un inventaire dense sur la grille choisie,
+pas d’une énumération de l’espace continu des matrices.
+
+4.1
+Beaucoup de destinations stables
+
+La résolution directe des équations trouve, en moyenne, les nombres suivants de points fixes stables.
+
+Type
+1 token
+2 tokens
+3 tokens
+maximum observé
+
+1
+1,68
+2,34
+3,09
+8
+2
+1,49
+2,03
+2,55
+9
+3
+1,57
+2,13
+2,61
+8
+4
+1,31
+1,71
+2,00
+7
+
+Un contrôle construit avec trois puits donne exactement 3n destinations stables étiquetées : 3, 9,
+27, 81 et 243 pour un à cinq tokens. Cela montre comment une règle locale très simple peut créer
+un nombre combinatoire de répartitions finales.
+
+4.2
+Cycles de trois et quatre couches
+
+Chaque candidat a été raffiné en résolvant F 3(X) = X ou F 4(X) = X, puis son retour primitif et
+sa stabilité ont été testés sur tout le cycle.
+
+Type
+trajectoires p3
+modèles p3
+trajectoires p4
+modèles p4
+
+1
+321
+8
+201
+15
+2
+2 039
+34
+1 823
+28
+3
+4 490
+75
+4 507
+113
+4
+1 621
+22
+1 860
+41
+
+Des périodes primitives 5 à 12 sont également certifiées. Les quatre largeurs MLP en contiennent.
+Une attention uniforme (β = 0) en contient aussi. Le MLP général peut produire seul des p3 et
+p4 ; le MLP potentiel seul n’a produit aucun p3 certifié dans 65 536 trajectoires, et son unique
+candidat p4 s’est réduit à une période plus courte.
+
+Résultat établi ici. La séparation décisive n’est pas simplement « potentiel ou non ». À pas fini, la
+composition de deux sous-étapes peut créer une boucle même si chacune possède une interprétation
+énergétique. À pas infinitésimal, ce qui compte est l’existence d’une circulation dans la somme des
+deux champs.
+
+5
+Pourquoi les petits cycles ne suffisent pas
+
+Supposons Fh = I + hf + O(h2). Pour une période entière p fixée,
+
+F p
+h(x) = x + phf(x) + O(h2).
+(13)
+
+6
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 1: À gauche, cycles de quelques couches dans le premier balayage. À droite, part des
+attracteurs sélectionnés qui reste mobile après passage à l’équation continue. Les deux panneaux
+n’ont ni le même dénominateur ni la même question.
+
+Un cycle qui garde exactement trois ou quatre couches pendant que h tend vers zéro ne peut donc
+s’accumuler que près d’un point où f(x) = 0. Un vrai cycle continu peut survivre, mais le nombre
+de couches nécessaires pour faire un tour doit croître comme T/h, où T est son temps physique de
+retour.
+
+Sur toute durée physique fixée, la couche en série vérifie
+
+max
+0≤k≤T/h
+
+���F k
+h (X) − φkh(X)
+��� = O(h),
+(14)
+
+où φt est le flot de (11). Cette convergence ne garantit pas que deux trajectoires chaotiques restent
+proches pour toujours. Elle garantit que l’équation continue est la bonne limite sur chaque fenêtre
+de temps fixée. Les distributions de trajectoires et les bassins sont donc vérifiés séparément.
+
+5.1
+Échelle finale de l’audit
+
+L’audit complet rassemble :
+
+• 214 528 modèles tirés indépendamment et 2 844 160 trajectoires initiales ;
+• 26 112 contrôles frais, non sélectionnés, dans les 24 cases obtenues en croisant les quatre types
+avec 1, 2, 3, 4, 8 et 16 tokens ;
+
+• 23 789 394 642 mises à jour modèle–couche, soit 102 108 101 290 mises à jour token–couche ;
+• 307 200 000 évaluations RK4 de référence, soit 1 740 800 000 évaluations token–champ ;
+• des pas allant jusqu’à h/4096, deux grilles non dyadiques, des temps physiques 2, 10 et 20, et
+des contrôles de Richardson qui annulent l’erreur du premier ordre.
+
+La pente de l’erreur est 1 dans chaque famille. Après annulation de Richardson, elle est 2,018 sur
+la population principale. Au pas le plus fin, l’erreur médiane passe de 2,63 × 10−4 à 3,39 × 10−7.
+Ce test vérifie directement le développement Fh = I + hf + h2g + · · · .
+
+5.2
+Recensement direct de la limite continue
+
+Les 1 908 attracteurs sélectionnés sont rejoués directement avec (11).
+
+7
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Type
+rejoués
+fixes
+mobiles
+rotation rigide
+forme interne mobile
+
+1
+286
+286
+0
+0
+0
+2
+378
+313
+65
+38
+27
+3
+768
+732
+36
+21
+15
+4
+476
+368
+108
+55
+53
+
+Total
+1 908
+1 699
+209
+114
+95
+
+Ainsi, 89,0% des attracteurs complexes sélectionnés à pas fini deviennent des points fixes ; 11,0%
+restent mobiles sur la fenêtre principale. Ce taux est conditionnel à la sélection d’un attracteur
+complexe : ce n’est pas sa fréquence parmi toutes les matrices aléatoires.
+
+Pour 8 et 16 tokens, 581 candidats sont poursuivis. Au pas h/4096, le comptage brut donne 118
+mouvements. Quatre états apparemment fixes ont une direction instable masquée par des tokens
+numériquement égaux ; après correction, la carte finie et le flot continu donnent tous deux 122
+mouvements et s’accordent individuellement dans 575 cas sur 581. Les six différences restantes
+choisissent des bassins coexistants.
+
+6
+Les mouvements continus effectivement trouvés
+
+6.1
+Cycles stables
+
+Quatre cycles complets sont certifiés dans le bloc avec MLP : un p3 et un p4 issus du type 2,
+puis un p3 et un p4 issus du type 4. Leur temps de retour mesuré par la carte au pas le plus fin
+coïncide avec RK4 : respectivement 16,632 contre 16,660 ; 9,331 contre 9,340 ; 9,389 contre 9,400 ;
+6,4395 contre 6,4400. Sur des grilles de pas qui ne sont pas des puissances de deux, les pentes du
+nombre de couches par tour sont 1,0016, 1,0029, 0,9992 et 0,9950. Chaque boucle attire toutes les
+perturbations de son audit de robustesse.
+
+Le type 4 p3 est particulièrement instructif : l’attention seule garde le cycle, tandis que le MLP
+seul s’arrête. Ce cas appartient donc aussi au volume I. Dans les trois autres exemples, le MLP
+participe à la boucle.
+
+6.2
+Chaos à trois tokens
+
+Un mouvement est appelé chaotique ici seulement après quatre contrôles : une direction de
+perturbation grandit en moyenne, une direction reste neutre parce qu’elle suit le temps le long de
+la trajectoire, les autres directions contractent, et la somme des taux coïncide avec la divergence
+moyenne calculée indépendamment.
+
+Le cas type 4 à trois tokens a les taux
+
+(0,1489, 0,0007, −0,3923).
+
+Il reste positif dans 24 perturbations sur 24, pour trois pas RK4 ; au pas 0,005 son premier taux
+vaut 0,1584. Les 512 départs uniformes testés rejoignent tous un mouvement interne à taux positif.
+L’attention seule s’arrête ; le MLP seul donne une rotation régulière ; leur interaction donne le
+chaos.
+
+Un second exemple de type 2 a les taux
+
+(0,0333, −0,0011, −0,7253).
+
+Ici l’attention seule et le MLP seul s’arrêtent tous les deux. Sur 512 départs, 449 dépassent le seuil
+strict 0,03 et les 63 autres restent positifs entre 0,022 et 0,03.
+
+8
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 2: Taux complets des cycles et attracteurs chaotiques. Un point orange à droite de zéro
+signifie qu’une petite différence grandit ; un point bleu à gauche signifie qu’elle se rétracte ; un
+point gris près de zéro suit la phase du mouvement.
+
+6.3
+Hyperchaos et chimère à huit tokens
+
+Un exemple de type 4 possède trois directions indépendantes de séparation :
+
+(0,1458, 0,1455, 0,1435, 0,0031, −0,0409, −0,1871, −0,1872, −0,1896).
+
+Une réplication avec un pas deux fois plus petit conserve trois taux positifs. Pendant ce mouvement,
+quatre tokens restent synchronisés ; la trajectoire alterne surtout entre des partitions 4 + 4 et
+4 + 3 + 1. C’est une chimère : une partie du groupe reste ordonnée pendant que les phases des
+groupes évoluent de façon imprévisible. Les poids d’attention varient très peu, alors que la géométrie
+des tokens varie fortement.
+
+6.4
+Un cas intéressant même avec attention uniforme
+
+À β = 0, chaque poids vaut toujours 1/n. Pourtant un type 3 à quatre tokens garde un mouvement
+intermittent avec premier taux positif. Le mécanisme vient de la partie antisymétrique de V . La
+remplacer par sa partie symétrique, retirer l’attention ou retirer le MLP fait converger vers un
+point fixe. Dans un audit de 512 départs, le même jeu de poids possède à la fois des points fixes,
+des mouvements récurrents et des trajectoires à taux positif : l’initialisation choisit le bassin.
+
+Sur le cercle, ce cas se réécrit exactement comme un groupe d’oscillateurs couplés. La partie
+antisymétrique de V fournit la tendance à tourner ; le MLP potentiel fournit des zones où le
+mouvement ralentit. L’attention uniforme n’est donc pas une absence d’interaction : elle est un
+couplage par la moyenne globale.
+
+Ce que cela ne prouve pas. Aucun tore quasi périodique robuste n’a encore été certifié. Nous
+avons certifié des points fixes, des spirales stables, des cycles, du chaos et de l’hyperchaos, mais pas
+toutes les possibilités d’un système continu de grande dimension.
+
+9
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+7
+Pourquoi une énergie existe parfois et parfois non
+
+Lorsque β = 0, V = V T et le MLP est potentiel, la fonction
+
+Φ(X) = 1
+
+2n
+
+�
+
+i,j
+xT
+i V xj +
+�
+
+i
+ϕ(xi)
+(15)
+
+augmente le long de la trajectoire :
+
+dΦ
+dt =
+�
+
+i
+
+���(I − xixT
+i )∇xiΦ
+���
+2 ≥ 0.
+
+Une boucle non constante reviendrait à la même valeur après un tour tout en ayant strictement
+augmenté ; elle est donc impossible. Les 146 contrôles continus exacts de ce cas finissent tous à
+l’équilibre.
+
+La normalisation ligne par ligne du softmax peut briser cette structure simple même quand
+S = V = V T. Parmi 1 699 équilibres audités, 28 sont des spirales stables : une en type 1, dix-neuf
+en type 3 et huit en type 4 ; aucune n’apparaît dans le contrôle exact β = 0. La spirale isolée du
+type 1 montre que deux sous-champs symétriques ne garantissent pas, avec des mobilités différentes,
+une seule énergie euclidienne.
+
+En multi-têtes non normalisées, des têtes symétriques et correctement alignées s’additionnent en
+une énergie commune. Avec des normalisations séparées, cette conclusion demande des conditions
+supplémentaires, car chaque tête multiplie sa poussée par son propre dénominateur. Les travaux de
+Pendharkar et de Massucco et collaborateurs donnent des conditions énergétiques dans des cadres
+multi-têtes précis [7, 6]. Notre audit montre ce qui se passe lorsque les sorties ne partagent plus
+cette énergie.
+
+8
+Plusieurs têtes : pas une superposition de dessins
+
+Pour H têtes, la poussée est
+
+Amulti
+i
+(X) =
+
+H
+�
+
+h=1
+ωh
+�
+
+j
+a(h)
+ij (X)Chxj.
+(16)
+
+La matrice de score de la tête h décide ses poids ; Ch inclut sa matrice de valeur et sa recombinaison
+de sortie. La destination satisfait
+
+(I − xixT
+i ){Amulti
+i
+(X) + M(xi)} = 0.
+
+Il n’est pas nécessaire que chaque tête s’annule. Deux têtes peuvent se compenser le long de la
+sphère et créer une destination qui n’existe pour aucune tête seule.
+
+8.1
+Cartes conditionnelles de bassins
+
+Nous fixons cinq tokens sur le cercle et laissons bouger une sixième sonde. Avec deux matrices
+ayant le même spectre (2, −3) mais des axes tournés de 60 degrés, la tête A a 4 destinations, la
+tête B en a 5 et leur somme en a 7. Sur la sphère, les nombres sont 4, 4 et 5. La somme coupe
+les frontières, déplace les destinations et crée de petits bassins. Deux points initiaux très proches
+peuvent donc finir dans des groupes éloignés s’ils sont de part et d’autre d’une frontière.
+
+10
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 3: À gauche, destination de la sonde selon son angle initial : A+B n’est pas la juxtaposition
+des deux premières lignes. À droite, en grande dimension, tokens et forces deviennent presque
+perpendiculaires tandis que le nombre de tokens effectivement écoutés monte vers 24.
+
+8.2
+Un cluster tournant créé par deux sorties
+
+Une expérience à 64 tokens utilise deux têtes avec le même score S = I. La première sortie est
+C1 = I et rassemble les tokens. La seconde est C2 = 0,8J, où J tourne un vecteur de 90 degrés.
+Le taux de synchronisation passe de 0,471 à 1,000, mais le cluster ne s’arrête jamais : sa vitesse
+angulaire mesurée vaut exactement 0,800000. La matrice de produits scalaires reste constante
+pendant cette rotation. Le noyau de score voit donc une configuration immobile alors que les
+valeurs transportées voient un cycle.
+
+9
+Grande dimension : orthogonalité sans découplage
+
+Pour deux directions unitaires aléatoires en dimension d,
+
+E|xTy| ≃
+
+� 2
+
+πd.
+
+Avec 24 tokens, six têtes aléatoires et 96 répétitions par dimension, la proximité absolue entre
+tokens passe de 0,638 en dimension 2 à 0,050 en dimension 256. La proximité entre les forces
+des têtes passe de 1,000 à 0,049. Les têtes indépendantes se combinent donc presque comme des
+directions perpendiculaires.
+
+Mais leurs scores deviennent aussi proches. Pour β = 3 fixé, le nombre effectif de tokens écoutés
+sur 24 passe de 11,6 à 23,6. La dynamique ne se décompose pas en 24 systèmes indépendants : elle
+conserve une moyenne globale presque uniforme.
+
+Si V = I, le score propre reste 1 tandis que les scores croisés tendent vers zéro. Le poids propre
+limite vaut alors
+
+aii −→
+eβ
+
+eβ + n − 1.
+(17)
+
+Il faut donc β sensiblement plus grand que log n pour un vrai auto-découplage. Pour une matrice
+aléatoire sans avantage diagonal, conserver des scores non triviaux dans notre normalisation
+demande typiquement β de l’ordre de
+√
+
+d.
+
+Dans un Transformer pratique, la division par √dhead et les normes apprises des requêtes et des clés
+sont précisément choisies pour garder des logits d’ordre un. L’orthogonalité brute des embeddings
+ne suffit donc pas à prédire le découplage d’un réseau entraîné.
+
+11
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+10
+Quand les tokens deviennent une distribution
+
+Définissons la mesure empirique
+
+µn
+t = 1
+
+n
+
+n
+�
+
+i=1
+δxi(t).
+
+Pour un noyau positif g et une attention normalisée, la vitesse au point x est
+
+vg[µ](x) = P ⊥
+x
+
+� g(xTSy)V y dµ(y)
+� g(xTSy) dµ(y)
++ P ⊥
+x M(x).
+(18)
+
+La limite de beaucoup de tokens est l’équation de transport
+
+∂tµt + divS
+�µtvg[µt]
+� = 0.
+(19)
+
+Elle dit seulement que toute la masse de tokens est déplacée par un champ calculé à partir de la
+distribution entière. Les travaux de Rigollet et de Castin, Ablin, Carrillo et Peyré placent cette
+limite dans une géométrie de transport adaptée à la normalisation [9, 2].
+
+Dans notre contrôle, une densité à trois bosses est échantillonnée puis comparée à une quadrature
+de 8 192 points. L’erreur sur la vitesse décroît comme n−0,494, en accord avec la fluctuation n−1/2 :
+0,289 à 16 tokens, 0,146 à 64, 0,071 à 256 et 0,038 à 1 024.
+
+10.1
+Les polygones deviennent des masses
+
+Une distribution concentrée sur q positions s’écrit
+
+µ =
+
+q
+�
+
+a=1
+paδwa,
+pa > 0,
+�
+
+a
+pa = 1.
+
+Elle est stationnaire exactement lorsque
+
+P ⊥
+wa
+�
+
+b
+pbg(wT
+a Swb)V wb + P ⊥
+waM(wa) = 0
+pour chaque a.
+(20)
+
+Les nombres entiers de tokens placés à chaque sommet deviennent donc des masses réelles. Le
+passage à l’intégrale élargit la famille : les rapports de masses n’ont plus besoin d’être rationnels.
+
+10.2
+Que mesure Wasserstein ?
+
+La distance de Wasserstein mesure le coût minimal pour déplacer un nuage de masse vers un autre.
+Elle convient naturellement à (19). Elle ne transforme pas automatiquement toute attention en
+descente d’énergie. Sans dénominateur et avec une interaction symétrique, une primitive G de g
+donne l’énergie
+
+EG(µ) = 1
+
+2
+
+��
+G(xTV y) dµ(x)dµ(y).
+
+Le dénominateur du softmax change la mobilité locale. Des matrices déliées ou antisymétriques
+peuvent supprimer toute énergie commune.
+
+11
+Changer l’exponentielle ou la normalisation
+
+Nous remplaçons exp(1,5s) par trois noyaux positifs dans le cas V = diag(2, −3) et trois masses
+égales.
+
+12
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 4: À gauche, convergence de la somme de tokens vers l’intégrale. À droite, positions
+polygonales trouvées pour quatre noyaux ; le cercle vert indique une branche stable et la croix
+orange une branche instable.
+
+Noyau
+racines polygonales q
+racine stable
+
+exponentielle
+−0,907, 0,024, 0,801
+0,024
+sigmoïde bornée
+−0,680
+aucune
+softplus
+−0,787
+aucune
+polynôme (1 + s/3,01)4
+−0,842, 0,231, 0,548
+0,231
+
+L’exponentielle n’est donc pas nécessaire à l’existence d’une forme polygonale, mais elle change ses
+branches et leur stabilité. Pour un noyau positif g, retirer seulement le dénominateur ne change pas
+les équilibres : il multiplie la vitesse par un facteur positif. Il peut cependant changer fortement les
+temps, les bassins et la métastabilité.
+
+Retirer la sphère est une opération bien plus radicale. Un token placé sur la direction propre
+positive de valeur 2 garde sa norme avec la projection sphérique. Sans cette projection, sa norme
+atteint 10 au temps 1,151 avec attention normalisée ; sans sphère ni dénominateur, elle diverge au
+temps 0,003262 dans notre paramétrage exponentiel. Une poussée auparavant radiale et invisible
+change alors toute la dynamique.
+
+12
+Le bon espace observable
+
+Les poids d’attention seuls ne décrivent pas l’état. Pour chaque tête, la vitesse dépend des deux
+fonctions
+Zµ
+h(x) =
+�
+kh(x, y)dµ(y),
+Nµ
+h (x) =
+�
+kh(x, y)Chy dµ(y).
+(21)
+
+La tête utilise Nh/Zh. Il faut donc observer à la fois qui est choisi et ce qui est transporté. Avec un
+MLP quadratique, il faut aussi garder les mesures cachées uT
+r xi + cr et les projections linéaires
+utilisées en sortie.
+
+Pour le cas symétrique aligné, la matrice H = XV XT et ses morceaux par espace propre constituent
+une description fermée, à rotation près. Dans le cas général, une description minimale utile contient
+:
+
+1. la géométrie des tokens, par exemple leur matrice de produits scalaires ;
+2. les matrices de score et les poids de chaque tête ;
+3. les directions après passage par les valeurs et les sorties ;
+
+13
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 5: À gauche, contrôle entraîné : le polygone absorbe d’abord les perturbations, puis le MLP
+agit près de la sortie. À droite, une seule mise à jour à norme globale égale : le gradient et Muon
+optimisent des géométries différentes.
+
+4. les features cachées du MLP ;
+5. pour une tâche supervisée, les positions, labels et le readout.
+
+L’exemple hyperchaotique rend ce point mesurable : l’écart-type temporel maximal des poids vaut
+seulement 0,0034, alors que celui de la géométrie de Gram vaut 0,481. Dans l’exemple à attention
+uniforme, la distance entre poids est exactement zéro à tous les pas, même lorsque la géométrie ne
+l’est pas.
+
+13
+Entraîner le MLP pour choisir la sortie
+
+Isobe, Inoue et Imaizumi fixent une attention symétrique non normalisée, ajoutent du bruit et
+entraînent seulement un FFN linéaire en ses paramètres avec un coût quadratique [3]. Leur solution
+optimale a trois phases : les tokens se regroupent, restent longtemps près d’un puits, puis le FFN
+agit fortement près de la sortie pour réduire la perte terminale. Leur attention est en parallèle avec
+le FFN dans l’équation continue ; notre MLP est en série dans la couche finie. La section 2 montre
+pourquoi le mécanisme se compare au premier ordre, mais pas couche par couche à grand pas.
+
+13.1
+Contrôle entraîné autour d’un polygone
+
+Nous entraînons un petit contrôle angulaire, linéaire en cinq features de Fourier, pour déplacer un
+polygone stable vers une cible tournée de 0,9 radian. Le contrôle maximal dans la première moitié
+vaut 0,0011 ; dans les cinq derniers intervalles, il atteint 2,19. L’erreur terminale vaut 0,00133. La
+force est donc environ 2 000 fois plus grande à la fin qu’au début. Le plateau d’Imaizumi survit
+lorsque le puits n’est plus un consensus mais un polygone.
+
+Ce résultat donne un principe de conception : fixer une dynamique d’attention qui crée des
+bassins utiles, puis entraîner un MLP sériel pour rester dans un bassin, en sortir ou déplacer sa
+destination. Il ne garantit pas que toute condition algébrique soit encodable par un petit MLP, ni
+que l’entraînement trouve globalement les bons poids.
+
+14
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+13.2
+Une première étape de Muon
+
+Si le gradient d’une matrice à la profondeur k est Gk = UkΣkV T
+k , une étape de gradient est −αGk.
+Une étape de Muon idéalisée utilise plutôt
+
+−ηUkV T
+k .
+(22)
+
+Elle garde les directions singulières et égalise les tailles non nulles. À la première étape, le momentum
+ne change que l’échelle globale du gradient, ensuite supprimée par ce facteur polaire. Sous une
+contrainte de norme opérateur par matrice, cette direction est la plus descendante ; sous la
+contrainte L2 du théorème d’Imaizumi, le gradient est naturellement favorisé.
+
+Dans notre analogue à 40 tranches, le gradient final est 7,11 × 1011 fois plus grand que le gradient
+initial. À budget total 0,3, la perte passe de 0,37839 sans entraînement à 0,28547 avec le gradient,
+0,35385 avec Muon exact et 0,35323 avec cinq itérations de Newton–Schulz. À budget 1,0, Muon
+agit bien plus tôt et détruit le plateau, tandis que le gradient concentre encore son action sur
+la dernière tranche. Ce n’est pas un classement universel : il montre que la norme choisie pour
+comparer les mises à jour décide du gagnant.
+
+Des analyses récentes de mémoire associative expliquent autrement l’intérêt de Muon : il rend
+l’apprentissage des directions rares plus équilibré que des mises à jour anisotropes [11, 4]. Notre
+expérience ne remplace pas ces résultats ; elle montre leur analogue dans la profondeur d’une
+dynamique polygonale.
+
+14
+Poids variables avec la profondeur : premier audit OU lent
+
+Massucco et collaborateurs représentent les têtes par une distribution de matrices qui change avec
+la profondeur [6]. Dans leur régime Ornstein–Uhlenbeck,
+
+dDt = (F − Dt)dt +
+√
+
+2σ2 dWt,
+(23)
+
+la loi des poids revient exponentiellement vers une gaussienne centrée en F. Leur théorie et
+leurs expériences montrent alors la relaxation vers une configuration stationnaire ; avec des poids
+périodiques non amortis, la relaxation peut disparaître.
+
+Notre première approche isole la vitesse de renouvellement. Elle utilise 32 tokens sur S2, quatre
+têtes, 12 répétitions, σ = 0,65, un pas 0,02 et 2 000 pas. La matrice moyenne cible a les valeurs
+propres (1,2, 1,0, 0,2). Le taux OU varie de 0 à 10.
+
+À taux 0,01, la concentration tardive vaut 0,736 et le suivi de l’axe instantané 0,948. À taux 0,3,
+elles valent 0,850 et 0,855. À taux 3, la concentration est pratiquement 1, mais le suivi instantané
+n’est plus que 0,740 tandis que l’alignement avec l’axe moyen vaut 0,897. La vitesse tardive croît
+de 0,040 à 0,352. Cela met en évidence trois temps : la contraction des tokens, le mouvement du
+paysage et le moyennage du bruit.
+
+Lecture concrète. Lent ne signifie pas nécessairement plus chaotique. Si les tokens se contractent
+bien plus vite que les poids ne bougent, ils suivent quasi statiquement une branche. La complexité
+apparaît près des changements de bassin et lorsque les deux temps deviennent comparables : retard,
+sauts, mémoire du chemin et coexistence. Le présent balayage mesure le retard et la concentration ;
+il ne certifie pas encore un attracteur chaotique causé par l’OU lent.
+
+15
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Figure 6: Premier balayage du temps de corrélation des poids. À faible taux, le paysage reste
+longtemps déformé et le nuage ne se concentre pas complètement. À taux intermédiaire, les tokens
+tentent de suivre un axe mouvant avec retard. À taux élevé, le bruit se moyenne vite, le nuage se
+concentre près de l’axe moyen mais garde une vitesse instantanée élevée.
+
+15
+Lecture de physique statistique, précisément
+
+Chaque ligne de softmax est exactement une loi de Boltzmann conditionnelle :
+
+aij =
+e−Eij/T
+
+�
+k e−Eik/T ,
+Eij = −xT
+i Sxj,
+T = 1/β.
+
+Cela ne fait pas encore du système une matière à l’équilibre : les poids sont des probabilités de
+Boltzmann, mais la trajectoire des tokens est déterministe. Un vrai bain thermique demanderait
+un bruit brownien tangent. Si le champ est un gradient et le bruit accordé à sa mobilité, la loi
+stationnaire est de Gibbs. Avec transport antisymétrique ou MLP général, des courants peuvent
+persister et le système reste hors équilibre.
+
+Les modèles voisins sont les mémoires de Hopfield modernes, les spins XY ou Heisenberg, les
+oscillateurs de Kuramoto ou Lohe et les verres de spins [8, 10]. Notre cas exact se distingue par
+trois traits : le couplage dépend de l’état, il est normalisé séparément pour chaque token, et les
+valeurs transportées peuvent ne pas être réciproques.
+
+Une analyse de répliques demanderait de choisir un ensemble aléatoire précis de matrices, une
+limite conjointe du nombre de tokens, de la dimension et du nombre de têtes, puis un observable
+de recouvrement. La matrice des produits scalaires entre deux copies soumises aux mêmes poids
+est un candidat naturel, mais les poids d’attention ne suffisent pas : les valeurs et les features du
+MLP doivent aussi entrer. Les travaux de physique statistique des chemins d’attention sont voisins,
+sans fournir à ce jour la solution par répliques de notre bloc sériel exact [10].
+
+16
+Ce qui est nouveau par rapport à Altafini et au cas symétrique
+
+Altafini étudie une dynamique d’attention et sa multistabilité sans MLP sériel ; son écriture
+travaille avec les matrices effectives de l’interaction plutôt qu’avec une factorisation architecturale
+séparée Q/K [1]. Son résultat d’instabilité des équilibres polygonaux concerne sa classe précise,
+notamment les configurations où la somme reçue s’annule. Il ne dit pas que toute forme à plusieurs
+sommets, après ajout d’un MLP ou déliaison score–valeur, doit être instable.
+
+16
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+Kuehn et Yoon imposent QTK = V = V T et obtiennent une sélection par les espaces propres ainsi
+qu’une structure de flot de gradient [5]. Le volume I étend l’équation des équilibres à S ̸= V et
+certifie un cycle interne stable produit par l’attention seule. Le présent volume ajoute :
+
+1. la condition exacte de tous les points fixes et cycles du bloc sériel attention–MLP ;
+2. une taxonomie expérimentale des quatre croisements réciproque/délié et potentiel/général ;
+3. la preuve que les p3/p4 fixes ne peuvent rester des p3/p4 quand h → 0, puis leur audit jusqu’à
+h/4096 ;
+
+4. des cycles continus stables, deux chaos à trois tokens et un hyperchaos à huit tokens dans le
+bloc complet ;
+
+5. la démonstration que des poids d’attention constants peuvent cacher un mouvement interne ;
+6. des cartes multi-têtes où la somme crée de nouvelles destinations ;
+7. la distinction expérimentale entre orthogonalité, uniformisation et vrai découplage en grande
+dimension ;
+
+8. le passage des polygones finis aux mesures atomiques, le changement de noyau, le contrôle
+entraîné, une étape de Muon et le premier balayage OU lent.
+
+Résultat établi ici. L’ajout central n’est pas « davantage de formes ». C’est une règle permettant
+de distinguer les formes qui sont de vraies destinations, les boucles artificielles d’une couche trop
+forte, et les mouvements qui restent vivants dans une profondeur continue. Cette règle repose sur
+l’équation tangentielle finale, l’échelle 1/h du temps de retour et le spectre complet des perturbations.
+
+17
+Ce que la dynamique peut réellement résoudre
+
+Les solutions exactes produites par la dynamique sont les vecteurs unitaires qui satisfont (12),
+ou les suites périodiques qui satisfont (10). En choisissant S, V et M, on choisit donc une famille
+d’équations non linéaires sur un produit de sphères. Les cas potentiels correspondent à des conditions
+de stationnarité avec contraintes de norme ; les cas non potentiels ajoutent une circulation et ne
+sont plus la minimisation d’une seule fonction.
+
+Cela permet d’encoder des tâches utiles : mémoire associative, regroupement, choix parmi plusieurs
+codes sphériques, maintien d’une horloge, suivi d’un paysage variable, ou contrôle d’un état vers
+une cible. Cela ne rend pas automatiquement facile le problème inverse « trouver les poids qui
+réalisent la bonne famille de solutions ». L’entraînement peut lui-même rester non convexe, posséder
+de mauvais bassins et exiger un nombre exponentiel d’essais.
+
+MaxCut fournit un bon contre-exemple à une conclusion trop forte. On peut encoder des signes
+unitaires et une énergie de coupe, puis laisser une dynamique chercher un point stationnaire. Elle
+peut donner une excellente coupe et le bruit OU peut aider à changer de bassin. Cela ne prouve ni
+l’optimalité globale ni un algorithme polynomial pour tous les graphes. Le bon énoncé est : cette
+dynamique forme une nouvelle famille d’heuristiques continues et entraînables pour des équations
+contraintes ; leur complexité doit être étudiée problème par problème.
+
+18
+Limites, contrôles manquants et expériences prioritaires
+
+Les contrôles les plus importants qui restent sont :
+
+1. reproduire les cycles et le chaos avec de vraies dimensions de tête, des matrices W O explicites
+et RMSNorm plutôt qu’une sphère idéale ;
+
+2. entraîner le bloc sériel complet, et pas seulement un contrôle FFN réduit, sur une tâche avec
+validation hors échantillon ;
+
+17
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+3. faire varier conjointement nombre de tokens, dimension, température et nombre de têtes afin de
+distinguer limite moyenne, limite de tête et limite de dimension ;
+
+4. cartographier les bifurcations lorsque les poids OU évoluent aussi lentement que le temps de
+relaxation des tokens, avec mesures d’hystérésis et de sauts de bassin ;
+
+5. tester si les attracteurs chaotiques certifiés persistent après ajout de bruit, de biais, de LayerNorm
+affine et de précision réduite ;
+
+6. construire une expérience de répliques avec deux copies et mêmes poids, puis mesurer le
+recouvrement complet incluant valeurs et MLP ;
+
+7. donner une borne d’approximation reliant la largeur et le degré du MLP aux champs tangentiels
+réalisables sur la sphère ;
+
+8. séparer performance d’optimisation et coût total pour Muon, gradient et Adam sur le même
+contrôle de profondeur.
+
+19
+Conclusion sans jargon
+
+Un token reçoit deux sortes de coups. L’attention lui dit vers quels autres tokens se tourner. Le
+MLP lui donne une poussée qui dépend de sa propre position. Après chaque coup, la normalisation
+le remet sur la sphère.
+
+Pour savoir où tout peut finir, il suffit de vérifier une règle : après addition de toutes les poussées,
+il ne doit rester aucun morceau qui fasse glisser le token le long de la sphère. Cette règle donne
+toutes les destinations, même lorsqu’elles ont plusieurs groupes et même lorsque l’attention et le
+MLP se compensent.
+
+Les boucles demandent plus de prudence. Une boucle de trois couches peut seulement venir de
+coups trop forts. Quand on divise la force d’une couche par mille, une vraie boucle ne fait plus
+un tour en trois couches : elle utilise environ mille fois plus de couches et garde le même temps
+total. C’est exactement ce que font nos cycles continus. Dans la famille la plus symétrique, toutes
+les boucles sélectionnées finissent par s’arrêter. Dans les autres familles, certaines continuent ;
+quelques-unes deviennent même imprévisibles tout en restant confinées.
+
+Plusieurs têtes ne votent pas séparément pour un sommet. Elles additionnent leurs poussées, et cette
+somme redessine les frontières. En grande dimension, elles deviennent presque perpendiculaires,
+mais elles peuvent encore écouter presque tout le monde. Avec beaucoup de tokens, on remplace
+simplement le nuage par une distribution : les groupes deviennent des parts de masse.
+
+Enfin, l’entraînement ne sert pas seulement à choisir une destination. Il peut choisir quand rester
+dans un groupe et quand le quitter. Muon et le gradient répartissent ce premier changement de
+poids de façons très différentes. Des poids OU ajoutent encore une horloge externe : s’ils bougent
+lentement, les tokens les suivent avec retard ; s’ils bougent vite, le bruit se moyenne et les tokens
+voient surtout le paysage moyen.
+
+Le résultat nouveau est donc une carte opérationnelle : quelles équations définissent les fins
+possibles, quelles structures forcent l’arrêt, quelles structures permettent une circulation, et quels
+tests séparent une vraie dynamique profonde d’un simple effet de couche forte.
+
+A
+Carte de reproductibilité
+
+Les expériences principales sont disponibles dans les fichiers suivants :
+
+• inventaire à pas fini : experiments/spectral_self_attention/large_scale_cycle_census.
+py ;
+
+• résolution des points fixes : experiments/spectral_self_attention/equilibrium_root_
+census.py ;
+
+18
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+• certification des cycles : experiments/spectral_self_attention/periodic_orbit_audit.py
+;
+
+• poursuite vers h/4096 : experiments/spectral_self_attention/small_step_continuation.
+py et extend_small_step_continuation.py ;
+
+• intégration continue, robustesse et spectres : continuous_ode_audit.py, continuous_ode_
+robustness.py et continuous_lyapunov_spectrum.py ;
+
+• limites à beaucoup de tokens et noyaux : mean_field_extensions.py ;
+• multi-têtes et grande dimension : multihead_phase.py ;
+• première étape de Muon : one_step_muon.py ;
+• poids OU lents : slow_ou_tokens.py ;
+• figures du présent rapport : global_report_figures.py.
+
+Les agrégats numériques utilisés dans le texte sont data/spectral_self_attention/large_
+taxonomy_summary.json,
+small_step_final_results.json,
+mean_field_extensions/
+summary.json,
+one_step_muon/summary.json,
+multihead/frozen_probe_basins.json
+et
+slow_ou_tokens.json.
+
+B
+Table de lecture des signatures locales
+
+Objet
+Ce que font les petites
+différences
+Signature continue
+
+Point fixe stable
+elles diminuent toutes
+toutes les parties réelles sont
+négatives
+Selle ou répulseur
+au moins une grandit
+au moins une partie réelle est
+positive
+Spirale stable
+elles tournent en diminuant
+paire complexe à partie réelle
+négative
+Cycle stable
+une suit la phase, les autres
+diminuent
+un zéro, le reste négatif
+
+Tore à k phases
+k décalages persistent
+k zéros, le reste non positif
+Chaos
+une grandit, une suit le temps,
+d’autres diminuent
+positif, zéro, puis contraction
+
+Hyperchaos
+plusieurs différences
+grandissent indépendamment
+au moins deux taux positifs
+
+Une matrice non normale peut amplifier une perturbation pendant un temps limité même si tous
+ses taux asymptotiques sont négatifs. C’est pourquoi l’audit combine spectre local, trajectoires
+longues et perturbations répétées.
+
+Références
+
+[1] Claudio Altafini. Multistability of self-attention dynamics in transformers. arXiv preprint
+arXiv:2511.11553, 2025.
+
+[2] Valentin Castin, Pierre Ablin, José A. Carrillo, and Gabriel Peyré. A unified perspective on
+the dynamics of deep transformers. arXiv preprint arXiv:2501.18322, 2025.
+
+[3] Noboru Isobe, Daisuke Inoue, and Masaaki Imaizumi. Training-induced escape from token
+clustering in a mean-field formulation of transformers. arXiv preprint arXiv:2605.07772, 2026.
+
+19
+
+
+Dynamiques sphériques de Transformers
+MLP, cycles et beaucoup de tokens
+
+[4] Juno Kim, Eshaan Nichani, Denny Wu, Alberto Bietti, and Jason D. Lee. Sharp capacity
+scaling of spectral optimizers in learning associative memory. arXiv preprint arXiv:2603.26554,
+2026.
+
+[5] Christian Kuehn and Jaeyoung Yoon. Spectral selection in symmetric self-attention dynamics.
+arXiv preprint arXiv:2604.26085, 2026.
+
+[6] Alex Massucco, Leonardo Del Grande, Marcello Carioni, Christoph Brune, and Carola-Bibiane
+Schönlieb. Multi-headed transformer architectures as time-dependent wasserstein gradient
+flows. arXiv preprint arXiv:2605.18870, 2026.
+
+[7] Ayan Pendharkar. Gradient flow structure and quantitative dynamics of multi-head self-
+attention. arXiv preprint arXiv:2605.04279, 2026.
+
+[8] Hubert Ramsauer, Bernhard Schäfl, Johannes Lehner, Philipp Seidl, Michael Widrich, Thomas
+Adler, Lukas Gruber, Markus Holzleitner, Milena Pavlović, Geir Kjetil Sandve, Victor Greiff,
+David Kreil, Michael Kopp, Günter Klambauer, Johannes Brandstetter, and Sepp Hochreiter.
+Hopfield networks is all you need. In International Conference on Learning Representations,
+2021.
+
+[9] Philippe Rigollet. The mean-field dynamics of transformers. arXiv preprint arXiv:2512.01868,
+2025.
+
+[10] Luca Tiberi et al. Dissecting the interplay of attention paths in a statistical mechanics theory
+of transformers. arXiv preprint arXiv:2405.15926, 2024.
+
+[11] Shuche Wang, Fengzhuo Zhang, Jiaxiang Li, Cunxiao Du, Chao Du, Tianyu Pang, Zhuoran
+Yang, Mingyi Hong, and Vincent Y. F. Tan. Muon outperforms adam in tail-end associative
+memory learning. arXiv preprint arXiv:2509.26030, 2025.
+
+20
+
+

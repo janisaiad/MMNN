@@ -201,3 +201,37 @@ nonlinear, iteration-dependent learned preconditioner belongs to FCG, not
 standard PCG.  The present opportunity is different: implement the Krylov
 solver itself in-context and jointly condition its SPD preconditioner on the
 prompt.
+
+## Update from Neural Quadratic Forms (August 2026)
+
+The NQF normal forms sharpen the initialization policy but do not modify PCG.
+For full multi-head attention with \(Q,K,V,O\) all initialized at scale
+\(\varepsilon\), value/readout corrections enter the output at quadratic
+order while query-key routing enters at quartic order. A fully small MHA is
+therefore a poor local parameterization if the scientific object to learn is
+the prompt-dependent preconditioner direction.
+
+The decoder head is query-key-only: its values are fixed weak rows. In this
+case Q/K routing is already quadratic and has an order-\(\varepsilon\) loss
+gradient. This makes two first-principles initialization choices admissible:
+
+1. train Q/K with fixed nonzero values, as in the current head; or
+2. fix nonzero kernel-matched Q/K features and train only value/readout
+   residual channels.
+
+Initializing every attention block near zero and then claiming that NQF
+learns the preconditioner directions at leading order is not admissible.
+Neither is applying the NQF theorem through a rank-deficient QR at zero.
+
+NQF modes live in parameter order parameters over **training time**. PCG
+modes live in the eigensystem of \(P_\theta^{1/2}HP_\theta^{1/2}\) over
+**inference iterations**. The standard PCG theorem remains valid because the
+trained SPD preconditioner is frozen during each solve. A theorem equating
+the two mode families is open and is not needed for the decoder claim.
+
+The new mandatory diagnostics are implemented in
+`audit_nqf_attention_residual_corrections.py`: Taylor slopes, blockwise
+gradient slopes, the pre-QR QK normal-form remainder, and separate labels for
+full MHA and QK-only heads. The next PDE run should additionally log
+order-parameter eigenvalues during training and their overlap---not equality---
+with slow eigenvectors of the effective preconditioned operator.

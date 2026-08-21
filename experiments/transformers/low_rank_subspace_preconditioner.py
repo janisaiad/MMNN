@@ -17,6 +17,46 @@ import torch.nn as nn
 Tensor = torch.Tensor
 
 
+def qk_only_routing_nqf(
+    normalized_rows: Tensor,
+    key_weight: Tensor,
+    slot_queries: Tensor,
+) -> Tensor:
+    """Quadratic normal form of the learned routing before orthogonalization.
+
+    If both ``key_weight`` and ``slot_queries`` are scaled by ``epsilon``,
+    the exact softmax-routed rows equal this expression up to order
+    ``epsilon**4``.  Values are fixed to the prompt rows, so this is the
+    query-key-only attention normal form rather than the all-blocks-small
+    multi-head normal form.  The downstream QR is intentionally excluded:
+    QR is not smooth at a rank-deficient zero output.
+    """
+
+    if normalized_rows.ndim != 3:
+        raise ValueError("normalized rows must have shape [batch, rows, dimension]")
+    if key_weight.ndim != 2 or key_weight.shape[1] != normalized_rows.shape[-1]:
+        raise ValueError("key weight must have shape [head dimension, dimension]")
+    if slot_queries.ndim != 2 or slot_queries.shape[1] != key_weight.shape[0]:
+        raise ValueError("slot queries must have shape [slots, head dimension]")
+    mean = normalized_rows.mean(dim=1)
+    centered = normalized_rows - mean[:, None, :]
+    covariance = (
+        torch.einsum(
+            "bmi,bmj->bij",
+            centered,
+            centered,
+        )
+        / normalized_rows.shape[1]
+    )
+    correction = torch.einsum(
+        "bij,hj,sh->bsi",
+        covariance,
+        key_weight,
+        slot_queries,
+    ) / math.sqrt(key_weight.shape[0])
+    return mean[:, None, :] + correction
+
+
 @dataclass(frozen=True)
 class FactorizedSubspaceInverse:
     """SPD map that is exact on a recovered subspace and ridge on its complement."""
@@ -145,10 +185,13 @@ class OneHeadObservableSubspace(nn.Module):
     ) -> Tuple[FactorizedSubspaceInverse, Dict[str, Tensor]]:
         if equations.shape[1] < self.slots:
             raise ValueError("the prompt must contain at least as many rows as slots")
-        normalized_rows = equations / equations.norm(dim=-1, keepdim=True).clamp_min(1e-10)
+        normalized_rows = equations / equations.norm(dim=-1, keepdim=True).clamp_min(
+            1e-10
+        )
         keys = self.key(normalized_rows)
         scores = torch.einsum("sd,bmd->bsm", self.slot_queries, keys)
-        attention = torch.softmax(scores / math.sqrt(self.head_dimension), dim=-1)
+        logits = scores / math.sqrt(self.head_dimension)
+        attention = torch.softmax(logits, dim=-1)
         routed_rows = torch.einsum("bsm,bmk->bks", attention, normalized_rows)
         if side == "primal":
             raw_directions = routed_rows
@@ -166,6 +209,13 @@ class OneHeadObservableSubspace(nn.Module):
         )
         return inverse, {
             "attention": attention,
+            "logits": logits,
+            "routed_rows": routed_rows,
+            "routing_nqf": qk_only_routing_nqf(
+                normalized_rows,
+                self.key.weight,
+                self.slot_queries,
+            ).transpose(-1, -2),
             "directions": directions,
             "projected_cholesky": inverse.projected_cholesky,
         }

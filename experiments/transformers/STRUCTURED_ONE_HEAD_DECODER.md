@@ -18,6 +18,55 @@ prompt-dependent spectral information that is unavailable a priori.
 | PCG \(\alpha_\ell,\beta_\ell\) | computed exactly, not learned | prompt- and iteration-dependent Krylov coefficients |
 | MLP/FFN | absent | no unknown nonlinear map is needed |
 
+## NQF initialization audit: full MHA is not QK-only attention
+
+The local normal form depends on which blocks are small and trainable. For a
+full head
+
+\[
+o^\top V X\operatorname{softmax}(X^\top K^\top Qx/\sqrt{d_k}),
+\]
+
+scaling all of \(Q,K,V,o\) by \(\varepsilon\) gives an order-
+\(\varepsilon^2\) uniform-value term and an order-\(\varepsilon^4\) routed
+term. Consequently the loss gradients of \(V/O\) and \(Q/K\) are respectively
+orders \(\varepsilon\) and \(\varepsilon^3\) for an order-one residual.
+
+Our head is different: values are fixed to normalized weak rows and only the
+keys and slot queries are learned. Before QR,
+
+\[
+u_s=\bar g+\frac{1}{\sqrt{d_h}}\Sigma_gW_K^\top q_s
++O(\|(W_K,q_s)\|^4),
+\]
+
+so the prompt-covariance correction is quadratic and its Q/K loss gradient is
+order \(\varepsilon\). This is exactly the query-key-only NQF normal form of
+Liu Ziyin, Xu, Poggio, and Chuang (2026), not the full-MHA normal form.
+
+The statement stops before orthogonalization. QR is not smooth at a
+rank-deficient zero matrix, and NQF does not turn QR, Ritz, Cholesky, scalar
+reductions, or PCG divisions into learned operations. The production head
+also starts from a nonzero identity-like key map and nonzero queries, rather
+than the all-zero asymptotic point.
+
+The focused float64 audit in
+`audit_nqf_attention_residual_corrections.py` recovered slopes
+\(2.0000,4.0001\) for the total/routed full-MHA output,
+\(3.0001,1.0001\) for its QK/VO gradients, and \(2.0000,1.0000\) for the
+QK-only routed output/gradient. The decoder's pre-QR Taylor remainder has
+slope \(4.0000\). These are trainability diagnostics near initialization,
+not final PDE-error claims.
+
+| Claim | Status |
+|---|---|
+| full-MHA and QK-only Taylor orders | theorem/direct expansion, numerically checked |
+| pre-QR decoder covariance normal form | proved and checked |
+| exact QR--Ritz--PCG algebra | unchanged and exact |
+| complete decoder is an NQF at zero | not proved; QR degeneracy violates the smooth setup |
+| NQF modes equal PCG Krylov modes | not claimed; requires a new alignment theorem |
+| GLV switch times on generic PDE prompts | open unless commutativity/isotropy is established |
+
 ## One head, several spectral slots
 
 The number of heads and the number of learned directions are different
@@ -97,6 +146,11 @@ parameters belong to the single preconditioner head.
    \(r^2-(1+\beta-\alpha\lambda)r+\beta\) on every evaluation prompt.
 5. **End to end:** unfreeze the encoder only after the decoder beats the
    stationary baselines in solver isolation.
+6. **Initialization blocks:** report Q/K and V/O gradient norms versus
+   initialization scale, and keep full MHA separate from fixed-value QK-only
+   attention.
+7. **Two spectra:** track NQF order-parameter modes over training and the
+   preconditioned PDE spectrum over inference without identifying them.
 
 The key scientific claim is therefore not that a generic FFN happens to mimic
 an inverse.  It is that one attention head identifies useful prompt-dependent

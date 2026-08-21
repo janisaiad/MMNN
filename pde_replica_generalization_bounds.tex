@@ -844,6 +844,43 @@ timescale separation is controlled by the data covariance
 anisotropic covariates lead to learned preconditioned gradient descent
 \cite{he2025demystified}.
 
+\subsection{NQF block audit and its boundary}
+
+The attention normal form depends on which parameters are trained near zero
+\cite{ziyin2026nqf}.  For a full multi-head term
+\[
+ v^\top W^V X\operatorname{softmax}
+ \left(X^\top(W^K)^\top W^Qx/\sqrt{d_k}\right),
+\]
+scaling all four query, key, value, and readout blocks by $\varepsilon$
+produces a quadratic uniform-average term, whereas prompt-dependent Q/K
+routing first appears at quartic order.  Its Q/K loss gradient is therefore
+$O(\varepsilon^3)$ for an order-one residual, compared with
+$O(\varepsilon)$ for V/readout.
+
+For the query--key-only decoder with fixed nonzero values $c$, the leading
+trainable correction is instead
+\[
+ \frac{\varepsilon^2}{\sqrt{d_k}}
+ (\Sigma_Xc)^\top(W^K)^\top W^Qx,
+ \qquad
+ \Sigma_X=XX^\top/N-\bar x\bar x^\top,
+\]
+so both Q and K receive $O(\varepsilon)$ gradients.  This is the appropriate
+local model for a head that routes fixed weak-form values into preconditioner
+directions.  A full MHA with every block small is not equivalent to it.
+
+The NQF order parameter $M=WW^\top$ describes activation of parameter modes
+during training.  It is not the PCG residual polynomial, whose modes are those
+of the promptwise operator $B_\theta^{1/2}HB_\theta^{1/2}$ during inference.
+The generalized Lotka--Volterra reduction additionally assumes commuting
+structure matrices (or a specified isotropic case); the GP-forced PDE prompt
+law does not establish that condition.  Thus NQF supplies blockwise
+initialization predictions and diagnostics, while the HB/Chebyshev/PCG
+convergence statements and the replica risk calculation retain their existing
+hypotheses.  In particular, once $B_\theta$ is frozen within a solve, the PCG
+interpretation is unchanged.
+
 For GP-forced PDE prompts, the ordering of the stages is governed by the
 spectrum of the exact observable normal statistic
 \[
@@ -1583,6 +1620,13 @@ Jianliang He, Xintian Pan, Siyu Chen, and Zhuoran Yang.
 Mechanistic Interpretability of Multi-Head Softmax Attention.
 \newblock \emph{ICML 2025 / arXiv:2503.12734}, 2025.
 \newblock \url{https://arxiv.org/abs/2503.12734}.
+
+\bibitem{ziyin2026nqf}
+Liu Ziyin, Yizhou Xu, Tomaso Poggio, and Isaac Chuang.
+\newblock Neural Quadratic Forms: A Unified Minimal Model for Sudden Learning
+and Scaling Laws.
+\newblock \emph{arXiv:2608.13335}, 2026.
+\newblock \url{https://arxiv.org/abs/2608.13335}.
 \end{thebibliography}
 
 \end{document}

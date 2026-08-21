@@ -1,0 +1,154 @@
+{
+  "architecture": "parallel posterior-mean and posterior-covariance recurrences with shared fixed softmax GP kernel, population factor, and spectral controller",
+  "physics": {
+    "n_sensors": 24,
+    "grid_size": 28,
+    "domain_half_width": 0.8,
+    "receiver_radius": 2.2,
+    "source_radius": 2.4,
+    "wavenumber": 8.0,
+    "boundary_points_per_component": 16,
+    "kernel_gamma": 1.0,
+    "kernel_mix": 0.2,
+    "receiver_noise_correlation": 0.18
+  },
+  "scenarios": [
+    {
+      "name": "one obstacle",
+      "count": 1,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.1,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "ID"
+    },
+    {
+      "name": "two obstacles",
+      "count": 2,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.1,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "ID"
+    },
+    {
+      "name": "four obstacles",
+      "count": 4,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "ID"
+    },
+    {
+      "name": "six obstacles",
+      "count": 6,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "OOD count"
+    },
+    {
+      "name": "three stars",
+      "count": 3,
+      "mode": "star",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "OOD shape"
+    },
+    {
+      "name": "30 percent noise",
+      "count": 4,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.3,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "OOD noise"
+    },
+    {
+      "name": "180 degree aperture",
+      "count": 3,
+      "mode": "mixed",
+      "wavenumber": 8.0,
+      "noise": 0.15,
+      "aperture": 180.0,
+      "jitter": 0.2,
+      "category": "OOD aperture"
+    },
+    {
+      "name": "wavenumber 12",
+      "count": 3,
+      "mode": "mixed",
+      "wavenumber": 12.0,
+      "noise": 0.15,
+      "aperture": 360.0,
+      "jitter": 0.05,
+      "category": "OOD frequency"
+    }
+  ],
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "steps": 1200,
+  "depth": 64,
+  "eval_tasks_per_seed_scenario": 48,
+  "parameter_counts": {
+    "richardson": 733731,
+    "heavy_ball": 733731,
+    "chebyshev": 733731
+  },
+  "runtime_ms_batch8": {
+    "17": {
+      "learned-Richardson": 23.903418498230167,
+      "learned-HB": 23.899262250051834,
+      "learned-Chebyshev": 24.854058100027032,
+      "global-safe-HB": 18.46136514795944,
+      "population-safe-HB": 23.927402449771762,
+      "spectrum-HB": 23.917774550500326,
+      "identity-CG": 23.575450549833477,
+      "population-PCG": 29.059594648424536,
+      "exact": 11.102272849529982
+    },
+    "29": {
+      "learned-Richardson": 7.2679836477618665,
+      "learned-HB": 7.336984551511705,
+      "learned-Chebyshev": 9.531031298683956,
+      "global-safe-HB": 6.66963649855461,
+      "population-safe-HB": 7.337188901146874,
+      "spectrum-HB": 7.328833799692802,
+      "identity-CG": 13.157733000116423,
+      "population-PCG": 13.850256201112643,
+      "exact": 1.8237749492982402
+    },
+    "43": {
+      "learned-Richardson": 7.233277149498463,
+      "learned-HB": 7.311503848177381,
+      "learned-Chebyshev": 10.735794651554897,
+      "global-safe-HB": 7.379525850410573,
+      "population-safe-HB": 8.31005015061237,
+      "spectrum-HB": 8.33213479781989,
+      "identity-CG": 15.051805751863867,
+      "population-PCG": 16.440581899951212,
+      "exact": 1.9097341981250793
+    }
+  },
+  "elapsed_seconds": 737.7742930439999,
+  "resumed_checkpoints": true,
+  "optimization_safeguard": "rollback to the last finite state and clear optimizer state after any nonfinite loss, gradient, or parameter update",
+  "paper_alignment": {
+    "mean_rhs": "Phi",
+    "covariance_rhs": "N K",
+    "shared_system": "N K N* + I",
+    "posterior_covariance": "K - K N* (N K N* + I)^-1 N K"
+  }
+}

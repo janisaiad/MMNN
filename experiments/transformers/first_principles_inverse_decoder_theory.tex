@@ -2,6 +2,7 @@
 \usepackage[a4paper,margin=2.6cm]{geometry}
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{booktabs}
+\usepackage{hyperref}
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
@@ -166,6 +167,142 @@ $\varepsilon/\lambda$.  This proves the first display.  Finally,
 \]
 and the eigenvalue and condition-number claims follow from Weyl's inequality.
 \end{proof}
+
+\section{Near-initialization trainability from neural quadratic forms}
+
+The local training theory depends on which attention blocks are trainable.
+This distinction is independent of the numerical controller.  We use the
+neural quadratic form (NQF) normal forms of
+\cite{ziyin2026neuralquadraticforms}, including their separate propositions
+for full multi-head attention and query--key-only attention.
+
+For one full attention head, write
+\begin{equation}
+ f_{\rm full}(X,x)
+ =o^\top V X\,\operatorname{softmax}\!\left(
+ \frac{X^\top K^\top Qx}{\sqrt{d_k}}
+ \right).
+ \label{eq:full-attention-nqf}
+\end{equation}
+Let $\bar x=X\mathbf 1/N$ and
+$\Sigma_X=XX^\top/N-\bar x\bar x^\top$.  If all four blocks are scaled from
+fixed directions as $(Q,K,V,o)\mapsto
+\varepsilon(Q,K,V,o)$, direct Taylor expansion gives
+\begin{equation}
+ f_{\rm full}(\varepsilon)
+ =\varepsilon^2 o^\top V\bar x
+ +\frac{\varepsilon^4}{\sqrt{d_k}}
+ o^\top V\Sigma_XK^\top Qx+O(\varepsilon^6).
+ \label{eq:full-attention-orders}
+\end{equation}
+Thus value/readout learning is present in the quadratic NQF, but learned
+query--key routing is not: it first affects the output at quartic order.  If a
+loss residual is $O(1)$, its $V,o$ gradients are $O(\varepsilon)$ whereas its
+$Q,K$ gradients are $O(\varepsilon^3)$.
+
+For query--key-only attention with a fixed nonzero value/readout vector $c$,
+\begin{equation}
+ f_{\rm QK}(X,x)
+ =c^\top X\,\operatorname{softmax}\!\left(
+ \frac{X^\top K^\top Qx}{\sqrt{d_k}}
+ \right),
+\end{equation}
+the normal form is instead
+\begin{equation}
+ f_{\rm QK}(\varepsilon)
+ =c^\top\bar x
+ +\frac{\varepsilon^2}{\sqrt{d_k}}
+ (\Sigma_Xc)^\top K^\top Qx+O(\varepsilon^4).
+ \label{eq:qk-only-orders}
+\end{equation}
+Now prompt-covariance routing is quadratic and both $Q,K$ receive
+$O(\varepsilon)$ residual gradients.  The statement ``query and key enter at
+quartic order'' is therefore true for the all-blocks-small model
+\eqref{eq:full-attention-nqf}, not for the fixed-value head used by our
+decoder.
+
+\begin{proposition}[Normal form of the decoder head before QR]
+Let $v_i=g_i/\|g_i\|$ be the fixed value rows, let
+$\bar v=m^{-1}\sum_i v_i$, and let
+$\Sigma_v=m^{-1}\sum_i(v_i-\bar v)(v_i-\bar v)^\top$.  For slot $s$, the raw
+routed row of \texttt{OneHeadObservableSubspace} satisfies, when both its key
+matrix and slot query are scaled by $\varepsilon$,
+\begin{equation}
+ u_s(\varepsilon)
+ =\bar v+\frac{\varepsilon^2}{\sqrt{d_h}}
+ \Sigma_vW_K^\top q_s+O(\varepsilon^4).
+ \label{eq:decoder-qk-nqf}
+\end{equation}
+Hence its learned residual correction is a prompt-covariance direction at
+quadratic order.
+\end{proposition}
+\begin{proof}
+The logits are
+$\varepsilon^2q_s^\top W_Kv_i/\sqrt{d_h}$.  Applying the softmax Jacobian
+$J(0)=I/m-\mathbf1\mathbf1^\top/m^2$ and summing the fixed values gives
+\eqref{eq:decoder-qk-nqf}; the next softmax term is quartic in
+$\varepsilon$.
+\end{proof}
+
+There are two boundaries.  First, the production head initializes $W_K$ near
+an identity embedding and the slot queries at nonzero scale, so it is not in
+the all-zero asymptotic regime; this deliberately avoids a vanishing routing
+signal.  Second, the reduced QR is not smooth at a rank-deficient zero raw
+output.  Equation~\eqref{eq:decoder-qk-nqf} therefore certifies the
+\emph{pre-QR routing map}, not an NQF expansion of QR, the Ritz solve, or the
+complete decoder.  Those downstream maps remain fixed exact algebra.
+
+\paragraph{Training modes are not Krylov modes.}
+The NQF order parameter $M=WW^\top$ describes how parameter features switch
+on over optimization time.  PCG residual modes are eigencomponents of
+$B_Q^{1/2}HB_Q^{1/2}$ over inference iterations.  Identifying the two would
+require an additional alignment theorem.  Moreover, the generalized
+Lotka--Volterra reduction in \cite{ziyin2026neuralquadraticforms} requires
+commuting structure matrices (or a stated isotropic special case); generic
+PDE prompts do not satisfy that hypothesis.  NQF therefore changes our
+initialization and block-gradient diagnostics, but not the PCG recurrence or
+its convergence proof once the prompt-fixed SPD $B_Q$ has been constructed.
+
+\paragraph{Focused audit.}
+The script
+\texttt{audit\_nqf\_attention\_residual\_corrections.py} measures the local
+orders in float64 on common synthetic prompts.  The fitted slopes are
+$2.0000$ for the total full-MHA output, $4.0001$ for its routed part,
+$3.0001$ and $1.0001$ for its Q/K and V/O loss gradients, and $2.0000$ and
+$1.0000$ for the QK-only routed output and Q/K gradient.  The decoder's
+pre-QR correction has slope $2.0000$, and the remainder after
+\eqref{eq:decoder-qk-nqf} has slope $4.0000$.  These checks validate Taylor
+orders, not end-to-end solver superiority.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{p{0.34\linewidth}p{0.18\linewidth}p{0.38\linewidth}}
+\toprule
+Statement & Status & Consequence \\
+\midrule
+Full MHA: V/O quadratic, Q/K routing quartic at all-blocks-small initialization
+& imported theorem/direct expansion & do not claim leading-order learned
+routing from a fully small MHA \\
+QK-only fixed-value normal form and \eqref{eq:decoder-qk-nqf}
+& imported theorem/direct proof & prompt-covariance residual correction is
+locally trainable \\
+Exact QR--Ritz SPD construction and fixed-preconditioner PCG
+& proved above/standard PCG & numerical interpretation and convergence are
+unchanged by NQF \\
+NQF closure for the complete QR--Ritz--PCG decoder
+& not established & QR at zero and guarded quotients lie outside the cited
+smooth NQF theorem \\
+Equality of NQF activation modes and PCG Krylov modes
+& open; not claimed & track both spectra and their overlap separately \\
+GLV switch times for generic PDE prompts
+& conditional/open & require commuting structure matrices or a proved
+isotropic reduction \\
+\bottomrule
+\end{tabular}
+\caption{Theorem-status ledger after the NQF audit.}
+\label{tab:nqf-status}
+\end{table}
 
 \section{Three exact tied decoder cells}
 
@@ -419,5 +556,14 @@ The method cannot improve upon an unlimited exact solver that receives the
 true $G$.  Its legitimate target is lower error at fixed depth/HVP budget by
 amortizing subspace recovery across tasks while remaining in-context on each
 new prompt.
+
+\begin{thebibliography}{1}
+\bibitem{ziyin2026neuralquadraticforms}
+Liu Ziyin, Yizhou Xu, Tomaso Poggio, and Isaac Chuang.
+\newblock Neural Quadratic Forms: A Unified Minimal Model for Sudden Learning
+and Scaling Laws.
+\newblock \emph{arXiv:2608.13335}, 2026.
+\newblock \url{https://arxiv.org/abs/2608.13335}.
+\end{thebibliography}
 
 \end{document}

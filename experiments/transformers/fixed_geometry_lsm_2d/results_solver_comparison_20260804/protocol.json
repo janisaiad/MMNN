@@ -1,0 +1,29 @@
+{
+  "description": "same fixed LSM encoder/decoder; recurrent solver ablation only",
+  "physics": {
+    "n_angles": 32,
+    "grid_size": 32,
+    "domain_half_width": 0.8,
+    "wavenumber": 8.0,
+    "noise_rel": 0.08,
+    "ridge_rel": 0.01,
+    "kernel_gamma": 1.0,
+    "kernel_mix": 0.2
+  },
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "steps": 1500,
+  "train_depth": 20,
+  "eval_tasks_per_seed_and_family": 192,
+  "trainable_parameter_counts": {
+    "richardson": 1346,
+    "heavy_ball": 1346,
+    "chebyshev": 1346,
+    "pcg": 1346
+  },
+  "loss": "balanced ranking + 0.20 log(1 + relative sampling residual)",
+  "elapsed_seconds": 216.12578576803207
+}

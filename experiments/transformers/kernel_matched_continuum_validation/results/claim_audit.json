@@ -1,0 +1,72 @@
+{
+  "claims": [
+    {
+      "claim": "Quadrature-aware RBF softmax exactly realizes the prescribed normalized kernel.",
+      "evidence": "maximum relative identity residual 7.859e-16",
+      "scope": "fixed model-chosen RBF length scale and quadrature rule",
+      "status": "verified"
+    },
+    {
+      "claim": "The normalized nonlinear kernel may use the linear-Wishart MP law.",
+      "evidence": "MP passed only on the separate linear control; nonlinear one- and two-resolvents were estimated directly.",
+      "scope": "no closed nonlinear-kernel deterministic equivalent is claimed",
+      "status": "rejected"
+    },
+    {
+      "claim": "The kernel-specific one- and two-resolvent statistics stabilize with size.",
+      "evidence": "penultimate/coarsest discrepancy ratio 0.1494",
+      "scope": "sampled sizes and negative-real resolvent probes only",
+      "status": "verified"
+    },
+    {
+      "claim": "FS/RRS reduced DMFT and resource exponents match the derived laws.",
+      "evidence": "fitted slopes, standard errors, finite-window tolerances, and R2 are recorded in theory/summary.json",
+      "scope": "reduced commuting/random-rotation model, not a closed DMFT for arbitrary softmax kernels",
+      "status": "verified"
+    },
+    {
+      "claim": "The Ritz spectral certificate and fixed-polynomial trace risk hold numerically.",
+      "evidence": "spectral violations 0; trace-risk max relative error 0.007222",
+      "scope": "all tested ranks, perturbations, seeds, and fixed HB/Chebyshev depths",
+      "status": "verified"
+    },
+    {
+      "claim": "Quadrature-aware features and Ritz metrics transfer covariantly across meshes.",
+      "evidence": "metric slope 2; unweighted bias ratio 4.037e+04",
+      "scope": "nonuniform periodic-grid lift experiment",
+      "status": "verified"
+    },
+    {
+      "claim": "The contextual kernel-Ritz metric materially reduces elliptic posterior conditioning.",
+      "evidence": "largest-grid condition reduction 885.7x; contextual condition 1.017",
+      "scope": "variable-coefficient 2-D elliptic inverse problem through N=16384",
+      "status": "verified"
+    },
+    {
+      "claim": "A global stored eigenspace is interchangeable with prompt-conditioned geometry.",
+      "evidence": "global/contextual residual ratio at 8 HVP 2.222e+13",
+      "scope": "task-rotated latent covariance family",
+      "status": "rejected"
+    },
+    {
+      "claim": "Kernel-HB universally outperforms exact Woodbury.",
+      "evidence": "at m=512, one-query Woodbury/kernel total ratio 0.2137",
+      "scope": "Woodbury remains the preferred baseline below the measured long-context crossover",
+      "status": "rejected"
+    },
+    {
+      "claim": "Kernel-HB beats Woodbury in a statistically separated long-context, few-query regime.",
+      "evidence": "nonoverlapping bootstrap intervals at m=2048,4096",
+      "scope": "fixed low effective rank, one context, one query; setup included",
+      "status": "verified"
+    },
+    {
+      "claim": "Kernel-HB is faster than dense posterior Cholesky in the largest tested context.",
+      "evidence": "dense/kernel median total ratio 12.82",
+      "scope": "N=16384, m=4096, one query, setup included",
+      "status": "verified"
+    }
+  ],
+  "passed_checks": 45,
+  "total_checks": 46
+}

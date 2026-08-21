@@ -1,0 +1,54 @@
+{
+  "all_checks_pass": true,
+  "checks": {
+    "decoder_pre_qr_nqf_remainder_rms": true,
+    "decoder_pre_qr_routing_rms": true,
+    "full_qk_loss_gradient_norm": true,
+    "full_routing_output_rms": true,
+    "full_total_output_rms": true,
+    "full_vo_loss_gradient_norm": true,
+    "qk_only_loss_gradient_norm": true,
+    "qk_only_routing_output_rms": true
+  },
+  "config": {
+    "batch_size": 256,
+    "epsilon_count": 12,
+    "epsilon_max_power": -0.7,
+    "epsilon_min_power": -4.0,
+    "heads": 3,
+    "input_dimension": 7,
+    "key_dimension": 5,
+    "seed": 260813335,
+    "sequence_length": 11,
+    "slots": 4,
+    "value_dimension": 6
+  },
+  "expected_slopes": {
+    "decoder_pre_qr_nqf_remainder_rms": 4.0,
+    "decoder_pre_qr_routing_rms": 2.0,
+    "full_qk_loss_gradient_norm": 3.0,
+    "full_routing_output_rms": 4.0,
+    "full_total_output_rms": 2.0,
+    "full_vo_loss_gradient_norm": 1.0,
+    "qk_only_loss_gradient_norm": 1.0,
+    "qk_only_routing_output_rms": 2.0
+  },
+  "interpretation": {
+    "decoder_head": "The fixed-value pre-QR routing in OneHeadObservableSubspace has the query-key-only NQF. QR/Cholesky/PCG are outside this local smooth normal form and remain exact primitives.",
+    "full_mha": "V/readout receive the quadratic-order residual signal; Q/K routing is delayed to quartic output order when all four blocks are small.",
+    "query_key_only": "With fixed nonzero values/readout, Q/K routing is itself quadratic and receives an order-epsilon loss gradient."
+  },
+  "measured_slopes": {
+    "decoder_pre_qr_nqf_remainder_rms": 4.00000224827291,
+    "decoder_pre_qr_routing_rms": 1.999996252129297,
+    "full_qk_loss_gradient_norm": 3.000136413636092,
+    "full_routing_output_rms": 4.000060437746133,
+    "full_total_output_rms": 1.9999981023799236,
+    "full_vo_loss_gradient_norm": 1.0000681094451158,
+    "qk_only_loss_gradient_norm": 1.0000427453264025,
+    "qk_only_routing_output_rms": 2.000019113487673
+  },
+  "slope_tolerance": 0.2,
+  "smallest_epsilon_full_qk_to_vo_gradient_ratio": 9.085731160750149e-10,
+  "smallest_epsilon_qk_only_to_full_qk_gradient_ratio": 513756765.0352972
+}

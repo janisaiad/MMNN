@@ -1,0 +1,47 @@
+{
+  "description": "larger fixed-kernel PCG foundation controller with analytic GP UQ",
+  "physics": {
+    "n_angles": 32,
+    "grid_size": 32,
+    "domain_half_width": 0.8,
+    "wavenumber": 8.0,
+    "noise_rel": 0.08,
+    "ridge_rel": 0.01,
+    "kernel_gamma": 1.0,
+    "kernel_mix": 0.2
+  },
+  "training_wavenumbers": [
+    6.0,
+    8.0,
+    10.0
+  ],
+  "training_obstacle_counts": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "training_noise_range": [
+    0.02,
+    0.2
+  ],
+  "training_apertures_degrees": [
+    240.0,
+    360.0
+  ],
+  "seeds": [
+    17
+  ],
+  "steps": 2200,
+  "depth": 16,
+  "batch_size": 12,
+  "eval_tasks_per_seed_and_scenario": 16,
+  "calibration_tasks_per_seed": 96,
+  "trainable_parameter_counts": {
+    "small": 1346,
+    "foundation": 1579784
+  },
+  "fixed_kernel": "von Mises softmax, gamma=1, mix=0.2; no learned temperature",
+  "uq": "proper-complex GP posterior quadratic moments plus log-normal score match",
+  "elapsed_seconds": 254.8531872809981
+}
