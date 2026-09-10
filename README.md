@@ -2,6 +2,16 @@
 
 This is the github repo for the paper "**Structured and Balanced Multi-Component and Multi-Layer Neural Networks**" [https://arxiv.org/abs/2407.00765](https://arxiv.org/abs/2407.00765).
 
+## ICL-PDE research subproject
+
+The transformer, nonlinear-PDE, and learned-preconditioning research line is
+maintained as the [`ICL-PDE`](ICL-PDE) submodule.  The retained headline result
+uses masked coefficient attention to predict an SPD preconditioner for an exact
+Newton--PCG solve of a nonlocal semilinear elliptic PDE.  At 12 exact
+Jacobian--vector products, its held-out tangent-solve error is 1/55 of
+base-preconditioned PCG.  The subproject records the full equation,
+architecture, controls, raw runs, and limitations.
+
 ## Abstract
 
 
@@ -259,7 +269,6 @@ For complete analysis, see [`experiments/table/FREQUENCY_BENCHMARK_COMPLETE_SUMM
 If you're using macOS or Python 3, replace `pip` with `pip3` in line 1 of ```launch.sh```
 
 Replace with your project folder name (which means the name of the library you are deving) in :```tests/test_env.py: ```
-
 
 
 
