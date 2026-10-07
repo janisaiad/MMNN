@@ -86,7 +86,8 @@ Only $Q$ is learned.  Orthonormalization, the projected matrix, and its small
 Cholesky solve are fixed algebraic operations.
 
 \begin{proposition}[Positivity and factorized cost]
-$B_Q$ is SPD.  After an $O(Ks^2+s^3)$ construction, its application costs
+$B_Q$ is SPD.  Its construction requires $s$ applications of $H$, followed
+by $O(Ks^2+s^3)$ thin-matrix arithmetic.  Each application of $B_Q$ costs
 $O(Ks+s^2)$ and does not require a dense $K\times K$ matrix.
 \end{proposition}
 \begin{proof}
@@ -96,8 +97,9 @@ Every $x$ decomposes uniquely as $x=Qa+x_\perp$.  Equation
  x^\top B_Qx=\lambda^{-1}\|x_\perp\|^2
  +a^\top(Q^\top H Q)^{-1}a>0
 \]
-for $x\ne0$.  The stated cost follows by applying the two thin factors and
-solving the fixed $s\times s$ Cholesky system.
+for $x\ne0$.  The construction forms $HQ$ and $Q^\top HQ$, then factors the
+resulting $s\times s$ matrix.  An application uses the two thin factors and
+one Cholesky solve of dimension $s$.
 \end{proof}
 
 \begin{theorem}[Exact recovery gives the exact inverse]
@@ -252,16 +254,16 @@ output.  Equation~\eqref{eq:decoder-qk-nqf} therefore certifies the
 \emph{pre-QR routing map}, not an NQF expansion of QR, the Ritz solve, or the
 complete decoder.  Those downstream maps remain fixed exact algebra.
 
-\paragraph{Training modes are not Krylov modes.}
+\paragraph{Training and Krylov mode coordinates.}
 The NQF order parameter $M=WW^\top$ describes how parameter features switch
 on over optimization time.  PCG residual modes are eigencomponents of
-$B_Q^{1/2}HB_Q^{1/2}$ over inference iterations.  Identifying the two would
-require an additional alignment theorem.  Moreover, the generalized
+$B_Q^{1/2}HB_Q^{1/2}$ over inference iterations.  An identification of these
+modes would require an additional alignment theorem.  Moreover, the generalized
 Lotka--Volterra reduction in \cite{ziyin2026neuralquadraticforms} requires
 commuting structure matrices (or a stated isotropic special case); generic
-PDE prompts do not satisfy that hypothesis.  NQF therefore changes our
-initialization and block-gradient diagnostics, but not the PCG recurrence or
-its convergence proof once the prompt-fixed SPD $B_Q$ has been constructed.
+PDE prompts do not satisfy that hypothesis.  NQF therefore gives
+initialization and block-gradient predictions.  The PCG recurrence and its
+convergence proof depend only on the prompt-fixed SPD operator $B_Q$.
 
 \paragraph{Focused audit.}
 The script
@@ -401,8 +403,11 @@ event $[\mu_{\rm true},L_{\rm true}]\subseteq
 
 \paragraph{Strict loop form versus compiled schedule.}
 The strict recurrent realization stores
-$[Z_\ell,Z_{\ell-1},\alpha_\ell,\beta_\ell]$ and applies one tied vector block
-plus the exact scalar recurrence above.  Equivalently, let
+\[
+ [Z_\ell,Z_{\ell-1},\alpha_\ell,\beta_\ell]
+\]
+and applies one tied vector block plus the exact scalar recurrence above.
+Equivalently, let
 $q=h^2/4$ and let $r_\pm$ be the roots of $r^2-dr+q=0$.  If
 $t=r_-/r_+$, then all layer weights can be constructed simultaneously as
 \[
@@ -413,17 +418,17 @@ $t=r_-/r_+$, then all layer weights can be constructed simultaneously as
  \qquad
  \beta_\ell=q\alpha_{\ell-1}\alpha_\ell.
 \]
-This closed form is the exact solution of the scalar-token recurrence.  It is
-a compilation optimization and does not turn the MLP into an approximation of
-solver arithmetic.
+This is the exact solution of the scalar-token recurrence and may be compiled
+before the vector iterations.  The MLP, when present, predicts only the
+spectral interval.
 
 \paragraph{When the interval head is genuinely in-context.}
 Let $s(\mathcal C)$ be fixed invariant reductions of the prompt-induced
 effective operator and let
 $(\widehat\mu,\widehat L)=\Phi_\psi(s(\mathcal C))$.  The meta-parameters
 $\psi$ are frozen at test time, but a new prompt changes the interval and hence
-the entire exact Chebyshev weight schedule.  This is in-context conditioning,
-not test-time optimization.  A necessary causal audit compares the conditioned
+the entire exact Chebyshev weight schedule.  This is prompt-dependent inference
+with frozen meta-parameters.  A causal audit compares the conditioned
 head with (i) prompt features permuted between tasks, (ii) a prompt-independent
 interval calibrated on disjoint tasks, and (iii) exact spectral endpoints.
 If permutation does not hurt and the constant control is indistinguishable,
@@ -481,9 +486,10 @@ The remaining claim is the minimax property of shifted and scaled Chebyshev
 polynomials.
 \end{proof}
 
-Heavy--Ball therefore cannot dominate exact PCG in error per HVP when both use
-the same learned preconditioner.  It is selected as the main architecture when
-its error is practically equivalent while its macro-block is cheaper.  Our
+Galerkin optimality precludes a uniform improvement over exact PCG in error
+per HVP when both methods use the same learned preconditioner.  Heavy--Ball is
+selected when its error is practically equivalent and its macro-block is
+cheaper.  Our
 pre-registered rule is to retain Heavy--Ball when its \emph{end-to-end} risk is
 at most $10\%$ above PCG (or their confidence intervals overlap) and its
 implemented solve time is lower.  A ratio of decoder-only errors is not used
@@ -493,9 +499,8 @@ encoder/statistical error floor.  Learned preconditioners are crossed between
 controllers to prevent a solver-specific head from invalidating this
 comparison.
 
-The certified hybrid strengthens this population-level selection rule.  It
-keeps HB on prompts whose measured final residual is below tolerance and
-inherits the PCG output on every rejected prompt.  Its cost is one final HVP
+The certified hybrid applies HB to prompts whose final residual is below
+tolerance and uses PCG on the remaining prompts.  Its cost is one final HVP
 for certification plus the empirical fallback rate times the PCG cost; this
 rate, rather than a claim that HB dominates PCG per HVP, must be reported.
 On parallel hardware this arithmetic count is not a latency guarantee:
@@ -510,8 +515,7 @@ solver algebra and requires no spectral MLP at inference.  Its admissibility
 is still decided by the same end-to-end non-inferiority rule on independent
 prompts, not by the training objective itself.
 
-Combining this theorem with \eqref{eq:kappa-transfer} gives the desired causal
-chain
+Combining this theorem with \eqref{eq:kappa-transfer} gives
 \begin{align*}
  \text{prompt subspace error}
  &\longrightarrow \text{preconditioner error}

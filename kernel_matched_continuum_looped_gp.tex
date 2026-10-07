@@ -70,13 +70,14 @@ Scaling Laws and Discretization-Covariant Posterior Geometry}
 
 \begin{abstract}
 We develop a theory of nonlinear looped attention for Gaussian-process and
-kernel least-squares regression in function space.  The organizing principle
-is that the attention nonlinearity is prescribed by the covariance kernel: it
-is a modelling choice, not a temperature learned from data.  Exponential
-softmax scores realize normalized strictly positive kernels, including the
-Gaussian radial basis kernel after a norm correction; signed positive
-semidefinite kernels instead require an explicit Mercer feature map.  In both
-cases quadrature weights are part of attention, so the discrete layer
+kernel least-squares regression in function space. For any strictly positive
+kernel \(\kappa\), softmax applied to \(\log\kappa\) realizes the corresponding
+row-normalized kernel operator; the kernel dependence lies in the score,
+quadrature measure, and normalization. The Gaussian radial basis kernel
+admits the usual bilinear score after a norm correction. Negative kernel
+values cannot be represented by positive softmax weights; we use an explicit
+feature contraction for kernels with zeros or signs. In both cases quadrature
+weights are part of attention, so the discrete layer
 approximates a continuum integral operator rather than the sampling density.
 
 The nonlinear attention block extracts a prompt-dependent finite-dimensional
@@ -97,9 +98,9 @@ regression to kernel posterior operators.  We finally specialize the
 construction to linear Bayesian inverse problems and to local
 Gauss--Newton--Laplace subproblems for nonlinear PDEs.  No numerical algebra is
 learned: attention learns the posterior geometry, and exact looping dynamics
-perform inference.  A failure-preserving validation campaign verifies the
-spectral certificates, reduced RMT/DMFT scaling laws, and nonuniform-mesh
-transfer.  On a variable-coefficient elliptic inverse problem with
+perform inference. Numerical experiments test the spectral bounds, reduced
+RMT/DMFT predictions, and nonuniform-mesh transfer. On a
+variable-coefficient elliptic inverse problem with
 $N=16384$ unknowns and a low-rank-plus-floor latent covariance, the
 setup-inclusive one-query time at context length $m=4096$ is $10.90$ ms for
 kernel--Ritz Heavy--Ball, $24.03$ ms for exact Woodbury, and $139.79$ ms for
@@ -115,44 +116,34 @@ operator.  This observation has motivated interpretations of linear
 self-attention as gradient descent or preconditioned least squares
 \citep{vonoswald2023transformers,akyurek2023learning,garg2022what} and a recent
 theory of how depth, width, context, and optimization time interact in
-in-context linear regression \citep{bordelon2026scaling}.  The linear model is
-deliberately transparent, but it leaves open two questions that are essential
-for Gaussian-process (GP) regression and inverse PDEs.  Which nonlinearity
-should replace the Euclidean covariance contraction, and how can the resulting
-model represent one operator independently of the points or mesh on which its
-context happens to be observed?
+in-context linear regression \citep{bordelon2026scaling}. For
+Gaussian-process (GP) regression and inverse PDEs, the attention operator must
+encode a prescribed kernel integral and remain consistent when the context is
+sampled on a different point cloud or mesh.
 
-Our answer separates modelling from learning.  A GP is Gaussian because each
+A GP is Gaussian because each
 finite collection of evaluations is jointly Gaussian; its covariance kernel
 need not be a Gaussian radial basis function \citep{rasmussen2006gaussian}.
 The covariance kernel is selected to encode regularity, locality, periodicity,
-or a PDE Green function.  We prescribe an attention interaction compatible
-with that kernel.  For a strictly positive kernel $\kappa$, normalized kernel
-attention is obtained from the fixed nonlinearity
-\(\sigma_\kappa(s)=\exp(s)\) and score
-\(s=\log\kappa\).  For the RBF kernel this is ordinary softmax with a fixed
-length scale and an explicit norm bias.  For Mat\'ern, spectral, Green, or
-signed kernels, the appropriate interaction may instead be a deterministic
-Mercer, Fourier, or operator feature map.  There is no universal softmax
-claim and no learned temperature in our theory.
+or a PDE Green function. For any strictly positive kernel \(\kappa\),
+normalized kernel attention is obtained by applying softmax to
+\(s_\kappa=\log\kappa\) with the appropriate quadrature bias. This includes
+strictly positive Mat\'ern and periodic kernels as well as the RBF kernel.
+The RBF case has the additional property that \(\log\kappa\) reduces to a
+bilinear score plus norm terms. Zero kernel values may be represented by
+masked logits equal to \(-\infty\); negative values require a signed Mercer,
+Fourier, or operator feature contraction. The kernel and its hyperparameters
+are fixed in the present analysis.
 
 This distinction is also needed algebraically.  Row-normalized softmax is a
 Markov operator; it is not in general a symmetric posterior covariance.
-Consequently we use nonlinear attention only to extract task-dependent
+Consequently we use normalized kernel attention to extract task-dependent
 feature fields.  Orthonormalization in the continuum mass metric followed by
 an exact Ritz formula produces a positive-definite posterior metric.  This
 metric is held fixed while a recurrent, weight-tied polynomial method solves
-the regularized normal equations.  The architecture therefore has two
-auditable parts:
-\[
- \begin{gathered}
- \boxed{\text{kernel-matched continuum attention learns the geometry}}
- \\
- \Downarrow
- \\
- \boxed{\text{exact Heavy--Ball/Chebyshev dynamics perform inference}.}
- \end{gathered}
-\]
+the regularized normal equations. A fixed Ritz map sends the
+prompt-conditioned subspace to an SPD metric, which is then used by HB or
+Chebyshev to approximate the posterior mean.
 
 The continuum formulation matters.  Neural operators already share
 parameters across discretizations \citep{kovachki2023neuraloperator}, and
@@ -243,7 +234,7 @@ ridge minimizer with regularization determined by the observation noise
 requires $k_0$ to be RBF.
 \end{remark}
 
-\section{The nonlinearity is prescribed by the kernel}
+\section{Kernel scores, normalization, and quadrature}
 \label{sec:kernel-attention}
 
 Let $(X,\rho)$ be a compact measured space, let $\kappa:X\times X\to\R$ be
@@ -289,11 +280,12 @@ of the GP prior or data model.  It is fixed before training in the present
 theory.
 \end{example}
 
-\begin{remark}[What softmax cannot do]
-A GP covariance may be Mat\'ern, periodic, polynomial, signed pointwise, or a
-Green kernel.  A row-stochastic positive matrix cannot equal an arbitrary
-covariance matrix.  For a general positive-semidefinite kernel we instead use
-a prescribed feature map $\varphi_\kappa$ satisfying
+\begin{remark}[Scope of the softmax representation]
+A row-stochastic positive matrix cannot equal an arbitrary covariance matrix.
+Softmax with finite score \(\log\kappa\) represents the normalized integral
+operator when \(\kappa\) is strictly positive. Zeros require masked
+\(-\infty\) logits. For a positive-semidefinite kernel that changes sign, we
+instead use a prescribed feature map $\varphi_\kappa$ satisfying
 $\kappa(x,y)=\langle\varphi_\kappa(x),\varphi_\kappa(y)\rangle$ and implement
 the unnormalized contraction by linear attention
 \citep{katharopoulos2020transformers}.  The term
@@ -335,7 +327,8 @@ Moreover $d_\kappa(x)\ge d_0>0$.
 
 \begin{theorem}[Continuum consistency]
 \label{thm:continuum-consistency}
-Under Assumption~\ref{ass:quadrature},
+Under Assumption~\ref{ass:quadrature}, there exist \(h_0,C>0\) such that,
+for \(h\le h_0\),
 \begin{equation}
  \|A_{\kappa,h}P_hv-P_h\calA_\kappa v\|_{\ell^\infty}
  \le C(1+\|v\|_\infty)h^p,
@@ -357,22 +350,20 @@ Neural quadratic forms make the trainable-block boundary precise
 \citep{ziyin2026neuralquadraticforms}.  In a full attention head with query,
 key, value, and readout blocks all of size $\varepsilon$, the leading
 $O(\varepsilon^2)$ output is value/readout applied to the uniform context
-average; query--key routing first appears at $O(\varepsilon^4)$.  In contrast,
-if values and readout are fixed and nonzero, query--key-only attention has the
-quadratic correction
+average; query--key routing first appears at $O(\varepsilon^4)$.  If values
+and readout are fixed and nonzero, scale fixed Q/K directions by
+\(\varepsilon\). Query--key-only attention then has the quadratic correction
 \[
- \frac{1}{\sqrt{d_k}}(\Sigma_Xc)^\top K^\top Qx,
+ \frac{\varepsilon^2}{\sqrt{d_k}}(\Sigma_Xc)^\top K^\top Qx,
  \qquad
  \Sigma_X=XX^\top/N-\bar x\bar x^\top.
 \]
-This supports the division of labor used here: kernel interactions and values
-that are known from the prior/prompt are not simultaneously initialized near
-zero, while the statistical head learns only the missing contextual geometry.
-It also prevents an overclaim.  The cited NQF mode dynamics concern parameter
-learning near initialization; they neither prove continuum quadrature nor
-replace the HB/Chebyshev inference recurrence.  Our fixed Gram--Schmidt/Ritz
-map is analyzed separately, since orthogonalization at a rank-deficient zero
-output is outside the smooth NQF hypotheses.
+The architecture therefore keeps prior-specified kernel interactions and
+prompt values fixed while training the missing contextual geometry. The NQF
+mode dynamics concern parameter learning near initialization. Continuum
+quadrature and the HB/Chebyshev recurrence require separate arguments.
+Orthogonalization at a rank-deficient zero output lies outside the smooth NQF
+hypotheses, so the Gram--Schmidt/Ritz map is analyzed independently.
 
 \section{A prompt-conditioned posterior metric}
 \label{sec:metric}
@@ -438,7 +429,7 @@ then
 \end{equation}
 \end{theorem}
 
-The theorem reveals the role of effective width.  Increasing $S$ reduces the
+Increasing $S$ reduces the
 spectral tail $r_S$; increasing context or training time can reduce the
 principal-angle error $\delta_S$.  Width alone is not sufficient when the
 prompt-dependent eigenspace has not been identified.
@@ -481,7 +472,11 @@ uniformly Lipschitz away from rank loss.
 \begin{theorem}[Discretization-covariant Ritz metric]
 \label{thm:discretization-covariance}
 Under Assumption~\ref{ass:discretization}, let $\bar B_h$ be the lift of the
-discrete metric \eqref{eq:ritz-metric} and let $B$ be its continuum analogue.
+discrete metric \eqref{eq:ritz-metric},
+\[
+ \bar B_h=\iota_hB_h\iota_h^*+(I-\Pi_h),
+\]
+and let $B$ be its continuum analogue.
 Then
 \begin{equation}
  \|\bar B_h-B\|_\op
@@ -491,12 +486,9 @@ Then
 For the transfer $I_{h\to h'}=\iota_{h'}^*\iota_h$,
 \begin{equation}
  \|I_{h\to h'}B_h-B_{h'}I_{h\to h'}\|_\op
- \le C_M\left[(c_H+c_P)(h^p+h'^p)+2\eps_{\rm enc}\right]
- +\eps_{\rm tr},
+\le C_M\left[(c_H+c_P)(h^p+h'^p)+2\eps_{\rm enc}\right],
  \label{eq:commutator-bound}
 \end{equation}
-where $\eps_{\rm tr}$ is the consistency error caused by projecting between
-non-nested trial spaces and vanishes for exact lifted comparison.
 \end{theorem}
 
 \begin{corollary}[Mesh-independent effective condition number]
@@ -733,8 +725,8 @@ Then
  \label{eq:fs-time-power}
 \end{equation}
 For the convention
-$\lambda_j\asymp j^{-\nu}$ and
-$\sum_{\ell>j}\omega_\ell\lambda_\ell\asymp j^{-\nu\beta}$,
+$\lambda_j\sim c_\lambda j^{-\nu}$ and a monotone task spectrum satisfying
+$\sum_{\ell>j}\omega_\ell\lambda_\ell\sim c_\Omega j^{-\nu\beta}$,
 one has $s=\nu\beta+1$ and $r=s+2\nu$, so the exponent follows directly from
 \eqref{eq:fs-time-power}.  Stating the law through $(s,r)$ prevents changes of
 capacity convention from silently changing the exponent.
@@ -816,8 +808,13 @@ changing the represented kernel.
 \begin{proposition}[Balanced amplitude parameterization]
 \label{prop:amplitude-parameterization}
 Suppose the reduced scale is parameterized as $\gamma=w^r$, $r\ge1$, and
-$w$ follows gradient flow.  If
-$\loss(\gamma)\asymp\gamma^{-\beta}$, then
+$w$ follows gradient flow.  If, as \(\gamma\to\infty\),
+\[
+ \loss(\gamma)\asymp\gamma^{-\beta},
+ \qquad
+ -\loss'(\gamma)\asymp\gamma^{-\beta-1},
+\]
+then
 \begin{equation}
  \gamma(t)\asymp t^{1/(\beta+2/r)},
  \qquad
@@ -851,7 +848,8 @@ terms gives
 \end{equation}
 
 Our posterior metric changes this conclusion when Theorem
-\ref{thm:subspace-spectrum} provides a uniform effective condition number.
+\ref{thm:subspace-spectrum} provides an effective condition number uniformly
+bounded in \(S\).
 The algebraic term $L_d^{-\beta}$ is then replaced by
 $[1+L_d(1+q)]^2q^{2L_d}$ for HB or $4q^{2L_d}$ for Chebyshev.  Balancing it
 against $S^{-\nu\beta}$ gives, to leading order,
@@ -884,7 +882,7 @@ exact identity
 \end{align}
 This is the nonlinear-kernel version of the two-point reduction: every
 finite-depth risk depends on the two-resolvent correlation
-$C_{\kappa,h}$, not only on the eigenvalue density.  A random-matrix or DMFT
+$C_{\kappa,h}$; the eigenvalue density alone is insufficient. A random-matrix or DMFT
 limit must derive $C_{\kappa,h}\to C_\kappa$ for the chosen kernel and sampling
 law.  The Wishart/free-product deterministic equivalent of linear attention
 cannot simply be reused for row-normalized softmax.  Once $C_\kappa$ is known,
@@ -956,7 +954,7 @@ Finite-batch SGD coefficients
 & Equation~\eqref{eq:sgd-noise-identity}; not universal\\
 \bottomrule
 \end{tabular}
-\caption{What transfers from the reduced linear-attention calculations.}
+\caption{Correspondence between reduced linear-attention and kernel calculations.}
 \label{tab:transfer-map}
 \end{table}
 
@@ -1015,14 +1013,13 @@ In the commuting model, if the approximate conditional mean is
 \end{equation}
 then its integrated Bayes risk is exactly
 \begin{equation}
- \boxed{
  \calR(n,S,L,t,h)
  =\sum_{j\le M_h}
  \left\{
  r_{n,j}
  +\left[1-(1-p_L(\zeta_{h,j}))\chi_j(t)\right]^2v_{n,j}
  \right\}
- +\sum_{j>M_h}\lambda_j.}
+ +\sum_{j>M_h}\lambda_j.
  \label{eq:master-risk}
 \end{equation}
 If the spatial discretization additionally perturbs represented modes by an
@@ -1177,10 +1174,11 @@ the inner residuals satisfy the standard forcing condition
 \end{equation}
 If the learned metrics are uniformly spectrally equivalent to $H_k^{-1}$,
 then the number of polynomial inner iterations needed to enforce
-\eqref{eq:forcing-condition} is uniform in the mesh.  The usual local inexact
-Gauss--Newton convergence conclusion then holds; if $\eta_k\to0$, the inner
-error does not obstruct superlinear convergence under the corresponding
-standard assumptions.
+\eqref{eq:forcing-condition} is uniform in the mesh. Under the standard local
+inexact Gauss--Newton assumptions, the outer iteration converges locally at
+the corresponding linear rate. If the residual at the solution vanishes (or
+the Gauss--Newton linearization defect vanishes at the required rate) and
+\(\eta_k\to0\), the convergence is superlinear.
 \end{proposition}
 
 This is a local Gaussian/Laplace statement.  Sampling a multimodal posterior
@@ -1200,19 +1198,19 @@ warps are valuable but distinct empirical-Bayes models; allowing them would
 change the feature space during training and invalidate the clean resource
 separation in Theorem~\ref{thm:master-risk}.
 
-\paragraph{What is and is not learned.}
+\paragraph{Learned and fixed components.}
 The encoder learns prompt-dependent coefficients and a finite subspace within
 the prescribed feature geometry.  It does not learn the Hessian--vector
 product, orthonormalization, projected inverse, Heavy--Ball arithmetic, or
-Chebyshev recurrence.  This makes positivity and solver stability properties
-of the architecture rather than regularization preferences.
+Chebyshev recurrence. Positivity and solver stability follow from the fixed
+construction.
 
 \paragraph{Comparison to classical solvers.}
 Finite elements, operator preconditioning, domain decomposition, and AMG can
-already be mesh robust.  The proposed novelty is not irregular-mesh
-competence.  It is amortized inference of a posterior metric from function
-pairs rather than construction from a supplied system matrix, combined with
-a discretization-covariance theorem and an exact loop.  Section
+already be mesh robust. The proposed contribution is amortized inference of a
+posterior metric from function pairs, rather than construction from a supplied
+system matrix, together with a discretization-covariance theorem and a fixed
+polynomial loop. Section
 \ref{sec:numerical-validation} shows that runtime advantage only in a bounded
 regime: for a long context and one or a few queries, the rank-$S$ contextual
 metric avoids both an $N\times N$ Cholesky factorization and the
@@ -1231,21 +1229,14 @@ weighted spectral law of the prompt-conditioned preconditioned Hessian.
 \clearpage
 \section{Conclusion}
 
-The nonlinearity of attention should reflect the covariance geometry assumed
-by the modeller.  Exponential softmax is the correct normalized interaction
-for an RBF-type kernel with fixed scale; it is not a universal representation
-of Gaussian-process covariance.  Once quadrature and normalization are made
-explicit, kernel attention becomes a consistent continuum operation.  Its
-contextual outputs can be converted by exact Ritz algebra into an SPD
-approximation of posterior covariance, after which tied Heavy--Ball or
-Chebyshev layers perform auditable inference.  The resulting theory separates
-five resources---context, width, training time, depth, and discretization---and
-shows how mesh-independent posterior geometry yields mesh-independent looped
-inference.  The numerical audit supports the exact spectral and reduced-model
-predictions, rejects importing the linear Marchenko--Pastur law into nonlinear
-softmax, and locates a setup-inclusive long-context crossover against both
-dense Cholesky and exact Woodbury.  This measured boundary is part of the
-claim: outside it, the appropriate classical solver should be used.
+For a strictly positive kernel, softmax with score \(\log\kappa\) and the
+quadrature bias implements its normalized integral operator. The Ritz map
+converts a prompt-conditioned subspace into an SPD metric, and the subsequent
+HB or Chebyshev recurrence is fixed algebra. Mesh-independent iteration counts
+follow when the subspace error and discretization error yield a uniform
+spectral interval. The joint scaling law is exact only in the commuting
+Gaussian sequence model; the nonlinear random-design problem still requires
+its kernel-specific weighted spectral limit.
 
 \clearpage
 \appendix
@@ -1282,8 +1273,8 @@ $|D_h-D|\le C_0h^p$.  For sufficiently small $h$, $D_h\ge d_0/2$.  Hence
  +\frac{|N|\,|D_h-D|}{|D_h|D}
  \le C(1+\|v\|_\infty)h^p.
 \]
-The finitely many coarser admissible discretizations are absorbed by enlarging
-$C$.
+This proves the claim for \(h\le h_0\), with \(h_0\) chosen so that
+\(D_h\ge d_0/2\).
 \end{proof}
 
 \section{Proofs for the posterior metric}
@@ -1357,11 +1348,13 @@ interval.  It has the same spectrum as $B_Q^{1/2}HB_Q^{1/2}$, which proves
 \begin{proof}[Proof of Theorem~\ref{thm:discretization-covariance}]
 Apply Lemma~\ref{lem:ritz-perturbation} to $(\bar H_h,\bar P_h)$ and $(H,P)$,
 then use \eqref{eq:operator-consistency}; this gives
-\eqref{eq:lift-convergence}.  Insert and subtract the continuum $B$ between
-the two lifted discrete metrics.  The triangle inequality gives the sum of
-the two one-level errors.  Compressing back to the two discrete spaces yields
-\eqref{eq:commutator-bound}; any failure of the transfer to equal exact lifted
-compression is, by definition, $\eps_{\rm tr}$.
+\eqref{eq:lift-convergence}. Moreover,
+\[
+ I_{h\to h'}B_h-B_{h'}I_{h\to h'}
+ =\iota_{h'}^*(\bar B_h-\bar B_{h'})\iota_h.
+\]
+Insert and subtract \(B\), then apply the two one-level bounds to obtain
+\eqref{eq:commutator-bound}.
 \end{proof}
 
 \begin{proof}[Proof of Corollary~\ref{cor:mesh-independent}]

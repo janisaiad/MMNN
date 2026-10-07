@@ -1,0 +1,221 @@
+{
+  "args": {
+    "K": 16,
+    "M0": 32,
+    "R": 16,
+    "a_background_amplitude": 0.15,
+    "a_level": 2.0,
+    "active_rank": 16,
+    "allow_completed": false,
+    "attention_mode": "linear",
+    "batch_size": 16,
+    "coefficient_strength": 0.25,
+    "d": 32,
+    "d_head": 32,
+    "data_seed": 3002,
+    "depth": 32,
+    "depth_eval_batch_size": 16,
+    "depth_eval_batches": 8,
+    "depths": "0,1,2,4,8,16,32,64",
+    "device": "cuda",
+    "dictionary_lr_multiplier": 10.0,
+    "dtype": "float32",
+    "eval_batch_size": 16,
+    "eval_batches": 8,
+    "eval_every": 500,
+    "evaluation_seed": 4002,
+    "f_std": 1.0,
+    "final_eval_batches": 64,
+    "forcing_decay": 1.0,
+    "gamma_u": 1e-08,
+    "grad_clip": 1.0,
+    "heads": 1,
+    "heldout_task_seed": 2002,
+    "heldout_tasks": 256,
+    "init": "true_noisy",
+    "init_noise": 20.0,
+    "lam_z": 1e-06,
+    "learn_probes": false,
+    "log_every": 100,
+    "loop_lmax_bound": 4.0,
+    "loop_preconditioner_head": "coordinate_ritz",
+    "loop_step_init": 0.25,
+    "loss_profile": "query_only",
+    "lr": 0.0003,
+    "m": 64,
+    "outdir": "/root/MMNN/.campaign-runners/icl-pde-scale-extension-0df6439-v1/k16_m0_32_query_attention_r16_m64_spread_seed2",
+    "potential_scale": 0.5,
+    "probe_layout": "evenly_spaced",
+    "qk_constraint": "untied",
+    "required_gpu_name": "NVIDIA H100",
+    "resume": "",
+    "save_every": 500,
+    "seed": 2,
+    "solver": "dual_attention_richardson",
+    "steps": 10000,
+    "subspace_slots": 4,
+    "task_bank_policy": "paired_full_coordinates",
+    "task_seed": 1002,
+    "train_frequencies": 16,
+    "weight_decay": 0.0001,
+    "z_scale": 1.0
+  },
+  "best_seen_u_nmse": 0.00020621571457013488,
+  "campaign_source_sha256": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+  "campaign_source_sha256_at_initial_start": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+  "checkpoint_provenance": {
+    "campaign_source_sha256": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+    "git_revision": "0df643907c591e2aeca48e9fff46574b7b2ae3fa",
+    "run_origin_campaign_source_sha256": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+    "run_origin_git_revision": "0df643907c591e2aeca48e9fff46574b7b2ae3fa",
+    "run_origin_source_sha256": {
+      "exact_loop_transformer_decoder.py": "3d2cd9664159a97b13eaefdf7378746c974b7d86c26f05c0f55b6eb5e64c2441",
+      "finite_basis_pde_icl_campaign.py": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+      "launch_finite_basis_pde_controls.py": "cacb1a4f558c5f1577db49386793bfd5d41fb8af06383f6041c60fa897b8f291",
+      "launch_finite_basis_pde_spectral_controls.py": "ae808ea731fe50785b57818c2444a2e832516333890abf2b6bf7e842ca71a9a5",
+      "launch_finite_basis_pde_sweep.py": "b1455357e6e1abee025032776095c4f86f65f5195d1ee59fe9ded762f9acdb03",
+      "plot_finite_basis_pde_campaign.py": "cee346d3d9f7dd187ce045bb227873f2fa4434c2f6e53be7414f70d569113fcb",
+      "pure_icl_parametric_operator_richardson_attention.py": "4024ae1422eb77c1b1292ce0d2370be08e73ce93410a607fb092afc7308e2df8",
+      "structured_one_head_heavyball.py": "026e497b4f19581e3207d9f3400ffaa65cd040b437e7f1b33de5a580233875e6"
+    },
+    "schema_version": 1,
+    "source_sha256": {
+      "exact_loop_transformer_decoder.py": "3d2cd9664159a97b13eaefdf7378746c974b7d86c26f05c0f55b6eb5e64c2441",
+      "finite_basis_pde_icl_campaign.py": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+      "launch_finite_basis_pde_controls.py": "cacb1a4f558c5f1577db49386793bfd5d41fb8af06383f6041c60fa897b8f291",
+      "launch_finite_basis_pde_spectral_controls.py": "ae808ea731fe50785b57818c2444a2e832516333890abf2b6bf7e842ca71a9a5",
+      "launch_finite_basis_pde_sweep.py": "b1455357e6e1abee025032776095c4f86f65f5195d1ee59fe9ded762f9acdb03",
+      "plot_finite_basis_pde_campaign.py": "cee346d3d9f7dd187ce045bb227873f2fa4434c2f6e53be7414f70d569113fcb",
+      "pure_icl_parametric_operator_richardson_attention.py": "4024ae1422eb77c1b1292ce0d2370be08e73ce93410a607fb092afc7308e2df8",
+      "structured_one_head_heavyball.py": "026e497b4f19581e3207d9f3400ffaa65cd040b437e7f1b33de5a580233875e6"
+    }
+  },
+  "coefficient_reference": {
+    "hidden_jitter": 0.0,
+    "matrix": "H=G^T G+lambda I",
+    "rhs": "G^T b"
+  },
+  "command": "/root/MMNN/.campaign-worktrees/icl-pde-scale-extension-v1/experiments/transformers/finite_basis_pde_icl_campaign.py --outdir /root/MMNN/.campaign-runners/icl-pde-scale-extension-0df6439-v1/k16_m0_32_query_attention_r16_m64_spread_seed2 --dtype float32 --K 16 --active-rank 16 --d 32 --m 64 --R 16 --heldout-tasks 256 --a-level 2.0 --a-background-amplitude 0.15 --coefficient-strength 0.25 --potential-scale 0.5 --z-scale 1.0 --forcing-decay 1.0 --f-std 1.0 --solver dual_attention_richardson --attention-mode linear --qk-constraint untied --heads 1 --d-head 32 --lam-z 1e-6 --gamma-u 1e-8 --probe-layout evenly_spaced --init true_noisy --init-noise 20 --depth 32 --steps 10000 --batch-size 16 --eval-batch-size 16 --eval-batches 8 --final-eval-batches 64 --depth-eval-batch-size 16 --depth-eval-batches 8 --depths 0,1,2,4,8,16,32,64 --lr 3e-4 --weight-decay 1e-4 --grad-clip 1.0 --log-every 100 --eval-every 500 --save-every 500 --dictionary-lr-multiplier 10 --train-frequencies 16 --device cuda --required-gpu-name NVIDIA H100 --M0 32 --loss-profile query_only --seed 2 --task-seed 1002 --heldout-task-seed 2002 --task-bank-policy paired_full_coordinates --data-seed 3002 --evaluation-seed 4002",
+  "data_stream_policy": "explicit_reset_after_model_and_optimizer_initialization",
+  "data_stream_seed": 3002,
+  "decoder_replay_schema": 3,
+  "device": "cuda",
+  "execution": {
+    "cuda_current_device": 0,
+    "cuda_device_count": 1,
+    "cuda_visible_devices": "0",
+    "gpu_compute_capability": [
+      9,
+      0
+    ],
+    "gpu_name": "NVIDIA H100 PCIe",
+    "requested_device": "cuda",
+    "required_gpu_name": "NVIDIA H100",
+    "resolved_device": "cuda",
+    "torch_cuda_runtime": "12.6"
+  },
+  "execution_history": [
+    {
+      "cuda_current_device": 0,
+      "cuda_device_count": 1,
+      "cuda_visible_devices": "0",
+      "gpu_compute_capability": [
+        9,
+        0
+      ],
+      "gpu_name": "NVIDIA H100 PCIe",
+      "requested_device": "cuda",
+      "required_gpu_name": "NVIDIA H100",
+      "resolved_device": "cuda",
+      "torch_cuda_runtime": "12.6"
+    }
+  ],
+  "final_evaluation_streams": {
+    "decoder_depth_replay": 4005,
+    "seen_task_new_forcing": 4002,
+    "unseen_task_high_frequency_forcing": 4004,
+    "unseen_task_in_distribution": 4003
+  },
+  "finished_unix": 1788831452.3244486,
+  "git_revision_at_process_start": "0df643907c591e2aeca48e9fff46574b7b2ae3fa",
+  "git_revision_at_start": "0df643907c591e2aeca48e9fff46574b7b2ae3fa",
+  "gpu": "NVIDIA H100 PCIe",
+  "initial_started_unix": 1788830435.527747,
+  "loss_objective": {
+    "historical_control_note": "Reconstructed unweighted five-term diagnostic. The archived reports name L_z as a batch mean of per-sample squared L2 norms, but do not preserve the numerical weights. Unit weights are deliberately unbalanced and form a declared control, not a recovered historical objective.",
+    "historical_weights_archived": false,
+    "profile": "query_only",
+    "terms": [
+      "query"
+    ],
+    "weights": {
+      "query": 1.0
+    }
+  },
+  "numpy": "2.1.3",
+  "optimizer": {
+    "dictionary_lr_multiplier": 10.0,
+    "lr": 0.0003,
+    "name": "torch.optim.AdamW",
+    "weight_decay": 0.0001
+  },
+  "parameter_count": {
+    "decoder_trainable": 1024,
+    "encoder_trainable": 16384,
+    "total": 18944,
+    "trainable": 17408
+  },
+  "peak_cuda_memory_allocated_bytes": 2767651840,
+  "peak_cuda_memory_reserved_bytes": 2822766592,
+  "protocol": {
+    "K": 16,
+    "a_background_amplitude": 0.15,
+    "a_level": 2.0,
+    "coefficient_strength": 0.25,
+    "d": 32,
+    "f_std": 1.0,
+    "forcing_decay": 1.0,
+    "potential_scale": 0.5,
+    "train_frequencies": 16,
+    "z_scale": 1.0
+  },
+  "python": "3.12.13",
+  "replica_transition_ratio_M0_over_active_rank": 2.0,
+  "resume_count": 0,
+  "resume_history": [],
+  "resume_validation": null,
+  "source_sha256": {
+    "exact_loop_transformer_decoder.py": "3d2cd9664159a97b13eaefdf7378746c974b7d86c26f05c0f55b6eb5e64c2441",
+    "finite_basis_pde_icl_campaign.py": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+    "launch_finite_basis_pde_controls.py": "cacb1a4f558c5f1577db49386793bfd5d41fb8af06383f6041c60fa897b8f291",
+    "launch_finite_basis_pde_spectral_controls.py": "ae808ea731fe50785b57818c2444a2e832516333890abf2b6bf7e842ca71a9a5",
+    "launch_finite_basis_pde_sweep.py": "b1455357e6e1abee025032776095c4f86f65f5195d1ee59fe9ded762f9acdb03",
+    "plot_finite_basis_pde_campaign.py": "cee346d3d9f7dd187ce045bb227873f2fa4434c2f6e53be7414f70d569113fcb",
+    "pure_icl_parametric_operator_richardson_attention.py": "4024ae1422eb77c1b1292ce0d2370be08e73ce93410a607fb092afc7308e2df8",
+    "structured_one_head_heavyball.py": "026e497b4f19581e3207d9f3400ffaa65cd040b437e7f1b33de5a580233875e6"
+  },
+  "source_sha256_at_initial_start": {
+    "exact_loop_transformer_decoder.py": "3d2cd9664159a97b13eaefdf7378746c974b7d86c26f05c0f55b6eb5e64c2441",
+    "finite_basis_pde_icl_campaign.py": "666cc076e8c8628cd82335fb1e1dac8f19387950cc9fcaf2f0562830f1addc2b",
+    "launch_finite_basis_pde_controls.py": "cacb1a4f558c5f1577db49386793bfd5d41fb8af06383f6041c60fa897b8f291",
+    "launch_finite_basis_pde_spectral_controls.py": "ae808ea731fe50785b57818c2444a2e832516333890abf2b6bf7e842ca71a9a5",
+    "launch_finite_basis_pde_sweep.py": "b1455357e6e1abee025032776095c4f86f65f5195d1ee59fe9ded762f9acdb03",
+    "plot_finite_basis_pde_campaign.py": "cee346d3d9f7dd187ce045bb227873f2fa4434c2f6e53be7414f70d569113fcb",
+    "pure_icl_parametric_operator_richardson_attention.py": "4024ae1422eb77c1b1292ce0d2370be08e73ce93410a607fb092afc7308e2df8",
+    "structured_one_head_heavyball.py": "026e497b4f19581e3207d9f3400ffaa65cd040b437e7f1b33de5a580233875e6"
+  },
+  "started_unix": 1788830435.527747,
+  "status": "complete",
+  "task_bank_policy": {
+    "coordinate_draw": "paired_full_coordinates",
+    "heldout_seed": 2002,
+    "train_seed": 1002
+  },
+  "task_covariance_effective_rank": 11.443263053894043,
+  "task_covariance_max": 0.7441583275794983,
+  "task_covariance_min": 0.055328354239463806,
+  "task_covariance_rank": 16,
+  "torch": "2.7.1+cu126",
+  "torch_cuda": "12.6",
+  "training_wall_seconds": 1016.796701669693
+}

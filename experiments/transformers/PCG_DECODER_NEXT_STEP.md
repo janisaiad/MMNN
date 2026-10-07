@@ -1,6 +1,6 @@
-# PCG as the next decoder, not as a DMFT proxy
+# Prompt-conditioned PCG decoder
 
-## Decision
+## Problem formulation
 
 The next project should optimize the decoder itself.  The current Richardson
 analysis remains the control experiment and the encoder--decoder transfer
@@ -16,11 +16,10 @@ H_{\mathcal C}=\widehat G_{\mathcal C}^{\top}
 c_{\mathcal C}=\widehat G_{\mathcal C}^{\top}\widehat b_{\mathcal C}.
 \]
 
-It should not start from the current overdetermined dual system.  When the
-prompt has \(M>K\), the dual matrix has \(M-K\) directions that are invisible to
-the coefficient readout.  Those directions made the Richardson convergence
-certificate nearly marginal even when coefficient error was good.  The primal
-system removes this mismatch and is SPD for every \(\lambda>0\).
+When \(M>K\), the primal system is smaller than the overdetermined dual system
+and is SPD for every \(\lambda>0\). The dual matrix also has \(M-K\) directions
+that are invisible to the coefficient readout; these directions can make a
+full dual residual bound weak despite small coefficient error.
 
 ## Exact recurrent PCG target
 
@@ -59,15 +58,26 @@ Hp=\sum_{i=1}^{M} g_i(g_i^\top p)+\lambda p,
 so attention can implement the matrix--vector product without materializing
 \(H\).  A state token carries \((z,r,y,p)\); equation tokens compute
 \(g_i^\top p\) and return \(g_i(g_i^\top p)\); global pooling computes the two
-dot products.  Comparisons must be made per matrix--vector product and per
-FLOP, not only per nominal Transformer layer, because a PCG step contains more
-arithmetic than a Richardson step.
+dot products. Comparisons must report matrix--vector products and FLOPs because
+a PCG step contains more arithmetic than a Richardson step. Nominal
+Transformer depth alone is not a matched computational budget.
 
-## First theorem to prove
+## Encoder--PCG transfer bound
 
-Let \(A,\widehat A\succeq a_0I\), and let PCG with a prompt-dependent but
+Let \(A,\widehat A\succeq a_0I\). Let
+\(f\sim\mathcal N(0,\Sigma)\) be independent of
+\((A,\widehat A,P)\), and let PCG with a prompt-dependent,
 depth-independent SPD inverse preconditioner \(P\) solve
-\(\widehat A u=f\), from \(u_0=0\).  Assume
+\(\widehat A u=f\) from \(u_0=0\). Define
+
+\[
+\mathcal R_A=\frac1D\mathbb E\|\widehat A-A\|_F^2,
+\qquad
+\mathcal R_{u,L}^{\rm PCG}
+=\mathbb E\|u_L-A^{-1}f\|_2^2.
+\]
+
+Assume
 
 \[
 \kappa\!\left(P^{1/2}\widehat A P^{1/2}\right)\le \bar\kappa,
@@ -87,17 +97,22 @@ The standard PCG energy estimate and the resolvent identity give, pointwise,
 \right)\|f\|_2.
 \]
 
-Consequently, for \(f\sim\mathcal N(0,\Sigma)\),
+Consequently,
 
 \[
-\boxed{
 \mathcal R_{u,L}^{\rm PCG}
 \le
 \frac{8\operatorname{tr}\Sigma}{a_0^2}
 \rho_{\rm CG}^{2L}
-+\frac{2D\operatorname{tr}\Sigma}{a_0^4}\mathcal R_A
-}.
++\frac{2D\operatorname{tr}\Sigma}{a_0^4}\mathcal R_A.
 \]
+
+Indeed, PCG gives the first term in the pointwise estimate in the
+\(\widehat A\)-energy norm. Coercivity converts it to the Euclidean norm.
+After squaring the pointwise estimate, independence of \(f\) and
+\((A,\widehat A)\), together with
+\(\|\widehat A-A\|_{\rm op}\leq\|\widehat A-A\|_F\), gives the displayed
+risk bound.
 
 This is the direct PCG replacement for the current Richardson transfer bound.
 It changes the solver depth from
@@ -108,14 +123,13 @@ L_{\rm Rich}=O\!\left(\kappa\log(1/\epsilon)\right)
 L_{\rm PCG}=O\!\left(\sqrt\kappa\log(1/\epsilon)\right).
 \]
 
-The same proof applies to the ridge coefficient system by replacing
-\(\widehat A\) with \(H_{\mathcal C}\).  Unlike Richardson, PCG is not a fixed
-linear map of the right-hand side: its polynomial depends on the right-hand
-side through \(\alpha_\ell,\beta_\ell\).  The exact conditional Gaussian trace
-identity from the Richardson paper therefore does **not** transfer verbatim;
-the deterministic norm bound above does.
+The same proof applies to the ridge coefficient system with
+\(\widehat A=H_{\mathcal C}\). PCG is nonlinear in the right-hand side because
+its polynomial depends on \(\alpha_\ell,\beta_\ell\). Consequently, the
+conditional Gaussian trace identity for a fixed Richardson polynomial does
+not apply. The deterministic norm bound remains valid.
 
-## Benchmark required before training a Transformer
+## Solver comparisons
 
 Use identical sampled tasks for every method and report error against exact
 ridge/Cholesky as a function of:
@@ -132,7 +146,7 @@ The minimum solver table is:
 
 1. optimal scalar Richardson;
 2. Jacobi/Richardson;
-3. Chebyshev semi-iteration (important fixed-coefficient competitor);
+3. Chebyshev semi-iteration;
 4. unpreconditioned CG;
 5. Jacobi-PCG;
 6. low-rank spectral/deflated PCG;
@@ -160,7 +174,7 @@ depends on the current residual or changes with depth, standard PCG theory no
 longer applies; that experiment must be labeled flexible CG (FCG) or restarted
 PCG.
 
-## Implemented experiment
+## Finite-dimensional solver isolation
 
 The constructive lab now supports paired Richardson/PCG sweeps:
 
@@ -187,12 +201,12 @@ PCG--Jacobi at all 12 tested combinations of prompt length
 \(m\in\{16,32,64,128\}\) and condition number
 \(\{10,100,1000\}\).
 
-The next milestone is no longer to emulate PCG inside generic Transformer
-blocks.  It is to scale the learned preconditioner to larger \(K\), compare
-against incomplete Cholesky/deflation baselines at matched wall-clock cost,
-and then connect the learned encoder error to the PCG transfer theorem.
+The next milestone is to scale the learned preconditioner to larger \(K\),
+compare it with incomplete-Cholesky and deflation baselines at matched
+wall-clock cost, and connect the learned encoder error to the PCG transfer
+bound.
 
-## Closest external reference
+## Learned preconditioners for flexible CG
 
 Rudikov et al., *Neural operators meet conjugate gradients: The FCG-NO method
 for efficient PDE solving* (2024), uses learned neural operators as
@@ -202,36 +216,37 @@ standard PCG.  The present opportunity is different: implement the Krylov
 solver itself in-context and jointly condition its SPD preconditioner on the
 prompt.
 
-## Update from Neural Quadratic Forms (August 2026)
+## NQF initialization regimes
 
 The NQF normal forms sharpen the initialization policy but do not modify PCG.
 For full multi-head attention with \(Q,K,V,O\) all initialized at scale
 \(\varepsilon\), value/readout corrections enter the output at quadratic
-order while query-key routing enters at quartic order. A fully small MHA is
-therefore a poor local parameterization if the scientific object to learn is
-the prompt-dependent preconditioner direction.
+order while query-key routing enters at quartic order. At initialization
+scale \(\varepsilon\), the Q/K loss gradient is \(O(\varepsilon^3)\), compared
+with \(O(\varepsilon)\) for V/O. This parameterization suppresses the local
+learning signal for prompt-dependent routing.
 
 The decoder head is query-key-only: its values are fixed weak rows. In this
 case Q/K routing is already quadratic and has an order-\(\varepsilon\) loss
-gradient. This makes two first-principles initialization choices admissible:
+gradient. Two initialization regimes retain a leading residual signal:
 
 1. train Q/K with fixed nonzero values, as in the current head; or
 2. fix nonzero kernel-matched Q/K features and train only value/readout
    residual channels.
 
-Initializing every attention block near zero and then claiming that NQF
-learns the preconditioner directions at leading order is not admissible.
-Neither is applying the NQF theorem through a rank-deficient QR at zero.
+An all-blocks-small initialization does not learn Q/K preconditioner
+directions at leading NQF order. Rank-deficient QR at zero also violates the
+smoothness assumption used by the NQF expansion.
 
-NQF modes live in parameter order parameters over **training time**. PCG
-modes live in the eigensystem of \(P_\theta^{1/2}HP_\theta^{1/2}\) over
-**inference iterations**. The standard PCG theorem remains valid because the
-trained SPD preconditioner is frozen during each solve. A theorem equating
-the two mode families is open and is not needed for the decoder claim.
+NQF modes are parameter order parameters indexed by training time. PCG modes
+are eigencomponents of \(P_\theta^{1/2}HP_\theta^{1/2}\) indexed by inference
+iteration. Relating them requires an additional alignment result. The
+standard PCG theorem only requires that the trained SPD preconditioner remain
+fixed during a solve.
 
-The new mandatory diagnostics are implemented in
+The initialization audit in
 `audit_nqf_attention_residual_corrections.py`: Taylor slopes, blockwise
 gradient slopes, the pre-QR QK normal-form remainder, and separate labels for
-full MHA and QK-only heads. The next PDE run should additionally log
-order-parameter eigenvalues during training and their overlap---not equality---
-with slow eigenvectors of the effective preconditioned operator.
+full MHA and QK-only heads. Subsequent PDE runs should also record
+order-parameter eigenvalues during training and their overlaps with slow
+eigenvectors of the effective preconditioned operator.

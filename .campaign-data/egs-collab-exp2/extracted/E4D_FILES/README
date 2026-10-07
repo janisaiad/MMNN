@@ -1,0 +1,38 @@
+OVERVIEW
+This directory contains the E4D (https://e4d.pnl.gov) input files used to invert time-lapse ERT data collected during shear stimulation attempts on the 4100 level testbed. The shear stimulation attempts were conducted from March 23 through March 25 of 2022. Descriptions of the tests including flow and pressure monitoring data are available at:
+
+Lawrence Berkeley National Laboratory. (2023). EGS Collab Experiment 2: Hydraulic Pressure Test Results [data set]. Retrieved from https://dx.doi.org/10.15121/1988394.
+
+FILE DESCRIPTIONS
+      E4D Mesh Files
+     	 -exp2d.1.ele:   tetgen element file
+	 -exp2d.1.node:	 tetgen node file
+	 -exp2d.1.neigh: tetgen neighbore file
+	 -exp2d.1.face:  tetgen face file
+	 -exp2d.1.edge:  tetgen edge file
+	 -epp2d.trn:     E4D mesh translation file
+	 
+      E4D Options Files	 
+ 	 -exp2.inv: 	 baseline inversion options file
+	 -exp2_tl.inv:   time-lapse inversion options file
+	 -exp2.out: 	 output options file
+	 -e4d.inp:	 input options file
+
+      electrode_map.txt
+	-provides mapping between the raw data files (*.Data) and the electrode positions. Used to create the E4D survey files (*.srv).
+
+	-first row: # of electrodes
+	-remaining rows
+	  Column 1: electrode number in the E4D survey files
+	  Column 2: cable number in the raw data files
+	  Column 3: electrode number in the raw data files
+      	  Column 4: x position of the electrode
+	  Column 5: y position of the electrode
+	  Column 6: z position of the electrode
+	  Column 7: E4D electrode flag to specify for this electrode.
+
+DIRECTORY survey_files
+- contains the E4D survey files derived from the raw data files.
+  -Time stamps in the file names were taken from the corresponding *.Data file specify the survey time in Mountain Standard Time. 
+  -See E4D documentation for survey file format information.
+  

@@ -1,24 +1,15 @@
-# Structured one-head decoder: learn geometry, hard-code algebra
+# One-head prompt-conditioned preconditioner with fixed solver algebra
 
-## Design rule
+## Architecture
 
-The decoder is not asked to rediscover a known iterative algorithm.  Every
-deterministic linear relation is frozen.  The attention head learns only the
-prompt-dependent spectral information that is unavailable a priori.
+The prompt defines \(H=G^\top G+\lambda I\), \(c=G^\top b\), and the
+residual \(r_\ell=c-Hz_\ell\). These quantities, the PCG state updates, inner
+products, and scalar divisions are fixed. The attention parameters determine
+prompt-dependent spectral directions and positive correction strengths. PCG
+computes \(\alpha_\ell\) and \(\beta_\ell\) from its Krylov state. The
+architecture contains no MLP or FFN.
 
-| Component | Status | Reason |
-|---|---|---|
-| weak system \(H=G^\top G+\lambda I\), \(c=G^\top b\) | frozen | definition of the encoded inverse problem |
-| residual \(r_\ell=c-Hz_\ell\) | frozen | exact solver algebra |
-| ridge drift and attention masks | frozen | known problem structure |
-| state shift \((z,r,y,p)\) | frozen | exact PCG memory |
-| PCG inner products and scalar divisions | frozen | known Krylov algebra |
-| spectral slots/directions | learned | task-dependent geometry |
-| strength of each spectral correction | learned, positive | finite-depth preconditioner design |
-| PCG \(\alpha_\ell,\beta_\ell\) | computed exactly, not learned | prompt- and iteration-dependent Krylov coefficients |
-| MLP/FFN | absent | no unknown nonlinear map is needed |
-
-## NQF initialization audit: full MHA is not QK-only attention
+## NQF expansions for full and QK-only attention
 
 The local normal form depends on which blocks are small and trainable. For a
 full head
@@ -32,23 +23,26 @@ scaling all of \(Q,K,V,o\) by \(\varepsilon\) gives an order-
 term. Consequently the loss gradients of \(V/O\) and \(Q/K\) are respectively
 orders \(\varepsilon\) and \(\varepsilon^3\) for an order-one residual.
 
-Our head is different: values are fixed to normalized weak rows and only the
-keys and slot queries are learned. Before QR,
+In the decoder head, values are fixed normalized weak rows and the trainable
+parameters are the keys and slot queries. For fixed directions \(W_K,q_s\),
+joint scaling by \(\varepsilon\) gives, before QR,
 
 \[
-u_s=\bar g+\frac{1}{\sqrt{d_h}}\Sigma_gW_K^\top q_s
-+O(\|(W_K,q_s)\|^4),
+u_s(\varepsilon)=\overline{\widetilde g}
++\frac{\varepsilon^2}{\sqrt{d_h}}\Sigma_{\widetilde g}W_K^\top q_s
++O(\varepsilon^4),
 \]
 
 so the prompt-covariance correction is quadratic and its Q/K loss gradient is
-order \(\varepsilon\). This is exactly the query-key-only NQF normal form of
-Liu Ziyin, Xu, Poggio, and Chuang (2026), not the full-MHA normal form.
+order \(\varepsilon\). This is the query-key-only NQF normal form of Liu
+Ziyin, Xu, Poggio, and Chuang (2026). The all-blocks-small full-MHA expansion
+has different leading terms.
 
 The statement stops before orthogonalization. QR is not smooth at a
-rank-deficient zero matrix, and NQF does not turn QR, Ritz, Cholesky, scalar
-reductions, or PCG divisions into learned operations. The production head
-also starts from a nonzero identity-like key map and nonzero queries, rather
-than the all-zero asymptotic point.
+rank-deficient zero matrix. The theorem therefore does not cover QR, Ritz,
+Cholesky, scalar reductions, or PCG divisions. The production head starts
+from a nonzero identity-like key map and nonzero queries, outside the
+all-zero asymptotic regime.
 
 The focused float64 audit in
 `audit_nqf_attention_residual_corrections.py` recovered slopes
@@ -75,7 +69,7 @@ quantities.  Use one head with \(S\) learned query tokens (spectral slots):
 \[
 q_s\in\mathbb R^{d_h},\qquad
 k_i=W_K\widetilde g_i,\qquad
-v_i=W_V\widetilde g_i,
+v_i=\widetilde g_i,
 \]
 
 \[
@@ -112,13 +106,12 @@ choosing \(U\) and \(w\).
 For the HeavyBall ablation, the tied decoder is
 
 \[
-\boxed{
 \begin{aligned}
 r_\ell&=c-Hz_\ell,\\
 s_\ell&=P_\theta(\mathcal C)r_\ell,\\
 z_{\ell+1}&=z_\ell+\alpha s_\ell
 +\beta(z_\ell-z_{\ell-1}).
-\end{aligned}}
+\end{aligned}
 \]
 
 No division by a learned quantity and no MLP approximation occurs in the
@@ -132,10 +125,10 @@ direction recurrence are exact tensor operations.  In particular, the PCG
 model contains no trainable step-size or momentum parameter: all trainable
 parameters belong to the single preconditioner head.
 
-## What must be demonstrated
+## Required validation
 
 1. **Solver isolation:** with exact \(G,b\), train only
-   \((W_K,W_V,q_s,w,\alpha,\beta)\) and compare to Jacobi Richardson,
+   \((W_K,q_s,w,\alpha,\beta)\) and compare to Jacobi Richardson,
    Jacobi HeavyBall, Chebyshev, and PCG.
 2. **Mechanism:** measure principal-angle overlap between the learned slot
    span and the slow eigenspace of
@@ -152,10 +145,9 @@ parameters belong to the single preconditioner head.
 7. **Two spectra:** track NQF order-parameter modes over training and the
    preconditioned PDE spectrum over inference without identifying them.
 
-The key scientific claim is therefore not that a generic FFN happens to mimic
-an inverse.  It is that one attention head identifies useful prompt-dependent
-geometry, and that a fixed SPD construction converts it into a preconditioner
-for an exact PCG loop.
+The claim is that one attention head identifies prompt-dependent directions
+whose fixed SPD completion improves an exact PCG loop. The architecture makes
+no claim about an FFN approximating an inverse.
 
 ## First solver-isolation result
 

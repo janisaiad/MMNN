@@ -1,0 +1,380 @@
+{
+  "all_checks_pass": true,
+  "attention_spectrum_summary": [
+    {
+      "architecture": "full_mha",
+      "matrix_dimension": 54,
+      "negative_count": 4,
+      "normalization": "softmax",
+      "positive_count": 4,
+      "positive_negative_pairing_error": 5.551115123125783e-17,
+      "spectral_radius": 0.2130388785537474,
+      "zero_count": 46
+    },
+    {
+      "architecture": "full_mha",
+      "matrix_dimension": 54,
+      "negative_count": 4,
+      "normalization": "unnormalized_exp",
+      "positive_count": 4,
+      "positive_negative_pairing_error": 8.881784197001252e-16,
+      "spectral_radius": 2.343427664091223,
+      "zero_count": 46
+    },
+    {
+      "architecture": "qk_only",
+      "matrix_dimension": 30,
+      "negative_count": 15,
+      "normalization": "softmax",
+      "positive_count": 15,
+      "positive_negative_pairing_error": 1.6653345369377348e-16,
+      "spectral_radius": 0.20653839603754254,
+      "zero_count": 0
+    },
+    {
+      "architecture": "qk_only",
+      "matrix_dimension": 30,
+      "negative_count": 15,
+      "normalization": "unnormalized_exp",
+      "positive_count": 15,
+      "positive_negative_pairing_error": 2.886579864025407e-15,
+      "spectral_radius": 3.228631306499548,
+      "zero_count": 0
+    }
+  ],
+  "bbp_selected_rows": {
+    "null": {
+      "aspect_p_over_d": 0.5,
+      "dimension": 256,
+      "mean_squared_spike_overlap": 0.0018732296820152866,
+      "mean_top_eigenvalue": 2.867794001594067,
+      "predicted_squared_overlap": 0.0,
+      "predicted_top_branch": 2.914213562373095,
+      "replicates": 32,
+      "standard_error_squared_overlap": 0.000647991071562821,
+      "standard_error_top_eigenvalue": 0.0069934653603098565,
+      "time_over_critical": 0.0,
+      "width": 512
+    },
+    "subcritical": {
+      "aspect_p_over_d": 0.5,
+      "dimension": 256,
+      "mean_squared_spike_overlap": 0.02043617534133697,
+      "mean_top_eigenvalue": 2.8748532508605846,
+      "predicted_squared_overlap": 0.0,
+      "predicted_top_branch": 2.914213562373095,
+      "replicates": 32,
+      "standard_error_squared_overlap": 0.005354634550897198,
+      "standard_error_top_eigenvalue": 0.007603752093902003,
+      "time_over_critical": 0.7,
+      "width": 512
+    },
+    "supercritical": {
+      "aspect_p_over_d": 0.5,
+      "dimension": 256,
+      "mean_squared_spike_overlap": 0.6860943356115492,
+      "mean_top_eigenvalue": 3.64527238362085,
+      "predicted_squared_overlap": 0.6846990312590646,
+      "predicted_top_branch": 3.6754174373368373,
+      "replicates": 32,
+      "standard_error_squared_overlap": 0.005520042727812088,
+      "standard_error_top_eigenvalue": 0.03019164230633468,
+      "time_over_critical": 2.0,
+      "width": 512
+    }
+  },
+  "checks": {
+    "attention_spectra_have_bipartite_pairing": true,
+    "bbp_null_has_no_outlier": true,
+    "bbp_subcritical_overlap_is_small": true,
+    "bbp_supercritical_eigenvalue_matches": true,
+    "bbp_supercritical_overlap_matches": true,
+    "categorical_class_count_is_280_through_p6": true,
+    "degenerate_gap_has_no_log_slope": true,
+    "generator_reconstruction_is_exact": true,
+    "ignition_slopes_match": true,
+    "isotropic_frame_is_exact": true,
+    "power_law_tail_slope_matches": true,
+    "signed_initial_growth_rates_match": true
+  },
+  "config": {
+    "attention_dimension": 5,
+    "attention_key_dimension": 3,
+    "attention_samples": 48,
+    "attention_sequence_length": 11,
+    "attention_value_dimension": 4,
+    "bbp_aspect": 0.5,
+    "bbp_delta": 0.25,
+    "bbp_dimensions": [
+      64,
+      128,
+      256
+    ],
+    "bbp_replicates": [
+      96,
+      64,
+      32
+    ],
+    "epsilon_max_power": 8,
+    "epsilon_min_power": 2,
+    "ignition_fraction": 0.5,
+    "isotropy": 0.125,
+    "max_pattern_dimension": 6,
+    "replicates": 64,
+    "seed": 260813335,
+    "spectrum_replicates": 24,
+    "spectrum_time_count": 25,
+    "tail_epsilon": 1e-12,
+    "tail_mode_count": 16384,
+    "width": 32
+  },
+  "counts": {
+    "attention_generator_spectra": 4,
+    "bbp_summary_rows": 24,
+    "categorical_patterns": 280,
+    "ignition_regression_rows": 12
+  },
+  "degenerate_clock_gaps": [
+    {
+      "first_mode": 1,
+      "gap_slope_standard_deviation": 0.00039408904996169843,
+      "initialization": "gaussian",
+      "mean_gap_slope": -0.0001604588052910226,
+      "predicted_gap_slope": 0.0,
+      "second_mode": 2,
+      "shared_generator_eigenvalue": 0.7
+    },
+    {
+      "first_mode": 1,
+      "gap_slope_standard_deviation": 0.0004194764242807873,
+      "initialization": "row_fixed",
+      "mean_gap_slope": -0.00014112100967609604,
+      "predicted_gap_slope": 0.0,
+      "second_mode": 2,
+      "shared_generator_eigenvalue": 0.7
+    },
+    {
+      "first_mode": 1,
+      "gap_slope_standard_deviation": 3.871202989809217e-17,
+      "initialization": "row_stiefel",
+      "mean_gap_slope": 3.2287749996203807e-18,
+      "predicted_gap_slope": 0.0,
+      "second_mode": 2,
+      "shared_generator_eigenvalue": 0.7
+    }
+  ],
+  "errors": {
+    "bbp_null_top_relative_error": 0.015928675021753592,
+    "bbp_supercritical_overlap_absolute_error": 0.0013953043524845832,
+    "bbp_supercritical_top_relative_error": 0.008201804075302544,
+    "maximum_attention_pairing_error": 2.886579864025407e-15,
+    "maximum_degenerate_gap_slope": 0.0001604588052910226,
+    "maximum_generator_reconstruction_error": 2.220446049250313e-16,
+    "maximum_ignition_relative_slope_error": 0.0010052317709541292,
+    "maximum_initial_growth_error": 1.227418744420561e-07,
+    "maximum_isotropy_identity_error": 2.7755575615628914e-17,
+    "power_law_tail_relative_slope_error": 0.004982255489945508
+  },
+  "ignition_regressions": [
+    {
+      "generator_eigenvalue": 1.0,
+      "initialization": "gaussian",
+      "intercept_standard_deviation": 0.12084299584553058,
+      "mean_fitted_slope": 0.4996526982182812,
+      "mean_intercept": 0.35988643842940304,
+      "mode": 0,
+      "multiplicity": 1,
+      "predicted_slope": 0.5,
+      "relative_slope_error": 0.0006946035634376457,
+      "replicates": 64,
+      "slope_standard_deviation": 0.00043065703427025306
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "gaussian",
+      "intercept_standard_deviation": 0.21505530324462233,
+      "mean_fitted_slope": 0.7144719000926655,
+      "mean_intercept": 0.31343265807502474,
+      "mode": 1,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.0002606601297316491,
+      "replicates": 64,
+      "slope_standard_deviation": 0.0002335007425772521
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "gaussian",
+      "intercept_standard_deviation": 0.2108983679719096,
+      "mean_fitted_slope": 0.7146323588979566,
+      "mean_intercept": 0.2930915892990663,
+      "mode": 2,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.00048530245713924726,
+      "replicates": 64,
+      "slope_standard_deviation": 0.00033247612464211125
+    },
+    {
+      "generator_eigenvalue": 0.25,
+      "initialization": "gaussian",
+      "intercept_standard_deviation": 0.4912555672798049,
+      "mean_fitted_slope": 2.0015318823631443,
+      "mean_intercept": -1.1244049022561513,
+      "mode": 3,
+      "multiplicity": 1,
+      "predicted_slope": 2.0,
+      "relative_slope_error": 0.0007659411815721384,
+      "replicates": 64,
+      "slope_standard_deviation": 0.0005023492012152935
+    },
+    {
+      "generator_eigenvalue": 1.0,
+      "initialization": "row_fixed",
+      "intercept_standard_deviation": 0.007998449795783624,
+      "mean_fitted_slope": 0.4996264878504255,
+      "mean_intercept": 0.3527339323808126,
+      "mode": 0,
+      "multiplicity": 1,
+      "predicted_slope": 0.5,
+      "relative_slope_error": 0.0007470242991489684,
+      "replicates": 64,
+      "slope_standard_deviation": 0.0004925416659643726
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "row_fixed",
+      "intercept_standard_deviation": 0.02322242798871403,
+      "mean_fitted_slope": 0.7144874620620872,
+      "mean_intercept": 0.26066462078047575,
+      "mode": 1,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.00028244688692211637,
+      "replicates": 64,
+      "slope_standard_deviation": 0.0002343787180653262
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "row_fixed",
+      "intercept_standard_deviation": 0.04684406574698065,
+      "mean_fitted_slope": 0.7146285830717634,
+      "mean_intercept": 0.27828311414415485,
+      "mode": 2,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.0004800163004686775,
+      "replicates": 64,
+      "slope_standard_deviation": 0.00035267153949700614
+    },
+    {
+      "generator_eigenvalue": 0.25,
+      "initialization": "row_fixed",
+      "intercept_standard_deviation": 0.15113789216721915,
+      "mean_fitted_slope": 2.0015784336471047,
+      "mean_intercept": -1.220079064911554,
+      "mode": 3,
+      "multiplicity": 1,
+      "predicted_slope": 2.0,
+      "relative_slope_error": 0.0007892168235523744,
+      "replicates": 64,
+      "slope_standard_deviation": 0.0002737882749794337
+    },
+    {
+      "generator_eigenvalue": 1.0,
+      "initialization": "row_stiefel",
+      "intercept_standard_deviation": 6.422454106631719e-16,
+      "mean_fitted_slope": 0.5001247608752015,
+      "mean_intercept": 0.34473949740204735,
+      "mode": 0,
+      "multiplicity": 1,
+      "predicted_slope": 0.5,
+      "relative_slope_error": 0.0002495217504030478,
+      "replicates": 64,
+      "slope_standard_deviation": 1.0924583100459875e-16
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "row_stiefel",
+      "intercept_standard_deviation": 5.739349050081272e-16,
+      "mean_fitted_slope": 0.7145405864565566,
+      "mean_intercept": 0.23659049804336682,
+      "mode": 1,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.0003568210391792226,
+      "replicates": 64,
+      "slope_standard_deviation": 1.1189996278004203e-16
+    },
+    {
+      "generator_eigenvalue": 0.7,
+      "initialization": "row_stiefel",
+      "intercept_standard_deviation": 3.554963976353287e-16,
+      "mean_fitted_slope": 0.7145405864565566,
+      "mean_intercept": 0.23659049804336696,
+      "mode": 2,
+      "multiplicity": 2,
+      "predicted_slope": 0.7142857142857143,
+      "relative_slope_error": 0.0003568210391792226,
+      "replicates": 64,
+      "slope_standard_deviation": 1.1189996278004203e-16
+    },
+    {
+      "generator_eigenvalue": 0.25,
+      "initialization": "row_stiefel",
+      "intercept_standard_deviation": 3.4862271327487262e-15,
+      "mean_fitted_slope": 2.0020104635419083,
+      "mean_intercept": -1.415848378078424,
+      "mode": 3,
+      "multiplicity": 1,
+      "predicted_slope": 2.0,
+      "relative_slope_error": 0.0010052317709541292,
+      "replicates": 64,
+      "slope_standard_deviation": 4.1493616733770434e-16
+    }
+  ],
+  "runtime_seconds": 6.834855840017553,
+  "scope": {
+    "bbp_status": "External spiked-Wishart control in the linearized NQF regime; BBP is not asserted by the NQF paper.",
+    "categorical_completeness": "All inertia and within-sign multiplicity partitions through the configured dimension; continuous eigenvalue magnitudes are not enumerated.",
+    "nqf_status": "Exact for the synthetic isotropic and orthogonal-feature NQFs; local when transferred to a nonlinear neural module."
+  },
+  "tail_scaling_summary": [
+    {
+      "alpha_1": 2.0,
+      "alpha_2": 0.8,
+      "case": "power_law",
+      "epsilon": 1e-12,
+      "first_half_slope": -1.252670043063263,
+      "fitted_log_log_slope": -1.2562278193624319,
+      "mode_count": 16384,
+      "predicted_log_log_slope": -1.25,
+      "second_half_slope": -1.2609090119440831,
+      "slope_drift": -0.008238968880820208
+    },
+    {
+      "alpha_1": 2.0,
+      "alpha_2": null,
+      "case": "exponential_rate_control",
+      "epsilon": 1e-12,
+      "first_half_slope": -0.6854082236633613,
+      "fitted_log_log_slope": -0.43631739275261366,
+      "mode_count": 16384,
+      "predicted_log_log_slope": null,
+      "second_half_slope": -0.2671247746888283,
+      "slope_drift": 0.418283448974533
+    },
+    {
+      "alpha_1": 2.0,
+      "alpha_2": 0.0,
+      "case": "flat_rate_control",
+      "epsilon": 1e-12,
+      "first_half_slope": -0.6636174463613037,
+      "fitted_log_log_slope": -36.46058423856258,
+      "mode_count": 16384,
+      "predicted_log_log_slope": null,
+      "second_half_slope": -78.76623825804072,
+      "slope_drift": -78.10262081167942
+    }
+  ]
+}
